@@ -7,6 +7,7 @@ pub mod instruction_generator;
 pub mod damage_calc;
 pub mod move_effects;
 pub mod format_targeting;
+pub mod ps_targeting;
 pub mod format_instruction_generator;
 pub mod doubles_mechanics;
 
