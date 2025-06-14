@@ -1,10 +1,12 @@
-# Tapu Simu
+# Tapu Simu (WORK IN PROGRESS)
 
 ![Tapu Simu](assets/tapu-simu-hero.png)
 
 **A next-generation Pokemon battle simulator built from the ground up for multi-format support.**
 
 Tapu Simu is a comprehensive battle engine featuring format-aware mechanics, position-based targeting, and Pokemon Showdown data integration. Designed for accuracy, performance, and extensibility across all Pokemon battle formats.
+
+⚠️ **Note**: This project is under active development and not yet ready for production use.
 
 ## 🛠 Installation
 
