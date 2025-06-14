@@ -1,200 +1,138 @@
-//! # Tapu Simu
+//! Tapu Simu - High-performance Pokemon battle simulator
 //! 
-//! A format-aware Pokemon battle simulator designed for multi-format support.
-//! This simulator supports Singles, Doubles, and VGC formats with position-based
-//! targeting and comprehensive battle mechanics.
-//! 
-//! ## Key Features
-//! 
-//! - **Multi-Format Support**: Singles, Doubles, VGC formats
-//! - **Position-Based Targeting**: All moves use explicit position targeting
-//! - **Format-Aware Architecture**: Battle logic adapts to the active format
-//! - **Modern Design**: Built from the ground up with V2 principles
-//! - **No Legacy Compatibility**: Clean, focused implementation
-//! 
-//! ## Architecture Overview
-//! 
-//! - `battle_format`: Format definitions and position management
-//! - `engine`: Core battle mechanics (generation-specific)
-//! - `instruction`: Battle instruction system with position tracking
-//! - `move_choice`: Format-aware move choice system
-//! - `state`: Battle state representation
-//! - `data`: Pokemon data integration with rustemon/PokeAPI
-//! 
-//! ## Example Usage
-//! 
-//! ```rust
-//! use tapu_simu::{BattleFormat, State, MoveChoice, InstructionGenerator};
-//! use tapu_simu::move_choice::{MoveIndex, PokemonIndex};
-//! use tapu_simu::battle_format::{BattlePosition, SideReference};
-//! 
-//! // Create a new singles battle
-//! let mut state = State::new(BattleFormat::Singles);
-//! 
-//! // Create move choices
-//! let move1 = MoveChoice::new_move(
-//!     MoveIndex::M0, 
-//!     vec![BattlePosition::new(SideReference::SideTwo, 0)]
-//! );
-//! let move2 = MoveChoice::new_move(
-//!     MoveIndex::M0, 
-//!     vec![BattlePosition::new(SideReference::SideOne, 0)]
-//! );
-//! 
-//! // Generate instructions for moves
-//! let generator = InstructionGenerator::new(BattleFormat::Singles);
-//! let instructions = generator.generate_instructions(&mut state, &move1, &move2);
-//! ```
+//! A Rust port of Pokemon Showdown's battle engine with a focus on:
+//! - State serialization for AI/RL applications
+//! - Efficient turn-level undo functionality 
+//! - Deterministic battles with PRNG seeds
+//! - Support for all Pokemon battle formats
 
-// Generation-specific modules
-#[cfg(feature = "gen1")]
-#[path = "gen1/mod.rs"]
-pub mod engine;
+pub mod battle_state;
+pub mod pokemon;
+pub mod side;
+pub mod action_queue;
+pub mod prng;
+pub mod dex;
+pub mod moves;
+pub mod events;
+pub mod battle;
+pub mod format;
+pub mod errors;
 
-#[cfg(feature = "gen2")]
-#[path = "gen2/mod.rs"]
-pub mod engine;
+// Re-export core types
+pub use battle_state::BattleState;
+pub use pokemon::Pokemon;
+pub use side::{Side, SideId};
+pub use battle::Battle;
+pub use errors::{BattleError, BattleResult};
+pub use format::BattleFormat;
 
-#[cfg(feature = "gen3")]
-#[path = "gen3/mod.rs"]
-pub mod engine;
-
-// Default generation (gen4-9)
-#[cfg(not(any(feature = "gen1", feature = "gen2", feature = "gen3")))]
-#[path = "genx/mod.rs"]
-pub mod engine;
-
-// Core V2 modules
-pub mod battle_format;
-pub mod instruction;
-pub mod move_choice;
-pub mod state;
-pub mod data;
-pub mod io;
-
-// Re-exports for convenience
-pub use battle_format::{BattleFormat, BattlePosition};
-pub use instruction::{Instruction, StateInstructions, InstructionGenerator};
-pub use move_choice::MoveChoice;
-pub use state::State;
-
-// Ensure only one generation is enabled
-#[cfg(all(feature = "gen1", feature = "gen2"))]
-compile_error!("Features 'gen1' and 'gen2' cannot be used together");
-
-#[cfg(all(feature = "gen1", feature = "gen3"))]
-compile_error!("Features 'gen1' and 'gen3' cannot be used together");
-
-#[cfg(all(feature = "gen2", feature = "gen3"))]
-compile_error!("Features 'gen2' and 'gen3' cannot be used together");
-
-// Add more generation mutual exclusion checks as needed...
-
-// Terastallization requires Gen 9
-#[cfg(all(feature = "terastallization", not(feature = "gen9")))]
-compile_error!("Feature 'terastallization' requires 'gen9'");
-
-// Macro for enum generation (copied from V1)
-#[macro_export]
-macro_rules! define_enum_with_from_str {
-    // Case when a default variant is provided
-    (
-        #[repr($repr:ident)]
-        $(#[$meta:meta])*
-        $name:ident {
-            $($variant:ident),+ $(,)?
-        },
-        default = $default_variant:ident
-    ) => {
-        #[repr($repr)]
-        $(#[$meta])*
-        pub enum $name {
-            $($variant),+
-        }
-
-        impl std::str::FromStr for $name {
-            type Err = ();
-
-            fn from_str(input: &str) -> Result<Self, Self::Err> {
-                match input.to_uppercase().as_str() {
-                    $(
-                        stringify!($variant) => Ok($name::$variant),
-                    )+
-                    _ => Ok($name::$default_variant),
-                }
+/// Common types used throughout the simulator
+pub mod types {
+    pub use serde::{Deserialize, Serialize};
+    
+    /// Pokemon type (Fire, Water, etc.)
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+    pub enum Type {
+        Normal, Fire, Water, Electric, Grass, Ice, Fighting, Poison,
+        Ground, Flying, Psychic, Bug, Rock, Ghost, Dragon, Dark,
+        Steel, Fairy,
+    }
+    
+    /// Gender of a Pokemon
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+    pub enum Gender {
+        Male, Female, Genderless,
+    }
+    
+    /// Nature affecting stats
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+    pub enum Nature {
+        Hardy, Lonely, Brave, Adamant, Naughty,
+        Bold, Docile, Relaxed, Impish, Lax,
+        Timid, Hasty, Serious, Jolly, Naive,
+        Modest, Mild, Quiet, Bashful, Rash,
+        Calm, Gentle, Sassy, Careful, Quirky,
+    }
+    
+    /// Move category (Physical, Special, Status)
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+    pub enum MoveCategory {
+        Physical, Special, Status,
+    }
+    
+    /// Move targeting
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+    pub enum MoveTarget {
+        // Single targets
+        Normal,         // One adjacent foe
+        Any,           // Any single Pokemon on the field
+        AdjacantAlly,  // One adjacent ally
+        AdjacantFoe,   // One adjacent foe
+        AdjacantAllyOrSelf, // One adjacent ally or self
+        
+        // Self targets
+        Self_,         // User only
+        
+        // Multiple targets
+        AllAdjacent,   // All adjacent Pokemon
+        AllAdjacentFoes, // All adjacent foes
+        AllAllies,     // All allies
+        AllFoes,       // All foes
+        All,           // Every Pokemon on the field
+        
+        // Field targets
+        FoeSide,       // Foe's side of the field
+        AllySide,      // User's side of the field
+        RandomNormal,  // Random adjacent foe
+    }
+    
+    /// Stats table
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+    pub struct StatsTable {
+        pub hp: u16,
+        pub attack: u16,
+        pub defense: u16,
+        pub special_attack: u16,
+        pub special_defense: u16,
+        pub speed: u16,
+    }
+    
+    impl Default for StatsTable {
+        fn default() -> Self {
+            Self {
+                hp: 0,
+                attack: 0,
+                defense: 0,
+                special_attack: 0,
+                special_defense: 0,
+                speed: 0,
             }
         }
-
-        impl std::fmt::Display for $name {
-            fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-                write!(f, "{:?}", self)
+    }
+    
+    /// Boosts table (-6 to +6 for each stat)
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+    pub struct BoostsTable {
+        pub attack: i8,
+        pub defense: i8,
+        pub special_attack: i8,
+        pub special_defense: i8,
+        pub speed: i8,
+        pub accuracy: i8,
+        pub evasion: i8,
+    }
+    
+    impl Default for BoostsTable {
+        fn default() -> Self {
+            Self {
+                attack: 0,
+                defense: 0,
+                special_attack: 0,
+                special_defense: 0,
+                speed: 0,
+                accuracy: 0,
+                evasion: 0,
             }
         }
-
-        impl From<$repr> for $name {
-            fn from(value: $repr) -> $name {
-                match value {
-                    $(
-                        x if x == $name::$variant as $repr => $name::$variant,
-                    )+
-                    _ => $name::$default_variant,
-                }
-            }
-        }
-        impl Into<$repr> for $name {
-            fn into(self) -> $repr {
-                self as $repr
-            }
-        }
-    };
-
-    // Case when no default variant is provided
-    (
-        #[repr($repr:ident)]
-        $(#[$meta:meta])*
-        $name:ident {
-            $($variant:ident),+ $(,)?
-        }
-    ) => {
-        #[repr($repr)]
-        $(#[$meta])*
-        pub enum $name {
-            $($variant),+
-        }
-
-        impl std::str::FromStr for $name {
-            type Err = ();
-
-            fn from_str(input: &str) -> Result<Self, Self::Err> {
-                match input.to_uppercase().as_str() {
-                    $(
-                        stringify!($variant) => Ok($name::$variant),
-                    )+
-                    _ => panic!("Invalid {}: {}", stringify!($name), input.to_uppercase().as_str()),
-                }
-            }
-        }
-
-        impl std::fmt::Display for $name {
-            fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-                write!(f, "{:?}", self)
-            }
-        }
-
-        impl From<$repr> for $name {
-            fn from(value: $repr) -> $name {
-                match value {
-                    $(
-                        x if x == $name::$variant as $repr => $name::$variant,
-                    )+
-                    _ => panic!("Invalid {}: {}", stringify!($name), value),
-                }
-            }
-        }
-        impl Into<$repr> for $name {
-            fn into(self) -> $repr {
-                self as $repr
-            }
-        }
-    };
+    }
 }

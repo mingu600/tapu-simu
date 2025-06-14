@@ -1,54 +1,38 @@
 [package]
 name = "tapu-simu"
-version = "0.1.0"
-authors = ["Mingu Kim <mingu@example.com>"]
+version = "0.2.0"
 edition = "2021"
-license-file = "LICENSE"
-description = "Tapu Simu - Format-aware Pokemon battle simulator"
+description = "High-performance Pokemon battle simulator - Rust port of Pokemon Showdown"
+license = "MIT"
+repository = "https://github.com/mingu600/tapu-simu"
 
 [lib]
 name = "tapu_simu"
 path = "src/lib.rs"
-crate-type = ["lib"]
 
 [[bin]]
 name = "tapu-simu"
 path = "src/main.rs"
 
-[[example]]
-name = "ps_data_demo"
-path = "examples/ps_data_demo.rs"
-
-[profile.release]
-debug = 1
-
 [dependencies]
-clap = { version = "4.5.4", features = ["derive"] }
-rand = "0.8.4"
-lazy_static = "1.4.0"
-deunicode = "1.3"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-colored = "3.0.0"
-rayon = "1.7"
+bincode = "1.3"
+chacha20 = "0.9"
+thiserror = "1.0"
+anyhow = "1.0"
+indexmap = "2.0"
+smallvec = { version = "1.11", features = ["serde"] }
+ahash = "0.8"
 
-[features]
-# Generation features
-gen1 = []
-gen2 = []
-gen3 = []
-gen4 = []
-gen5 = []
-gen6 = []
-gen7 = []
-gen8 = []
-gen9 = []
-terastallization = ["gen9"]
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+proptest = "1.0"
 
-# Battle optimization features
-remove_low_chance_instructions = []
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
 
-# Default features (Gen 9 with Terastallization for modern Pokemon)
-default = ["gen9", "terastallization"]
-
-[workspace]
+[profile.bench]
+debug = true
