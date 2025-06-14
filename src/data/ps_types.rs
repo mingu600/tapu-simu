@@ -204,7 +204,7 @@ pub struct PSMoveData {
     pub category: String, // "Physical", "Special", "Status"
     pub priority: i8,
     pub target: String, // We'll parse this into PSMoveTarget
-    pub flags: std::collections::HashMap<String, bool>,
+    pub flags: std::collections::HashMap<String, i32>, // PS uses 1 for true, 0 for false
     
     // Optional effect data
     pub drain: Option<[u8; 2]>,
@@ -223,12 +223,12 @@ pub struct PSMoveData {
     pub self_: Option<PSSelfEffect>,
     
     // Special properties
-    pub is_z: bool,
-    pub is_max: bool,
-    pub ohko: bool,
+    pub is_z: ZMoveData,
+    pub is_max: MaxMoveData,
+    pub ohko: OHKOData,
     pub thaws_target: bool,
     pub force_switch: bool,
-    pub self_switch: bool,
+    pub self_switch: SelfSwitchData,
     pub breaks_protect: bool,
     pub ignore_defensive: bool,
     pub ignore_evasion: bool,
@@ -250,6 +250,22 @@ pub struct PSMoveData {
     pub short_desc: String,
 }
 
+impl PSMoveData {
+    /// Check if a move has a specific flag
+    pub fn has_flag(&self, flag: &str) -> bool {
+        self.flags.get(flag).map(|&v| v != 0).unwrap_or(false)
+    }
+    
+    /// Get all active flags for this move
+    pub fn get_active_flags(&self) -> Vec<String> {
+        self.flags
+            .iter()
+            .filter(|(_, &value)| value != 0)
+            .map(|(key, _)| key.clone())
+            .collect()
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PSSecondaryEffect {
     pub chance: u8,
@@ -262,4 +278,91 @@ pub struct PSSecondaryEffect {
 pub struct PSSelfEffect {
     pub boosts: Option<std::collections::HashMap<String, i8>>,
     pub volatile_status: Option<String>,
+}
+
+/// Z-move data - can be false or a Z-crystal name
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum ZMoveData {
+    None(bool), // false when not a Z-move
+    ZCrystal(String), // Z-crystal name when it is a Z-move
+}
+
+impl ZMoveData {
+    pub fn is_z_move(&self) -> bool {
+        matches!(self, ZMoveData::ZCrystal(_))
+    }
+    
+    pub fn z_crystal(&self) -> Option<&str> {
+        match self {
+            ZMoveData::ZCrystal(name) => Some(name),
+            ZMoveData::None(_) => None,
+        }
+    }
+}
+
+/// Max move data - can be false or true/string for Max moves
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum MaxMoveData {
+    None(bool), // false when not a Max move
+    MaxMove(bool), // true when it is a Max move
+    GMaxMove(String), // Pokemon name for G-Max moves
+}
+
+impl MaxMoveData {
+    pub fn is_max_move(&self) -> bool {
+        matches!(self, MaxMoveData::MaxMove(true) | MaxMoveData::GMaxMove(_))
+    }
+    
+    pub fn gmax_pokemon(&self) -> Option<&str> {
+        match self {
+            MaxMoveData::GMaxMove(name) => Some(name),
+            _ => None,
+        }
+    }
+}
+
+/// Self-switch data - can be false, true, or a specific switch type
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum SelfSwitchData {
+    None(bool), // false when no self-switch
+    Normal(bool), // true when normal self-switch
+    Special(String), // Special switch type like "shedtail", "copyvolatile"
+}
+
+impl SelfSwitchData {
+    pub fn causes_switch(&self) -> bool {
+        matches!(self, SelfSwitchData::Normal(true) | SelfSwitchData::Special(_))
+    }
+    
+    pub fn switch_type(&self) -> Option<&str> {
+        match self {
+            SelfSwitchData::Special(switch_type) => Some(switch_type),
+            _ => None,
+        }
+    }
+}
+
+/// OHKO data - can be false, true, or a type requirement
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum OHKOData {
+    None(bool), // false when not OHKO
+    Normal(bool), // true when normal OHKO
+    TypeSpecific(String), // Type requirement like "Ice" for Sheer Cold
+}
+
+impl OHKOData {
+    pub fn is_ohko(&self) -> bool {
+        matches!(self, OHKOData::Normal(true) | OHKOData::TypeSpecific(_))
+    }
+    
+    pub fn type_requirement(&self) -> Option<&str> {
+        match self {
+            OHKOData::TypeSpecific(type_name) => Some(type_name),
+            _ => None,
+        }
+    }
 }

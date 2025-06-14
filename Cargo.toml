@@ -15,6 +15,10 @@ crate-type = ["lib"]
 name = "tapu-simu"
 path = "src/main.rs"
 
+[[example]]
+name = "ps_data_demo"
+path = "examples/ps_data_demo.rs"
+
 [profile.release]
 debug = 1
 

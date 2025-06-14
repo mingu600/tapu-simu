@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
-import { Dex } from '@pkmn/dex';
-import { Generations } from '@pkmn/data';
+import { Dex } from '@pkmn/sim';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -11,11 +10,12 @@ const __dirname = path.dirname(__filename);
 
 // No mapping needed - we'll use Pokemon Showdown's naming directly
 
-async function extractMoves(gen) {
-    const moves = gen.moves;
+async function extractMoves(dex) {
     const extractedMoves = {};
 
-    for (const move of moves) {
+    // Get all move names and iterate through them
+    for (const moveId in dex.data.Moves) {
+        const move = dex.moves.get(moveId);
         // Skip nonstandard moves unless they're Z-moves or Max moves
         if (move.isNonstandard && !move.isZ && !move.isMax) {
             continue;
@@ -92,11 +92,12 @@ async function extractMoves(gen) {
     return extractedMoves;
 }
 
-async function extractItems(gen) {
-    const items = gen.items;
+async function extractItems(dex) {
     const extractedItems = {};
     
-    for (const item of items) {
+    // Get all item names and iterate through them
+    for (const itemId in dex.data.Items) {
+        const item = dex.items.get(itemId);
         // Skip nonstandard items
         if (item.isNonstandard) {
             continue;
@@ -158,16 +159,14 @@ async function main() {
     const args = process.argv.slice(2);
     const command = args[0] || 'all';
     
-    // Use Gen 9 data by default
-    const gens = new Generations(Dex);
-    const gen = gens.get(9);
+    // Use Gen 9 data by default - Dex is already the latest generation
     
     const outputDir = path.join(__dirname, '../../data/ps-extracted');
     await fs.mkdir(outputDir, { recursive: true });
     
     if (command === 'moves' || command === 'all') {
         console.log('Extracting moves...');
-        const moves = await extractMoves(gen);
+        const moves = await extractMoves(Dex);
         const movesPath = path.join(outputDir, 'moves.json');
         await fs.writeFile(movesPath, JSON.stringify(moves, null, 2));
         console.log(`Extracted ${Object.keys(moves).length} moves to ${movesPath}`);
@@ -175,7 +174,7 @@ async function main() {
     
     if (command === 'items' || command === 'all') {
         console.log('Extracting items...');
-        const items = await extractItems(gen);
+        const items = await extractItems(Dex);
         const itemsPath = path.join(outputDir, 'items.json');
         await fs.writeFile(itemsPath, JSON.stringify(items, null, 2));
         console.log(`Extracted ${Object.keys(items).length} items to ${itemsPath}`);

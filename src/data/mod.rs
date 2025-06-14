@@ -9,6 +9,8 @@ pub mod ps_types;
 pub mod conversion;
 pub mod ps_conversion;
 pub mod ps_loader;
+pub mod ps_move_service;
+pub mod ps_move_factory;
 pub mod move_service;
 pub mod move_factory;
 pub mod choices;
