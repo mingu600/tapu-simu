@@ -1,6 +1,8 @@
 # Tapu Simu (WORK IN PROGRESS)
 
-![Tapu Simu](assets/tapu-simu-hero.png)
+<div align="center">
+  <img src="assets/tapu-simu-logo.png" alt="Tapu Simu Logo" width="200">
+</div>
 
 **A next-generation Pokemon battle simulator built from the ground up for multi-format support.**
 
