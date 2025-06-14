@@ -8,7 +8,6 @@ use std::fs;
 use std::path::Path;
 use serde_json;
 use crate::data::ps_types::{PSMoveData, PSMoveTarget};
-use crate::data::ps_conversion::ps_target_from_string;
 
 /// Pokemon Showdown data repository
 pub struct PSDataRepository {
@@ -70,37 +69,12 @@ impl PSDataRepository {
             move_type: ps_move.move_type.clone(),
             pp: ps_move.pp,
             max_pp: ps_move.max_pp,
-            target: self.convert_ps_target_to_engine(&ps_move.target),
+            target: crate::data::ps_conversion::ps_target_from_string(&ps_move.target),
             category: self.convert_ps_category_to_engine(&ps_move.category),
             priority: ps_move.priority,
         }
     }
 
-    /// Convert PS target string to engine MoveTarget (temporary during migration)
-    fn convert_ps_target_to_engine(&self, ps_target: &str) -> crate::data::types::MoveTarget {
-        // This is a temporary bridge during migration
-        use crate::data::ps_conversion::ps_target_from_string;
-        use crate::data::ps_conversion::rustemon_to_ps_target;
-        
-        // For now, map PS targets back to our current engine targets
-        // In the final implementation, we'd use PS targets directly
-        let ps_target_enum = ps_target_from_string(ps_target);
-        
-        // Reverse mapping (this will be removed when we fully migrate)
-        match ps_target_enum {
-            PSMoveTarget::Self_ => crate::data::types::MoveTarget::User,
-            PSMoveTarget::Normal => crate::data::types::MoveTarget::SelectedPokemon,
-            PSMoveTarget::AdjacentAlly => crate::data::types::MoveTarget::Ally,
-            PSMoveTarget::AdjacentAllyOrSelf => crate::data::types::MoveTarget::UserOrAlly,
-            PSMoveTarget::AllAdjacentFoes => crate::data::types::MoveTarget::AllOpponents,
-            PSMoveTarget::All => crate::data::types::MoveTarget::EntireField,
-            PSMoveTarget::AllySide => crate::data::types::MoveTarget::UsersField,
-            PSMoveTarget::FoeSide => crate::data::types::MoveTarget::OpponentsField,
-            PSMoveTarget::RandomNormal => crate::data::types::MoveTarget::RandomOpponent,
-            PSMoveTarget::Scripted => crate::data::types::MoveTarget::SpecificMove,
-            _ => crate::data::types::MoveTarget::SelectedPokemon, // Default
-        }
-    }
 
     /// Convert PS category to engine category
     fn convert_ps_category_to_engine(&self, ps_category: &str) -> crate::state::MoveCategory {

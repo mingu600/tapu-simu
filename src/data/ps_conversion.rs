@@ -30,6 +30,29 @@ pub fn rustemon_to_ps_target(rustemon_target: MoveTarget) -> PSMoveTarget {
     }
 }
 
+/// Convert rustemon/PokeAPI target string to Pokemon Showdown target
+pub fn rustemon_target_to_ps(rustemon_target: &str) -> PSMoveTarget {
+    match rustemon_target {
+        "specific-move" => PSMoveTarget::Scripted,
+        "selected-pokemon-me-first" => PSMoveTarget::Normal,
+        "ally" => PSMoveTarget::AdjacentAlly,
+        "users-field" => PSMoveTarget::AllySide,
+        "user-or-ally" => PSMoveTarget::AdjacentAllyOrSelf,
+        "opponents-field" => PSMoveTarget::FoeSide,
+        "user" => PSMoveTarget::Self_,
+        "random-opponent" => PSMoveTarget::RandomNormal,
+        "all-other-pokemon" => PSMoveTarget::AllAdjacent,
+        "selected-pokemon" => PSMoveTarget::Normal,
+        "all-opponents" => PSMoveTarget::AllAdjacentFoes,
+        "entire-field" => PSMoveTarget::All,
+        "user-and-allies" => PSMoveTarget::Allies,
+        "all-pokemon" => PSMoveTarget::All,
+        "all-allies" => PSMoveTarget::Allies,
+        "fainting-pokemon" => PSMoveTarget::Scripted,
+        _ => PSMoveTarget::Normal, // Default fallback
+    }
+}
+
 /// Convert Pokemon Showdown target string to enum
 pub fn ps_target_from_string(target: &str) -> PSMoveTarget {
     match target {

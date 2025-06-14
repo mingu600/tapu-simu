@@ -82,7 +82,7 @@ pub fn print_engine_info() {
     println!("Features:");
     println!("  - Position-based targeting");
     println!("  - Format-aware battle mechanics");
-    println!("  - Rustemon/PokeAPI integration");
+    println!("  - Pokemon Showdown data integration");
     
     #[cfg(feature = "terastallization")]
     println!("  - Terastallization support");

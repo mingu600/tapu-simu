@@ -252,6 +252,51 @@ impl PSAutoTargetingEngine {
 
         Ok(())
     }
+
+    /// Auto-resolve targets for a move choice, compatible with existing code
+    pub fn auto_resolve_targets(
+        &self,
+        user_side: SideReference,
+        user_slot: usize,
+        move_choice: &mut crate::move_choice::MoveChoice,
+        state: &State,
+    ) -> Result<(), String> {
+        use crate::battle_format::BattlePosition;
+
+        // If move choice already has targets, don't modify them
+        if move_choice.target_positions().is_some() {
+            return Ok(());
+        }
+
+        // Get the move index from the choice
+        let move_index = match move_choice.move_index() {
+            Some(index) => index,
+            None => return Ok(()), // No targets for switches or no-moves
+        };
+
+        let user_position = BattlePosition::new(user_side, user_slot);
+        
+        // Get the move and its PS target type
+        let side = state.get_side(user_side);
+        let pokemon = side.get_active_pokemon_at_slot(user_slot)
+            .ok_or("No active Pokemon at specified slot")?;
+        
+        let move_data = pokemon.get_move(move_index)
+            .ok_or("Move not found on Pokemon")?;
+        
+        let ps_target = move_data.target;
+
+        // Resolve targets using PS targeting system
+        let targets = self.resolve_targets(ps_target, user_position, state);
+        
+        // Validate the resolved targets
+        self.validate_targets(ps_target, user_position, &targets, state)?;
+        
+        // Update the move choice with resolved targets
+        move_choice.set_target_positions(targets);
+        
+        Ok(())
+    }
 }
 
 #[cfg(test)]

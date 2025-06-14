@@ -6,10 +6,9 @@
 use std::collections::HashMap;
 use std::sync::OnceLock;
 use crate::data::ps_loader::PSDataRepository;
-use crate::data::ps_types::{PSMoveData, PSMoveTarget};
+use crate::data::ps_types::PSMoveData;
 use crate::data::ps_conversion::ps_target_from_string;
 use crate::state::{Move, MoveCategory};
-use crate::data::types::MoveTarget;
 
 /// Global PS data repository - loaded once and cached
 static PS_REPO: OnceLock<PSDataRepository> = OnceLock::new();
@@ -72,31 +71,9 @@ impl PSMoveService {
             move_type: ps_move.move_type.clone(),
             pp: ps_move.pp,
             max_pp: ps_move.max_pp,
-            target: self.convert_ps_target_to_engine(&ps_move.target),
+            target: ps_target_from_string(&ps_move.target),
             category: self.convert_ps_category_to_engine(&ps_move.category),
             priority: ps_move.priority,
-        }
-    }
-
-    /// Convert PS target to current engine target (temporary during migration)
-    fn convert_ps_target_to_engine(&self, ps_target: &str) -> MoveTarget {
-        let ps_target_enum = ps_target_from_string(ps_target);
-        
-        match ps_target_enum {
-            PSMoveTarget::Self_ => MoveTarget::User,
-            PSMoveTarget::Normal | PSMoveTarget::AdjacentFoe => MoveTarget::SelectedPokemon,
-            PSMoveTarget::AdjacentAlly => MoveTarget::Ally,
-            PSMoveTarget::AdjacentAllyOrSelf => MoveTarget::UserOrAlly,
-            PSMoveTarget::AllAdjacentFoes => MoveTarget::AllOpponents,
-            PSMoveTarget::AllAdjacent => MoveTarget::AllOtherPokemon,
-            PSMoveTarget::All => MoveTarget::EntireField,
-            PSMoveTarget::AllySide => MoveTarget::UsersField,
-            PSMoveTarget::FoeSide => MoveTarget::OpponentsField,
-            PSMoveTarget::Any => MoveTarget::SelectedPokemon, // Best approximation
-            PSMoveTarget::RandomNormal => MoveTarget::RandomOpponent,
-            PSMoveTarget::Scripted => MoveTarget::SpecificMove,
-            PSMoveTarget::AllyTeam => MoveTarget::UserAndAllies,
-            PSMoveTarget::Allies => MoveTarget::AllAllies,
         }
     }
 

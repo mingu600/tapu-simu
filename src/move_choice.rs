@@ -106,7 +106,7 @@ impl MoveChoice {
     }
 
     /// Get the move target type from the move data (requires state access)
-    pub fn get_move_target(&self, state: &crate::State) -> Option<crate::data::types::MoveTarget> {
+    pub fn get_move_target(&self, state: &crate::State) -> Option<crate::data::ps_types::PSMoveTarget> {
         let move_index = self.move_index()?;
         
         // Get the user's side - this is a simplified approach

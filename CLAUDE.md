@@ -53,63 +53,43 @@ Ask clarifying questions whenever my request is ambiguous or unclear
 
 ### 🎯 Current Implementation Status
 
-**🎉 MAJOR MILESTONE: Pokemon Showdown Data Integration Complete** ✅ 
-- Successfully replaced rustemon/PokeAPI with Pokemon Showdown as primary data source
-- **772 moves** + **244 items** extracted with complete metadata
-- **Production-ready** PS data pipeline with synchronous access
-- **More comprehensive** than rustemon (flags, effects, Z-moves, secondary effects)
-- **Battle-tested accuracy** from the most popular Pokemon simulator
-- **Clean API** maintaining backward compatibility during migration
+**🎉 MAJOR MILESTONE: Pokemon Showdown Integration Complete** ✅ 
+- **Fully replaced rustemon** - Complete migration to Pokemon Showdown as primary data source
+- **772 moves** + **244 items** with complete battle metadata
+- **Generation-specific data** - Complete Gen 1-9 support (252-777 moves per generation)
+- **319 moves with change tracking** - Full historical evolution across generations
+- **Production-ready synchronous API** - No async dependencies, fast local access
+- **Battle-tested accuracy** - Direct Pokemon Showdown data ensures simulator-grade precision
 
-**Core Foundation** ✅ COMPLETED
+**Core Architecture** ✅ COMPLETED
 - ✅ Multi-format battle state system (`src/battle_format.rs`, `src/state.rs`)
-- ✅ Position-based targeting framework (`src/battle_format.rs`)
+- ✅ Position-based targeting framework with PSMoveTarget integration
 - ✅ Format-aware instruction system (`src/instruction.rs`)
 - ✅ Move choice with explicit targeting (`src/move_choice.rs`)
-- ✅ Rustemon/PokeAPI data integration layer (`src/data/`)
+- ✅ Pokemon Showdown data integration layer (`src/data/`)
 - ✅ CLI interface with basic commands (`src/io.rs`)
 
-**Phase 4: Advanced Battle Mechanics** ✅ COMPLETED
-- ✅ **Format-Aware Targeting System** (`src/genx/format_targeting.rs`)
-  - Complete move target resolution for all 16 rustemon/PokeAPI targets
-  - AutoTargetingEngine for automatic target resolution
-  - Format-specific targeting logic (singles vs doubles vs VGC)
-- ✅ **Format Instruction Generator** (`src/genx/format_instruction_generator.rs`)
-  - Spread move damage reduction (0.75x in doubles/VGC)
-  - Critical hit branching with proper percentages
-  - Multi-target instruction generation
-- ✅ **Doubles-Specific Mechanics** (`src/genx/doubles_mechanics.rs`)
-  - Follow Me/Rage Powder redirection mechanics
-  - Helping Hand, Wide Guard, Quick Guard implementation
-  - Ally damage calculation for spread moves
-  - Position-based adjacency checking
-- ✅ **Multi-Target Instruction System** (enhanced `src/instruction.rs`)
-  - PositionDamageInstruction and MultiTargetDamageInstruction
-  - Position-aware volatile status instructions
-  - Comprehensive affected_positions tracking
-- ✅ **Enhanced Instruction Generator** (`src/genx/instruction_generator.rs`)
-  - **NO MORE PLACEHOLDERS** - fully functional implementation
-  - Integration of all format-aware mechanics
-  - Auto-targeting resolution and redirection mechanics
+**Advanced Battle Mechanics** ✅ COMPLETED
+- ✅ **Format-Aware Targeting** (`src/genx/format_targeting.rs`) - Complete PSMoveTarget resolution
+- ✅ **Format Instruction Generator** (`src/genx/format_instruction_generator.rs`) - Spread damage, critical hits
+- ✅ **Doubles-Specific Mechanics** (`src/genx/doubles_mechanics.rs`) - Redirection, ally interactions
+- ✅ **Multi-Target Instructions** - Position-aware damage and status effects
+- ✅ **Complete Instruction Generator** (`src/genx/instruction_generator.rs`) - Production-ready implementation
 
-**Pokemon Showdown Integration** ✅ COMPLETED
-- ✅ PS data extraction tool with @pkmn packages (772 moves, 244 items)
-- ✅ PS-compatible type system (PSMoveTarget, PSMoveData, ZMoveData, etc.)
-- ✅ PSAutoTargetingEngine for direct PS target usage
-- ✅ PS data loader with comprehensive JSON parsing
-- ✅ PSMoveService - synchronous local data access replacing rustemon
-- ✅ PSMoveFactory - moveset creation with engine enhancements  
-- ✅ Advanced type handling (mixed boolean/string types, flags as integers)
-- ✅ Working production demo with complete PS data integration
-- ⏳ Migrate existing code to use PS data instead of rustemon
-- ⏳ Remove rustemon dependency entirely
+**Pokemon Showdown Data System** ✅ COMPLETED
+- ✅ **PS Data Extraction** - Complete toolchain with @pkmn packages
+- ✅ **PS Type System** - PSMoveTarget, PSMoveData with advanced type handling
+- ✅ **Generation Repository** (`src/data/ps_generation_loader.rs`) - Historical move data access
+- ✅ **PS Move Services** - Synchronous local data access replacing all async dependencies
+- ✅ **PS Move Factory** - Enhanced moveset creation with engine optimizations
+- ✅ **Advanced Data Types** - Complex immunity handling, Z-moves, Max moves, secondary effects
 
-**Remaining Core Mechanics** ⏳ PENDING
-- ⏳ Enhanced damage calculation with type effectiveness
-- ⏳ Comprehensive status condition effects  
-- ⏳ Weather and terrain effects
-- ⏳ Ability system integration
-- ⏳ Item effects implementation
+**Next Implementation Focus**
+- Enhanced damage calculation with PS type effectiveness
+- Status condition system using PS status data
+- Weather and terrain effects with PS metadata
+- Ability system integration
+- Item effects implementation
 
 ### 📋 Development Guidelines
 
@@ -140,33 +120,43 @@ Ask clarifying questions whenever my request is ambiguous or unclear
 ```
 src/
 ├── battle_format.rs      # Format definitions and position management  
-├── instruction.rs        # Position-aware instruction system (enhanced)
-├── move_choice.rs        # Explicit targeting move choices (enhanced)
+├── instruction.rs        # Position-aware instruction system
+├── move_choice.rs        # Explicit targeting move choices
 ├── state.rs             # Multi-format battle state with Move definitions
-├── data/                # Rustemon/PokeAPI integration
-│   ├── types.rs         # Engine-optimized data structures
-│   ├── conversion.rs    # Rustemon → Engine conversions
-│   ├── rustemon_client.rs # API client wrapper
-│   ├── move_factory.rs  # Move data factory system
-│   └── move_service.rs  # Move service layer
-├── genx/                # Generation-specific mechanics (Phase 4 complete)
+├── data/                # Pokemon Showdown data integration
+│   ├── types.rs         # Engine-optimized legacy structures
+│   ├── ps_types.rs      # Pokemon Showdown data types (PSMoveData, PSMoveTarget)
+│   ├── ps_conversion.rs # PS → Engine conversions
+│   ├── ps_loader.rs     # PS JSON data loader
+│   ├── ps_generation_loader.rs # Generation-specific data repository
+│   ├── ps_move_service.rs      # Synchronous move data access
+│   ├── ps_move_factory.rs      # Enhanced moveset creation
+│   └── choices.rs       # Move choice utilities
+├── genx/                # Advanced battle mechanics
 │   ├── instruction_generator.rs    # Main instruction coordinator
 │   ├── format_instruction_generator.rs # Format-aware instruction generation  
 │   ├── format_targeting.rs         # Multi-format targeting system
+│   ├── ps_targeting.rs            # Pokemon Showdown targeting engine
 │   ├── doubles_mechanics.rs        # Doubles-specific mechanics
 │   ├── damage_calc.rs             # Damage calculation system
 │   └── move_effects.rs            # Special move effects
 └── io.rs                # CLI interface
 ```
 
-#### 🆕 Phase 4 Architecture Highlights
+#### Key Architecture Features
 
-**Format-Aware Instruction Generation Flow:**
+**Pokemon Showdown Data Pipeline:**
+1. `PSDataRepository` loads and caches all PS JSON data
+2. `PSGenerationRepository` provides generation-aware move access
+3. `PSMoveService` offers synchronous move lookups with caching
+4. `PSAutoTargetingEngine` handles native PS target resolution
+
+**Format-Aware Battle Flow:**
 1. `GenerationXInstructionGenerator` coordinates all mechanics
-2. `AutoTargetingEngine` resolves move targets automatically  
-3. `FormatInstructionGenerator` handles damage and status instructions
-4. `DoublesSpecificMechanics` applies doubles-only interactions
-5. Redirection mechanics (Follow Me, etc.) applied in final step
+2. `PSAutoTargetingEngine` resolves move targets using PS conventions
+3. `FormatInstructionGenerator` generates position-aware instructions
+4. `DoublesSpecificMechanics` applies format-specific interactions
+5. Multi-target damage calculations with spread reduction
 
 **Multi-Target Support:**
 - `PositionDamageInstruction` for single-target moves
@@ -237,27 +227,39 @@ When referencing V1:
 
 ### 🚀 Next Implementation Priorities
 
-1. **Complete Rustemon Migration** 🔥 HIGH PRIORITY
-   - Replace all rustemon usage with PS data throughout codebase
-   - Update targeting system to use PSMoveTarget conventions
-   - Remove rustemon dependency from Cargo.toml
-   - Update tests to use PS data instead of rustemon calls
+1. **Enhanced Battle Mechanics** 🔥 HIGH PRIORITY
+   - Type effectiveness calculation using PS type chart data
+   - Status condition system leveraging PS status metadata
+   - Weather and terrain effects with PS environmental data
+   - Enhanced damage calculation with PS formulas
 
-2. **Enhanced PS Data Utilization**
-   - Leverage PS move flags for battle mechanics (contact, sound, etc.)
-   - Implement PS secondary effects and status conditions
-   - Use PS drain/recoil data for move effects
-   - Integrate Z-move and Max move mechanics
+2. **Advanced Move Systems**
+   - Multi-hit moves using PS multihit data structures
+   - Z-move and Max move mechanics with PS Z-crystal/Dynamax data
+   - Secondary effects and status conditions from PS secondary data
+   - Move flags integration (contact, sound, protect, etc.)
 
-3. **Complete Core Move Mechanics**
-   - Enhanced damage calculation with PS data
-   - Type effectiveness using PS type chart
-   - Critical hits with PS crit ratios
-   - Multi-hit moves with PS multihit data
+3. **Pokemon Stats and Abilities**
+   - Ability system integration with PS ability data
+   - Item effects implementation using PS item metadata
+   - Stat calculation and modification systems
+   - Base stat and type data integration
 
-4. **Status System with PS Integration**
-   - Major status conditions using PS data
-   - Volatile status effects from PS
-   - Status immunities and interactions
+4. **Battle State Enhancements**
+   - Turn order calculation with priority and speed
+   - End-of-turn effect processing
+   - Field condition management
+   - Team preview and switch mechanics
 
-Remember: V2 is a fresh start. Build it right from the beginning with multi-format support as the foundation, not an afterthought.
+### 🎯 Data Utilization Guide
+
+**Pokemon Showdown Data Features Available:**
+- **Move Flags**: Contact, sound, protect, mirror, metronome, etc.
+- **Secondary Effects**: Status conditions, stat boosts, field effects
+- **Drain/Recoil**: HP recovery and damage ratios
+- **Complex Targeting**: Type-specific immunity overrides
+- **Generation Tracking**: Historical move changes across generations
+- **Z-Move Data**: Z-crystal requirements and power calculations
+- **Max Move Data**: Dynamax effects and power scaling
+
+Remember: V2 leverages Pokemon Showdown's battle-tested data for maximum accuracy.

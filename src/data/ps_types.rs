@@ -99,6 +99,19 @@ impl PSMoveTarget {
         )
     }
 
+    /// Returns true if this move affects allies
+    pub fn affects_allies(&self) -> bool {
+        matches!(
+            self,
+            PSMoveTarget::AdjacentAlly
+                | PSMoveTarget::AdjacentAllyOrSelf
+                | PSMoveTarget::AllAdjacent
+                | PSMoveTarget::AllyTeam
+                | PSMoveTarget::Allies
+                | PSMoveTarget::AllySide
+        )
+    }
+
     /// Get the default targets for this move in the given format
     pub fn get_default_targets(&self, user_side: usize, user_slot: usize, active_per_side: usize) -> Vec<(usize, usize)> {
         match self {
@@ -232,7 +245,7 @@ pub struct PSMoveData {
     pub breaks_protect: bool,
     pub ignore_defensive: bool,
     pub ignore_evasion: bool,
-    pub ignore_immunity: bool,
+    pub ignore_immunity: IgnoreImmunityData,
     pub multiaccuracy: bool,
     pub multihit: Option<serde_json::Value>, // Can be number or array
     pub no_damage_variance: bool,
@@ -248,6 +261,9 @@ pub struct PSMoveData {
     // Descriptions
     pub desc: String,
     pub short_desc: String,
+    
+    // Nonstandard designation
+    pub is_nonstandard: Option<String>,
 }
 
 impl PSMoveData {
@@ -354,6 +370,15 @@ pub enum OHKOData {
     TypeSpecific(String), // Type requirement like "Ice" for Sheer Cold
 }
 
+/// Ignore immunity data - can be false, true, or a type-specific map
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum IgnoreImmunityData {
+    None(bool), // false when no immunity ignored
+    All(bool), // true when all immunities ignored
+    TypeSpecific(std::collections::HashMap<String, bool>), // Per-type immunity ignoring
+}
+
 impl OHKOData {
     pub fn is_ohko(&self) -> bool {
         matches!(self, OHKOData::Normal(true) | OHKOData::TypeSpecific(_))
@@ -363,6 +388,26 @@ impl OHKOData {
         match self {
             OHKOData::TypeSpecific(type_name) => Some(type_name),
             _ => None,
+        }
+    }
+}
+
+impl IgnoreImmunityData {
+    pub fn ignores_immunity(&self) -> bool {
+        match self {
+            IgnoreImmunityData::All(true) => true,
+            IgnoreImmunityData::TypeSpecific(map) => !map.is_empty(),
+            _ => false,
+        }
+    }
+    
+    pub fn ignores_type_immunity(&self, type_name: &str) -> bool {
+        match self {
+            IgnoreImmunityData::All(true) => true,
+            IgnoreImmunityData::TypeSpecific(map) => {
+                map.get(type_name).copied().unwrap_or(false)
+            }
+            _ => false,
         }
     }
 }

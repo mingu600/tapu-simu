@@ -5,7 +5,7 @@
 
 use crate::battle_format::{BattleFormat, BattlePosition, SideReference};
 use crate::instruction::{PokemonStatus, VolatileStatus, Weather, Terrain, SideCondition};
-use crate::move_choice::{MoveIndex, PokemonIndex};
+use crate::move_choice::MoveIndex;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 
@@ -356,8 +356,8 @@ pub struct Move {
     pub pp: u8,
     /// Maximum PP
     pub max_pp: u8,
-    /// Move target type
-    pub target: crate::data::types::MoveTarget,
+    /// Move target type (Pokemon Showdown format)
+    pub target: crate::data::ps_types::PSMoveTarget,
     /// Move category
     pub category: MoveCategory,
     /// Move priority
@@ -374,7 +374,7 @@ impl Move {
             move_type: "Normal".to_string(),
             pp: 20,
             max_pp: 20,
-            target: crate::data::types::MoveTarget::SelectedPokemon,
+            target: crate::data::ps_types::PSMoveTarget::Normal,
             category: MoveCategory::Physical,
             priority: 0,
         }
@@ -387,7 +387,7 @@ impl Move {
         accuracy: u8,
         move_type: String,
         pp: u8,
-        target: crate::data::types::MoveTarget,
+        target: crate::data::ps_types::PSMoveTarget,
         category: MoveCategory,
         priority: i8,
     ) -> Self {

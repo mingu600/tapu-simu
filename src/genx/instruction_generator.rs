@@ -8,7 +8,7 @@ use crate::instruction::StateInstructions;
 use crate::battle_format::SideReference;
 use super::format_instruction_generator::FormatInstructionGenerator;
 use super::doubles_mechanics::DoublesSpecificMechanics;
-use super::format_targeting::AutoTargetingEngine;
+use super::ps_targeting::PSAutoTargetingEngine;
 
 /// Instruction generator for Generation X (4-9)
 /// 
@@ -22,7 +22,7 @@ pub struct GenerationXInstructionGenerator {
     format: BattleFormat,
     format_generator: FormatInstructionGenerator,
     doubles_mechanics: DoublesSpecificMechanics,
-    auto_targeting: AutoTargetingEngine,
+    auto_targeting: PSAutoTargetingEngine,
 }
 
 impl GenerationXInstructionGenerator {
@@ -32,7 +32,7 @@ impl GenerationXInstructionGenerator {
             format: format.clone(),
             format_generator: FormatInstructionGenerator::new(format.clone()),
             doubles_mechanics: DoublesSpecificMechanics::new(format.clone()),
-            auto_targeting: AutoTargetingEngine::new(format),
+            auto_targeting: PSAutoTargetingEngine::new(format),
         }
     }
 

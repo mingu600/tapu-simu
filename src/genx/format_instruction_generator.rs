@@ -243,10 +243,10 @@ impl FormatInstructionGenerator {
     fn is_self_targeting_move(&self, move_data: &Move) -> bool {
         // Check move target - moves that target the user are not blocked by opponent's Substitute
         matches!(move_data.target, 
-            crate::data::types::MoveTarget::User | 
-            crate::data::types::MoveTarget::UsersField |
-            crate::data::types::MoveTarget::UserAndAllies |
-            crate::data::types::MoveTarget::UserOrAlly
+            crate::data::ps_types::PSMoveTarget::Self_ | 
+            crate::data::ps_types::PSMoveTarget::AllySide |
+            crate::data::ps_types::PSMoveTarget::AllyTeam |
+            crate::data::ps_types::PSMoveTarget::AdjacentAllyOrSelf
         )
     }
 

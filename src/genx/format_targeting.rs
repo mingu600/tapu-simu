@@ -1,11 +1,10 @@
 //! # Format-Aware Move Targeting System
 //! 
-//! This module provides format-aware move targeting that integrates rustemon MoveTarget
-//! enum with actual battle execution. It resolves move targets based on the current
+//! This module provides format-aware move targeting that integrates Pokemon Showdown
+//! PSMoveTarget enum with actual battle execution. It resolves move targets based on the current
 //! battle format and validates target positions.
 
 use crate::battle_format::{BattleFormat, BattlePosition, SideReference};
-use crate::data::types::MoveTarget;
 use crate::move_choice::MoveChoice;
 use crate::state::State;
 
@@ -55,7 +54,7 @@ impl FormatMoveTargetResolver {
         user_side: SideReference,
         user_slot: usize,
         move_index: crate::move_choice::MoveIndex,
-    ) -> Result<MoveTarget, String> {
+    ) -> Result<crate::data::ps_types::PSMoveTarget, String> {
         let side = state.get_side(user_side);
         let pokemon = side.get_active_pokemon_at_slot(user_slot)
             .ok_or("No active Pokemon at specified slot")?;
@@ -67,177 +66,22 @@ impl FormatMoveTargetResolver {
     }
 
     /// Resolve targets based on move target type and battle format
+    /// This is a legacy bridge that delegates to PSAutoTargetingEngine
     fn resolve_targets_for_move_target(
         &self,
-        move_target: MoveTarget,
+        move_target: crate::data::ps_types::PSMoveTarget,
         user_position: BattlePosition,
         state: &State,
     ) -> Result<Vec<BattlePosition>, String> {
-        let opponent_side = user_position.side.opposite();
-        let user_side = user_position.side;
-        
-        match move_target {
-            MoveTarget::SelectedPokemon => {
-                // Single target move - target the first available opponent
-                self.get_single_opponent_target(opponent_side, state)
-            }
-            
-            MoveTarget::AllOpponents => {
-                // Target all active opponents
-                self.get_all_opponent_targets(opponent_side, state)
-            }
-            
-            MoveTarget::AllOtherPokemon => {
-                // Target all other Pokemon (opponents + ally in doubles)
-                let mut targets = self.get_all_opponent_targets(opponent_side, state)?;
-                
-                // Add ally if in multi-Pokemon format
-                if self.format.active_pokemon_count() > 1 {
-                    if let Some(ally_pos) = self.get_ally_position(user_position) {
-                        if state.is_position_active(ally_pos) {
-                            targets.push(ally_pos);
-                        }
-                    }
-                }
-                
-                Ok(targets)
-            }
-            
-            MoveTarget::User => {
-                // Target the user
-                Ok(vec![user_position])
-            }
-            
-            MoveTarget::Ally => {
-                // Target ally (only in multi-Pokemon formats)
-                if self.format.active_pokemon_count() > 1 {
-                    if let Some(ally_pos) = self.get_ally_position(user_position) {
-                        if state.is_position_active(ally_pos) {
-                            return Ok(vec![ally_pos]);
-                        }
-                    }
-                }
-                Ok(vec![])
-            }
-            
-            MoveTarget::UserOrAlly => {
-                // Can target user or ally - default to user
-                Ok(vec![user_position])
-            }
-            
-            MoveTarget::UserAndAllies => {
-                // Target user and all allies
-                let mut targets = vec![user_position];
-                
-                if self.format.active_pokemon_count() > 1 {
-                    if let Some(ally_pos) = self.get_ally_position(user_position) {
-                        if state.is_position_active(ally_pos) {
-                            targets.push(ally_pos);
-                        }
-                    }
-                }
-                
-                Ok(targets)
-            }
-            
-            MoveTarget::AllPokemon => {
-                // Target all Pokemon on the field
-                let mut targets = vec![user_position];
-                
-                // Add ally
-                if self.format.active_pokemon_count() > 1 {
-                    if let Some(ally_pos) = self.get_ally_position(user_position) {
-                        if state.is_position_active(ally_pos) {
-                            targets.push(ally_pos);
-                        }
-                    }
-                }
-                
-                // Add all opponents
-                targets.extend(self.get_all_opponent_targets(opponent_side, state)?);
-                
-                Ok(targets)
-            }
-            
-            MoveTarget::AllAllies => {
-                // Target all allies (not including user)
-                if self.format.active_pokemon_count() > 1 {
-                    if let Some(ally_pos) = self.get_ally_position(user_position) {
-                        if state.is_position_active(ally_pos) {
-                            return Ok(vec![ally_pos]);
-                        }
-                    }
-                }
-                Ok(vec![])
-            }
-            
-            MoveTarget::RandomOpponent => {
-                // For deterministic resolution, choose the first available opponent
-                self.get_single_opponent_target(opponent_side, state)
-            }
-            
-            MoveTarget::UsersField | MoveTarget::OpponentsField | MoveTarget::EntireField => {
-                // Field moves don't target specific positions
-                Ok(vec![])
-            }
-            
-            MoveTarget::SpecificMove | MoveTarget::SelectedPokemonMeFirst | MoveTarget::FaintingPokemon => {
-                // Special targeting that requires additional context
-                // For now, default to single opponent
-                self.get_single_opponent_target(opponent_side, state)
-            }
-        }
+        // Delegate to PS auto-targeting engine for accurate resolution
+        let ps_engine = super::ps_targeting::PSAutoTargetingEngine::new(self.format.clone());
+        let targets = ps_engine.resolve_targets(move_target, user_position, state);
+        Ok(targets)
     }
 
-    /// Get a single opponent target (first available)
-    fn get_single_opponent_target(&self, opponent_side: SideReference, state: &State) -> Result<Vec<BattlePosition>, String> {
-        for slot in 0..self.format.active_pokemon_count() {
-            let position = BattlePosition::new(opponent_side, slot);
-            if state.is_position_active(position) {
-                return Ok(vec![position]);
-            }
-        }
-        
-        Err("No valid opponent targets available".to_string())
-    }
-
-    /// Get all active opponent targets
-    fn get_all_opponent_targets(&self, opponent_side: SideReference, state: &State) -> Result<Vec<BattlePosition>, String> {
-        let mut targets = Vec::new();
-        
-        for slot in 0..self.format.active_pokemon_count() {
-            let position = BattlePosition::new(opponent_side, slot);
-            if state.is_position_active(position) {
-                targets.push(position);
-            }
-        }
-        
-        if targets.is_empty() {
-            Err("No active opponent targets available".to_string())
-        } else {
-            Ok(targets)
-        }
-    }
-
-    /// Get the ally position for a user position (doubles/triples)
-    fn get_ally_position(&self, user_position: BattlePosition) -> Option<BattlePosition> {
-        if self.format.active_pokemon_count() <= 1 {
-            return None;
-        }
-        
-        // In doubles, slots 0 and 1 are allies
-        let ally_slot = match user_position.slot {
-            0 => 1,
-            1 => 0,
-            // For triples, more complex logic would be needed
-            _ => return None,
-        };
-        
-        Some(BattlePosition::new(user_position.side, ally_slot))
-    }
 
     /// Validate that all target positions are valid for the current format
-    pub fn validate_targets(&self, targets: &[BattlePosition], state: &State) -> Result<(), String> {
+    pub fn validate_targets(&self, targets: &[BattlePosition], _state: &State) -> Result<(), String> {
         for target in targets {
             if !target.is_valid_for_format(&self.format) {
                 return Err(format!("Target position {:?} is not valid for format {:?}", target, self.format));
@@ -251,16 +95,17 @@ impl FormatMoveTargetResolver {
     }
 }
 
-/// Auto-targeting engine for moves that don't require manual selection
+/// Legacy auto-targeting engine - deprecated in favor of PSAutoTargetingEngine
+/// This is kept for compatibility but should be replaced with PSAutoTargetingEngine
 pub struct AutoTargetingEngine {
-    resolver: FormatMoveTargetResolver,
+    ps_engine: super::ps_targeting::PSAutoTargetingEngine,
 }
 
 impl AutoTargetingEngine {
-    /// Create a new auto-targeting engine
+    /// Create a new auto-targeting engine using PS targeting system
     pub fn new(format: BattleFormat) -> Self {
         Self {
-            resolver: FormatMoveTargetResolver::new(format),
+            ps_engine: super::ps_targeting::PSAutoTargetingEngine::new(format),
         }
     }
 
@@ -272,21 +117,8 @@ impl AutoTargetingEngine {
         move_choice: &mut MoveChoice,
         state: &State,
     ) -> Result<(), String> {
-        // If move choice already has targets, don't modify them
-        if move_choice.target_positions().is_some() {
-            return Ok(());
-        }
-
-        // Resolve targets automatically
-        let targets = self.resolver.resolve_move_targets(user_side, user_slot, move_choice, state)?;
-        
-        // Validate the resolved targets
-        self.resolver.validate_targets(&targets, state)?;
-        
-        // Update the move choice with resolved targets
-        move_choice.set_target_positions(targets);
-        
-        Ok(())
+        // Delegate to PS auto-targeting engine
+        self.ps_engine.auto_resolve_targets(user_side, user_slot, move_choice, state)
     }
 }
 

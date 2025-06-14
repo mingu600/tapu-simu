@@ -41,7 +41,7 @@ pub struct EngineMoveData {
     pub move_type: String,
     pub category: MoveCategory,
     pub priority: i8,
-    pub target: MoveTarget,
+    pub target: crate::data::ps_types::PSMoveTarget,
     pub effect_chance: Option<i16>,
     pub effect_description: String,
     pub flags: Vec<String>,
