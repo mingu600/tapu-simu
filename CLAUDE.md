@@ -84,6 +84,15 @@ Ask clarifying questions whenever my request is ambiguous or unclear
   - Integration of all format-aware mechanics
   - Auto-targeting resolution and redirection mechanics
 
+**Pokemon Showdown Integration** 🚧 IN PROGRESS
+- ✅ PS data extraction tool with @pkmn packages
+- ✅ PS-compatible type system (PSMoveTarget, PSMoveData)
+- ✅ PSAutoTargetingEngine for direct PS target usage
+- ✅ PS data loader with JSON parsing
+- ⏳ Replace rustemon move data with PS data
+- ⏳ Migrate all targeting to PS conventions
+- ⏳ Extract and integrate PS item data
+
 **Remaining Core Mechanics** ⏳ PENDING
 - ⏳ Enhanced damage calculation with type effectiveness
 - ⏳ Comprehensive status condition effects  
