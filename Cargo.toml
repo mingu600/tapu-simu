@@ -1,0 +1,52 @@
+[package]
+name = "tapu-simu"
+version = "0.1.0"
+authors = ["Mingu Kim <mingu@example.com>"]
+edition = "2021"
+license-file = "LICENSE"
+description = "Tapu Simu - Format-aware Pokemon battle simulator"
+
+[lib]
+name = "tapu_simu"
+path = "src/lib.rs"
+crate-type = ["lib"]
+
+[[bin]]
+name = "tapu-simu"
+path = "src/main.rs"
+
+[profile.release]
+debug = 1
+
+[dependencies]
+clap = { version = "4.5.4", features = ["derive"] }
+rand = "0.8.4"
+lazy_static = "1.4.0"
+deunicode = "1.3"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+colored = "3.0.0"
+rayon = "1.7"
+rustemon = { version = "4.2.0", features = ["serialize"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+
+[features]
+# Generation features
+gen1 = []
+gen2 = []
+gen3 = []
+gen4 = []
+gen5 = []
+gen6 = []
+gen7 = []
+gen8 = []
+gen9 = []
+terastallization = ["gen9"]
+
+# Battle optimization features
+remove_low_chance_instructions = []
+
+# Default features (Gen 9 with Terastallization for modern Pokemon)
+default = ["gen9", "terastallization"]
+
+[workspace]
