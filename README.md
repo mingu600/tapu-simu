@@ -1,50 +1,10 @@
 # Tapu Simu
 
-A format-aware Pokemon battle simulator designed for multi-format support with position-based targeting and comprehensive battle mechanics.
+![Tapu Simu](assets/tapu-simu-hero.png)
 
-## 🚀 Key Features
+**A next-generation Pokemon battle simulator built from the ground up for multi-format support.**
 
-- **Multi-Format Support**: Singles, Doubles, VGC, and Triples formats
-- **Position-Based Targeting**: All moves use explicit position targeting
-- **Format-Aware Architecture**: Battle logic adapts to the active format
-- **Advanced Battle Mechanics**: Complete implementation of doubles-specific moves (Follow Me, Helping Hand, etc.)
-- **Spread Move Support**: Automatic 0.75x damage reduction for multi-target moves in doubles/VGC
-- **Critical Hit Branching**: Percentage-based critical hit calculations with proper damage multipliers
-- **Auto-Targeting Engine**: Automatic target resolution for all 16 rustemon/PokeAPI move targets
-- **Modern Design**: Built from the ground up with V2 principles
-- **No Legacy Compatibility**: Clean, focused implementation
-- **Rustemon Integration**: Built-in PokeAPI data fetching via rustemon
-
-## 🏗 Architecture
-
-### Core Modules
-
-- **`battle_format`**: Format definitions and position management
-- **`instruction`**: Battle instruction system with position tracking and multi-target support
-- **`move_choice`**: Format-aware move choice system with explicit targeting
-- **`state`**: Battle state representation with multi-format support
-- **`data`**: Pokemon data integration with rustemon/PokeAPI
-- **`genx`**: Generation-specific battle mechanics (Phase 4 complete)
-  - **`format_targeting`**: Format-aware move target resolution
-  - **`format_instruction_generator`**: Spread move and critical hit handling
-  - **`doubles_mechanics`**: Complete doubles-specific move implementations
-  - **`instruction_generator`**: Main coordinator with auto-targeting
-
-### Design Principles
-
-- **KISS (Keep It Simple, Stupid)**: Straightforward, readable code
-- **YAGNI (You Aren't Gonna Need It)**: Only implement immediate requirements
-- **Format-First Design**: Everything is designed around multi-format support
-- **Position-Based Everything**: All targeting uses explicit positions
-
-## 🎮 Supported Battle Formats
-
-| Format | Active Pokemon | Spread Moves | Ally Damage | Description |
-|--------|----------------|--------------|-------------|-------------|
-| Singles | 1v1 | ❌ | ❌ | Traditional single Pokemon battles |
-| Doubles | 2v2 | ✅ | ✅ | Double battles with ally interactions |
-| VGC | 2v2 | ✅ | ✅ | VGC tournament format |
-| Triples | 3v3 | ✅ | ✅ | Triple battles (deprecated) |
+Tapu Simu is a comprehensive battle engine featuring format-aware mechanics, position-based targeting, and Pokemon Showdown data integration. Designed for accuracy, performance, and extensibility across all Pokemon battle formats.
 
 ## 🛠 Installation
 
@@ -76,6 +36,13 @@ let mut state = State::new(BattleFormat::Doubles);
 // Generate instructions for moves
 let generator = InstructionGenerator::new(BattleFormat::Doubles);
 let instructions = generator.generate_instructions(&mut state, &move1, &move2);
+```
+
+### Generation-Specific Data Demo
+
+```bash
+# See generation-specific move data in action
+cargo run --example generation_data_demo
 ```
 
 ### CLI Usage
@@ -124,26 +91,6 @@ cargo test -- --nocapture
 default = ["gen9", "terastallization"]
 ```
 
-## 🎯 Phase 4: Advanced Battle Mechanics Implementation
-
-Tapu Simu includes a complete implementation of advanced battle mechanics migrated from poke-engine V2:
-
-### Format-Aware Targeting System
-- **Complete Move Target Resolution**: Supports all 16 rustemon/PokeAPI move targets
-- **Format-Specific Logic**: Singles vs Doubles vs VGC targeting differences
-- **Auto-Targeting Engine**: Automatic target resolution for moves without explicit targets
-
-### Multi-Target Instruction System
-- **Position-Based Instructions**: All instructions track affected positions
-- **Spread Move Support**: Automatic 0.75x damage reduction in doubles/VGC
-- **Critical Hit Branching**: Proper percentage-based calculations (1/24 chance, 1.5x multiplier)
-
-### Doubles-Specific Mechanics
-- **Follow Me/Rage Powder**: Complete redirection mechanics implementation
-- **Helping Hand**: 1.5x damage boost for allies with proper volatile status tracking
-- **Wide Guard/Quick Guard**: Protection from spread moves and priority moves
-- **Ally Damage**: Proper handling of moves that hit your partner (Earthquake, Surf, etc.)
-
 ## 📊 Battle Mechanics
 
 ### Position-Based Targeting
@@ -176,86 +123,27 @@ let instructions = StateInstructions::new(100.0, vec![
 - Automatic target resolution based on move data
 - Format-aware ally damage calculation
 
-## 🧬 Generation Support
+## 🎯 Features
 
-The engine supports multiple Pokemon generations through feature flags:
+### ✅ **Pokemon Showdown Integration**
+- **Battle-tested accuracy** - Direct Pokemon Showdown data integration
+- **772+ moves** with complete metadata (flags, effects, secondary effects)
+- **Generation-specific data** - Historical move evolution across Gen 1-9
+- **244+ items** with comprehensive effect data
+- **Synchronous data access** - No async dependencies, blazing fast
 
-- **Gen 1-3**: Specific implementations for classic mechanics
-- **Gen 4-9**: Modern mechanics (default)
-- **Terastallization**: Gen 9 exclusive feature
+### ✅ **Multi-Format Battle Engine**
+- **Singles, Doubles, VGC** format support
+- **Position-based targeting** with explicit move targeting
+- **Format-aware damage calculation** (spread move reduction, etc.)
+- **Advanced mechanics** - Redirection, ally interactions, critical hits
 
-## 🔄 Data Integration
+### ✅ **Generation Support**
+- **Complete Gen 1-9 data** with 252-777 moves per generation
+- **Move change tracking** - 319 moves with historical evolution
+- **Generation-aware API** - Access moves as they existed in any generation
+- **Type evolution tracking** - Bite (Normal→Dark), Gust (Normal→Flying), etc.
 
-### Rustemon/PokeAPI Integration
-
-```rust
-use tapu_simu::data::RustemonClient;
-
-let mut client = RustemonClient::new();
-let pokemon = client.get_pokemon("pikachu").await?;
-let move_data = client.get_move("thunderbolt").await?;
-```
-
-### Engine Data Conversion
-
-Automatic conversion between PokeAPI data and engine-optimized formats:
-
-```rust
-let engine_pokemon = rustemon_pokemon_to_engine(&pokemon);
-let engine_move = rustemon_move_to_engine(&move_data);
-```
-
-## 🎯 Roadmap
-
-### Phase 1: Core Foundation ✅
-- ✅ Multi-format architecture
-- ✅ Position-based targeting
-- ✅ Basic instruction system
-- ✅ State management
-- ✅ Rustemon/PokeAPI data integration
-
-### Phase 4: Advanced Battle Mechanics ✅
-- ✅ **Format-Aware Targeting System**: Complete move target resolution for all 16 rustemon/PokeAPI targets
-- ✅ **Format Instruction Generator**: Spread move damage reduction (0.75x in doubles/VGC)
-- ✅ **Doubles-Specific Mechanics**: Follow Me, Helping Hand, Wide Guard, Quick Guard implementation
-- ✅ **Multi-Target Instruction System**: Position-aware damage and status instructions
-- ✅ **Critical Hit Branching**: Proper percentage-based critical hit calculations
-- ✅ **Auto-Targeting Engine**: Automatic target resolution for moves
-
-### Phase 2: Core Battle Mechanics (In Progress)
-- 🔄 Enhanced damage calculation with type effectiveness
-- 🔄 Comprehensive status condition effects
-- 🔄 Weather and terrain effects
-- 🔄 Ability system integration
-- 🔄 Item effects implementation
-
-### Phase 3: Advanced Features
-- ⏳ AI battle simulation
-- ⏳ Team validation
-- ⏳ Battle replay system
-- ⏳ Performance optimization
-
-### Phase 5: Ecosystem
-- ⏳ Python bindings
-- ⏳ WebAssembly support
-- ⏳ REST API interface
-- ⏳ Documentation website
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Implement your changes
-4. Add tests for new functionality
-5. Run the test suite
-6. Submit a pull request
-
-### Development Guidelines
-
-- Follow the existing code style
-- Write comprehensive tests
-- Update documentation for new features
-- Ensure all tests pass before submitting
 
 ## 📝 License
 
@@ -263,13 +151,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 🙏 Acknowledgments
 
-- **PokeAPI**: Comprehensive Pokemon data source
-- **Rustemon**: Rust wrapper for PokeAPI
 - **Original poke-engine**: Foundation and inspiration for battle mechanics
-
-## 📚 Documentation
-
-- [API Documentation](docs/api.md)
-- [Battle Format Guide](docs/formats.md)
-- [Move Implementation Guide](docs/moves.md)
-- [Contributing Guide](docs/contributing.md)
