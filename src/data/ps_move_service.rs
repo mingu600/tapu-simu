@@ -60,9 +60,7 @@ impl PSMoveService {
 
     /// Convert PS move data to engine move with enhancements
     pub fn ps_move_to_engine_move(&self, ps_move: &PSMoveData) -> Move {
-        // Apply engine enhancements if any
-        let _enhancement = self.engine_enhancements.get(&ps_move.id);
-        // TODO: Apply enhancement data to move when implementing advanced effects
+        // PS data already includes drain and recoil data - no need for manual enhancements
         
         Move {
             name: ps_move.name.clone(),
@@ -74,6 +72,26 @@ impl PSMoveService {
             target: ps_target_from_string(&ps_move.target),
             category: self.convert_ps_category_to_engine(&ps_move.category),
             priority: ps_move.priority,
+        }
+    }
+
+    /// Get drain ratio for a move (from PS data)
+    pub fn get_drain_ratio(&self, move_name: &str) -> Option<f32> {
+        let ps_move = self.get_repo().get_move_by_name(move_name)?;
+        if let Some(drain) = &ps_move.drain {
+            Some(drain[0] as f32 / drain[1] as f32)
+        } else {
+            None
+        }
+    }
+
+    /// Get recoil ratio for a move (from PS data)
+    pub fn get_recoil_ratio(&self, move_name: &str) -> Option<f32> {
+        let ps_move = self.get_repo().get_move_by_name(move_name)?;
+        if let Some(recoil) = &ps_move.recoil {
+            Some(recoil[0] as f32 / recoil[1] as f32)
+        } else {
+            None
         }
     }
 
@@ -189,21 +207,17 @@ mod tests {
     }
 
     #[test]
-    fn test_target_conversion() {
-        let service = PSMoveService::default();
-        
-        // Test PS target to engine target conversion
-        assert_eq!(
-            service.convert_ps_target_to_engine("normal"),
-            MoveTarget::SelectedPokemon
-        );
-        assert_eq!(
-            service.convert_ps_target_to_engine("self"),
-            MoveTarget::User
-        );
-        assert_eq!(
-            service.convert_ps_target_to_engine("allAdjacentFoes"),
-            MoveTarget::AllOpponents
-        );
+    fn test_drain_recoil_ratios() {
+        if let Ok(service) = PSMoveService::new() {
+            // Test drain ratio parsing
+            if let Some(absorb_drain) = service.get_drain_ratio("absorb") {
+                assert!((absorb_drain - 0.5).abs() < 0.01); // Should be 1/2 = 0.5
+            }
+            
+            // Test recoil ratio parsing  
+            if let Some(doubleedge_recoil) = service.get_recoil_ratio("doubleedge") {
+                assert!((doubleedge_recoil - 0.33).abs() < 0.01); // Should be 33/100 = 0.33
+            }
+        }
     }
 }

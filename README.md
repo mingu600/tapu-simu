@@ -134,7 +134,6 @@ let instructions = StateInstructions::new(100.0, vec![
 - **772+ moves** with complete metadata (flags, effects, secondary effects)
 - **Generation-specific data** - Historical move evolution across Gen 1-9
 - **244+ items** with comprehensive effect data
-- **Synchronous data access** - No async dependencies, blazing fast
 
 ### ✅ **Multi-Format Battle Engine**
 - **Singles, Doubles, VGC** format support

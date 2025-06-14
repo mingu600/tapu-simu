@@ -26,55 +26,10 @@ impl PSMoveFactory {
 
     /// Register engine-specific move enhancements that aren't in PS data
     fn register_engine_enhancements(service: &mut PSMoveService) {
-        // Drain moves
-        service.register_enhancement(
-            "absorb".to_string(),
-            EngineEnhancement::drain(0.5)
-        );
-        service.register_enhancement(
-            "megadrain".to_string(),
-            EngineEnhancement::drain(0.5)
-        );
-        service.register_enhancement(
-            "gigadrain".to_string(),
-            EngineEnhancement::drain(0.5)
-        );
-        service.register_enhancement(
-            "dreameater".to_string(),
-            EngineEnhancement::drain(0.5)
-        );
-        service.register_enhancement(
-            "drainingkiss".to_string(),
-            EngineEnhancement::drain(0.75)
-        );
+        // Note: Drain and recoil data is now read directly from PS data
+        // Only register truly custom mechanics that PS doesn't have
         
-        // Recoil moves
-        service.register_enhancement(
-            "doubleedge".to_string(),
-            EngineEnhancement::recoil(0.33)
-        );
-        service.register_enhancement(
-            "submission".to_string(),
-            EngineEnhancement::recoil(0.25)
-        );
-        service.register_enhancement(
-            "takedown".to_string(),
-            EngineEnhancement::recoil(0.25)
-        );
-        service.register_enhancement(
-            "volttackle".to_string(),
-            EngineEnhancement::recoil(0.33)
-        );
-        service.register_enhancement(
-            "flareblitz".to_string(),
-            EngineEnhancement::recoil(0.33)
-        );
-        service.register_enhancement(
-            "wildcharge".to_string(),
-            EngineEnhancement::recoil(0.25)
-        );
-        
-        // Special mechanics
+        // Special engine-specific mechanics (not in PS data)
         service.register_enhancement(
             "selfdestruct".to_string(),
             EngineEnhancement::with_flags(vec!["ohko_user".to_string()])
@@ -134,6 +89,16 @@ impl PSMoveFactory {
     /// Check if move exists in PS data
     pub fn move_exists(&self, name: &str) -> bool {
         self.move_service.move_exists(name)
+    }
+
+    /// Get drain ratio for a move (from PS data)
+    pub fn get_drain_ratio(&self, move_name: &str) -> Option<f32> {
+        self.move_service.get_drain_ratio(move_name)
+    }
+
+    /// Get recoil ratio for a move (from PS data)
+    pub fn get_recoil_ratio(&self, move_name: &str) -> Option<f32> {
+        self.move_service.get_recoil_ratio(move_name)
     }
 
     /// Get all available moves
