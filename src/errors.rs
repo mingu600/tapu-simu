@@ -24,6 +24,9 @@ pub enum BattleError {
     #[error("Pokemon not found at position {position}")]
     PokemonNotFound { position: usize },
     
+    #[error("Invalid Pokemon: {0}")]
+    InvalidPokemon(String),
+    
     #[error("Serialization error: {0}")]
     Serialization(#[from] bincode::Error),
     
@@ -44,4 +47,10 @@ pub enum BattleError {
     
     #[error("Internal error: {0}")]
     Internal(String),
+    
+    #[error("Event system stack overflow")]
+    EventStackOverflow,
+    
+    #[error("Event system infinite loop detected")]
+    EventInfiniteLoop,
 }

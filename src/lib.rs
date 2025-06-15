@@ -25,6 +25,7 @@ pub use side::{Side, SideId};
 pub use battle::Battle;
 pub use errors::{BattleError, BattleResult};
 pub use format::BattleFormat;
+pub use types::EVStatType;
 
 /// Common types used throughout the simulator
 pub mod types {
@@ -108,6 +109,61 @@ pub mod types {
                 speed: 0,
             }
         }
+    }
+    
+    impl StatsTable {
+        /// Create a StatsTable with max IVs (31 for all stats)
+        pub fn max() -> Self {
+            Self {
+                hp: 31,
+                attack: 31,
+                defense: 31,
+                special_attack: 31,
+                special_defense: 31,
+                speed: 31,
+            }
+        }
+        
+        /// Create a StatsTable with competitive EVs (252/252/4 spread)
+        pub fn competitive_evs(max_stat1: EVStatType, max_stat2: EVStatType) -> Self {
+            let mut evs = Self::default();
+            
+            match max_stat1 {
+                EVStatType::Hp => evs.hp = 252,
+                EVStatType::Attack => evs.attack = 252,
+                EVStatType::Defense => evs.defense = 252,
+                EVStatType::SpecialAttack => evs.special_attack = 252,
+                EVStatType::SpecialDefense => evs.special_defense = 252,
+                EVStatType::Speed => evs.speed = 252,
+            }
+            
+            match max_stat2 {
+                EVStatType::Hp => evs.hp = 252,
+                EVStatType::Attack => evs.attack = 252,
+                EVStatType::Defense => evs.defense = 252,
+                EVStatType::SpecialAttack => evs.special_attack = 252,
+                EVStatType::SpecialDefense => evs.special_defense = 252,
+                EVStatType::Speed => evs.speed = 252,
+            }
+            
+            // Put remaining 4 EVs in HP if it's not already maxed
+            if evs.hp < 252 {
+                evs.hp = 4;
+            }
+            
+            evs
+        }
+    }
+    
+    /// Stat type enumeration for EV spreading
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum EVStatType {
+        Hp,
+        Attack,
+        Defense,
+        SpecialAttack,
+        SpecialDefense,
+        Speed,
     }
     
     /// Boosts table (-6 to +6 for each stat)

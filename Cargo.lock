@@ -722,6 +722,7 @@ dependencies = [
  "criterion",
  "indexmap",
  "proptest",
+ "regex",
  "serde",
  "serde_json",
  "smallvec",

@@ -1,6 +1,10 @@
 //! Move execution system
 //! 
-//! This module will handle move effects and execution logic
-//! in future implementation phases.
+//! This module implements Pokemon Showdown's move execution pipeline
+//! with exact fidelity to the original implementation.
 
-// Placeholder for future implementation
+pub mod execution;
+pub mod damage;
+
+pub use execution::*;
+pub use damage::*;

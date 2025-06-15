@@ -1,6 +1,6 @@
 //! Tapu Simu CLI interface
 
-use tapu_simu::{Battle, BattleState, format::*, side::*, pokemon::*, types::*, dex::ShowdownDex, errors::*};
+use tapu_simu::{Battle, BattleState, format::*, side::*, pokemon::*, types::*, dex::{ShowdownDex, Dex}, errors::*};
 
 fn main() -> BattleResult<()> {
     println!("Tapu Simu v0.2.0 - Pokemon Showdown Rust Port");
@@ -8,7 +8,23 @@ fn main() -> BattleResult<()> {
     
     // Create a simple test battle
     let battle_state = create_test_battle()?;
-    let dex = Box::new(ShowdownDex {});
+    
+    // Try to load Pokemon Showdown data
+    let dex = match ShowdownDex::new(std::path::Path::new(".")) {
+        Ok(dex) => {
+            println!("Successfully loaded Pokemon Showdown data!");
+            println!("Moves: {}", dex.moves_count());
+            println!("Species: {}", dex.species_count());
+            println!("Type chart entries: {}", dex.parser.type_chart.len());
+            Box::new(dex) as Box<dyn Dex>
+        }
+        Err(e) => {
+            println!("Warning: Could not load Pokemon Showdown data: {}", e);
+            println!("Using minimal test implementation");
+            Box::new(TestDex {}) as Box<dyn Dex>
+        }
+    };
+    
     let mut battle = Battle::new(battle_state, dex);
     
     println!("\nBattle created successfully!");
@@ -76,6 +92,7 @@ fn create_test_battle() -> BattleResult<BattleState> {
         id: "static".to_string(),
         name: "Static".to_string(),
         description: "Contact may paralyze attacker".to_string(),
+        event_handlers: tapu_simu::events::EventHandlerRegistry::new(),
     };
     
     let pokemon1 = Pokemon::new(
@@ -106,4 +123,29 @@ fn create_test_battle() -> BattleResult<BattleState> {
     let side2 = Side::new(SideId::P2, "Player 2".to_string(), vec![pokemon2], &format)?;
     
     BattleState::new(format, rules, vec![side1, side2], Some("sodium,1234567890abcdef".to_string()))
+}
+
+/// Minimal test Dex implementation for fallback
+struct TestDex {}
+
+impl Dex for TestDex {
+    fn get_move(&self, _id: &str) -> Option<&MoveData> {
+        None
+    }
+    
+    fn get_species(&self, _id: &str) -> Option<&SpeciesData> {
+        None
+    }
+    
+    fn get_ability(&self, _id: &str) -> Option<&AbilityData> {
+        None
+    }
+    
+    fn get_item(&self, _id: &str) -> Option<&ItemData> {
+        None
+    }
+    
+    fn get_type_effectiveness(&self, _attacking: Type, _defending: Type) -> f32 {
+        1.0
+    }
 }

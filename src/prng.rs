@@ -47,8 +47,12 @@ impl PRNGState {
                         .map_err(|_| BattleError::InvalidSeed(format!("Invalid number: {}", part)))?;
                 }
                 Ok(PRNGState::Gen5(Gen5RNG::from_seed(gen5_seed)))
+            } else if parts.len() == 2 && parts[0] == "test" {
+                // Handle test seed format: "test,seed" -> use seed as sodium hex
+                Ok(PRNGState::Sodium(SodiumRNG::from_seed(parts[1])?))
             } else {
-                Err(BattleError::InvalidSeed(format!("Unrecognized seed format: {}", seed)))
+                // Default to sodium with the whole string as seed
+                Ok(PRNGState::Sodium(SodiumRNG::from_seed(seed)?))
             }
         }
     }
@@ -123,24 +127,31 @@ pub struct SodiumRNG {
 }
 
 impl SodiumRNG {
-    /// Create from hex seed string
-    pub fn from_seed(hex_seed: &str) -> BattleResult<Self> {
+    /// Create from hex seed string or convert string to bytes
+    pub fn from_seed(input_seed: &str) -> BattleResult<Self> {
         let mut seed = [0u8; 32];
-        let hex_clean = hex_seed.trim();
+        let clean_seed = input_seed.trim();
         
-        if hex_clean.len() > 64 {
-            return Err(BattleError::InvalidSeed("Seed too long".to_string()));
-        }
-        
-        // Pad with zeros if needed
-        let padded = format!("{:0<64}", hex_clean);
-        
-        for (i, chunk) in padded.as_bytes().chunks(2).enumerate() {
-            if i >= 32 { break; }
-            let hex_str = std::str::from_utf8(chunk)
-                .map_err(|_| BattleError::InvalidSeed("Invalid UTF-8 in seed".to_string()))?;
-            seed[i] = u8::from_str_radix(hex_str, 16)
-                .map_err(|_| BattleError::InvalidSeed(format!("Invalid hex byte: {}", hex_str)))?;
+        // Try to parse as hex first
+        if clean_seed.chars().all(|c| c.is_ascii_hexdigit()) && clean_seed.len() <= 64 {
+            // Valid hex string
+            let padded = format!("{:0<64}", clean_seed);
+            for (i, chunk) in padded.as_bytes().chunks(2).enumerate() {
+                if i >= 32 { break; }
+                let hex_str = std::str::from_utf8(chunk).unwrap();
+                seed[i] = u8::from_str_radix(hex_str, 16).unwrap();
+            }
+        } else {
+            // Convert string to bytes directly, hash if too long
+            let input_bytes = clean_seed.as_bytes();
+            if input_bytes.len() <= 32 {
+                seed[..input_bytes.len()].copy_from_slice(input_bytes);
+            } else {
+                // Simple hash for longer strings
+                for (i, &byte) in input_bytes.iter().enumerate() {
+                    seed[i % 32] ^= byte;
+                }
+            }
         }
         
         Ok(SodiumRNG { seed })
@@ -213,15 +224,15 @@ impl Gen5RNG {
     /// 64-bit multiply-add operation
     fn multiply_add(&self, a: [u16; 4], b: [u16; 4], c: [u16; 4]) -> [u16; 4] {
         let mut result = [0u16; 4];
-        let mut carry = 0u32;
+        let mut carry = 0u64;  // Use u64 to prevent overflow
         
         // Long multiplication
         for i in (0..4).rev() {
             for j in i..4 {
                 let ai = 3 - (j - i);
-                carry += (a[ai] as u32) * (b[j] as u32);
+                carry += (a[ai] as u64) * (b[j] as u64);
             }
-            carry += c[i] as u32;
+            carry += c[i] as u64;
             result[i] = (carry & 0xFFFF) as u16;
             carry >>= 16;
         }
@@ -259,7 +270,7 @@ mod tests {
     
     #[test]
     fn test_random_chance() {
-        let mut rng = PRNGState::generate();
+        let mut rng = PRNGState::generate_seed();
         
         // Test extreme cases
         assert!(!rng.random_chance(0, 100));

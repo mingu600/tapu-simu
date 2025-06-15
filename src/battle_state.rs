@@ -145,8 +145,24 @@ pub enum LogEvent {
 }
 
 impl BattleState {
-    /// Create a new battle state
-    pub fn new(
+    /// Create a new battle state (simple version for testing)
+    pub fn new(format: BattleFormat) -> Self {
+        Self {
+            turn: 0,
+            sides: Vec::new(),
+            field: FieldState::new(),
+            queue: ActionQueue::new(),
+            random: PRNGState::generate_seed(),
+            format,
+            rules: FormatRules::default(),
+            ended: false,
+            winner: None,
+            log: Vec::new(),
+        }
+    }
+    
+    /// Create a new battle state with full configuration
+    pub fn new_with_sides(
         format: BattleFormat,
         rules: FormatRules,
         sides: Vec<Side>,
@@ -203,12 +219,24 @@ impl BattleState {
     }
     
     /// Get side by ID
-    pub fn get_side(&self, side_id: SideId) -> Option<&Side> {
+    pub fn get_side(&self, side_id: SideId) -> BattleResult<&Side> {
         self.sides.iter().find(|s| s.id == side_id)
+            .ok_or_else(|| BattleError::InvalidMove(format!("Invalid side ID: {:?}", side_id)))
     }
     
     /// Get mutable side by ID
-    pub fn get_side_mut(&mut self, side_id: SideId) -> Option<&mut Side> {
+    pub fn get_side_mut(&mut self, side_id: SideId) -> BattleResult<&mut Side> {
+        self.sides.iter_mut().find(|s| s.id == side_id)
+            .ok_or_else(|| BattleError::InvalidMove(format!("Invalid side ID: {:?}", side_id)))
+    }
+    
+    /// Get side by ID (option version for backwards compatibility)
+    pub fn get_side_opt(&self, side_id: SideId) -> Option<&Side> {
+        self.sides.iter().find(|s| s.id == side_id)
+    }
+    
+    /// Get mutable side by ID (option version for backwards compatibility)
+    pub fn get_side_mut_opt(&mut self, side_id: SideId) -> Option<&mut Side> {
         self.sides.iter_mut().find(|s| s.id == side_id)
     }
     
@@ -285,6 +313,32 @@ impl BattleState {
     /// Check if all sides have made their choices
     pub fn all_choices_made(&self) -> bool {
         self.sides.iter().all(|side| side.is_choice_done())
+    }
+    
+    /// Get a Pokemon by reference
+    pub fn get_pokemon(&self, pokemon_ref: crate::pokemon::PokemonRef) -> BattleResult<&crate::pokemon::Pokemon> {
+        let side = self.get_side(pokemon_ref.side)?;
+        side.pokemon.get(pokemon_ref.position)
+            .ok_or_else(|| BattleError::InvalidMove(format!("Invalid Pokemon position: {}", pokemon_ref.position)))
+    }
+    
+    /// Get a mutable Pokemon by reference
+    pub fn get_pokemon_mut(&mut self, pokemon_ref: crate::pokemon::PokemonRef) -> BattleResult<&mut crate::pokemon::Pokemon> {
+        let side = self.get_side_mut(pokemon_ref.side)?;
+        side.pokemon.get_mut(pokemon_ref.position)
+            .ok_or_else(|| BattleError::InvalidMove(format!("Invalid Pokemon position: {}", pokemon_ref.position)))
+    }
+    
+    /// Get a Pokemon by reference (option version for backwards compatibility)
+    pub fn get_pokemon_opt(&self, pokemon_ref: crate::pokemon::PokemonRef) -> Option<&crate::pokemon::Pokemon> {
+        let side = self.sides.iter().find(|s| s.id == pokemon_ref.side)?;
+        side.pokemon.get(pokemon_ref.position)
+    }
+    
+    /// Get a mutable Pokemon by reference (option version for backwards compatibility)
+    pub fn get_pokemon_mut_opt(&mut self, pokemon_ref: crate::pokemon::PokemonRef) -> Option<&mut crate::pokemon::Pokemon> {
+        let side = self.sides.iter_mut().find(|s| s.id == pokemon_ref.side)?;
+        side.pokemon.get_mut(pokemon_ref.position)
     }
     
     /// Get battle summary for AI/RL

@@ -136,6 +136,149 @@ pub enum ActionType {
     Pass,
 }
 
+impl ChosenAction {
+    // Factory methods for easy action creation
+    
+    /// Create a move action - most common case
+    /// Example: ChosenAction::move_action(0, 0, None) // Pokemon 0 uses move 0
+    pub fn move_action(
+        pokemon_index: usize,
+        move_index: usize,
+        target_location: Option<i8>,
+    ) -> Self {
+        Self {
+            action_type: ActionType::Move,
+            pokemon_index,
+            move_index: Some(move_index),
+            target_location,
+            switch_target: None,
+            mega: false,
+            z_move: false,
+            dynamax: false,
+            terastallize: false,
+        }
+    }
+    
+    /// Create a switch action
+    /// Example: ChosenAction::switch_action(0, 1) // Pokemon 0 switches to Pokemon 1
+    pub fn switch_action(pokemon_index: usize, switch_target: usize) -> Self {
+        Self {
+            action_type: ActionType::Switch,
+            pokemon_index,
+            move_index: None,
+            target_location: None,
+            switch_target: Some(switch_target),
+            mega: false,
+            z_move: false,
+            dynamax: false,
+            terastallize: false,
+        }
+    }
+    
+    /// Create a pass action (for fainted Pokemon)
+    pub fn pass_action(pokemon_index: usize) -> Self {
+        Self {
+            action_type: ActionType::Pass,
+            pokemon_index,
+            move_index: None,
+            target_location: None,
+            switch_target: None,
+            mega: false,
+            z_move: false,
+            dynamax: false,
+            terastallize: false,
+        }
+    }
+    
+    /// Create a move action with Mega Evolution
+    pub fn mega_move_action(
+        pokemon_index: usize,
+        move_index: usize,
+        target_location: Option<i8>,
+    ) -> Self {
+        Self {
+            action_type: ActionType::Move,
+            pokemon_index,
+            move_index: Some(move_index),
+            target_location,
+            switch_target: None,
+            mega: true,
+            z_move: false,
+            dynamax: false,
+            terastallize: false,
+        }
+    }
+    
+    /// Create a Z-move action
+    pub fn z_move_action(
+        pokemon_index: usize,
+        move_index: usize,
+        target_location: Option<i8>,
+    ) -> Self {
+        Self {
+            action_type: ActionType::Move,
+            pokemon_index,
+            move_index: Some(move_index),
+            target_location,
+            switch_target: None,
+            mega: false,
+            z_move: true,
+            dynamax: false,
+            terastallize: false,
+        }
+    }
+    
+    /// Create a Dynamax move action
+    pub fn dynamax_move_action(
+        pokemon_index: usize,
+        move_index: usize,
+        target_location: Option<i8>,
+    ) -> Self {
+        Self {
+            action_type: ActionType::Move,
+            pokemon_index,
+            move_index: Some(move_index),
+            target_location,
+            switch_target: None,
+            mega: false,
+            z_move: false,
+            dynamax: true,
+            terastallize: false,
+        }
+    }
+    
+    /// Create a move action with Terastallization
+    pub fn tera_move_action(
+        pokemon_index: usize,
+        move_index: usize,
+        target_location: Option<i8>,
+    ) -> Self {
+        Self {
+            action_type: ActionType::Move,
+            pokemon_index,
+            move_index: Some(move_index),
+            target_location,
+            switch_target: None,
+            mega: false,
+            z_move: false,
+            dynamax: false,
+            terastallize: true,
+        }
+    }
+    
+    /// Create a simple attack action targeting the opponent
+    /// Most common case for testing - Pokemon 0 uses move 0 against opponent
+    pub fn attack() -> Self {
+        Self::move_action(0, 0, Some(1))
+    }
+    
+    /// Create a simple switch action for testing
+    /// Pokemon 0 switches to Pokemon 1
+    pub fn switch() -> Self {
+        Self::switch_action(0, 1)
+    }
+}
+
 /// Side condition data
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SideCondition {
@@ -280,7 +423,7 @@ impl Side {
                 }
             }
             ActionType::Switch => {
-                if pokemon.trapped {
+                if !matches!(pokemon.trapped, crate::pokemon::TrappedState::None) {
                     return Err(BattleError::InvalidSwitch(
                         "Pokemon is trapped and cannot switch".to_string()
                     ));
@@ -365,119 +508,45 @@ impl Default for Choice {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
     use crate::pokemon::*;
     use crate::types::*;
     use crate::format::BattleFormat;
+    use crate::dex::ShowdownDex;
     
     pub fn create_test_pokemon() -> Pokemon {
-        let species = SpeciesData {
-            id: "pikachu".to_string(),
-            name: "Pikachu".to_string(),
-            types: [Type::Electric, Type::Electric],
-            base_stats: StatsTable {
-                hp: 35,
-                attack: 55,
-                defense: 40,
-                special_attack: 50,
-                special_defense: 50,
-                speed: 90,
-            },
-            abilities: vec!["static".to_string()],
-            height: 0.4,
-            weight: 6.0,
-            gender_ratio: GenderRatio::Ratio { male: 0.5, female: 0.5 },
-        };
-        
-        let moves = [
-            MoveData {
-                id: "tackle".to_string(),
-                name: "Tackle".to_string(),
-                type_: Type::Normal,
-                category: MoveCategory::Physical,
-                base_power: 40,
-                accuracy: Some(100),
-                pp: 35,
-                target: MoveTarget::Normal,
-                priority: 0,
-                flags: MoveFlags::default(),
-                secondary_effect: None,
-                crit_ratio: 1,
-                multihit: None,
-                drain: None,
-                recoil: None,
-            },
-            MoveData {
-                id: "thundershock".to_string(),
-                name: "Thunder Shock".to_string(),
-                type_: Type::Electric,
-                category: MoveCategory::Special,
-                base_power: 40,
-                accuracy: Some(100),
-                pp: 30,
-                target: MoveTarget::Normal,
-                priority: 0,
-                flags: MoveFlags::default(),
-                secondary_effect: None,
-                crit_ratio: 1,
-                multihit: None,
-                drain: None,
-                recoil: None,
-            },
-            MoveData {
-                id: "growl".to_string(),
-                name: "Growl".to_string(),
-                type_: Type::Normal,
-                category: MoveCategory::Status,
-                base_power: 0,
-                accuracy: Some(100),
-                pp: 40,
-                target: MoveTarget::AllAdjacentFoes,
-                priority: 0,
-                flags: MoveFlags::default(),
-                secondary_effect: None,
-                crit_ratio: 1,
-                multihit: None,
-                drain: None,
-                recoil: None,
-            },
-            MoveData {
-                id: "tailwhip".to_string(),
-                name: "Tail Whip".to_string(),
-                type_: Type::Normal,
-                category: MoveCategory::Status,
-                base_power: 0,
-                accuracy: Some(100),
-                pp: 30,
-                target: MoveTarget::AllAdjacentFoes,
-                priority: 0,
-                flags: MoveFlags::default(),
-                secondary_effect: None,
-                crit_ratio: 1,
-                multihit: None,
-                drain: None,
-                recoil: None,
-            },
-        ];
-        
-        let ability = AbilityData {
-            id: "static".to_string(),
-            name: "Static".to_string(),
-            description: "Contact may paralyze attacker".to_string(),
-        };
-        
-        Pokemon::new(
-            species,
-            50,
-            moves,
-            ability,
-            None,
-            Nature::Hardy,
-            StatsTable { hp: 31, attack: 31, defense: 31, special_attack: 31, special_defense: 31, speed: 31 },
-            StatsTable::default(),
-            Gender::Male,
-        )
+        // Use factory method - 95% less code!
+        let dex = ShowdownDex::test_dex();
+        Pokemon::test_pokemon(dex.as_ref(), Some(50))
+            .unwrap_or_else(|_| {
+                // Fallback for when no data is available
+                Pokemon::new(
+                    SpeciesData {
+                        id: "pikachu".to_string(),
+                        name: "Pikachu".to_string(),
+                        types: [Type::Electric, Type::Electric],
+                        base_stats: StatsTable { hp: 35, attack: 55, defense: 40, special_attack: 50, special_defense: 50, speed: 90 },
+                        abilities: vec!["static".to_string()],
+                        height: 0.4,
+                        weight: 6.0,
+                        gender_ratio: GenderRatio::Ratio { male: 0.5, female: 0.5 },
+                    },
+                    50,
+                    [
+                        MoveData { id: "tackle".to_string(), name: "Tackle".to_string(), type_: Type::Normal, category: MoveCategory::Physical, base_power: 40, accuracy: Some(100), pp: 35, target: MoveTarget::Normal, priority: 0, flags: MoveFlags::default(), secondary_effect: None, crit_ratio: 1, multihit: None, drain: None, recoil: None },
+                        MoveData { id: "thundershock".to_string(), name: "Thunder Shock".to_string(), type_: Type::Electric, category: MoveCategory::Special, base_power: 40, accuracy: Some(100), pp: 30, target: MoveTarget::Normal, priority: 0, flags: MoveFlags::default(), secondary_effect: None, crit_ratio: 1, multihit: None, drain: None, recoil: None },
+                        MoveData { id: "growl".to_string(), name: "Growl".to_string(), type_: Type::Normal, category: MoveCategory::Status, base_power: 0, accuracy: Some(100), pp: 40, target: MoveTarget::AllAdjacentFoes, priority: 0, flags: MoveFlags::default(), secondary_effect: None, crit_ratio: 1, multihit: None, drain: None, recoil: None },
+                        MoveData { id: "tailwhip".to_string(), name: "Tail Whip".to_string(), type_: Type::Normal, category: MoveCategory::Status, base_power: 0, accuracy: Some(100), pp: 30, target: MoveTarget::AllAdjacentFoes, priority: 0, flags: MoveFlags::default(), secondary_effect: None, crit_ratio: 1, multihit: None, drain: None, recoil: None },
+                    ],
+                    AbilityData { id: "static".to_string(), name: "Static".to_string(), description: "Contact may paralyze attacker".to_string(), event_handlers: crate::events::EventHandlerRegistry::default() },
+                    None,
+                    Nature::Hardy,
+                    StatsTable::max(),
+                    StatsTable::default(),
+                    Gender::Male,
+                )
+            })
     }
     
     #[test]
@@ -500,18 +569,8 @@ mod tests {
         let format = BattleFormat::Singles;
         let mut side = Side::new(SideId::P1, "Test Player".to_string(), team, &format).unwrap();
         
-        // Valid move action
-        let action = ChosenAction {
-            action_type: ActionType::Move,
-            pokemon_index: 0,
-            move_index: Some(0),
-            target_location: None,
-            switch_target: None,
-            mega: false,
-            z_move: false,
-            dynamax: false,
-            terastallize: false,
-        };
+        // Valid move action using factory method
+        let action = ChosenAction::move_action(0, 0, None);
         
         assert!(side.add_choice(action).is_ok());
     }

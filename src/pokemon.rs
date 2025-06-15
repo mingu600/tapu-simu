@@ -2,6 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 use crate::types::*;
+use crate::side::SideId;
 use std::collections::HashMap;
 
 /// A Pokemon's current battle state
@@ -58,11 +59,92 @@ pub struct Pokemon {
     /// Position on the field (0, 1, 2 for triples)
     pub position: usize,
     
+    /// Pokemon details string (visible to opponents)
+    pub details: String,
+    
+    /// Base species (before forme changes)
+    pub base_species: SpeciesData,
+    
+    /// Status condition state
+    pub status_state: Option<StatusState>,
+    
+    /// Base stored stats (before modifications)
+    pub base_stored_stats: StatsTable,
+    
+    /// Current stored stats (can be modified by Power Trick, Transform, etc)
+    pub stored_stats: StatsTable,
+    
+    /// Base ability before any changes
+    pub base_ability: AbilityData,
+    
+    /// Last item held (for recycle, etc)
+    pub last_item: Option<ItemData>,
+    
+    /// Used item this turn flag
+    pub used_item_this_turn: bool,
+    
+    /// Ate berry flag
+    pub ate_berry: bool,
+    
+    /// Whether this Pokemon can be switched out
+    pub trapped: TrappedState,
+    
+    /// Maybe trapped (for move validation)
+    pub maybe_trapped: bool,
+    
+    /// Maybe disabled (for move validation)
+    pub maybe_disabled: bool,
+    
+    /// Maybe locked into a move
+    pub maybe_locked: Option<bool>,
+    
+    /// Illusion Pokemon (if any)
+    pub illusion: Option<Box<Pokemon>>,
+    
+    /// Whether this Pokemon is transformed
+    pub transformed: bool,
+    
+    /// Base max HP (before Dynamax)
+    pub base_max_hp: u16,
+    
     /// Fainted this turn
     pub fainted: bool,
     
-    /// Whether this Pokemon can be switched out
-    pub trapped: bool,
+    /// Faint queued for end of turn
+    pub faint_queued: bool,
+    
+    /// Substitute fainted
+    pub sub_fainted: Option<bool>,
+    
+    /// Should revert forme when fainting
+    pub forme_regression: bool,
+    
+    /// Added type (from Forest's Curse, Trick-or-Treat)
+    pub added_type: Option<Type>,
+    
+    /// Whether type is known to opponent
+    pub known_type: bool,
+    
+    /// Type that client sees
+    pub apparent_type: Option<Type>,
+    
+    /// Switch flag (effect that caused switch)
+    pub switch_flag: SwitchFlag,
+    
+    /// Force switch flag
+    pub force_switch_flag: bool,
+    
+    /// Skip before switch out event
+    pub skip_before_switch_out_event_flag: bool,
+    
+    /// Dragged in by effect
+    pub dragged_in: Option<u32>,
+    
+    /// Newly switched flag
+    pub newly_switched: bool,
+    
+    /// Being called back flag
+    pub being_called_back: bool,
     
     /// Last move used
     pub last_move: Option<String>,
@@ -70,8 +152,64 @@ pub struct Pokemon {
     /// Last move target location
     pub last_move_target_loc: Option<i8>,
     
+    /// Move this turn
+    pub move_this_turn: Option<String>,
+    
+    /// Stats raised this turn
+    pub stats_raised_this_turn: bool,
+    
+    /// Stats lowered this turn
+    pub stats_lowered_this_turn: bool,
+    
+    /// Result of last move used previous turn
+    pub move_last_turn_result: Option<MoveResult>,
+    
+    /// Result of most recent move this turn
+    pub move_this_turn_result: Option<MoveResult>,
+    
     /// Turn when this Pokemon switched in
     pub switch_in_turn: u32,
+    
+    // CRITICAL BATTLE MECHANICS FIELDS
+    
+    /// Number of damage taken from last hit (Counter, Mirror Coat, etc.)
+    pub last_damage: u16,
+    
+    /// Damage taken this turn for Assurance/Avalanche mechanics
+    pub hurt_this_turn: Option<u16>,
+    
+    /// Number of turns this Pokemon has been active
+    pub active_turns: u32,
+    
+    /// Whether this Pokemon is currently active on the field
+    pub is_active: bool,
+    
+    /// Whether this Pokemon has entered battle (Start events)
+    pub is_started: bool,
+    
+    /// Current cached speed stat (updated when stats change)
+    pub speed_cache: u16,
+    
+    /// Weight in hectograms (for Low Kick, Grass Knot, etc.)
+    pub weight_hg: u16,
+    
+    /// Height in decimeters (for certain moves)
+    pub height_dm: u16,
+    
+    /// Move actions taken while active (for Fake Out, Truant)
+    pub active_move_actions: u8,
+    
+    /// List of attackers this turn (for Weakness Policy, etc.)
+    pub attacked_by: Vec<AttackerInfo>,
+    
+    /// Tera type for Terastallization
+    pub tera_type: Option<Type>,
+    
+    /// Whether this Pokemon is Terastallized
+    pub terastallized: Option<Type>,
+    
+    /// Base types before any modifications
+    pub base_types: [Type; 2],
 }
 
 /// Pokemon species data
@@ -96,13 +234,32 @@ pub enum GenderRatio {
     Ratio { male: f32, female: f32 },
 }
 
-/// A move slot with PP tracking
+/// A move slot with PP tracking (based on Pokemon Showdown MoveSlot)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MoveSlot {
+    pub id: String,
     pub move_data: MoveData,
     pub pp: u8,
     pub max_pp: u8,
-    pub disabled: bool,
+    pub target: Option<String>,
+    pub disabled: MoveDisabled,
+    pub disabled_source: Option<String>,
+    pub used: bool,
+    pub virtual_: bool, // 'virtual' is a reserved keyword in Rust
+}
+
+/// Move disabled state
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum MoveDisabled {
+    None,
+    True,
+    Reason(String),
+}
+
+impl Default for MoveDisabled {
+    fn default() -> Self {
+        MoveDisabled::None
+    }
 }
 
 /// Move data
@@ -200,6 +357,7 @@ pub struct AbilityData {
     pub id: String,
     pub name: String,
     pub description: String,
+    pub event_handlers: crate::events::EventHandlerRegistry,
 }
 
 /// Item data
@@ -209,6 +367,7 @@ pub struct ItemData {
     pub name: String,
     pub description: String,
     pub natural_gift: Option<NaturalGiftData>,
+    pub event_handlers: crate::events::EventHandlerRegistry,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -236,6 +395,54 @@ pub struct VolatileStatus {
     pub data: HashMap<String, serde_json::Value>,
 }
 
+/// Status condition state
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StatusState {
+    pub effect_order: i32,
+    pub duration: Option<u8>,
+    pub data: HashMap<String, serde_json::Value>,
+}
+
+/// Trapped state
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum TrappedState {
+    None,
+    True,
+    Hidden,
+}
+
+/// Switch flag
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum SwitchFlag {
+    None,
+    Effect(String), // ID of the effect that caused the switch
+    Force,
+}
+
+/// Move result
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub enum MoveResult {
+    Success,    // Move executed successfully
+    Failure,    // Move failed completely
+    Skipped,    // Move was skipped (recharge, Sky Drop, etc)
+}
+
+/// Information about a Pokemon that attacked this Pokemon
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AttackerInfo {
+    pub pokemon_ref: PokemonRef,
+    pub move_id: String,
+    pub damage: u16,
+    pub this_turn: bool,
+}
+
+/// Reference to a Pokemon (side + position)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct PokemonRef {
+    pub side: SideId,
+    pub position: usize,
+}
+
 impl Pokemon {
     /// Create a new Pokemon from team data
     pub fn new(
@@ -251,16 +458,25 @@ impl Pokemon {
     ) -> Self {
         let stats = Self::calculate_stats(&species.base_stats, level, nature, ivs, evs);
         let max_hp = stats.hp;
+        let speed_cache = stats.speed;
+        let base_types = species.types;
+        let species_weight = species.weight;
+        let species_height = species.height;
+        let species_name = species.name.clone();
         
         let move_slots = moves.map(|move_data| MoveSlot {
+            id: move_data.id.clone(),
             pp: move_data.pp,
             max_pp: move_data.pp,
-            disabled: false,
+            target: None,
+            disabled: MoveDisabled::None,
+            disabled_source: None,
+            used: false,
+            virtual_: false,
             move_data,
         });
         
         Self {
-            species: species.clone(),
             hp: max_hp,
             max_hp,
             stats,
@@ -268,9 +484,9 @@ impl Pokemon {
             status: None,
             volatiles: HashMap::new(),
             moves: move_slots,
-            ability,
+            ability: ability.clone(),
             item,
-            types: species.types,
+            types: base_types,
             level,
             gender,
             nature,
@@ -278,10 +494,65 @@ impl Pokemon {
             evs,
             position: 0,
             fainted: false,
-            trapped: false,
+            trapped: TrappedState::None,
             last_move: None,
             last_move_target_loc: None,
             switch_in_turn: 0,
+            // New fields
+            species: species.clone(),
+            details: format!("{}, L{}, {}", species_name, level, gender_string(gender)),
+            base_species: species,
+            status_state: None,
+            base_stored_stats: stats,
+            stored_stats: StatsTable {
+                hp: 0, // HP is not included in stored stats
+                attack: stats.attack,
+                defense: stats.defense,
+                special_attack: stats.special_attack,
+                special_defense: stats.special_defense,
+                speed: stats.speed,
+            },
+            base_ability: ability,
+            last_item: None,
+            used_item_this_turn: false,
+            ate_berry: false,
+            maybe_trapped: false,
+            maybe_disabled: false,
+            maybe_locked: None,
+            illusion: None,
+            transformed: false,
+            base_max_hp: max_hp,
+            faint_queued: false,
+            sub_fainted: None,
+            forme_regression: false,
+            added_type: None,
+            known_type: true,
+            apparent_type: None,
+            switch_flag: SwitchFlag::None,
+            force_switch_flag: false,
+            skip_before_switch_out_event_flag: false,
+            dragged_in: None,
+            newly_switched: false,
+            being_called_back: false,
+            move_this_turn: None,
+            stats_raised_this_turn: false,
+            stats_lowered_this_turn: false,
+            move_last_turn_result: None,
+            move_this_turn_result: None,
+            // New battle mechanics fields
+            last_damage: 0,
+            hurt_this_turn: None,
+            active_turns: 0,
+            is_active: false,
+            is_started: false,
+            speed_cache,
+            weight_hg: (species_weight * 10.0) as u16, // Convert kg to hectograms
+            height_dm: (species_height * 10.0) as u16, // Convert m to decimeters
+            active_move_actions: 0,
+            attacked_by: Vec::new(),
+            tera_type: None,
+            terastallized: None,
+            base_types,
         }
     }
     
@@ -333,10 +604,84 @@ impl Pokemon {
     
     /// Apply damage to this Pokemon
     pub fn take_damage(&mut self, damage: u16) {
+        self.last_damage = damage;
+        self.hurt_this_turn = Some(self.hurt_this_turn.unwrap_or(0) + damage);
         self.hp = self.hp.saturating_sub(damage);
         if self.hp == 0 {
             self.fainted = true;
         }
+    }
+    
+    /// Add an attacker to the list (for abilities like Justified)
+    pub fn add_attacker(&mut self, attacker: PokemonRef, move_id: String, damage: u16) {
+        // Remove any existing attacker from this turn (replace with latest)
+        self.attacked_by.retain(|a| !(a.pokemon_ref == attacker && a.this_turn));
+        
+        self.attacked_by.push(AttackerInfo {
+            pokemon_ref: attacker,
+            move_id,
+            damage,
+            this_turn: true,
+        });
+    }
+    
+    /// Mark start of new turn for this Pokemon
+    pub fn start_turn(&mut self) {
+        self.hurt_this_turn = None;
+        
+        // Mark previous turn's attackers as not this turn
+        for attacker in &mut self.attacked_by {
+            attacker.this_turn = false;
+        }
+        
+        if self.is_active {
+            self.active_turns += 1;
+        }
+    }
+    
+    /// Switch this Pokemon in
+    pub fn switch_in(&mut self, turn: u32) {
+        self.is_active = true;
+        self.newly_switched = true;
+        self.switch_in_turn = turn;
+        self.active_turns = 0;
+        self.active_move_actions = 0;
+        self.hurt_this_turn = None;
+        self.attacked_by.clear();
+        
+        if !self.is_started {
+            self.is_started = true;
+        }
+    }
+    
+    /// Switch this Pokemon out
+    pub fn switch_out(&mut self) {
+        self.is_active = false;
+        self.newly_switched = false;
+        self.hurt_this_turn = None;
+        self.attacked_by.clear();
+    }
+    
+    /// Get current speed considering all modifiers
+    pub fn get_speed(&self) -> u16 {
+        // For now, return cached speed
+        // In full implementation, this would consider abilities, items, etc.
+        self.speed_cache
+    }
+    
+    /// Update speed cache when stats change
+    pub fn update_speed_cache(&mut self) {
+        self.speed_cache = self.effective_stat(StatType::Speed);
+    }
+    
+    /// Check if this Pokemon was attacked this turn
+    pub fn was_attacked_this_turn(&self) -> bool {
+        self.attacked_by.iter().any(|a| a.this_turn)
+    }
+    
+    /// Get damage taken this turn
+    pub fn damage_this_turn(&self) -> u16 {
+        self.hurt_this_turn.unwrap_or(0)
     }
     
     /// Heal this Pokemon
@@ -386,7 +731,63 @@ impl Pokemon {
         }
         
         let move_slot = &self.moves[move_index];
-        !move_slot.disabled && move_slot.pp > 0
+        !matches!(move_slot.disabled, MoveDisabled::True | MoveDisabled::Reason(_)) && move_slot.pp > 0
+    }
+    
+    /// Check if move slot can be used (more detailed check)
+    pub fn can_use_move_slot(&self, slot_index: usize) -> bool {
+        if let Some(slot) = self.moves.get(slot_index) {
+            !matches!(slot.disabled, MoveDisabled::True | MoveDisabled::Reason(_)) 
+                && slot.pp > 0 
+                && !slot.virtual_
+        } else {
+            false
+        }
+    }
+    
+    /// Get the Pokemon that should be displayed (considering illusion)
+    pub fn get_apparent_pokemon(&self) -> &Pokemon {
+        if let Some(ref illusion_mon) = self.illusion {
+            illusion_mon
+        } else {
+            self
+        }
+    }
+    
+    /// Check if this Pokemon is under the effect of an illusion
+    pub fn has_illusion(&self) -> bool {
+        self.illusion.is_some()
+    }
+    
+    /// Get the effective types (including added type)
+    pub fn get_effective_types(&self) -> Vec<Type> {
+        let mut types = self.types.to_vec();
+        if let Some(added) = self.added_type {
+            if !types.contains(&added) {
+                types.push(added);
+            }
+        }
+        types
+    }
+    
+    /// Set illusion
+    pub fn set_illusion(&mut self, illusion_pokemon: Option<Pokemon>) {
+        self.illusion = illusion_pokemon.map(Box::new);
+    }
+    
+    /// Clear illusion
+    pub fn clear_illusion(&mut self) {
+        self.illusion = None;
+    }
+    
+    /// Set transformed state
+    pub fn set_transformed(&mut self, is_transformed: bool) {
+        self.transformed = is_transformed;
+    }
+    
+    /// Check if this Pokemon should be forced to switch
+    pub fn should_force_switch(&self) -> bool {
+        self.force_switch_flag || matches!(self.switch_flag, SwitchFlag::Force)
     }
     
     /// Use PP for a move
@@ -394,6 +795,129 @@ impl Pokemon {
         if move_index < 4 {
             self.moves[move_index].pp = self.moves[move_index].pp.saturating_sub(1);
         }
+    }
+    
+    // Factory methods for easier Pokemon creation using dex data
+    
+    /// Create a Pokemon using species name and move names from dex data
+    /// This is much easier to use for testing and general Pokemon creation
+    pub fn from_dex(
+        dex: &dyn crate::dex::Dex,
+        species_name: &str,
+        level: u8,
+        move_names: &[&str],
+        ability_name: Option<&str>,
+        item_name: Option<&str>,
+        nature: Option<Nature>,
+        gender: Option<Gender>,
+    ) -> crate::errors::BattleResult<Self> {
+        // Get species data
+        let species = dex.get_species(species_name)
+            .ok_or_else(|| crate::errors::BattleError::InvalidMove(format!("Species '{}' not found", species_name)))?
+            .clone();
+            
+        // Get move data, padding with empty moves if needed
+        let mut moves_data = Vec::new();
+        for &move_name in move_names.iter().take(4) {
+            let move_data = dex.get_move(move_name)
+                .ok_or_else(|| crate::errors::BattleError::InvalidMove(format!("Move '{}' not found", move_name)))?
+                .clone();
+            moves_data.push(move_data);
+        }
+        
+        // Pad with a default move if needed
+        while moves_data.len() < 4 {
+            let default_move = dex.get_move("tackle")
+                .or_else(|| dex.get_move("pound"))
+                .ok_or_else(|| crate::errors::BattleError::InvalidMove("No default move (tackle/pound) found".to_string()))?
+                .clone();
+            moves_data.push(default_move);
+        }
+        
+        let moves: [MoveData; 4] = moves_data.try_into()
+            .map_err(|_| crate::errors::BattleError::InvalidMove("Failed to create move array".to_string()))?;
+            
+        // Get ability data
+        let ability_name = ability_name.unwrap_or(&species.abilities[0]);
+        let ability = dex.get_ability(ability_name)
+            .ok_or_else(|| crate::errors::BattleError::InvalidMove(format!("Ability '{}' not found", ability_name)))?
+            .clone();
+            
+        // Get item data if specified
+        let item = if let Some(item_name) = item_name {
+            Some(dex.get_item(item_name)
+                .ok_or_else(|| crate::errors::BattleError::InvalidMove(format!("Item '{}' not found", item_name)))?
+                .clone())
+        } else {
+            None
+        };
+        
+        // Use defaults for other values
+        let nature = nature.unwrap_or(Nature::Hardy);
+        let gender = gender.unwrap_or(Gender::Genderless);
+        let ivs = crate::types::StatsTable::max(); // Perfect IVs for testing
+        let evs = StatsTable::default(); // No EVs
+        
+        Ok(Self::new(species, level, moves, ability, item, nature, ivs, evs, gender))
+    }
+    
+    /// Create a simple Pokemon for testing with minimal configuration
+    /// Uses commonly available Pokemon like Pikachu for reliable testing
+    pub fn test_pokemon(
+        dex: &dyn crate::dex::Dex,
+        level: Option<u8>,
+    ) -> crate::errors::BattleResult<Self> {
+        Self::from_dex(
+            dex,
+            "pikachu",
+            level.unwrap_or(50),
+            &["thunderbolt", "quick-attack", "double-team", "substitute"],
+            None, // Use default ability
+            None, // No item
+            Some(Nature::Modest), // +SpA, -Atk
+            Some(Gender::Male),
+        )
+    }
+    
+    /// Create a Pokemon for competitive testing with optimal stats
+    pub fn competitive_pokemon(
+        dex: &dyn crate::dex::Dex,
+        species_name: &str,
+        level: u8,
+        move_names: &[&str],
+        ability_name: &str,
+        item_name: Option<&str>,
+        nature: Nature,
+        evs: Option<StatsTable>,
+    ) -> crate::errors::BattleResult<Self> {
+        let mut pokemon = Self::from_dex(
+            dex,
+            species_name,
+            level,
+            move_names,
+            Some(ability_name),
+            item_name,
+            Some(nature),
+            Some(Gender::Genderless), // For consistency
+        )?;
+        
+        // Apply custom EVs if provided
+        if let Some(custom_evs) = evs {
+            pokemon.evs = custom_evs;
+            // Recalculate stats with new EVs
+            pokemon.stats = Self::calculate_stats(
+                &pokemon.species.base_stats,
+                pokemon.level,
+                pokemon.nature,
+                pokemon.ivs,
+                pokemon.evs,
+            );
+            pokemon.max_hp = pokemon.stats.hp;
+            pokemon.hp = pokemon.max_hp;
+            pokemon.speed_cache = pokemon.stats.speed;
+        }
+        
+        Ok(pokemon)
     }
 }
 
@@ -441,5 +965,26 @@ impl Nature {
             // Neutral natures
             _ => 1.0,
         }
+    }
+}
+
+/// Helper function to convert gender to string
+fn gender_string(gender: Gender) -> &'static str {
+    match gender {
+        Gender::Male => "M",
+        Gender::Female => "F",
+        Gender::Genderless => "",
+    }
+}
+
+impl Default for TrappedState {
+    fn default() -> Self {
+        TrappedState::None
+    }
+}
+
+impl Default for SwitchFlag {
+    fn default() -> Self {
+        SwitchFlag::None
     }
 }
