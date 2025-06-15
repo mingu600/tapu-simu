@@ -7,6 +7,7 @@
 use crate::errors::BattleResult;
 use crate::events::{EventSystem, EventTarget, EventSource};
 use crate::pokemon::Pokemon;
+use super::targeting::TargetResolver;
 use crate::side::SideId;
 use crate::pokemon::MoveData;
 use std::collections::HashMap;
@@ -95,29 +96,76 @@ impl MoveExecutor {
     /// Pre-execution validation and targeting for side/field moves
     pub fn try_move_hit(
         &mut self,
-        _targets: &[PokemonRef],
-        _user: &PokemonRef,
-        _active_move: &mut ActiveMove,
+        targets: &[PokemonRef],
+        user: &PokemonRef,
+        active_move: &mut ActiveMove,
     ) -> BattleResult<Option<MoveResult>> {
-        // Set active move context
-        // This would be stored in battle state
+        // Check accuracy for each target
+        for target in targets {
+            if !self.check_accuracy(user, target, active_move)? {
+                // Move missed
+                return Ok(Some(MoveResult::Miss));
+            }
+        }
         
-        // Run 'Try' event
-        // let try_result = self.event_system.run_event(
-        //     "Try",
-        //     Some(EventTarget::Pokemon(user.side_id, user.position)),
-        //     Some(EventSource::Pokemon(user.side_id, user.position)),
-        //     None, // source effect
-        //     None, // relay_var
-        //     false, // on_effect
-        //     false, // fast_exit
-        // )?;
-
-        // Run 'PrepareHit' event
-        // Similar event system call...
-
-        // For now, return success to continue execution
+        // All accuracy checks passed - move hits
+        // Run 'PrepareHit' event here when event system is fully integrated
+        
+        // Return success to continue execution
         Ok(None)
+    }
+    
+    /// Check if a move hits based on accuracy calculation
+    /// This matches Pokemon Showdown's accuracy checking mechanics
+    fn check_accuracy(
+        &mut self,
+        user: &PokemonRef,
+        target: &PokemonRef,
+        active_move: &ActiveMove,
+    ) -> BattleResult<bool> {
+        // Moves with no accuracy always hit (like Swift)
+        if active_move.base_move.accuracy.is_none() {
+            return Ok(true);
+        }
+        
+        let base_accuracy = active_move.base_move.accuracy.unwrap();
+        
+        // Get user and target Pokemon from battle state
+        let user_pokemon = self.battle_state.get_pokemon(*user)?;
+        let target_pokemon = self.battle_state.get_pokemon(*target)?;
+        
+        // Calculate accuracy stage multiplier (from stat boosts)
+        let accuracy_stage = user_pokemon.boosts.accuracy;
+        let evasion_stage = target_pokemon.boosts.evasion;
+        let net_stage = accuracy_stage - evasion_stage;
+        
+        // Pokemon Showdown accuracy stage multipliers
+        let stage_multiplier = match net_stage {
+            -6 => 3.0 / 9.0,   // 33%
+            -5 => 3.0 / 8.0,   // 37.5%
+            -4 => 3.0 / 7.0,   // ~43%
+            -3 => 3.0 / 6.0,   // 50%
+            -2 => 3.0 / 5.0,   // 60%
+            -1 => 3.0 / 4.0,   // 75%
+             0 => 1.0,         // 100%
+             1 => 4.0 / 3.0,   // ~133%
+             2 => 5.0 / 3.0,   // ~167%
+             3 => 6.0 / 3.0,   // 200%
+             4 => 7.0 / 3.0,   // ~233%
+             5 => 8.0 / 3.0,   // ~267%
+             6 => 9.0 / 3.0,   // 300%
+             _ => if net_stage > 6 { 9.0 / 3.0 } else { 3.0 / 9.0 },
+        };
+        
+        // Calculate final accuracy
+        let final_accuracy = (base_accuracy as f32 * stage_multiplier) as u8;
+        let final_accuracy = final_accuracy.min(100); // Cap at 100%
+        
+        // Roll for accuracy
+        let roll = self.battle_state.random.next_u32() % 100;
+        let hit = roll < final_accuracy as u32;
+        
+        Ok(hit)
     }
 
     /// Pokemon Showdown's hitStepMoveHitLoop() function
@@ -231,7 +279,152 @@ impl MoveExecutor {
             is_crit
         )?;
         
+        // Apply secondary effects after damage calculation
+        if let Some(secondary) = &active_move.base_move.secondary_effect {
+            self.apply_secondary_effect(target, source, secondary, active_move)?;
+        }
+        
         Ok(Some(final_damage))
+    }
+    
+    /// Apply secondary effects from moves
+    fn apply_secondary_effect(
+        &mut self,
+        target: &PokemonRef,
+        source: &PokemonRef,
+        secondary: &crate::pokemon::SecondaryEffect,
+        active_move: &ActiveMove,
+    ) -> BattleResult<()> {
+        // Roll for secondary effect chance
+        let roll = self.battle_state.random.next_u32() % 100;
+        if roll >= secondary.chance as u32 {
+            return Ok(()); // Effect didn't trigger
+        }
+        
+        // Apply the secondary effect
+        match &secondary.effect {
+            crate::pokemon::SecondaryEffectType::Status(status) => {
+                self.apply_status_effect(target, status.clone())?;
+            },
+            crate::pokemon::SecondaryEffectType::StatBoost { stat, amount } => {
+                self.apply_stat_boost(target, stat, *amount)?;
+            },
+            crate::pokemon::SecondaryEffectType::Burn => {
+                self.apply_status_effect(target, crate::pokemon::StatusCondition::Burn)?;
+            },
+            crate::pokemon::SecondaryEffectType::Paralyze => {
+                self.apply_status_effect(target, crate::pokemon::StatusCondition::Paralysis)?;
+            },
+            crate::pokemon::SecondaryEffectType::Freeze => {
+                self.apply_status_effect(target, crate::pokemon::StatusCondition::Freeze)?;
+            },
+            crate::pokemon::SecondaryEffectType::Poison => {
+                self.apply_status_effect(target, crate::pokemon::StatusCondition::Poison)?;
+            },
+            crate::pokemon::SecondaryEffectType::BadlyPoison => {
+                self.apply_status_effect(target, crate::pokemon::StatusCondition::BadlyPoison)?;
+            },
+            crate::pokemon::SecondaryEffectType::Sleep => {
+                self.apply_status_effect(target, crate::pokemon::StatusCondition::Sleep)?;
+            },
+            crate::pokemon::SecondaryEffectType::Flinch => {
+                // Flinch is typically handled as a volatile status
+                self.apply_volatile_status(target, "flinch".to_string())?;
+            },
+        }
+        
+        Ok(())
+    }
+    
+    /// Apply a status condition to a Pokemon
+    fn apply_status_effect(
+        &mut self,
+        target: &PokemonRef,
+        status: crate::pokemon::StatusCondition,
+    ) -> BattleResult<()> {
+        let target_pokemon = self.battle_state.get_pokemon_mut(*target)?;
+        
+        // Don't apply status if Pokemon already has a major status
+        if target_pokemon.status.is_some() {
+            return Ok(());
+        }
+        
+        target_pokemon.status = Some(status);
+        Ok(())
+    }
+    
+    /// Apply a stat boost to a Pokemon
+    fn apply_stat_boost(
+        &mut self,
+        target: &PokemonRef,
+        stat: &str,
+        amount: i8,
+    ) -> BattleResult<()> {
+        let target_pokemon = self.battle_state.get_pokemon_mut(*target)?;
+        
+        // Apply stat boost (clamp to -6/+6 range)
+        match stat {
+            "attack" | "atk" => {
+                target_pokemon.boosts.attack = (target_pokemon.boosts.attack + amount).clamp(-6, 6);
+            },
+            "defense" | "def" => {
+                target_pokemon.boosts.defense = (target_pokemon.boosts.defense + amount).clamp(-6, 6);
+            },
+            "spatk" | "spa" => {
+                target_pokemon.boosts.special_attack = (target_pokemon.boosts.special_attack + amount).clamp(-6, 6);
+            },
+            "spdef" | "spd" => {
+                target_pokemon.boosts.special_defense = (target_pokemon.boosts.special_defense + amount).clamp(-6, 6);
+            },
+            "speed" | "spe" => {
+                target_pokemon.boosts.speed = (target_pokemon.boosts.speed + amount).clamp(-6, 6);
+            },
+            "accuracy" | "acc" => {
+                target_pokemon.boosts.accuracy = (target_pokemon.boosts.accuracy + amount).clamp(-6, 6);
+            },
+            "evasion" | "eva" => {
+                target_pokemon.boosts.evasion = (target_pokemon.boosts.evasion + amount).clamp(-6, 6);
+            },
+            _ => {
+                // Unknown stat, ignore
+            }
+        }
+        
+        Ok(())
+    }
+    
+    /// Apply a volatile status effect to a Pokemon
+    fn apply_volatile_status(
+        &mut self,
+        target: &PokemonRef,
+        volatile_id: String,
+    ) -> BattleResult<()> {
+        let target_pokemon = self.battle_state.get_pokemon_mut(*target)?;
+        
+        let volatile_status = crate::pokemon::VolatileStatus {
+            id: volatile_id.clone(),
+            duration: Some(1), // Most volatiles last 1 turn (like flinch)
+            data: std::collections::HashMap::new(),
+        };
+        
+        target_pokemon.volatiles.insert(volatile_id, volatile_status);
+        Ok(())
+    }
+    
+    /// Resolve move targets based on target type and chosen target
+    pub fn resolve_move_targets(
+        &mut self,
+        user: &PokemonRef,
+        active_move: &ActiveMove,
+        chosen_target: Option<PokemonRef>,
+    ) -> BattleResult<Vec<PokemonRef>> {
+        TargetResolver::resolve_targets(
+            &self.battle_state,
+            user,
+            active_move.base_move.target,
+            chosen_target,
+            &mut self.battle_state.random,
+        )
     }
 
     /// Pokemon Showdown's moveHit() function

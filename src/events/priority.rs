@@ -33,7 +33,7 @@ pub struct EventListener {
 }
 
 /// Event callback function type
-pub type EventCallback = fn(&crate::events::context::EventContext, &mut crate::events::relay_vars::RelayContainer) -> crate::events::EventResult;
+pub type EventCallback = fn(&mut crate::events::context::EventContext, &mut crate::events::relay_vars::RelayContainer) -> crate::events::EventResult;
 
 /// Event result types matching Pokemon Showdown's behavior
 #[derive(Debug, Clone)]
@@ -250,7 +250,7 @@ impl PriorityCalculator {
         custom_order: Option<i32>,
         custom_sub_order: Option<i32>,
     ) -> EventListener {
-        let priority = custom_priority.unwrap_or_else(|| Self::get_default_priority(effect_type));
+        let priority = custom_priority.unwrap_or_else(|| Self::get_default_priority(effect_type.clone()));
         
         EventListener {
             effect_id,

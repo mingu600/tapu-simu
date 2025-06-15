@@ -502,12 +502,35 @@ impl ShowdownDataParser {
             .unwrap_or("")
             .to_string();
         
+        let event_handlers = Self::setup_ability_event_handlers(id);
+        
         Ok(AbilityData {
             id: id.to_string(),
             name,
             description,
-            event_handlers: crate::events::EventHandlerRegistry::new(),
+            event_handlers,
         })
+    }
+    
+    /// Set up event handlers for specific abilities
+    fn setup_ability_event_handlers(ability_id: &str) -> crate::events::EventHandlerRegistry {
+        let mut registry = crate::events::EventHandlerRegistry::new();
+        
+        // Register events for abilities that have handlers implemented
+        match ability_id {
+            "static" => {
+                registry.register("DamagingHit".to_string());
+            },
+            "intimidate" => {
+                registry.register("SwitchIn".to_string());
+            },
+            // Add more abilities as we implement their handlers
+            _ => {
+                // No events registered for unknown abilities
+            }
+        }
+        
+        registry
     }
     
     /// Parse item data from JSON
@@ -540,13 +563,36 @@ impl ShowdownDataParser {
                 })
             });
         
+        let event_handlers = Self::setup_item_event_handlers(id);
+        
         Ok(ItemData {
             id: id.to_string(),
             name,
             description,
             natural_gift,
-            event_handlers: crate::events::EventHandlerRegistry::new(),
+            event_handlers,
         })
+    }
+    
+    /// Set up event handlers for specific items
+    fn setup_item_event_handlers(item_id: &str) -> crate::events::EventHandlerRegistry {
+        let mut registry = crate::events::EventHandlerRegistry::new();
+        
+        // Register events for items that have handlers implemented
+        match item_id {
+            "leftovers" => {
+                registry.register("Residual".to_string());
+            },
+            "choiceband" => {
+                registry.register("ModifyAttack".to_string());
+            },
+            // Add more items as we implement their handlers
+            _ => {
+                // No events registered for unknown items
+            }
+        }
+        
+        registry
     }
     
     /// Parse Pokemon type from string (case-insensitive)

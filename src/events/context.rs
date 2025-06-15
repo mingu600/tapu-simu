@@ -5,7 +5,7 @@
 
 use std::collections::HashMap;
 use crate::battle_state::BattleState;
-use crate::prng::PRNG;
+use crate::prng::PRNGState;
 use crate::side::SideId;
 use crate::pokemon::{PokemonRef, Pokemon};
 use crate::errors::{BattleResult, BattleError};
@@ -31,8 +31,8 @@ pub struct EventContext<'a> {
     /// Mutable reference to battle state
     pub battle_state: &'a mut BattleState,
     
-    /// PRNG for random number generation
-    pub prng: &'a mut PRNG,
+    /// PRNGState for random number generation
+    pub prng: &'a mut PRNGState,
     
     /// Current turn number
     pub turn: u32,
@@ -55,7 +55,7 @@ impl<'a> EventContext<'a> {
         source: Option<EventSource>,
         effect: Option<EffectData>,
         battle_state: &'a mut BattleState,
-        prng: &'a mut PRNG,
+        prng: &'a mut PRNGState,
         turn: u32,
         event_depth: u8,
     ) -> Self {

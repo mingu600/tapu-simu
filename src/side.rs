@@ -7,7 +7,7 @@ use crate::errors::{BattleError, BattleResult};
 use std::collections::{HashMap, HashSet};
 
 /// Side identifier (P1, P2, P3, P4)
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
 pub enum SideId {
     P1, P2, P3, P4,
 }

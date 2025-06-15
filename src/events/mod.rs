@@ -8,7 +8,7 @@ use std::collections::{HashMap, HashSet};
 use crate::side::SideId;
 use crate::errors::{BattleResult, BattleError};
 use crate::battle_state::BattleState;
-use crate::prng::PRNG;
+use crate::prng::PRNGState;
 use crate::pokemon::PokemonRef;
 
 // Public modules
@@ -85,7 +85,7 @@ impl EventSystem {
         source_effect: Option<EffectData>,
         mut relay_container: RelayContainer,
         battle_state: &mut BattleState,
-        prng: &mut PRNG,
+        prng: &mut PRNGState,
         turn: u32,
     ) -> BattleResult<RelayContainer> {
         // Check for event depth overflow
@@ -142,7 +142,7 @@ impl EventSystem {
         source_effect: Option<EffectData>,
         mut relay_container: RelayContainer,
         battle_state: &mut BattleState,
-        prng: &mut PRNG,
+        prng: &mut PRNGState,
         turn: u32,
     ) -> BattleResult<RelayContainer> {
         // Check for event depth overflow
@@ -546,13 +546,13 @@ pub enum BattleEvent {
 mod tests {
     use super::*;
     use crate::battle_state::BattleState;
-    use crate::prng::PRNG;
+    use crate::prng::PRNGState;
     
     #[test]
     fn test_event_system_depth_protection() {
         let mut event_system = EventSystem::new();
         let mut battle_state = BattleState::new(crate::format::BattleFormat::Singles);
-        let mut prng = PRNG::new(Some([1, 2, 3, 4]));
+        let mut prng = PRNGState::from_seed("test").unwrap();
         
         // Set event depth to maximum
         event_system.event_depth = event_system.max_event_depth;

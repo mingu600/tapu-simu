@@ -4,17 +4,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with Ta
 
 Read SHOWDOWN_RUST_PORT_PLAN.md for important project details.
 
-## Design Philosophy Principles
-
-KISS (Keep It Simple, Stupid)
-• Solutions must be straightforward and easy to understand.
-• Avoid over-engineering or unnecessary abstraction.
-• Prioritise code readability and maintainability.
-
-YAGNI (You Aren’t Gonna Need It)
-• Do not add speculative features or future-proofing unless explicitly required.
-• Focus only on immediate requirements and deliverables.
-• Minimise code bloat and long-term technical debt. 
 
 **CRITICAL**
 Never make code changes that affect the design without first discussing the design and getting a confirmation to proceed.

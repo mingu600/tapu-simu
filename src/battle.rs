@@ -88,7 +88,7 @@ impl Battle {
         let side2 = Side::new(SideId::P2, "Player 2".to_string(), team2, &format)?;
         
         // Create battle state
-        let state = BattleState::new(
+        let state = BattleState::new_with_sides(
             format,
             FormatRules::default(),
             vec![side1, side2],

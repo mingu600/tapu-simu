@@ -8,7 +8,7 @@ use crate::events::{EventContext, EventSystem, RelayVar, RelayContainer, EventRe
 use crate::errors::BattleResult;
 use crate::pokemon::PokemonRef;
 use crate::battle_state::BattleState;
-use crate::prng::PRNG;
+use crate::prng::PRNGState;
 use std::collections::HashMap;
 
 /// Critical events that form the backbone of Pokemon Showdown's battle system
@@ -24,7 +24,7 @@ impl EventSystem {
         target: Option<PokemonRef>,
         move_id: &str,
         battle_state: &mut BattleState,
-        prng: &mut PRNG,
+        prng: &mut PRNGState,
         turn: u32,
     ) -> BattleResult<bool> {
         let relay_container = RelayContainer::new(RelayVar::Bool(true));
@@ -57,7 +57,7 @@ impl EventSystem {
         source: PokemonRef,
         move_id: &str,
         battle_state: &mut BattleState,
-        prng: &mut PRNG,
+        prng: &mut PRNGState,
         turn: u32,
     ) -> BattleResult<TryHitResult> {
         let relay_container = RelayContainer::new(RelayVar::Bool(true));
@@ -92,7 +92,7 @@ impl EventSystem {
         move_id: &str,
         base_power: u16,
         battle_state: &mut BattleState,
-        prng: &mut PRNG,
+        prng: &mut PRNGState,
         turn: u32,
     ) -> BattleResult<u16> {
         let relay_container = RelayContainer::new(RelayVar::BasePower(base_power));
@@ -122,7 +122,7 @@ impl EventSystem {
         move_id: &str,
         damage: u32,
         battle_state: &mut BattleState,
-        prng: &mut PRNG,
+        prng: &mut PRNGState,
         turn: u32,
     ) -> BattleResult<u32> {
         let relay_container = RelayContainer::new(RelayVar::Damage(damage));
@@ -152,7 +152,7 @@ impl EventSystem {
         move_id: &str,
         damage: u32,
         battle_state: &mut BattleState,
-        prng: &mut PRNG,
+        prng: &mut PRNGState,
         turn: u32,
     ) -> BattleResult<()> {
         let relay_container = RelayContainer::new(RelayVar::Damage(damage));
@@ -182,7 +182,7 @@ impl EventSystem {
         move_type: crate::types::Type,
         stab: f32,
         battle_state: &mut BattleState,
-        prng: &mut PRNG,
+        prng: &mut PRNGState,
         turn: u32,
     ) -> BattleResult<f32> {
         let relay_container = RelayContainer::new(RelayVar::StabMultiplier(stab));
@@ -211,7 +211,7 @@ impl EventSystem {
         move_type: crate::types::Type,
         effectiveness: f32,
         battle_state: &mut BattleState,
-        prng: &mut PRNG,
+        prng: &mut PRNGState,
         turn: u32,
     ) -> BattleResult<f32> {
         let relay_container = RelayContainer::new(RelayVar::TypeEffectiveness(effectiveness));
@@ -237,7 +237,7 @@ impl EventSystem {
         &mut self,
         pokemon_ref: PokemonRef,
         battle_state: &mut BattleState,
-        prng: &mut PRNG,
+        prng: &mut PRNGState,
         turn: u32,
     ) -> BattleResult<()> {
         let relay_container = RelayContainer::new(RelayVar::None);
@@ -263,7 +263,7 @@ impl EventSystem {
         &mut self,
         pokemon_ref: PokemonRef,
         battle_state: &mut BattleState,
-        prng: &mut PRNG,
+        prng: &mut PRNGState,
         turn: u32,
     ) -> BattleResult<()> {
         let relay_container = RelayContainer::new(RelayVar::None);
@@ -288,7 +288,7 @@ impl EventSystem {
     pub fn run_turn_end(
         &mut self,
         battle_state: &mut BattleState,
-        prng: &mut PRNG,
+        prng: &mut PRNGState,
         turn: u32,
     ) -> BattleResult<()> {
         let relay_container = RelayContainer::new(RelayVar::None);
@@ -315,7 +315,7 @@ impl EventSystem {
         &mut self,
         pokemon_ref: PokemonRef,
         battle_state: &mut BattleState,
-        prng: &mut PRNG,
+        prng: &mut PRNGState,
         turn: u32,
     ) -> BattleResult<()> {
         let relay_container = RelayContainer::new(RelayVar::None);
@@ -343,7 +343,7 @@ impl EventSystem {
         target: Option<PokemonRef>,
         move_data: &crate::pokemon::MoveData,
         battle_state: &mut BattleState,
-        prng: &mut PRNG,
+        prng: &mut PRNGState,
         turn: u32,
     ) -> BattleResult<Option<crate::pokemon::MoveData>> {
         let relay_container = RelayContainer::new(RelayVar::move_data(move_data.clone()));
@@ -375,7 +375,7 @@ impl EventSystem {
         source: PokemonRef,
         move_type: crate::types::Type,
         battle_state: &mut BattleState,
-        prng: &mut PRNG,
+        prng: &mut PRNGState,
         turn: u32,
     ) -> BattleResult<bool> {
         let relay_container = RelayContainer::new(RelayVar::Bool(false));
@@ -417,7 +417,7 @@ impl EventSystem {
         pokemon_ref: PokemonRef,
         attack: u16,
         battle_state: &mut BattleState,
-        prng: &mut PRNG,
+        prng: &mut PRNGState,
         turn: u32,
     ) -> BattleResult<u16> {
         let relay_container = RelayContainer::new(RelayVar::StatValue(attack));
@@ -442,7 +442,7 @@ impl EventSystem {
         pokemon_ref: PokemonRef,
         defense: u16,
         battle_state: &mut BattleState,
-        prng: &mut PRNG,
+        prng: &mut PRNGState,
         turn: u32,
     ) -> BattleResult<u16> {
         let relay_container = RelayContainer::new(RelayVar::StatValue(defense));
@@ -467,7 +467,7 @@ impl EventSystem {
         pokemon_ref: PokemonRef,
         special_attack: u16,
         battle_state: &mut BattleState,
-        prng: &mut PRNG,
+        prng: &mut PRNGState,
         turn: u32,
     ) -> BattleResult<u16> {
         let relay_container = RelayContainer::new(RelayVar::StatValue(special_attack));
@@ -492,7 +492,7 @@ impl EventSystem {
         pokemon_ref: PokemonRef,
         special_defense: u16,
         battle_state: &mut BattleState,
-        prng: &mut PRNG,
+        prng: &mut PRNGState,
         turn: u32,
     ) -> BattleResult<u16> {
         let relay_container = RelayContainer::new(RelayVar::StatValue(special_defense));
@@ -517,7 +517,7 @@ impl EventSystem {
         pokemon_ref: PokemonRef,
         speed: u16,
         battle_state: &mut BattleState,
-        prng: &mut PRNG,
+        prng: &mut PRNGState,
         turn: u32,
     ) -> BattleResult<u16> {
         let relay_container = RelayContainer::new(RelayVar::StatValue(speed));
@@ -547,7 +547,7 @@ impl EventSystem {
         move_id: &str,
         accuracy: u8,
         battle_state: &mut BattleState,
-        prng: &mut PRNG,
+        prng: &mut PRNGState,
         turn: u32,
     ) -> BattleResult<u8> {
         let relay_container = RelayContainer::new(RelayVar::Accuracy(accuracy));
@@ -574,7 +574,7 @@ impl EventSystem {
         move_id: &str,
         crit_ratio: u8,
         battle_state: &mut BattleState,
-        prng: &mut PRNG,
+        prng: &mut PRNGState,
         turn: u32,
     ) -> BattleResult<u8> {
         let relay_container = RelayContainer::new(RelayVar::CritRatio(crit_ratio));
@@ -600,7 +600,7 @@ impl EventSystem {
         move_id: &str,
         priority: i8,
         battle_state: &mut BattleState,
-        prng: &mut PRNG,
+        prng: &mut PRNGState,
         turn: u32,
     ) -> BattleResult<i8> {
         let relay_container = RelayContainer::new(RelayVar::Priority(priority));
@@ -631,7 +631,7 @@ mod tests {
     fn test_critical_events_integration() {
         let mut event_system = EventSystem::new();
         let mut battle_state = BattleState::new(BattleFormat::Singles);
-        let mut prng = crate::prng::PRNG::new(Some([1, 2, 3, 4]));
+        let mut prng = crate::prng::PRNGState::new(Some([1, 2, 3, 4]));
         
         let pokemon_ref = PokemonRef { side: SideId::P1, position: 0 };
         
@@ -675,7 +675,7 @@ mod tests {
     fn test_stat_modification_events() {
         let mut event_system = EventSystem::new();
         let mut battle_state = BattleState::new(BattleFormat::Singles);
-        let mut prng = crate::prng::PRNG::new(Some([1, 2, 3, 4]));
+        let mut prng = crate::prng::PRNGState::new(Some([1, 2, 3, 4]));
         
         let pokemon_ref = PokemonRef { side: SideId::P1, position: 0 };
         
