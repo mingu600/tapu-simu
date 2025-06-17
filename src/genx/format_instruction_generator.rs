@@ -146,16 +146,22 @@ impl FormatInstructionGenerator {
             
             let final_damage = (base_damage as f32 * damage_multiplier) as i16;
 
-            let damage_instruction = Instruction::PositionDamage(PositionDamageInstruction {
-                target_position: targets[0],
-                damage_amount: final_damage,
-            });
+            let mut instruction_list = vec![
+                Instruction::PositionDamage(PositionDamageInstruction {
+                    target_position: targets[0],
+                    damage_amount: final_damage,
+                })
+            ];
 
-            instructions.push(StateInstructions::new(100.0, vec![damage_instruction]));
+            // Add recoil/drain effects after damage
+            self.add_recoil_drain_effects(move_data, user_position, final_damage, &mut instruction_list);
+
+            instructions.push(StateInstructions::new(100.0, instruction_list));
         } else if targets.len() > 1 {
             // Multi-target damage
             let mut target_damages = Vec::new();
             let mut has_any_damage = false;
+            let mut total_damage = 0i16;
 
             for &target in targets {
                 let base_damage = self.calculate_base_damage(state, move_data, user_position, target);
@@ -164,6 +170,7 @@ impl FormatInstructionGenerator {
                 
                 if final_damage > 0 {
                     has_any_damage = true;
+                    total_damage += final_damage;
                 }
             }
 
@@ -172,11 +179,16 @@ impl FormatInstructionGenerator {
                 return vec![StateInstructions::empty()];
             }
 
-            let multi_damage_instruction = Instruction::MultiTargetDamage(MultiTargetDamageInstruction {
-                target_damages,
-            });
+            let mut instruction_list = vec![
+                Instruction::MultiTargetDamage(MultiTargetDamageInstruction {
+                    target_damages,
+                })
+            ];
 
-            instructions.push(StateInstructions::new(100.0, vec![multi_damage_instruction]));
+            // Add recoil/drain effects after damage (based on total damage for multi-target)
+            self.add_recoil_drain_effects(move_data, user_position, total_damage, &mut instruction_list);
+
+            instructions.push(StateInstructions::new(100.0, instruction_list));
         }
 
         // Add critical hit branching for damaging moves
@@ -214,6 +226,40 @@ impl FormatInstructionGenerator {
         move_effects::apply_move_effects(state, &engine_move_data, user_position, targets, &generation_mechanics)
     }
     
+    /// Add recoil and drain effects to instruction list
+    fn add_recoil_drain_effects(
+        &self,
+        move_data: &Move,
+        user_position: BattlePosition,
+        damage_dealt: i16,
+        instructions: &mut Vec<Instruction>,
+    ) {
+        // Get PS move data to check for recoil/drain
+        let ps_move_service = crate::data::ps_move_service::PSMoveService::default();
+        
+        // Check for recoil effect
+        if let Some(recoil_ratio) = ps_move_service.get_recoil_ratio(&move_data.name) {
+            let recoil_damage = (damage_dealt as f32 * recoil_ratio).max(1.0) as i16;
+            if recoil_damage > 0 {
+                instructions.push(Instruction::PositionDamage(PositionDamageInstruction {
+                    target_position: user_position,
+                    damage_amount: recoil_damage,
+                }));
+            }
+        }
+        
+        // Check for drain effect
+        if let Some(drain_ratio) = ps_move_service.get_drain_ratio(&move_data.name) {
+            let heal_amount = (damage_dealt as f32 * drain_ratio).max(1.0) as i16;
+            if heal_amount > 0 {
+                instructions.push(Instruction::PositionHeal(PositionHealInstruction {
+                    target_position: user_position,
+                    heal_amount,
+                }));
+            }
+        }
+    }
+
     /// Check if a move targets the user (self-targeting)
     fn is_self_targeting_move(&self, move_data: &Move) -> bool {
         // Check move target - moves that target the user are not blocked by opponent's Substitute
@@ -363,6 +409,14 @@ impl FormatInstructionGenerator {
                     
                     Instruction::MultiTargetDamage(MultiTargetDamageInstruction {
                         target_damages: crit_target_damages,
+                    })
+                }
+                Instruction::PositionHeal(heal_instr) => {
+                    // Critical hits also affect drain healing (since it's based on damage dealt)
+                    let crit_heal = (heal_instr.heal_amount as f32 * crit_multiplier).floor() as i16;
+                    Instruction::PositionHeal(PositionHealInstruction {
+                        target_position: heal_instr.target_position,
+                        heal_amount: crit_heal,
                     })
                 }
                 other => other.clone(),

@@ -12,7 +12,7 @@
 //! - Status effect mechanics (e.g., burn reducing physical attack)
 //! - Accuracy and effect chances that varied by generation
 
-use crate::state::{State, Pokemon};
+use crate::state::{State, Pokemon, MoveCategory};
 use crate::instruction::{
     Instruction, StateInstructions, ApplyStatusInstruction, ApplyVolatileStatusInstruction,
     BoostStatsInstruction, PositionHealInstruction, PositionDamageInstruction,
@@ -554,11 +554,22 @@ fn is_move_bypassing_protection(move_data: &EngineMoveData) -> bool {
     )
 }
 
-/// Calculate accuracy for a move
+/// Calculate accuracy for a move with weather, ability, and item modifiers
 pub fn calculate_accuracy(
     move_data: &EngineMoveData,
     user: &Pokemon,
     target: &Pokemon,
+) -> f32 {
+    calculate_accuracy_with_context(move_data, user, target, None, None)
+}
+
+/// Calculate accuracy for a move with full context
+pub fn calculate_accuracy_with_context(
+    move_data: &EngineMoveData,
+    user: &Pokemon,
+    target: &Pokemon,
+    weather: Option<&crate::instruction::Weather>,
+    generation: Option<&GenerationMechanics>,
 ) -> f32 {
     let base_accuracy = move_data.accuracy.unwrap_or(100) as f32 / 100.0;
     
@@ -566,12 +577,167 @@ pub fn calculate_accuracy(
     let accuracy_modifier = user.get_effective_stat(crate::instruction::Stat::Accuracy) as f32 / 100.0;
     let evasion_modifier = target.get_effective_stat(crate::instruction::Stat::Evasion) as f32 / 100.0;
     
-    // Calculate final accuracy
-    let final_accuracy = base_accuracy * (accuracy_modifier / evasion_modifier);
+    // Calculate base accuracy with stats
+    let mut final_accuracy = base_accuracy * (accuracy_modifier / evasion_modifier);
     
-    // TODO: Add weather, ability, and item modifiers
+    // Apply ability modifiers
+    final_accuracy = apply_accuracy_ability_modifiers(final_accuracy, move_data, user, target);
+    
+    // Apply weather modifiers
+    if let Some(current_weather) = weather {
+        final_accuracy = apply_weather_accuracy_modifiers(final_accuracy, move_data, current_weather);
+    }
+    
+    // Apply item modifiers
+    final_accuracy = apply_item_accuracy_modifiers(final_accuracy, move_data, user, target);
     
     final_accuracy.min(1.0).max(0.0)
+}
+
+/// Apply ability modifiers to accuracy
+fn apply_accuracy_ability_modifiers(
+    accuracy: f32,
+    move_data: &EngineMoveData,
+    user: &Pokemon,
+    target: &Pokemon,
+) -> f32 {
+    let mut modified_accuracy = accuracy;
+    
+    // User abilities that affect accuracy
+    match user.ability.to_lowercase().as_str() {
+        "compoundeyes" => {
+            // Compound Eyes boosts accuracy by 30%
+            modified_accuracy *= 1.3;
+        }
+        "hustle" => {
+            // Hustle reduces accuracy of physical moves by 20%
+            if move_data.category == MoveCategory::Physical {
+                modified_accuracy *= 0.8;
+            }
+        }
+        "noguard" => {
+            // No Guard makes all moves hit
+            return 1.0;
+        }
+        "keeneye" => {
+            // Keen Eye prevents accuracy reduction (already handled in stat calculation)
+            // but also ignores evasion boosts
+            if let Some(evasion_boost) = target.stat_boosts.get(&crate::instruction::Stat::Evasion) {
+                if *evasion_boost > 0 {
+                    // Recalculate without evasion boosts
+                    let accuracy_mod = user.get_effective_stat(crate::instruction::Stat::Accuracy) as f32 / 100.0;
+                    modified_accuracy = (move_data.accuracy.unwrap_or(100) as f32 / 100.0) * accuracy_mod;
+                }
+            }
+        }
+        "victorystar" => {
+            // Victory Star boosts accuracy by 10%
+            modified_accuracy *= 1.1;
+        }
+        _ => {}
+    }
+    
+    // Target abilities that affect accuracy
+    match target.ability.to_lowercase().as_str() {
+        "noguard" => {
+            // No Guard makes all moves hit
+            return 1.0;
+        }
+        "wonderskin" => {
+            // Wonder Skin reduces accuracy of status moves to 50% if they would be super effective
+            if move_data.category == MoveCategory::Status && modified_accuracy > 0.5 {
+                modified_accuracy = 0.5;
+            }
+        }
+        "sandveil" => {
+            // Sand Veil boosts evasion in sandstorm (handled in weather section)
+        }
+        "snowcloak" => {
+            // Snow Cloak boosts evasion in hail/snow (handled in weather section)
+        }
+        _ => {}
+    }
+    
+    modified_accuracy
+}
+
+/// Apply weather modifiers to accuracy
+fn apply_weather_accuracy_modifiers(
+    accuracy: f32,
+    move_data: &EngineMoveData,
+    weather: &crate::instruction::Weather,
+) -> f32 {
+    let mut modified_accuracy = accuracy;
+    
+    match weather {
+        crate::instruction::Weather::RAIN => {
+            // Thunder has perfect accuracy in rain
+            if move_data.name.to_lowercase() == "thunder" {
+                modified_accuracy = 1.0;
+            }
+            // Hurricane has perfect accuracy in rain
+            if move_data.name.to_lowercase() == "hurricane" {
+                modified_accuracy = 1.0;
+            }
+        }
+        crate::instruction::Weather::SUN | crate::instruction::Weather::HARSHSUN => {
+            // Thunder has reduced accuracy in sun
+            if move_data.name.to_lowercase() == "thunder" {
+                modified_accuracy *= 0.5;
+            }
+            // Hurricane has reduced accuracy in sun
+            if move_data.name.to_lowercase() == "hurricane" {
+                modified_accuracy *= 0.5;
+            }
+        }
+        crate::instruction::Weather::SAND => {
+            // Rock-type moves have perfect accuracy in sandstorm
+            if move_data.move_type.to_lowercase() == "rock" {
+                modified_accuracy = 1.0;
+            }
+        }
+        crate::instruction::Weather::HAIL | crate::instruction::Weather::SNOW => {
+            // Blizzard has perfect accuracy in hail/snow
+            if move_data.name.to_lowercase() == "blizzard" {
+                modified_accuracy = 1.0;
+            }
+        }
+        _ => {}
+    }
+    
+    modified_accuracy
+}
+
+/// Apply item modifiers to accuracy
+fn apply_item_accuracy_modifiers(
+    accuracy: f32,
+    _move_data: &EngineMoveData,
+    user: &Pokemon,
+    _target: &Pokemon,
+) -> f32 {
+    let mut modified_accuracy = accuracy;
+    
+    // User items that affect accuracy
+    if let Some(item) = &user.item {
+        match item.to_lowercase().as_str() {
+        "widelens" => {
+            // Wide Lens boosts accuracy by 10%
+            modified_accuracy *= 1.1;
+        }
+        "zoomlens" => {
+            // Zoom Lens boosts accuracy by 20% when moving after the target
+            // For now, assume we don't have speed order context, so apply conservatively
+            modified_accuracy *= 1.1;
+        }
+        "laxincense" => {
+            // Lax Incense reduces incoming move accuracy by 10%
+            // This would be applied to the target's evasion calculation
+        }
+        _ => {}
+        }
+    }
+    
+    modified_accuracy
 }
 
 // =============================================================================
@@ -1384,8 +1550,8 @@ fn create_flinch_instructions(target_positions: &[BattlePosition]) -> Vec<Instru
 // RECOIL AND DRAIN MOVE HELPER FUNCTIONS
 // =============================================================================
 
-/// Apply recoil move effects - generates secondary recoil damage instruction
-/// This function is used for damage-dealing moves that inflict recoil on the user
+/// Apply recoil move effects - now handled automatically by instruction generator
+/// This function is kept for compatibility but recoil is now handled via PS data
 pub fn apply_recoil_move(
     state: &State,
     user_position: BattlePosition,
@@ -1393,27 +1559,13 @@ pub fn apply_recoil_move(
     generation: &GenerationMechanics,
     recoil_percentage: i16,
 ) -> Vec<StateInstructions> {
-    // For recoil moves, we indicate that recoil should be applied after damage calculation
-    // The actual recoil damage will be calculated as a percentage of damage dealt
-    // This is handled by the damage calculation system
-    
-    // Return a placeholder instruction that signals recoil should be applied
-    let mut instructions = Vec::new();
-    
-    // Generate the recoil marker - this will be processed by the damage system
-    // to calculate the actual recoil amount based on damage dealt
-    if let Some(_user) = state.get_pokemon_at_position(user_position) {
-        // The recoil percentage is stored for later processing
-        // This approach matches poke-engine's design where recoil is calculated
-        // after damage is determined
-        instructions.push(StateInstructions::empty());
-    }
-    
-    instructions
+    // Recoil is now handled automatically in the instruction generator
+    // based on PS move data, so we just return empty instructions
+    vec![StateInstructions::empty()]
 }
 
-/// Apply drain move effects - generates secondary healing instruction
-/// This function is used for damage-dealing moves that heal the user
+/// Apply drain move effects - now handled automatically by instruction generator
+/// This function is kept for compatibility but drain is now handled via PS data
 pub fn apply_drain_move(
     state: &State,
     user_position: BattlePosition,
@@ -1421,23 +1573,9 @@ pub fn apply_drain_move(
     generation: &GenerationMechanics,
     drain_percentage: i16,
 ) -> Vec<StateInstructions> {
-    // For drain moves, we indicate that healing should be applied after damage calculation
-    // The actual heal amount will be calculated as a percentage of damage dealt
-    // This is handled by the damage calculation system
-    
-    // Return a placeholder instruction that signals drain should be applied
-    let mut instructions = Vec::new();
-    
-    // Generate the drain marker - this will be processed by the damage system
-    // to calculate the actual heal amount based on damage dealt
-    if let Some(_user) = state.get_pokemon_at_position(user_position) {
-        // The drain percentage is stored for later processing
-        // This approach matches poke-engine's design where drain is calculated
-        // after damage is determined
-        instructions.push(StateInstructions::empty());
-    }
-    
-    instructions
+    // Drain is now handled automatically in the instruction generator
+    // based on PS move data, so we just return empty instructions
+    vec![StateInstructions::empty()]
 }
 
 /// Create a damage-based effect instruction for moves like recoil and drain
@@ -1520,11 +1658,23 @@ fn is_immune_to_paralysis(pokemon: &Pokemon, generation: &GenerationMechanics) -
 
 /// Check if a Pokemon is immune to powder moves
 /// Generation-aware: Grass types become immune to powder moves in Gen 6+
+/// Also checks for Overcoat ability and Safety Goggles item
 fn is_immune_to_powder(pokemon: &Pokemon, generation: &GenerationMechanics) -> bool {
+    // Check for Overcoat ability (immune to powder moves in all generations)
+    if pokemon.ability.to_lowercase() == "overcoat" {
+        return true;
+    }
+    
+    // Check for Safety Goggles item (immune to powder moves and weather damage)
+    if let Some(item) = &pokemon.item {
+        if item.to_lowercase() == "safetygoggles" {
+            return true;
+        }
+    }
+    
     if generation.generation.number() >= 6 {
         // Gen 6+: Grass types are immune to powder moves
         pokemon.types.iter().any(|t| t.to_lowercase() == "grass")
-        // TODO: Check for Overcoat ability, Safety Goggles item
     } else {
         // Earlier gens: no grass immunity to powder moves
         false

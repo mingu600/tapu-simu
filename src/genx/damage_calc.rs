@@ -180,11 +180,11 @@ pub fn calculate_damage_with_generation(
         defender_type1
     };
 
-    // Type effectiveness (with generation-specific overrides)
+    // Type effectiveness (with generation-specific overrides and Tera type support)
     let mut type_effectiveness = type_chart.calculate_damage_multiplier(
         move_type,
         (defender_type1, defender_type2),
-        None, // TODO: Add Tera type support
+        get_tera_type(defender), // Tera type support
         Some(&move_data.name.to_lowercase()),
     );
 
@@ -213,7 +213,7 @@ pub fn calculate_damage_with_generation(
     let stab_multiplier = type_chart.calculate_stab_multiplier(
         move_type,
         (attacker_type1, attacker_type2),
-        None,  // TODO: Add Tera type support
+        get_tera_type(attacker), // Tera type support
         has_adaptability_ability(attacker),
     );
     damage *= stab_multiplier;
@@ -270,15 +270,81 @@ pub fn random_damage_roll() -> f32 {
     rng.gen_range(0.85..=1.0)
 }
 
-/// Calculate critical hit probability
-pub fn critical_hit_probability(_attacker: &Pokemon, _move_data: &EngineMoveData) -> f32 {
+/// Calculate critical hit probability with move, ability, and item modifiers
+pub fn critical_hit_probability(attacker: &Pokemon, move_data: &EngineMoveData) -> f32 {
     // Base critical hit rate is 1/24 (about 4.17%)
-    let mut crit_rate: f32 = 1.0 / 24.0;
+    let mut crit_stage = 0;
 
-    // TODO: Add modifiers for high crit ratio moves, abilities, items, etc.
+    // High critical hit ratio moves
+    let high_crit_moves = [
+        "slash", "razorleaf", "crabhammer", "karatechop", "aerialace", "airslash",
+        "attackorder", "crosschop", "leafblade", "nightslash", "psychocut",
+        "shadowclaw", "spacialrend", "stoneedge", "frostbreath", "stormthrow"
+    ];
+    
+    if high_crit_moves.contains(&move_data.name.to_lowercase().as_str()) {
+        crit_stage += 1;
+    }
+    
+    // Super high critical hit ratio moves
+    let super_high_crit_moves = ["frostbreath", "stormthrow"];
+    if super_high_crit_moves.contains(&move_data.name.to_lowercase().as_str()) {
+        crit_stage += 1; // These moves always crit
+    }
 
-    // Cap at 50% (1/2)
-    crit_rate.min(0.5)
+    // Ability modifiers
+    match attacker.ability.to_lowercase().as_str() {
+        "superluck" => {
+            // Super Luck increases critical hit ratio by 1 stage
+            crit_stage += 1;
+        }
+        "sniper" => {
+            // Sniper increases critical hit damage but not rate (handled in damage calc)
+        }
+        _ => {}
+    }
+
+    // Item modifiers
+    if let Some(item) = &attacker.item {
+        match item.to_lowercase().as_str() {
+            "scopelens" => {
+                // Scope Lens increases critical hit ratio by 1 stage
+                crit_stage += 1;
+            }
+            "razorclaw" => {
+                // Razor Claw increases critical hit ratio by 1 stage
+                crit_stage += 1;
+            }
+            "luckypunch" => {
+                // Lucky Punch increases Chansey's critical hit ratio by 2 stages
+                if attacker.species.to_lowercase() == "chansey" {
+                    crit_stage += 2;
+                }
+            }
+            "leek" | "stick" => {
+                // Leek/Stick increases Farfetch'd's critical hit ratio by 2 stages
+                if attacker.species.to_lowercase() == "farfetchd" || attacker.species.to_lowercase() == "sirfetchd" {
+                    crit_stage += 2;
+                }
+            }
+            _ => {}
+        }
+    }
+
+    // Calculate critical hit rate based on stage
+    let crit_rate: f32 = match crit_stage {
+        0 => 1.0 / 24.0,    // ~4.17%
+        1 => 1.0 / 8.0,     // 12.5%
+        2 => 1.0 / 2.0,     // 50%
+        _ => 1.0 / 2.0,     // Cap at 50%
+    };
+
+    // Cap at 50% (1/2) - some moves like Frost Breath always crit
+    if super_high_crit_moves.contains(&move_data.name.to_lowercase().as_str()) {
+        1.0 // Always critical hit
+    } else {
+        crit_rate.min(0.5)
+    }
 }
 
 /// Check if weather effects should be negated by any active Pokemon abilities
@@ -610,6 +676,47 @@ fn apply_base_power_modifications(
     }
 
     base_power
+}
+
+/// Get the Tera type of a Pokemon if it's Terastallized
+fn get_tera_type(pokemon: &Pokemon) -> Option<super::type_effectiveness::PokemonType> {
+    #[cfg(feature = "terastallization")]
+    {
+        if pokemon.is_terastallized {
+            pokemon.tera_type.map(|tera_type| {
+                // Convert from move_choice::PokemonType to type_effectiveness::PokemonType
+                use super::type_effectiveness::PokemonType;
+                match tera_type {
+                    crate::move_choice::PokemonType::Normal => PokemonType::Normal,
+                    crate::move_choice::PokemonType::Fire => PokemonType::Fire,
+                    crate::move_choice::PokemonType::Water => PokemonType::Water,
+                    crate::move_choice::PokemonType::Electric => PokemonType::Electric,
+                    crate::move_choice::PokemonType::Grass => PokemonType::Grass,
+                    crate::move_choice::PokemonType::Ice => PokemonType::Ice,
+                    crate::move_choice::PokemonType::Fighting => PokemonType::Fighting,
+                    crate::move_choice::PokemonType::Poison => PokemonType::Poison,
+                    crate::move_choice::PokemonType::Ground => PokemonType::Ground,
+                    crate::move_choice::PokemonType::Flying => PokemonType::Flying,
+                    crate::move_choice::PokemonType::Psychic => PokemonType::Psychic,
+                    crate::move_choice::PokemonType::Bug => PokemonType::Bug,
+                    crate::move_choice::PokemonType::Rock => PokemonType::Rock,
+                    crate::move_choice::PokemonType::Ghost => PokemonType::Ghost,
+                    crate::move_choice::PokemonType::Dragon => PokemonType::Dragon,
+                    crate::move_choice::PokemonType::Dark => PokemonType::Dark,
+                    crate::move_choice::PokemonType::Steel => PokemonType::Steel,
+                    crate::move_choice::PokemonType::Fairy => PokemonType::Fairy,
+                    crate::move_choice::PokemonType::Unknown => PokemonType::Normal, // Fallback to Normal
+                }
+            })
+        } else {
+            None
+        }
+    }
+    
+    #[cfg(not(feature = "terastallization"))]
+    {
+        None
+    }
 }
 
 // All damage calculation tests have been moved to tests/ directory

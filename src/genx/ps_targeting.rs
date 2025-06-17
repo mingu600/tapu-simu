@@ -86,8 +86,8 @@ impl PSAutoTargetingEngine {
             }
             
             PSMoveTarget::RandomNormal => {
-                // Random opponent - for now just use first available
-                self.get_any_opponent_target(opponent_side, state)
+                // Random opponent - select random target from available opponents
+                self.get_random_opponent_target(opponent_side, state)
                     .map(|pos| vec![pos])
                     .unwrap_or_default()
             }
@@ -199,6 +199,24 @@ impl PSAutoTargetingEngine {
         } else {
             None
         }
+    }
+
+    /// Get a random active opponent (for RandomNormal targeting)
+    fn get_random_opponent_target(
+        &self,
+        opponent_side: SideReference,
+        state: &State,
+    ) -> Option<BattlePosition> {
+        let active_opponents = self.get_all_active_opponents(opponent_side, state);
+        
+        if active_opponents.is_empty() {
+            return None;
+        }
+        
+        // Use proper randomization
+        use rand::seq::SliceRandom;
+        let mut rng = rand::thread_rng();
+        active_opponents.choose(&mut rng).copied()
     }
 
     /// Check if explicit targets are valid for the given PS target type

@@ -42,19 +42,26 @@ impl PSMoveService {
     }
 
     /// Get the PS repository
-    fn get_repo(&self) -> &PSDataRepository {
-        PS_REPO.get().expect("PS repository should be initialized")
+    fn get_repo(&self) -> Option<&PSDataRepository> {
+        PS_REPO.get()
+    }
+    
+    /// Check if PS repository is initialized
+    pub fn is_initialized(&self) -> bool {
+        PS_REPO.get().is_some()
     }
 
     /// Get move data by name (replaces rustemon async calls)
     pub fn get_move_by_name(&self, name: &str) -> Option<Move> {
-        let ps_move = self.get_repo().get_move_by_name(name)?;
+        let repo = self.get_repo()?;
+        let ps_move = repo.get_move_by_name(name)?;
         Some(self.ps_move_to_engine_move(ps_move))
     }
 
     /// Get move data by ID
     pub fn get_move_by_id(&self, id: &str) -> Option<Move> {
-        let ps_move = self.get_repo().get_move(id)?;
+        let repo = self.get_repo()?;
+        let ps_move = repo.get_move(id)?;
         Some(self.ps_move_to_engine_move(ps_move))
     }
 
@@ -77,7 +84,8 @@ impl PSMoveService {
 
     /// Get drain ratio for a move (from PS data)
     pub fn get_drain_ratio(&self, move_name: &str) -> Option<f32> {
-        let ps_move = self.get_repo().get_move_by_name(move_name)?;
+        let repo = self.get_repo()?;
+        let ps_move = repo.get_move_by_name(move_name)?;
         if let Some(drain) = &ps_move.drain {
             Some(drain[0] as f32 / drain[1] as f32)
         } else {
@@ -87,7 +95,8 @@ impl PSMoveService {
 
     /// Get recoil ratio for a move (from PS data)
     pub fn get_recoil_ratio(&self, move_name: &str) -> Option<f32> {
-        let ps_move = self.get_repo().get_move_by_name(move_name)?;
+        let repo = self.get_repo()?;
+        let ps_move = repo.get_move_by_name(move_name)?;
         if let Some(recoil) = &ps_move.recoil {
             Some(recoil[0] as f32 / recoil[1] as f32)
         } else {
@@ -112,36 +121,56 @@ impl PSMoveService {
 
     /// Get all available moves
     pub fn get_all_moves(&self) -> Vec<Move> {
-        self.get_repo()
-            .get_all_moves()
-            .values()
-            .map(|ps_move| self.ps_move_to_engine_move(ps_move))
-            .collect()
+        if let Some(repo) = self.get_repo() {
+            repo.get_all_moves()
+                .values()
+                .map(|ps_move| self.ps_move_to_engine_move(ps_move))
+                .collect()
+        } else {
+            Vec::new()
+        }
     }
 
     /// Check if a move exists
     pub fn move_exists(&self, name: &str) -> bool {
-        self.get_repo().get_move_by_name(name).is_some()
+        if let Some(repo) = self.get_repo() {
+            repo.get_move_by_name(name).is_some()
+        } else {
+            false
+        }
     }
 
     /// Get move statistics
     pub fn get_stats(&self) -> PSMoveServiceStats {
-        let repo_stats = self.get_repo().stats();
-        PSMoveServiceStats {
-            total_moves: repo_stats.move_count,
-            enhanced_moves: self.engine_enhancements.len(),
+        if let Some(repo) = self.get_repo() {
+            let repo_stats = repo.stats();
+            PSMoveServiceStats {
+                total_moves: repo_stats.move_count,
+                enhanced_moves: self.engine_enhancements.len(),
+            }
+        } else {
+            PSMoveServiceStats {
+                total_moves: 0,
+                enhanced_moves: self.engine_enhancements.len(),
+            }
         }
     }
 
     /// Get PS move data directly (for advanced usage)
     pub fn get_ps_move(&self, name: &str) -> Option<&PSMoveData> {
-        self.get_repo().get_move_by_name(name)
+        let repo = self.get_repo()?;
+        repo.get_move_by_name(name)
     }
 }
 
 impl Default for PSMoveService {
     fn default() -> Self {
-        Self::new().expect("Failed to create PS move service")
+        // In tests or when PS data isn't available, create a service with empty data
+        Self::new().unwrap_or_else(|_| {
+            PSMoveService {
+                engine_enhancements: HashMap::new(),
+            }
+        })
     }
 }
 

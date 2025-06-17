@@ -158,9 +158,12 @@ impl PSMoveTarget {
                 vec![(user_side, user_slot)]
             }
             PSMoveTarget::RandomNormal => {
-                // Pick random opponent (just use first for now)
+                // Pick random opponent slot
                 let opponent_side = 1 - user_side;
-                vec![(opponent_side, 0)]
+                use rand::Rng;
+                let mut rng = rand::thread_rng();
+                let random_slot = rng.gen_range(0..active_per_side);
+                vec![(opponent_side, random_slot)]
             }
             PSMoveTarget::Any => {
                 // Default to first opponent for long-range

@@ -246,11 +246,29 @@ impl AbilityEffect for FlashFire {
 
     fn modify_damage(&self, context: &DamageContext) -> AbilityModifier {
         if context.move_type.to_lowercase() == "fire" {
-            // TODO: Check if Flash Fire boost is active (need volatile status tracking)
-            // For now, just provide immunity
-            AbilityModifier::new().block_move()
+            // Check if Flash Fire boost is active
+            if context.attacker.volatile_statuses.contains(&crate::instruction::VolatileStatus::FlashFire) {
+                // Flash Fire boost is active - provide 1.5x damage boost and immunity
+                AbilityModifier::new()
+                    .block_move()
+                    .with_damage_multiplier(1.5)
+            } else {
+                // Flash Fire not yet activated - just provide immunity and activate boost
+                // Note: The boost activation would happen in the instruction generator
+                AbilityModifier::new().block_move()
+            }
         } else {
-            AbilityModifier::default()
+            // Check if Flash Fire boost is active for non-Fire moves
+            if context.attacker.volatile_statuses.contains(&crate::instruction::VolatileStatus::FlashFire) {
+                // Flash Fire boost affects all Fire-type moves user makes
+                if context.move_data.move_type.to_lowercase() == "fire" {
+                    AbilityModifier::new().with_damage_multiplier(1.5)
+                } else {
+                    AbilityModifier::default()
+                }
+            } else {
+                AbilityModifier::default()
+            }
         }
     }
 }
