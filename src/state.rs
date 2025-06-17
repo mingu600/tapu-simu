@@ -124,6 +124,284 @@ impl State {
             None
         }
     }
+
+    /// Apply a vector of instructions to the battle state
+    pub fn apply_instructions(&mut self, instructions: &[crate::instruction::Instruction]) {
+        for instruction in instructions {
+            self.apply_instruction(instruction);
+        }
+    }
+
+    /// Apply a single instruction to the battle state
+    pub fn apply_instruction(&mut self, instruction: &crate::instruction::Instruction) {
+        use crate::instruction::Instruction;
+        
+        match instruction {
+            Instruction::PositionDamage(instr) => {
+                self.apply_position_damage(instr.target_position, instr.damage_amount);
+            }
+            Instruction::PositionHeal(instr) => {
+                self.apply_position_heal(instr.target_position, instr.heal_amount);
+            }
+            Instruction::ApplyStatus(instr) => {
+                self.apply_status(instr.target_position, instr.status);
+            }
+            Instruction::RemoveStatus(instr) => {
+                self.remove_status(instr.target_position);
+            }
+            Instruction::BoostStats(instr) => {
+                self.apply_stat_boosts(instr.target_position, &instr.stat_boosts);
+            }
+            Instruction::ApplyVolatileStatus(instr) => {
+                self.apply_volatile_status(instr.target_position, instr.volatile_status, instr.duration);
+            }
+            Instruction::RemoveVolatileStatus(instr) => {
+                self.remove_volatile_status(instr.target_position, instr.volatile_status);
+            }
+            Instruction::ChangeVolatileStatusDuration(instr) => {
+                self.change_volatile_status_duration(instr.target_position, instr.volatile_status, instr.duration_change);
+            }
+            Instruction::ChangeStatusDuration(instr) => {
+                self.change_status_duration(instr.target_position, instr.duration_change);
+            }
+            Instruction::ChangeWeather(instr) => {
+                self.change_weather(instr.weather, instr.duration);
+            }
+            Instruction::ChangeTerrain(instr) => {
+                self.change_terrain(instr.terrain, instr.duration);
+            }
+            Instruction::SwitchPokemon(instr) => {
+                self.switch_pokemon(instr.position, instr.pokemon_index);
+            }
+            Instruction::ApplySideCondition(instr) => {
+                self.apply_side_condition(instr.side, instr.condition, instr.duration);
+            }
+            Instruction::RemoveSideCondition(instr) => {
+                self.remove_side_condition(instr.side, instr.condition);
+            }
+            Instruction::DecrementSideConditionDuration(instr) => {
+                self.decrement_side_condition_duration(instr.side, instr.condition, instr.amount);
+            }
+            Instruction::DecrementWeatherTurns => {
+                self.decrement_weather_turns();
+            }
+            Instruction::DecrementTerrainTurns => {
+                self.decrement_terrain_turns();
+            }
+            _ => {
+                // Handle other instruction types as they are implemented
+            }
+        }
+    }
+
+    /// Apply damage to a Pokemon at the specified position
+    fn apply_position_damage(&mut self, position: BattlePosition, damage: i16) {
+        if let Some(pokemon) = self.get_pokemon_at_position_mut(position) {
+            pokemon.hp = (pokemon.hp - damage).max(0);
+        }
+    }
+
+    /// Apply healing to a Pokemon at the specified position
+    fn apply_position_heal(&mut self, position: BattlePosition, heal_amount: i16) {
+        if let Some(pokemon) = self.get_pokemon_at_position_mut(position) {
+            pokemon.hp = (pokemon.hp + heal_amount).min(pokemon.max_hp);
+        }
+    }
+
+    /// Apply a status condition to a Pokemon at the specified position
+    fn apply_status(&mut self, position: BattlePosition, status: crate::instruction::PokemonStatus) {
+        if let Some(pokemon) = self.get_pokemon_at_position_mut(position) {
+            pokemon.status = status;
+            // Set default duration for certain statuses
+            pokemon.status_duration = match status {
+                crate::instruction::PokemonStatus::SLEEP => Some(1), // Will be randomized in actual implementation
+                crate::instruction::PokemonStatus::FREEZE => Some(1),
+                _ => None,
+            };
+        }
+    }
+
+    /// Remove status condition from a Pokemon at the specified position
+    fn remove_status(&mut self, position: BattlePosition) {
+        if let Some(pokemon) = self.get_pokemon_at_position_mut(position) {
+            pokemon.status = crate::instruction::PokemonStatus::NONE;
+            pokemon.status_duration = None;
+        }
+    }
+
+    /// Apply stat boosts to a Pokemon at the specified position
+    fn apply_stat_boosts(&mut self, position: BattlePosition, boosts: &HashMap<crate::instruction::Stat, i8>) {
+        if let Some(pokemon) = self.get_pokemon_at_position_mut(position) {
+            for (stat, boost) in boosts {
+                let current = pokemon.stat_boosts.get(stat).unwrap_or(&0);
+                let new_boost = (current + boost).clamp(-6, 6);
+                pokemon.stat_boosts.insert(*stat, new_boost);
+            }
+        }
+    }
+
+    /// Apply a volatile status to a Pokemon at the specified position
+    fn apply_volatile_status(
+        &mut self,
+        position: BattlePosition,
+        volatile_status: crate::instruction::VolatileStatus,
+        duration: Option<u8>,
+    ) {
+        if let Some(pokemon) = self.get_pokemon_at_position_mut(position) {
+            pokemon.volatile_statuses.insert(volatile_status);
+            if let Some(dur) = duration {
+                pokemon.volatile_status_durations.insert(volatile_status, dur);
+            }
+        }
+    }
+
+    /// Remove a volatile status from a Pokemon at the specified position
+    fn remove_volatile_status(
+        &mut self,
+        position: BattlePosition,
+        volatile_status: crate::instruction::VolatileStatus,
+    ) {
+        if let Some(pokemon) = self.get_pokemon_at_position_mut(position) {
+            pokemon.volatile_statuses.remove(&volatile_status);
+            pokemon.volatile_status_durations.remove(&volatile_status);
+        }
+    }
+
+    /// Change volatile status duration for a Pokemon at the specified position
+    fn change_volatile_status_duration(
+        &mut self,
+        position: BattlePosition,
+        volatile_status: crate::instruction::VolatileStatus,
+        duration_change: i8,
+    ) {
+        if let Some(pokemon) = self.get_pokemon_at_position_mut(position) {
+            if let Some(current_duration) = pokemon.volatile_status_durations.get_mut(&volatile_status) {
+                let new_duration = (*current_duration as i8 + duration_change).max(0) as u8;
+                if new_duration > 0 {
+                    *current_duration = new_duration;
+                } else {
+                    // If duration reaches 0, remove the volatile status
+                    pokemon.volatile_statuses.remove(&volatile_status);
+                    pokemon.volatile_status_durations.remove(&volatile_status);
+                }
+            }
+        }
+    }
+
+    /// Change status condition duration for a Pokemon at the specified position
+    fn change_status_duration(
+        &mut self,
+        position: BattlePosition,
+        duration_change: i8,
+    ) {
+        if let Some(pokemon) = self.get_pokemon_at_position_mut(position) {
+            if let Some(current_duration) = pokemon.status_duration {
+                let new_duration = (current_duration as i8 + duration_change).max(0) as u8;
+                if new_duration > 0 {
+                    pokemon.status_duration = Some(new_duration);
+                } else {
+                    // If duration reaches 0, remove the status condition
+                    pokemon.status = crate::instruction::PokemonStatus::NONE;
+                    pokemon.status_duration = None;
+                }
+            }
+        }
+    }
+
+    /// Change the weather condition
+    fn change_weather(&mut self, weather: crate::instruction::Weather, duration: Option<u8>) {
+        self.weather = weather;
+        self.weather_turns_remaining = duration;
+    }
+
+    /// Change the terrain condition
+    fn change_terrain(&mut self, terrain: crate::instruction::Terrain, duration: Option<u8>) {
+        self.terrain = terrain;
+        self.terrain_turns_remaining = duration;
+    }
+
+    /// Switch a Pokemon at the specified position
+    fn switch_pokemon(&mut self, position: BattlePosition, pokemon_index: usize) {
+        if let Some(side) = self.get_side_mut_ref(position.side) {
+            side.set_active_pokemon_at_slot(position.slot, Some(pokemon_index));
+        }
+    }
+
+    /// Apply a side condition
+    fn apply_side_condition(
+        &mut self,
+        side_ref: crate::battle_format::SideReference,
+        condition: crate::instruction::SideCondition,
+        duration: Option<u8>,
+    ) {
+        let side = self.get_side_mut(side_ref);
+        let current_value = side.side_conditions.get(&condition).unwrap_or(&0);
+        let new_value = match duration {
+            Some(dur) => dur,
+            None => current_value + 1, // Increment for stackable conditions like Spikes
+        };
+        side.side_conditions.insert(condition, new_value.min(3)); // Max 3 layers for most conditions
+    }
+
+    /// Remove a side condition
+    fn remove_side_condition(
+        &mut self,
+        side_ref: crate::battle_format::SideReference,
+        condition: crate::instruction::SideCondition,
+    ) {
+        let side = self.get_side_mut(side_ref);
+        side.side_conditions.remove(&condition);
+    }
+
+    /// Decrement side condition duration
+    fn decrement_side_condition_duration(
+        &mut self,
+        side_ref: crate::battle_format::SideReference,
+        condition: crate::instruction::SideCondition,
+        amount: u8,
+    ) {
+        let side = self.get_side_mut(side_ref);
+        if let Some(current_value) = side.side_conditions.get_mut(&condition) {
+            if *current_value > amount {
+                *current_value -= amount;
+            } else {
+                // If duration reaches 0 or below, remove the condition
+                side.side_conditions.remove(&condition);
+            }
+        }
+    }
+
+    /// Decrement weather turns remaining
+    fn decrement_weather_turns(&mut self) {
+        if let Some(turns) = self.weather_turns_remaining {
+            if turns > 1 {
+                self.weather_turns_remaining = Some(turns - 1);
+            } else {
+                self.weather = crate::instruction::Weather::NONE;
+                self.weather_turns_remaining = None;
+            }
+        }
+    }
+
+    /// Decrement terrain turns remaining
+    fn decrement_terrain_turns(&mut self) {
+        if let Some(turns) = self.terrain_turns_remaining {
+            if turns > 1 {
+                self.terrain_turns_remaining = Some(turns - 1);
+            } else {
+                self.terrain = crate::instruction::Terrain::NONE;
+                self.terrain_turns_remaining = None;
+            }
+        }
+    }
+
+    /// Helper method to get a mutable reference to a side by reference
+    fn get_side_mut_ref(&mut self, side_ref: crate::battle_format::SideReference) -> Option<&mut BattleSide> {
+        match side_ref {
+            crate::battle_format::SideReference::SideOne => Some(&mut self.side_one),
+            crate::battle_format::SideReference::SideTwo => Some(&mut self.side_two),
+        }
+    }
 }
 
 impl Default for State {
@@ -232,6 +510,8 @@ pub struct Pokemon {
     pub status_duration: Option<u8>,
     /// Volatile statuses
     pub volatile_statuses: HashSet<VolatileStatus>,
+    /// Volatile status durations (turns remaining for each status)
+    pub volatile_status_durations: HashMap<VolatileStatus, u8>,
     /// Substitute health (when Substitute volatile status is active)
     pub substitute_health: i16,
     /// Current moves
@@ -266,6 +546,7 @@ impl Pokemon {
             status: PokemonStatus::NONE,
             status_duration: None,
             volatile_statuses: HashSet::new(),
+            volatile_status_durations: HashMap::new(),
             substitute_health: 0,
             moves: HashMap::new(),
             ability: String::new(),

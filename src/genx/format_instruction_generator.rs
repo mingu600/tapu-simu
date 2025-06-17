@@ -209,8 +209,9 @@ impl FormatInstructionGenerator {
             flags: Vec::new(),
         };
 
-        // Use the comprehensive move effects system
-        move_effects::apply_move_effects(state, &engine_move_data, user_position, targets)
+        // Use the comprehensive move effects system with generation awareness
+        let generation_mechanics = self.format.generation.get_mechanics();
+        move_effects::apply_move_effects(state, &engine_move_data, user_position, targets, &generation_mechanics)
     }
     
     /// Check if a move targets the user (self-targeting)

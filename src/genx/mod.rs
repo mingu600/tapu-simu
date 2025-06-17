@@ -13,6 +13,8 @@ pub mod doubles_mechanics;
 pub mod type_effectiveness;
 pub mod abilities;
 pub mod items;
+pub mod end_of_turn;
+pub mod switch_effects;
 
 // Re-exports
 pub use instruction_generator::GenerationXInstructionGenerator;
@@ -20,3 +22,4 @@ pub use format_targeting::{FormatMoveTargetResolver, AutoTargetingEngine};
 pub use format_instruction_generator::FormatInstructionGenerator;
 pub use doubles_mechanics::DoublesSpecificMechanics;
 pub use type_effectiveness::{TypeChart, PokemonType};
+pub use end_of_turn::process_end_of_turn_effects;

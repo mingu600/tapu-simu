@@ -214,7 +214,7 @@ pub fn calculate_damage_with_generation(
         move_type,
         (attacker_type1, attacker_type2),
         None,  // TODO: Add Tera type support
-        false, // TODO: Check for Adaptability ability
+        has_adaptability_ability(attacker),
     );
     damage *= stab_multiplier;
 
@@ -522,8 +522,13 @@ pub fn get_terrain_damage_modifier(
     }
 }
 
+/// Check if a Pokemon has the Adaptability ability
+fn has_adaptability_ability(pokemon: &Pokemon) -> bool {
+    pokemon.ability.to_lowercase() == "adaptability"
+}
+
 /// Check if a Pokemon is grounded (affected by terrain)
-fn is_grounded(pokemon: &Pokemon) -> bool {
+pub fn is_grounded(pokemon: &Pokemon) -> bool {
     use super::abilities::get_ability_by_name;
 
     // Check for Flying type
@@ -538,8 +543,21 @@ fn is_grounded(pokemon: &Pokemon) -> bool {
         }
     }
 
-    // TODO: Check for items like Air Balloon
-    // TODO: Check for volatile statuses like Magnet Rise, Telekinesis
+    // Check for items that affect grounding
+    if let Some(ref item) = pokemon.item {
+        match item.to_lowercase().as_str() {
+            "airballoon" | "air balloon" => return false, // Air Balloon makes Pokemon ungrounded
+            _ => {}
+        }
+    }
+
+    // Check for volatile statuses that affect grounding
+    if pokemon.volatile_statuses.contains(&crate::instruction::VolatileStatus::MagnetRise) {
+        return false; // Magnet Rise makes Pokemon ungrounded
+    }
+    if pokemon.volatile_statuses.contains(&crate::instruction::VolatileStatus::Telekinesis) {
+        return false; // Telekinesis makes Pokemon ungrounded
+    }
 
     true
 }
