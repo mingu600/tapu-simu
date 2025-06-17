@@ -195,6 +195,171 @@ async function extractGenerationMoves() {
     return { generationData, moveChanges };
 }
 
+async function extractItemForGeneration(genDex, itemId) {
+    const item = genDex.items.get(itemId);
+    
+    // Skip if item doesn't exist in this generation
+    if (!item.exists || (item.isNonstandard && item.isNonstandard !== 'Past')) {
+        return null;
+    }
+
+    return {
+        id: item.id,
+        num: item.num,
+        name: item.name,
+        
+        // Item categories
+        isBerry: item.isBerry || false,
+        isGem: item.isGem || false,
+        isPokeball: item.isPokeball || false,
+        isChoice: item.isChoice || false,
+        
+        // Mega stone properties
+        megaStone: item.megaStone || null,
+        megaEvolves: item.megaEvolves || null,
+        
+        // Z crystal properties
+        zMove: item.zMove || null,
+        zMoveType: item.zMoveType || null,
+        zMoveFrom: item.zMoveFrom || null,
+        
+        // Stat boosts
+        boosts: item.boosts || null,
+        
+        // Natural Gift properties
+        naturalGift: item.naturalGift || null,
+        
+        // Fling properties
+        fling: item.fling ? {
+            basePower: item.fling.basePower || 0,
+            status: item.fling.status || null,
+            volatileStatus: item.fling.volatileStatus || null,
+        } : null,
+        
+        // Item effects
+        desc: item.desc || "",
+        shortDesc: item.shortDesc || "",
+        
+        // Special flags
+        ignoreKlutz: item.ignoreKlutz || false,
+        
+        // Plate/Memory/Drive types
+        onPlate: item.onPlate || null,
+        onMemory: item.onMemory || null,
+        onDrive: item.onDrive || null,
+        
+        // Generation metadata
+        isNonstandard: item.isNonstandard || null,
+        
+        // Berry-specific properties
+        berryType: item.berryType || null,
+        berryPower: item.berryPower || null,
+        
+        // Healing items
+        heal: item.heal || null,
+        
+        // Status cure items
+        cure: item.cure || null,
+        
+        // Other berry effects
+        onEat: item.onEat ? true : false,
+        onResidual: item.onResidual ? true : false,
+        
+        // Unreleased status
+        unreleased: item.unreleased || false,
+    };
+}
+
+async function extractGenerationItems() {
+    const generationData = {};
+    const itemChanges = {};
+    
+    // Get all unique item IDs from Gen 9 (most comprehensive)
+    const allItemIds = Object.keys(Dex.data.Items);
+    
+    console.log(`Found ${allItemIds.length} items to check across generations`);
+    
+    // Extract items for each generation
+    for (const generation of GENERATIONS) {
+        console.log(`Extracting Gen ${generation.num} (${generation.name})...`);
+        
+        const genDex = Dex.forFormat(`gen${generation.num}ou`);
+        const genItems = {};
+        let itemCount = 0;
+        
+        for (const itemId of allItemIds) {
+            const itemData = await extractItemForGeneration(genDex, itemId);
+            if (itemData) {
+                genItems[itemId] = itemData;
+                itemCount++;
+            }
+        }
+        
+        generationData[generation.id] = {
+            generation: generation.num,
+            name: generation.name,
+            itemCount,
+            items: genItems,
+        };
+        
+        console.log(`  ${itemCount} items available in Gen ${generation.num}`);
+    }
+    
+    // Analyze item changes across generations
+    console.log('\nAnalyzing item changes across generations...');
+    
+    for (const itemId of allItemIds) {
+        const changes = [];
+        let previousData = null;
+        
+        for (const generation of GENERATIONS) {
+            const currentData = generationData[generation.id].items[itemId];
+            
+            if (currentData && previousData) {
+                const changedFields = [];
+                
+                // Check for changes in key properties
+                const fieldsToCheck = [
+                    'isBerry', 'isGem', 'isPokeball', 'isChoice', 'megaStone', 'megaEvolves',
+                    'zMove', 'zMoveType', 'zMoveFrom', 'boosts', 'naturalGift', 'fling',
+                    'ignoreKlutz', 'onPlate', 'onMemory', 'onDrive', 'isNonstandard',
+                    'berryType', 'berryPower', 'heal', 'cure', 'onEat', 'onResidual', 'unreleased'
+                ];
+                
+                for (const field of fieldsToCheck) {
+                    if (JSON.stringify(currentData[field]) !== JSON.stringify(previousData[field])) {
+                        changedFields.push({
+                            field,
+                            from: previousData[field],
+                            to: currentData[field],
+                        });
+                    }
+                }
+                
+                if (changedFields.length > 0) {
+                    changes.push({
+                        generation: generation.num,
+                        changes: changedFields,
+                    });
+                }
+            }
+            
+            if (currentData) {
+                previousData = currentData;
+            }
+        }
+        
+        if (changes.length > 0) {
+            itemChanges[itemId] = {
+                name: previousData?.name || itemId,
+                changes,
+            };
+        }
+    }
+    
+    return { generationData, itemChanges };
+}
+
 async function main() {
     const args = process.argv.slice(2);
     const command = args[0] || 'all';
@@ -202,7 +367,7 @@ async function main() {
     const outputDir = path.join(__dirname, '../../data/ps-extracted');
     await fs.mkdir(outputDir, { recursive: true });
     
-    if (command === 'generations' || command === 'all') {
+    if (command === 'moves' || command === 'all') {
         console.log('🚀 Extracting generation-specific move data...\n');
         const { generationData, moveChanges } = await extractGenerationMoves();
         
@@ -244,6 +409,52 @@ async function main() {
                 for (const genChange of changeData.changes.slice(0, 2)) {
                     for (const change of genChange.changes.slice(0, 2)) {
                         console.log(`    Gen ${genChange.generation}: ${change.field} ${change.from} → ${change.to}`);
+                    }
+                }
+                notableCount++;
+            }
+        }
+    }
+    
+    if (command === 'items' || command === 'all') {
+        console.log('🚀 Extracting generation-specific item data...\n');
+        const { generationData, itemChanges } = await extractGenerationItems();
+        
+        // Save generation data
+        const genDataPath = path.join(outputDir, 'items-by-generation.json');
+        await fs.writeFile(genDataPath, JSON.stringify(generationData, null, 2));
+        console.log(`\n✅ Generation data saved to ${genDataPath}`);
+        
+        // Save item changes analysis
+        const changesPath = path.join(outputDir, 'item-changes.json');
+        await fs.writeFile(changesPath, JSON.stringify(itemChanges, null, 2));
+        
+        const changesCount = Object.keys(itemChanges).length;
+        console.log(`✅ Item changes analysis saved to ${changesPath}`);
+        console.log(`📊 Found ${changesCount} items with changes across generations`);
+        
+        // Print some interesting statistics
+        console.log('\n📈 Generation Statistics:');
+        for (const generation of GENERATIONS) {
+            const genData = generationData[generation.id];
+            console.log(`  Gen ${generation.num} (${generation.name}): ${genData.itemCount} items`);
+        }
+        
+        // Print some notable changes
+        console.log('\n🔥 Notable Item Changes:');
+        let notableCount = 0;
+        for (const [itemId, changeData] of Object.entries(itemChanges)) {
+            if (notableCount >= 5) break;
+            
+            const hasImportantChange = changeData.changes.some(change => 
+                change.changes.some(c => ['fling', 'naturalGift', 'berryPower', 'heal'].includes(c.field))
+            );
+            
+            if (hasImportantChange) {
+                console.log(`  ${changeData.name}:`);
+                for (const genChange of changeData.changes.slice(0, 2)) {
+                    for (const change of genChange.changes.slice(0, 2)) {
+                        console.log(`    Gen ${genChange.generation}: ${change.field} ${JSON.stringify(change.from)} → ${JSON.stringify(change.to)}`);
                     }
                 }
                 notableCount++;

@@ -411,3 +411,229 @@ impl IgnoreImmunityData {
         }
     }
 }
+
+/// Pokemon Showdown item data structure
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PSItemData {
+    pub id: String,
+    pub num: i32,
+    pub name: String,
+    
+    // Item categories
+    pub is_berry: bool,
+    pub is_gem: bool,
+    pub is_pokeball: bool,
+    pub is_choice: bool,
+    
+    // Mega stone properties
+    pub mega_stone: Option<String>,
+    pub mega_evolves: Option<String>,
+    
+    // Z crystal properties
+    pub z_move: Option<serde_json::Value>, // Can be string or array
+    pub z_move_type: Option<String>,
+    pub z_move_from: Option<String>,
+    
+    // Stat boosts
+    pub boosts: Option<std::collections::HashMap<String, i8>>,
+    
+    // Natural Gift properties
+    pub natural_gift: Option<PSNaturalGift>,
+    
+    // Fling properties
+    pub fling: Option<PSFling>,
+    
+    // Item effects
+    pub desc: String,
+    pub short_desc: String,
+    
+    // Special flags
+    pub ignore_klutz: bool,
+    
+    // Plate/Memory/Drive types
+    pub on_plate: Option<String>,
+    pub on_memory: Option<String>,
+    pub on_drive: Option<String>,
+    
+    // Generation metadata
+    pub is_nonstandard: Option<String>,
+    
+    // Berry-specific properties
+    pub berry_type: Option<String>,
+    pub berry_power: Option<u8>,
+    
+    // Healing items
+    pub heal: Option<serde_json::Value>, // Can be number or array
+    
+    // Status cure items
+    pub cure: Option<serde_json::Value>, // Can be string or array
+    
+    // Other berry effects
+    pub on_eat: bool,
+    pub on_residual: bool,
+    
+    // Unreleased status
+    pub unreleased: bool,
+}
+
+/// Natural Gift data structure
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PSNaturalGift {
+    #[serde(rename = "basePower")]
+    pub base_power: u8,
+    #[serde(rename = "type")]
+    pub move_type: String,
+}
+
+/// Fling data structure
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PSFling {
+    #[serde(rename = "basePower")]
+    pub base_power: u8,
+    pub status: Option<String>,
+    pub volatile_status: Option<String>,
+}
+
+impl PSItemData {
+    /// Check if this item provides type boosting for the given type
+    pub fn boosts_type(&self, move_type: &str) -> bool {
+        // Check for type plates
+        if let Some(ref plate_type) = self.on_plate {
+            return plate_type == move_type;
+        }
+        
+        // Check for type memories
+        if let Some(ref memory_type) = self.on_memory {
+            return memory_type == move_type;
+        }
+        
+        // Check for type drives
+        if let Some(ref drive_type) = self.on_drive {
+            return drive_type == move_type;
+        }
+        
+        // Check Natural Gift type
+        if let Some(ref natural_gift) = self.natural_gift {
+            return natural_gift.move_type == move_type;
+        }
+        
+        // Map common type booster items by ID
+        match (self.id.as_str(), move_type) {
+            // Standard type boosters
+            ("silkscarf", "Normal") => true,
+            ("blackbelt", "Fighting") => true,
+            ("sharpbeak", "Flying") => true,
+            ("poisonbarb", "Poison") => true,
+            ("softsand", "Ground") => true,
+            ("hardstone", "Rock") => true,
+            ("silverpowder", "Bug") => true,
+            ("spelltag", "Ghost") => true,
+            ("metalcoat", "Steel") => true,
+            ("charcoal", "Fire") => true,
+            ("mysticwater", "Water") => true,
+            ("miracleseed", "Grass") => true,
+            ("magnet", "Electric") => true,
+            ("twistedspoon", "Psychic") => true,
+            ("nevermeltice", "Ice") => true,
+            ("dragonfang", "Dragon") => true,
+            ("blackglasses", "Dark") => true,
+            ("fairyfeather", "Fairy") => true,
+            
+            // Incense items
+            ("seaincense", "Water") => true,
+            ("waveincense", "Water") => true,
+            ("oddincense", "Psychic") => true,
+            ("rockincense", "Rock") => true,
+            ("roseincense", "Grass") => true,
+            ("laxincense", _) => false, // Lax Incense doesn't boost types
+            
+            // Gems
+            (id, t) if self.is_gem => {
+                let gem_type = match id {
+                    "normalgem" => "Normal",
+                    "fightinggem" => "Fighting",
+                    "flyinggem" => "Flying",
+                    "poisongem" => "Poison",
+                    "groundgem" => "Ground",
+                    "rockgem" => "Rock",
+                    "buggem" => "Bug",
+                    "ghostgem" => "Ghost",
+                    "steelgem" => "Steel",
+                    "firegem" => "Fire",
+                    "watergem" => "Water",
+                    "grassgem" => "Grass",
+                    "electricgem" => "Electric",
+                    "psychicgem" => "Psychic",
+                    "icegem" => "Ice",
+                    "dragongem" => "Dragon",
+                    "darkgem" => "Dark",
+                    "fairygem" => "Fairy",
+                    _ => return false,
+                };
+                gem_type == t
+            },
+            
+            _ => false,
+        }
+    }
+    
+    /// Get the type boost multiplier for this item
+    pub fn get_type_boost_multiplier(&self) -> f32 {
+        if self.is_gem {
+            // Gems boost by 1.3x in Gen 6+ (1.5x in Gen 5)
+            1.3
+        } else if self.on_plate.is_some() {
+            // Plates boost by 1.2x
+            1.2
+        } else {
+            // Standard type boosters (like Charcoal, Mystic Water) boost by 1.2x
+            1.2
+        }
+    }
+    
+    /// Check if this is a damage reduction berry for the given type
+    pub fn is_damage_reduction_berry(&self, move_type: &str) -> bool {
+        if !self.is_berry {
+            return false;
+        }
+        
+        // Map berry names to their resisted types
+        match self.id.as_str() {
+            "chopleberry" => move_type == "Fighting",
+            "cobaberry" => move_type == "Flying",
+            "kebiaberry" => move_type == "Poison",
+            "shucaberry" => move_type == "Ground",
+            "chartiberry" => move_type == "Rock",
+            "tangaberry" => move_type == "Bug",
+            "kasibberry" => move_type == "Ghost",
+            "babiriberry" => move_type == "Steel",
+            "occaberry" => move_type == "Fire",
+            "passhoberry" => move_type == "Water",
+            "rindoberry" => move_type == "Grass",
+            "wacanberry" => move_type == "Electric",
+            "payapaberry" => move_type == "Psychic",
+            "yacheberry" => move_type == "Ice",
+            "habanberry" => move_type == "Dragon",
+            "colburberry" => move_type == "Dark",
+            "roseliberry" => move_type == "Fairy",
+            "chilanberry" => move_type == "Normal",
+            _ => false,
+        }
+    }
+    
+    /// Check if this item provides a stat boost
+    pub fn provides_stat_boost(&self, stat: &str) -> Option<i8> {
+        self.boosts.as_ref().and_then(|boosts| boosts.get(stat).copied())
+    }
+    
+    /// Check if this is a choice item
+    pub fn is_choice_item(&self) -> bool {
+        self.is_choice
+    }
+    
+    /// Check if this item gets consumed when used
+    pub fn is_consumed_on_use(&self) -> bool {
+        self.is_berry || self.is_gem
+    }
+}

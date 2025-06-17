@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use serde_json;
-use crate::data::ps_types::{PSMoveData, PSMoveTarget};
+use crate::data::ps_types::{PSMoveData, PSMoveTarget, PSItemData};
 use crate::data::ps_conversion::ps_target_from_string;
 use crate::state::{Move, MoveCategory};
 
@@ -22,8 +22,10 @@ pub struct Generation {
 /// Generation-specific data repository
 pub struct PSGenerationRepository {
     generations: Vec<Generation>,
-    generation_data: HashMap<String, GenerationMoveData>,
+    generation_move_data: HashMap<String, GenerationMoveData>,
+    generation_item_data: HashMap<String, GenerationItemData>,
     move_changes: HashMap<String, MoveChangeHistory>,
+    item_changes: HashMap<String, ItemChangeHistory>,
 }
 
 /// Move data for a specific generation
@@ -35,6 +37,15 @@ pub struct GenerationMoveData {
     pub moves: HashMap<String, PSMoveData>,
 }
 
+/// Item data for a specific generation
+#[derive(Debug)]
+pub struct GenerationItemData {
+    pub generation: u8,
+    pub name: String,
+    pub item_count: usize,
+    pub items: HashMap<String, PSItemData>,
+}
+
 /// History of changes to a move across generations
 #[derive(Debug)]
 pub struct MoveChangeHistory {
@@ -42,7 +53,14 @@ pub struct MoveChangeHistory {
     pub changes: Vec<GenerationChange>,
 }
 
-/// A change made to a move in a specific generation
+/// History of changes to an item across generations
+#[derive(Debug)]
+pub struct ItemChangeHistory {
+    pub name: String,
+    pub changes: Vec<GenerationChange>,
+}
+
+/// A change made to a move/item in a specific generation
 #[derive(Debug)]
 pub struct GenerationChange {
     pub generation: u8,
@@ -72,15 +90,15 @@ impl PSGenerationRepository {
             Generation { num: 9, id: "gen9".to_string(), name: "SV".to_string() },
         ];
 
-        // Load generation data
-        let generation_data_path = Path::new(data_dir).join("moves-by-generation.json");
-        let generation_data_content = fs::read_to_string(&generation_data_path)?;
-        let raw_generation_data: serde_json::Value = serde_json::from_str(&generation_data_content)?;
+        // Load generation move data
+        let generation_move_data_path = Path::new(data_dir).join("moves-by-generation.json");
+        let generation_move_data_content = fs::read_to_string(&generation_move_data_path)?;
+        let raw_generation_move_data: serde_json::Value = serde_json::from_str(&generation_move_data_content)?;
 
-        let mut generation_data = HashMap::new();
+        let mut generation_move_data = HashMap::new();
         
         for generation in &generations {
-            if let Some(gen_data) = raw_generation_data.get(&generation.id) {
+            if let Some(gen_data) = raw_generation_move_data.get(&generation.id) {
                 let gen_moves_raw = gen_data.get("moves").unwrap().as_object().unwrap();
                 let mut gen_moves = HashMap::new();
 
@@ -89,12 +107,40 @@ impl PSGenerationRepository {
                     gen_moves.insert(move_id.clone(), move_data);
                 }
 
-                generation_data.insert(generation.id.clone(), GenerationMoveData {
+                generation_move_data.insert(generation.id.clone(), GenerationMoveData {
                     generation: generation.num,
                     name: generation.name.clone(),
                     move_count: gen_moves.len(),
                     moves: gen_moves,
                 });
+            }
+        }
+
+        // Load generation item data
+        let generation_item_data_path = Path::new(data_dir).join("items-by-generation.json");
+        let mut generation_item_data = HashMap::new();
+        
+        if generation_item_data_path.exists() {
+            let generation_item_data_content = fs::read_to_string(&generation_item_data_path)?;
+            let raw_generation_item_data: serde_json::Value = serde_json::from_str(&generation_item_data_content)?;
+            
+            for generation in &generations {
+                if let Some(gen_data) = raw_generation_item_data.get(&generation.id) {
+                    let gen_items_raw = gen_data.get("items").unwrap().as_object().unwrap();
+                    let mut gen_items = HashMap::new();
+
+                    for (item_id, item_value) in gen_items_raw {
+                        let item_data: PSItemData = serde_json::from_value(item_value.clone())?;
+                        gen_items.insert(item_id.clone(), item_data);
+                    }
+
+                    generation_item_data.insert(generation.id.clone(), GenerationItemData {
+                        generation: generation.num,
+                        name: generation.name.clone(),
+                        item_count: gen_items.len(),
+                        items: gen_items,
+                    });
+                }
             }
         }
 
@@ -137,17 +183,66 @@ impl PSGenerationRepository {
             }
         }
 
+        // Load item changes data
+        let item_changes_path = Path::new(data_dir).join("item-changes.json");
+        let mut item_changes = HashMap::new();
+        
+        if item_changes_path.exists() {
+            let item_changes_content = fs::read_to_string(&item_changes_path)?;
+            let raw_item_changes: serde_json::Value = serde_json::from_str(&item_changes_content)?;
+            
+            if let Some(changes_obj) = raw_item_changes.as_object() {
+                for (item_id, change_data) in changes_obj {
+                    let name = change_data.get("name").unwrap().as_str().unwrap().to_string();
+                    let changes_array = change_data.get("changes").unwrap().as_array().unwrap();
+                    
+                    let mut changes = Vec::new();
+                    for change in changes_array {
+                        let generation = change.get("generation").unwrap().as_u64().unwrap() as u8;
+                        let field_changes_array = change.get("changes").unwrap().as_array().unwrap();
+                        
+                        let mut field_changes = Vec::new();
+                        for field_change in field_changes_array {
+                            field_changes.push(FieldChange {
+                                field: field_change.get("field").unwrap().as_str().unwrap().to_string(),
+                                from: field_change.get("from").unwrap().clone(),
+                                to: field_change.get("to").unwrap().clone(),
+                            });
+                        }
+                        
+                        changes.push(GenerationChange {
+                            generation,
+                            changes: field_changes,
+                        });
+                    }
+                    
+                    item_changes.insert(item_id.clone(), ItemChangeHistory {
+                        name,
+                        changes,
+                    });
+                }
+            }
+        }
+
         Ok(Self {
             generations,
-            generation_data,
+            generation_move_data,
+            generation_item_data,
             move_changes,
+            item_changes,
         })
     }
 
     /// Get move data for a specific generation
     pub fn get_move_for_generation(&self, move_name: &str, generation: u8) -> Option<&PSMoveData> {
         let gen_id = format!("gen{}", generation);
-        self.generation_data.get(&gen_id)?.moves.get(move_name)
+        self.generation_move_data.get(&gen_id)?.moves.get(move_name)
+    }
+
+    /// Get item data for a specific generation
+    pub fn get_item_for_generation(&self, item_name: &str, generation: u8) -> Option<&PSItemData> {
+        let gen_id = format!("gen{}", generation);
+        self.generation_item_data.get(&gen_id)?.items.get(item_name)
     }
 
     /// Get current generation move data (Gen 9)
@@ -155,9 +250,19 @@ impl PSGenerationRepository {
         self.get_move_for_generation(move_name, 9)
     }
 
+    /// Get current generation item data (Gen 9)
+    pub fn get_item(&self, item_name: &str) -> Option<&PSItemData> {
+        self.get_item_for_generation(item_name, 9)
+    }
+
     /// Check if a move exists in a specific generation
     pub fn move_exists_in_generation(&self, move_name: &str, generation: u8) -> bool {
         self.get_move_for_generation(move_name, generation).is_some()
+    }
+
+    /// Check if an item exists in a specific generation
+    pub fn item_exists_in_generation(&self, item_name: &str, generation: u8) -> bool {
+        self.get_item_for_generation(item_name, generation).is_some()
     }
 
     /// Get all generations where a move exists
@@ -171,15 +276,37 @@ impl PSGenerationRepository {
         generations
     }
 
+    /// Get all generations where an item exists
+    pub fn get_item_generations(&self, item_name: &str) -> Vec<u8> {
+        let mut generations = Vec::new();
+        for generation in &self.generations {
+            if self.item_exists_in_generation(item_name, generation.num) {
+                generations.push(generation.num);
+            }
+        }
+        generations
+    }
+
     /// Get change history for a move
     pub fn get_move_changes(&self, move_name: &str) -> Option<&MoveChangeHistory> {
         self.move_changes.get(move_name)
     }
 
+    /// Get change history for an item
+    pub fn get_item_changes(&self, item_name: &str) -> Option<&ItemChangeHistory> {
+        self.item_changes.get(item_name)
+    }
+
     /// Get all moves for a specific generation
     pub fn get_all_moves_for_generation(&self, generation: u8) -> Option<&HashMap<String, PSMoveData>> {
         let gen_id = format!("gen{}", generation);
-        Some(&self.generation_data.get(&gen_id)?.moves)
+        Some(&self.generation_move_data.get(&gen_id)?.moves)
+    }
+
+    /// Get all items for a specific generation
+    pub fn get_all_items_for_generation(&self, generation: u8) -> Option<&HashMap<String, PSItemData>> {
+        let gen_id = format!("gen{}", generation);
+        Some(&self.generation_item_data.get(&gen_id)?.items)
     }
 
     /// Convert PS move data to engine move (with generation awareness)
@@ -210,12 +337,14 @@ impl PSGenerationRepository {
     /// Get generation statistics
     pub fn get_generation_stats(&self) -> Vec<GenerationStats> {
         self.generations.iter().map(|gen| {
-            let data = self.generation_data.get(&gen.id);
+            let move_data = self.generation_move_data.get(&gen.id);
+            let item_data = self.generation_item_data.get(&gen.id);
             GenerationStats {
                 generation: gen.num,
                 name: gen.name.clone(),
-                move_count: data.map(|d| d.move_count).unwrap_or(0),
-                has_data: data.is_some(),
+                move_count: move_data.map(|d| d.move_count).unwrap_or(0),
+                item_count: item_data.map(|d| d.item_count).unwrap_or(0),
+                has_data: move_data.is_some(),
             }
         }).collect()
     }
@@ -224,7 +353,11 @@ impl PSGenerationRepository {
     pub fn get_change_stats(&self) -> ChangeStats {
         ChangeStats {
             total_moves_with_changes: self.move_changes.len(),
-            total_changes: self.move_changes.values()
+            total_items_with_changes: self.item_changes.len(),
+            total_move_changes: self.move_changes.values()
+                .map(|history| history.changes.len())
+                .sum(),
+            total_item_changes: self.item_changes.values()
                 .map(|history| history.changes.len())
                 .sum(),
         }
@@ -236,6 +369,13 @@ impl PSGenerationRepository {
             .filter(|history| history.changes.iter().any(|change| change.generation == generation))
             .collect()
     }
+
+    /// Find items that changed in a specific generation
+    pub fn get_items_changed_in_generation(&self, generation: u8) -> Vec<&ItemChangeHistory> {
+        self.item_changes.values()
+            .filter(|history| history.changes.iter().any(|change| change.generation == generation))
+            .collect()
+    }
 }
 
 /// Statistics about a generation
@@ -244,14 +384,17 @@ pub struct GenerationStats {
     pub generation: u8,
     pub name: String,
     pub move_count: usize,
+    pub item_count: usize,
     pub has_data: bool,
 }
 
-/// Statistics about move changes
+/// Statistics about changes
 #[derive(Debug)]
 pub struct ChangeStats {
     pub total_moves_with_changes: usize,
-    pub total_changes: usize,
+    pub total_items_with_changes: usize,
+    pub total_move_changes: usize,
+    pub total_item_changes: usize,
 }
 
 #[cfg(test)]

@@ -15,6 +15,7 @@ use crate::move_choice::MoveChoice;
 use crate::state::{State, Move};
 use super::format_targeting::FormatMoveTargetResolver;
 use super::damage_calc::calculate_damage;
+use super::move_effects;
 
 /// Format-aware instruction generator for enhanced battle mechanics
 pub struct FormatInstructionGenerator {
@@ -103,8 +104,11 @@ impl FormatInstructionGenerator {
         state: &State,
     ) -> Option<Vec<BattlePosition>> {
         // If move choice has explicit targets, use those
+        // But treat empty target lists as needing auto-resolution
         if let Some(targets) = move_choice.target_positions() {
-            return Some(targets.clone());
+            if !targets.is_empty() {
+                return Some(targets.clone());
+            }
         }
 
         // Otherwise, resolve targets automatically
@@ -134,6 +138,12 @@ impl FormatInstructionGenerator {
         if targets.len() == 1 {
             // Single target damage
             let base_damage = self.calculate_base_damage(state, move_data, user_position, targets[0]);
+            
+            // If immune (0 damage), don't generate damage instructions
+            if base_damage == 0 {
+                return vec![StateInstructions::empty()];
+            }
+            
             let final_damage = (base_damage as f32 * damage_multiplier) as i16;
 
             let damage_instruction = Instruction::PositionDamage(PositionDamageInstruction {
@@ -145,11 +155,21 @@ impl FormatInstructionGenerator {
         } else if targets.len() > 1 {
             // Multi-target damage
             let mut target_damages = Vec::new();
+            let mut has_any_damage = false;
 
             for &target in targets {
                 let base_damage = self.calculate_base_damage(state, move_data, user_position, target);
                 let final_damage = (base_damage as f32 * damage_multiplier) as i16;
                 target_damages.push((target, final_damage));
+                
+                if final_damage > 0 {
+                    has_any_damage = true;
+                }
+            }
+
+            // If no target takes damage (all immune), don't generate damage instructions
+            if !has_any_damage {
+                return vec![StateInstructions::empty()];
             }
 
             let multi_damage_instruction = Instruction::MultiTargetDamage(MultiTargetDamageInstruction {
@@ -173,70 +193,24 @@ impl FormatInstructionGenerator {
         user_position: BattlePosition,
         targets: &[BattlePosition],
     ) -> Vec<StateInstructions> {
-        let mut instructions = Vec::new();
+        // Convert Move to EngineMoveData for the move effects system
+        let engine_move_data = crate::data::types::EngineMoveData {
+            id: 1, // Placeholder ID
+            name: move_data.name.clone(),
+            base_power: Some(move_data.base_power as i16),
+            accuracy: Some(move_data.accuracy as i16),
+            pp: move_data.pp as i16,
+            move_type: move_data.move_type.clone(),
+            category: move_data.category,
+            priority: move_data.priority,
+            target: move_data.target,
+            effect_chance: None,
+            effect_description: String::new(),
+            flags: Vec::new(),
+        };
 
-        if targets.is_empty() {
-            instructions.push(StateInstructions::empty());
-            return instructions;
-        }
-
-        // Check if this is a status move that gets blocked by Substitute
-        let move_name = &move_data.name;
-        
-        // Most status moves targeting an opponent are blocked by Substitute
-        // Self-targeting moves (like Substitute itself) are not blocked
-        let is_opponent_targeting_status = !self.is_self_targeting_move(move_data);
-        
-        for &target_position in targets {
-            let mut move_instructions = Vec::new();
-            
-            // Check if target has Substitute and move should be blocked
-            if is_opponent_targeting_status {
-                if let Some(target) = state.get_pokemon_at_position(target_position) {
-                    if target.volatile_statuses.contains(&crate::instruction::VolatileStatus::Substitute) {
-                        // Move is blocked by Substitute - generate no instructions
-                        instructions.push(StateInstructions::new(100.0, vec![]));
-                        continue;
-                    }
-                }
-            }
-            
-            // Generate actual status effect based on move
-            match move_name.as_str() {
-                "CONFUSERAY" => {
-                    move_instructions.push(crate::instruction::Instruction::ApplyVolatileStatus(
-                        crate::instruction::ApplyVolatileStatusInstruction {
-                            target_position,
-                            volatile_status: crate::instruction::VolatileStatus::Confusion,
-                            duration: Some(2), // Confusion lasts 2-5 turns, using 2 as base
-                        }
-                    ));
-                }
-                "SUBSTITUTE" => {
-                    // Substitute should create the substitute status on the user
-                    move_instructions.push(crate::instruction::Instruction::ApplyVolatileStatus(
-                        crate::instruction::ApplyVolatileStatusInstruction {
-                            target_position,
-                            volatile_status: crate::instruction::VolatileStatus::Substitute,
-                            duration: None, // Substitute lasts until broken
-                        }
-                    ));
-                    // TODO: Also need to subtract HP from user (25% of max HP)
-                }
-                _ => {
-                    // Generic status move - generate placeholder
-                    // In the future, this would use move data to determine actual effects
-                }
-            }
-            
-            if !move_instructions.is_empty() {
-                instructions.push(StateInstructions::new(100.0, move_instructions));
-            } else {
-                instructions.push(StateInstructions::new(100.0, vec![]));
-            }
-        }
-
-        instructions
+        // Use the comprehensive move effects system
+        move_effects::apply_move_effects(state, &engine_move_data, user_position, targets)
     }
     
     /// Check if a move targets the user (self-targeting)
@@ -276,7 +250,7 @@ impl FormatInstructionGenerator {
             accuracy: Some(move_data.accuracy as i16),
             pp: move_data.pp as i16,
             move_type: move_data.move_type.clone(),
-            category: crate::state::MoveCategory::Physical, // Default category
+            category: move_data.category, // Use the correct category from move data
             priority: move_data.priority,
             target: move_data.target,
             effect_chance: None,
@@ -284,8 +258,19 @@ impl FormatInstructionGenerator {
             flags: Vec::new(),
         };
 
+        // Check for type immunities first
+        if self.is_immune_to_move_type(&move_data.move_type, defender) {
+            return 0;
+        }
+
+        // Check for ability immunities
+        if self.is_immune_due_to_ability(&engine_move_data, defender) {
+            return 0;
+        }
+
         // Calculate damage using the damage calculator
         calculate_damage(
+            state,
             attacker,
             defender,
             &engine_move_data,
@@ -383,6 +368,42 @@ impl FormatInstructionGenerator {
             })
             .collect()
     }
+
+    /// Check if a Pokemon is immune to a move type (e.g., Ghost immune to Normal/Fighting)
+    fn is_immune_to_move_type(&self, move_type: &str, defender: &crate::state::Pokemon) -> bool {
+        use super::type_effectiveness::{PokemonType, TypeChart};
+
+        let type_chart = TypeChart::new(self.format.generation.number());
+        let attacking_type = PokemonType::from_str(move_type).unwrap_or(PokemonType::Normal);
+        
+        let defender_type1 = PokemonType::from_str(&defender.types[0]).unwrap_or(PokemonType::Normal);
+        let defender_type2 = if defender.types.len() > 1 {
+            PokemonType::from_str(&defender.types[1]).unwrap_or(defender_type1)
+        } else {
+            defender_type1
+        };
+
+        let type_effectiveness = type_chart.calculate_damage_multiplier(
+            attacking_type,
+            (defender_type1, defender_type2),
+            None,
+            None,
+        );
+
+        // If type effectiveness is 0, the Pokemon is immune
+        type_effectiveness == 0.0
+    }
+
+    /// Check if a Pokemon is immune due to ability (e.g., Levitate vs Ground)
+    fn is_immune_due_to_ability(&self, move_data: &crate::data::types::EngineMoveData, defender: &crate::state::Pokemon) -> bool {
+        use super::abilities::get_ability_by_name;
+        
+        if let Some(ability) = get_ability_by_name(&defender.ability) {
+            ability.provides_immunity(&move_data.move_type)
+        } else {
+            false
+        }
+    }
 }
 
 #[cfg(test)]
@@ -390,10 +411,11 @@ mod tests {
     use super::*;
     use crate::state::{Pokemon, MoveCategory};
     use crate::move_choice::MoveIndex;
-    use crate::data::types::MoveTarget;
+    use crate::battle_format::{BattleFormat, FormatType};
+    use crate::generation::Generation;
 
     fn create_test_state() -> State {
-        let mut state = State::new(BattleFormat::Singles);
+        let mut state = State::new(BattleFormat::new("Singles".to_string(), Generation::Gen9, FormatType::Singles));
         
         // Add Pokemon to both sides
         let mut pokemon1 = Pokemon::new("Attacker".to_string());
@@ -406,7 +428,7 @@ mod tests {
             100,
             "Normal".to_string(),
             35,
-            MoveTarget::SelectedPokemon,
+            crate::data::ps_types::PSMoveTarget::Normal,
             MoveCategory::Physical,
             0,
         );
@@ -426,7 +448,7 @@ mod tests {
 
     #[test]
     fn test_single_target_damage_generation() {
-        let generator = FormatInstructionGenerator::new(BattleFormat::Singles);
+        let generator = FormatInstructionGenerator::new(BattleFormat::new("Singles".to_string(), Generation::Gen9, FormatType::Singles));
         let state = create_test_state();
         
         let move_choice = MoveChoice::new_move(
@@ -449,8 +471,8 @@ mod tests {
 
     #[test]
     fn test_spread_move_damage_reduction() {
-        let generator = FormatInstructionGenerator::new(BattleFormat::Doubles);
-        let mut state = State::new(BattleFormat::Doubles);
+        let generator = FormatInstructionGenerator::new(BattleFormat::new("Doubles".to_string(), Generation::Gen9, FormatType::Doubles));
+        let mut state = State::new(BattleFormat::new("Doubles".to_string(), Generation::Gen9, FormatType::Doubles));
         
         // Add Pokemon to all positions
         for side in [SideReference::SideOne, SideReference::SideTwo] {
@@ -468,7 +490,7 @@ mod tests {
             100,
             "Ground".to_string(),
             10,
-            MoveTarget::AllOtherPokemon,
+            crate::data::ps_types::PSMoveTarget::AllAdjacent,
             MoveCategory::Physical,
             0,
         );
@@ -494,7 +516,7 @@ mod tests {
 
     #[test]
     fn test_critical_hit_branching() {
-        let generator = FormatInstructionGenerator::new(BattleFormat::Singles);
+        let generator = FormatInstructionGenerator::new(BattleFormat::new("Singles".to_string(), Generation::Gen9, FormatType::Singles));
         let state = create_test_state();
         
         let move_choice = MoveChoice::new_move(

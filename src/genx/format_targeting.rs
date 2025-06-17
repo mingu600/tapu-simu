@@ -28,8 +28,11 @@ impl FormatMoveTargetResolver {
         state: &State,
     ) -> Result<Vec<BattlePosition>, String> {
         // If move choice already has explicit targets, use those
+        // But treat empty target lists as needing auto-resolution
         if let Some(targets) = move_choice.target_positions() {
-            return Ok(targets.clone());
+            if !targets.is_empty() {
+                return Ok(targets.clone());
+            }
         }
 
         // Otherwise, resolve targets based on the move's target type
@@ -127,13 +130,29 @@ mod tests {
     use super::*;
     use crate::state::{Pokemon, Move, MoveCategory};
     use crate::move_choice::MoveIndex;
+    use crate::data::ps_types::PSMoveTarget;
+    use crate::battle_format::{BattleFormat, FormatType};
+    use crate::generation::Generation;
 
     fn create_test_state_with_pokemon() -> State {
-        let mut state = State::new(BattleFormat::Doubles);
+        let mut state = State::new(BattleFormat::new("Doubles".to_string(), Generation::Gen9, FormatType::Doubles));
         
         // Add Pokemon to both sides
-        let pokemon1 = Pokemon::new("TestPokemon1".to_string());
+        let mut pokemon1 = Pokemon::new("TestPokemon1".to_string());
         let pokemon2 = Pokemon::new("TestPokemon2".to_string());
+        
+        // Add a basic attack move to pokemon1
+        let tackle = Move::new_with_details(
+            "Tackle".to_string(),
+            40,
+            100,
+            "Normal".to_string(),
+            35,
+            crate::data::ps_types::PSMoveTarget::Normal,
+            MoveCategory::Physical,
+            0,
+        );
+        pokemon1.add_move(MoveIndex::M0, tackle);
         
         state.side_one.add_pokemon(pokemon1);
         state.side_one.set_active_pokemon_at_slot(0, Some(0));
@@ -146,7 +165,7 @@ mod tests {
 
     #[test]
     fn test_single_target_resolution() {
-        let resolver = FormatMoveTargetResolver::new(BattleFormat::Singles);
+        let resolver = FormatMoveTargetResolver::new(BattleFormat::new("Singles".to_string(), Generation::Gen9, FormatType::Singles));
         let state = create_test_state_with_pokemon();
         
         let move_choice = MoveChoice::new_move(MoveIndex::M0, vec![]);
@@ -167,7 +186,7 @@ mod tests {
 
     #[test]
     fn test_spread_move_resolution() {
-        let resolver = FormatMoveTargetResolver::new(BattleFormat::Doubles);
+        let resolver = FormatMoveTargetResolver::new(BattleFormat::new("Doubles".to_string(), Generation::Gen9, FormatType::Doubles));
         let mut state = create_test_state_with_pokemon();
         
         // Add an ally and more opponents for doubles
@@ -187,7 +206,7 @@ mod tests {
             100,
             "Ground".to_string(),
             10,
-            MoveTarget::AllOtherPokemon,
+            PSMoveTarget::AllAdjacent,
             MoveCategory::Physical,
             0,
         );
@@ -213,7 +232,7 @@ mod tests {
 
     #[test]
     fn test_target_validation() {
-        let resolver = FormatMoveTargetResolver::new(BattleFormat::Singles);
+        let resolver = FormatMoveTargetResolver::new(BattleFormat::new("Singles".to_string(), Generation::Gen9, FormatType::Singles));
         let state = create_test_state_with_pokemon();
         
         // Valid target for singles
@@ -227,7 +246,7 @@ mod tests {
 
     #[test]
     fn test_auto_targeting_engine() {
-        let engine = AutoTargetingEngine::new(BattleFormat::Singles);
+        let engine = AutoTargetingEngine::new(BattleFormat::new("Singles".to_string(), Generation::Gen9, FormatType::Singles));
         let state = create_test_state_with_pokemon();
         
         let mut move_choice = MoveChoice::new_move(MoveIndex::M0, vec![]);

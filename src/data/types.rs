@@ -47,55 +47,6 @@ pub struct EngineMoveData {
     pub flags: Vec<String>,
 }
 
-/// Move targeting information (from V1 for compatibility)
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum MoveTarget {
-    SpecificMove,           // specific-move (1)
-    SelectedPokemonMeFirst, // selected-pokemon-me-first (2)
-    Ally,                   // ally (3)
-    UsersField,             // users-field (4)
-    UserOrAlly,             // user-or-ally (5)
-    OpponentsField,         // opponents-field (6)
-    User,                   // user (7)
-    RandomOpponent,         // random-opponent (8)
-    AllOtherPokemon,        // all-other-pokemon (9)
-    SelectedPokemon,        // selected-pokemon (10)
-    AllOpponents,           // all-opponents (11)
-    EntireField,            // entire-field (12)
-    UserAndAllies,          // user-and-allies (13)
-    AllPokemon,             // all-pokemon (14)
-    AllAllies,              // all-allies (15)
-    FaintingPokemon,        // fainting-pokemon (16)
-}
-
-impl MoveTarget {
-    /// Returns true if this target requires user selection
-    pub fn requires_user_selection(&self) -> bool {
-        matches!(self, MoveTarget::SpecificMove)
-    }
-
-    /// Returns true if this target can hit multiple Pokemon
-    pub fn is_spread_move(&self) -> bool {
-        matches!(
-            self,
-            MoveTarget::AllOpponents
-                | MoveTarget::AllOtherPokemon
-                | MoveTarget::AllPokemon
-                | MoveTarget::UserAndAllies
-        )
-    }
-
-    /// Returns true if this target affects allies
-    pub fn affects_allies(&self) -> bool {
-        matches!(
-            self,
-            MoveTarget::AllOtherPokemon
-                | MoveTarget::AllPokemon
-                | MoveTarget::Ally
-                | MoveTarget::UserAndAllies
-        )
-    }
-}
 
 /// Type effectiveness multiplier
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -141,17 +92,6 @@ pub struct EngineItemData {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_move_target_properties() {
-        assert!(MoveTarget::SpecificMove.requires_user_selection());
-        assert!(!MoveTarget::User.requires_user_selection());
-
-        assert!(MoveTarget::AllOpponents.is_spread_move());
-        assert!(!MoveTarget::SpecificMove.is_spread_move());
-
-        assert!(MoveTarget::AllOtherPokemon.affects_allies());
-        assert!(!MoveTarget::AllOpponents.affects_allies());
-    }
 
     #[test]
     fn test_type_effectiveness() {

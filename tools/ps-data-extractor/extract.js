@@ -16,10 +16,8 @@ async function extractMoves(dex) {
     // Get all move names and iterate through them
     for (const moveId in dex.data.Moves) {
         const move = dex.moves.get(moveId);
-        // Skip nonstandard moves unless they're Z-moves or Max moves
-        if (move.isNonstandard && !move.isZ && !move.isMax) {
-            continue;
-        }
+        // Include all moves for comprehensive testing
+        // (Previously filtered out nonstandard moves, but we want complete data)
 
         const moveData = {
             id: move.id,
@@ -92,16 +90,95 @@ async function extractMoves(dex) {
     return extractedMoves;
 }
 
+async function extractPokemon(dex) {
+    const extractedPokemon = {};
+    
+    // Get all Pokemon names and iterate through them
+    for (const pokemonId in dex.data.Pokedex) {
+        const pokemon = dex.species.get(pokemonId);
+        // Include all Pokemon for comprehensive testing
+        // (Previously filtered out nonstandard Pokemon, but we want complete data)
+        
+        const pokemonData = {
+            id: pokemon.id,
+            num: pokemon.num,
+            name: pokemon.name,
+            
+            // Basic info
+            types: pokemon.types,
+            baseStats: pokemon.baseStats,
+            abilities: pokemon.abilities,
+            
+            // Physical properties
+            heightm: pokemon.heightm,
+            weightkg: pokemon.weightkg,
+            color: pokemon.color,
+            
+            // Evolution and form data
+            prevo: pokemon.prevo || null,
+            evos: pokemon.evos || [],
+            evoType: pokemon.evoType || null,
+            evoCondition: pokemon.evoCondition || null,
+            evoItem: pokemon.evoItem || null,
+            evoLevel: pokemon.evoLevel || null,
+            
+            // Forme data
+            baseForme: pokemon.baseForme || null,
+            forme: pokemon.forme || null,
+            baseSpecies: pokemon.baseSpecies || pokemon.name,
+            otherFormes: pokemon.otherFormes || [],
+            formeOrder: pokemon.formeOrder || [],
+            
+            // Battle properties
+            gender: pokemon.gender || null,
+            genderRatio: pokemon.genderRatio || null,
+            maxHP: pokemon.maxHP || null,
+            
+            // Learnset reference
+            learnset: pokemon.learnset || null,
+            
+            // Special properties
+            tags: pokemon.tags || [],
+            tier: pokemon.tier || null,
+            doublesTier: pokemon.doublesTier || null,
+            
+            // Mega/Forme properties
+            isMega: pokemon.isMega || false,
+            isPrimal: pokemon.isPrimal || false,
+            cannotDynamax: pokemon.cannotDynamax || false,
+            canGigantamax: pokemon.canGigantamax || false,
+            gigantamax: pokemon.gigantamax || null,
+            
+            // Regional variants
+            cosmeticFormes: pokemon.cosmeticFormes || [],
+            
+            // Required items
+            requiredItem: pokemon.requiredItem || null,
+            requiredItems: pokemon.requiredItems || [],
+            
+            // Battle-only formes
+            battleOnly: pokemon.battleOnly || null,
+            
+            // Special mechanics
+            unreleasedHidden: pokemon.unreleasedHidden || false,
+            maleOnlyHidden: pokemon.maleOnlyHidden || false,
+            changesFrom: pokemon.changesFrom || null,
+        };
+        
+        extractedPokemon[pokemon.id] = pokemonData;
+    }
+    
+    return extractedPokemon;
+}
+
 async function extractItems(dex) {
     const extractedItems = {};
     
     // Get all item names and iterate through them
     for (const itemId in dex.data.Items) {
         const item = dex.items.get(itemId);
-        // Skip nonstandard items
-        if (item.isNonstandard) {
-            continue;
-        }
+        // Include all items for comprehensive testing
+        // (Previously filtered out nonstandard items, but we want complete data)
         
         const itemData = {
             id: item.id,
@@ -147,6 +224,26 @@ async function extractItems(dex) {
             onPlate: item.onPlate || null,
             onMemory: item.onMemory || null,
             onDrive: item.onDrive || null,
+            
+            // Generation metadata
+            isNonstandard: item.isNonstandard || null,
+            
+            // Berry-specific properties
+            berryType: item.berryType || null,
+            berryPower: item.berryPower || null,
+            
+            // Healing items
+            heal: item.heal || null,
+            
+            // Status cure items
+            cure: item.cure || null,
+            
+            // Other berry effects
+            onEat: item.onEat ? true : false,
+            onResidual: item.onResidual ? true : false,
+            
+            // Unreleased status
+            unreleased: item.unreleased || false,
         };
         
         extractedItems[item.id] = itemData;
@@ -170,6 +267,14 @@ async function main() {
         const movesPath = path.join(outputDir, 'moves.json');
         await fs.writeFile(movesPath, JSON.stringify(moves, null, 2));
         console.log(`Extracted ${Object.keys(moves).length} moves to ${movesPath}`);
+    }
+    
+    if (command === 'pokemon' || command === 'all') {
+        console.log('Extracting Pokemon...');
+        const pokemon = await extractPokemon(Dex);
+        const pokemonPath = path.join(outputDir, 'pokemon.json');
+        await fs.writeFile(pokemonPath, JSON.stringify(pokemon, null, 2));
+        console.log(`Extracted ${Object.keys(pokemon).length} Pokemon to ${pokemonPath}`);
     }
     
     if (command === 'items' || command === 'all') {

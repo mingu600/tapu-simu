@@ -1,0 +1,6057 @@
+{
+  "abomasite": {
+    "name": "Abomasite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "absolite": {
+    "name": "Absolite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "aerodactylite": {
+    "name": "Aerodactylite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "aggronite": {
+    "name": "Aggronite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "aguavberry": {
+    "name": "Aguav Berry",
+    "changes": [
+      {
+        "generation": 4,
+        "changes": [
+          {
+            "field": "onResidual",
+            "from": true,
+            "to": false
+          }
+        ]
+      },
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Dragon"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Dragon"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "alakazite": {
+    "name": "Alakazite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "aloraichiumz": {
+    "name": "Aloraichium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "altarianite": {
+    "name": "Altarianite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "ampharosite": {
+    "name": "Ampharosite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "apicotberry": {
+    "name": "Apicot Berry",
+    "changes": [
+      {
+        "generation": 4,
+        "changes": [
+          {
+            "field": "onResidual",
+            "from": true,
+            "to": false
+          }
+        ]
+      },
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 80,
+              "type": "Ground"
+            },
+            "to": {
+              "basePower": 100,
+              "type": "Ground"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "armorfossil": {
+    "name": "Armor Fossil",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "aspearberry": {
+    "name": "Aspear Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Ice"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Ice"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "audinite": {
+    "name": "Audinite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "babiriberry": {
+    "name": "Babiri Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Steel"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Steel"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "banettite": {
+    "name": "Banettite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "beedrillite": {
+    "name": "Beedrillite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "belueberry": {
+    "name": "Belue Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 80,
+              "type": "Electric"
+            },
+            "to": {
+              "basePower": 100,
+              "type": "Electric"
+            }
+          }
+        ]
+      },
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "berryjuice": {
+    "name": "Berry Juice",
+    "changes": [
+      {
+        "generation": 4,
+        "changes": [
+          {
+            "field": "onResidual",
+            "from": true,
+            "to": false
+          }
+        ]
+      },
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "bignugget": {
+    "name": "Big Nugget",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "fling",
+            "from": {
+              "basePower": 30,
+              "status": null,
+              "volatileStatus": null
+            },
+            "to": {
+              "basePower": 130,
+              "status": null,
+              "volatileStatus": null
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "blastoisinite": {
+    "name": "Blastoisinite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "blazikenite": {
+    "name": "Blazikenite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "blueorb": {
+    "name": "Blue Orb",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "buggem": {
+    "name": "Bug Gem",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "bugmemory": {
+    "name": "Bug Memory",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "buginiumz": {
+    "name": "Buginium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "burndrive": {
+    "name": "Burn Drive",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "cameruptite": {
+    "name": "Cameruptite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "charizarditex": {
+    "name": "Charizardite X",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "charizarditey": {
+    "name": "Charizardite Y",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "chartiberry": {
+    "name": "Charti Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Rock"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Rock"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "cheriberry": {
+    "name": "Cheri Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Fire"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Fire"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "chestoberry": {
+    "name": "Chesto Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Water"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Water"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "chilanberry": {
+    "name": "Chilan Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Normal"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Normal"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "chilldrive": {
+    "name": "Chill Drive",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "chopleberry": {
+    "name": "Chople Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Fighting"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Fighting"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "clawfossil": {
+    "name": "Claw Fossil",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "cobaberry": {
+    "name": "Coba Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Flying"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Flying"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "colburberry": {
+    "name": "Colbur Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Dark"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Dark"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "cornnberry": {
+    "name": "Cornn Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 70,
+              "type": "Bug"
+            },
+            "to": {
+              "basePower": 90,
+              "type": "Bug"
+            }
+          }
+        ]
+      },
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "coverfossil": {
+    "name": "Cover Fossil",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "custapberry": {
+    "name": "Custap Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 80,
+              "type": "Ghost"
+            },
+            "to": {
+              "basePower": 100,
+              "type": "Ghost"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "darkgem": {
+    "name": "Dark Gem",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "darkmemory": {
+    "name": "Dark Memory",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "darkiniumz": {
+    "name": "Darkinium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "decidiumz": {
+    "name": "Decidium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "deepseascale": {
+    "name": "Deep Sea Scale",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "deepseatooth": {
+    "name": "Deep Sea Tooth",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "diancite": {
+    "name": "Diancite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "domefossil": {
+    "name": "Dome Fossil",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "dousedrive": {
+    "name": "Douse Drive",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "dracoplate": {
+    "name": "Draco Plate",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      },
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": "Past",
+            "to": null
+          }
+        ]
+      }
+    ]
+  },
+  "dragongem": {
+    "name": "Dragon Gem",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "dragonmemory": {
+    "name": "Dragon Memory",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "dragoniumz": {
+    "name": "Dragonium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "dreadplate": {
+    "name": "Dread Plate",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      },
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": "Past",
+            "to": null
+          }
+        ]
+      }
+    ]
+  },
+  "durinberry": {
+    "name": "Durin Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 80,
+              "type": "Water"
+            },
+            "to": {
+              "basePower": 100,
+              "type": "Water"
+            }
+          }
+        ]
+      },
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "earthplate": {
+    "name": "Earth Plate",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      },
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": "Past",
+            "to": null
+          }
+        ]
+      }
+    ]
+  },
+  "eeviumz": {
+    "name": "Eevium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "electricgem": {
+    "name": "Electric Gem",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "electricmemory": {
+    "name": "Electric Memory",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "electriumz": {
+    "name": "Electrium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "enigmaberry": {
+    "name": "Enigma Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 80,
+              "type": "Bug"
+            },
+            "to": {
+              "basePower": 100,
+              "type": "Bug"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "fairiumz": {
+    "name": "Fairium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "fairymemory": {
+    "name": "Fairy Memory",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "fightinggem": {
+    "name": "Fighting Gem",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "fightingmemory": {
+    "name": "Fighting Memory",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "fightiniumz": {
+    "name": "Fightinium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "figyberry": {
+    "name": "Figy Berry",
+    "changes": [
+      {
+        "generation": 4,
+        "changes": [
+          {
+            "field": "onResidual",
+            "from": true,
+            "to": false
+          }
+        ]
+      },
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Bug"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Bug"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "firegem": {
+    "name": "Fire Gem",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "firememory": {
+    "name": "Fire Memory",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "firiumz": {
+    "name": "Firium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "fistplate": {
+    "name": "Fist Plate",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      },
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": "Past",
+            "to": null
+          }
+        ]
+      }
+    ]
+  },
+  "flameplate": {
+    "name": "Flame Plate",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      },
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": "Past",
+            "to": null
+          }
+        ]
+      }
+    ]
+  },
+  "flyinggem": {
+    "name": "Flying Gem",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "flyingmemory": {
+    "name": "Flying Memory",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "flyiniumz": {
+    "name": "Flyinium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "fossilizedbird": {
+    "name": "Fossilized Bird",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "fossilizeddino": {
+    "name": "Fossilized Dino",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "fossilizeddrake": {
+    "name": "Fossilized Drake",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "fossilizedfish": {
+    "name": "Fossilized Fish",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "fullincense": {
+    "name": "Full Incense",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "galladite": {
+    "name": "Galladite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "ganlonberry": {
+    "name": "Ganlon Berry",
+    "changes": [
+      {
+        "generation": 4,
+        "changes": [
+          {
+            "field": "onResidual",
+            "from": true,
+            "to": false
+          }
+        ]
+      },
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 80,
+              "type": "Ice"
+            },
+            "to": {
+              "basePower": 100,
+              "type": "Ice"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "garchompite": {
+    "name": "Garchompite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "gardevoirite": {
+    "name": "Gardevoirite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "gengarite": {
+    "name": "Gengarite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "ghostgem": {
+    "name": "Ghost Gem",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "ghostmemory": {
+    "name": "Ghost Memory",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "ghostiumz": {
+    "name": "Ghostium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "glalitite": {
+    "name": "Glalitite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "grassgem": {
+    "name": "Grass Gem",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "grassmemory": {
+    "name": "Grass Memory",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "grassiumz": {
+    "name": "Grassium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "grepaberry": {
+    "name": "Grepa Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 70,
+              "type": "Flying"
+            },
+            "to": {
+              "basePower": 90,
+              "type": "Flying"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "groundgem": {
+    "name": "Ground Gem",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "groundmemory": {
+    "name": "Ground Memory",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "groundiumz": {
+    "name": "Groundium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "gyaradosite": {
+    "name": "Gyaradosite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "habanberry": {
+    "name": "Haban Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Dragon"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Dragon"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "helixfossil": {
+    "name": "Helix Fossil",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "heracronite": {
+    "name": "Heracronite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "hondewberry": {
+    "name": "Hondew Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 70,
+              "type": "Ground"
+            },
+            "to": {
+              "basePower": 90,
+              "type": "Ground"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "houndoominite": {
+    "name": "Houndoominite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "iapapaberry": {
+    "name": "Iapapa Berry",
+    "changes": [
+      {
+        "generation": 4,
+        "changes": [
+          {
+            "field": "onResidual",
+            "from": true,
+            "to": false
+          }
+        ]
+      },
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Dark"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Dark"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "icegem": {
+    "name": "Ice Gem",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "icememory": {
+    "name": "Ice Memory",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "icicleplate": {
+    "name": "Icicle Plate",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      },
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": "Past",
+            "to": null
+          }
+        ]
+      }
+    ]
+  },
+  "iciumz": {
+    "name": "Icium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "inciniumz": {
+    "name": "Incinium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "insectplate": {
+    "name": "Insect Plate",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      },
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": "Past",
+            "to": null
+          }
+        ]
+      }
+    ]
+  },
+  "ironplate": {
+    "name": "Iron Plate",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      },
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": "Past",
+            "to": null
+          }
+        ]
+      }
+    ]
+  },
+  "jabocaberry": {
+    "name": "Jaboca Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 80,
+              "type": "Dragon"
+            },
+            "to": {
+              "basePower": 100,
+              "type": "Dragon"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "jawfossil": {
+    "name": "Jaw Fossil",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "kasibberry": {
+    "name": "Kasib Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Ghost"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Ghost"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "kebiaberry": {
+    "name": "Kebia Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Poison"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Poison"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "kelpsyberry": {
+    "name": "Kelpsy Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 70,
+              "type": "Fighting"
+            },
+            "to": {
+              "basePower": 90,
+              "type": "Fighting"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "kangaskhanite": {
+    "name": "Kangaskhanite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "kommoniumz": {
+    "name": "Kommonium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "lansatberry": {
+    "name": "Lansat Berry",
+    "changes": [
+      {
+        "generation": 4,
+        "changes": [
+          {
+            "field": "onResidual",
+            "from": true,
+            "to": false
+          }
+        ]
+      },
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 80,
+              "type": "Flying"
+            },
+            "to": {
+              "basePower": 100,
+              "type": "Flying"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "latiasite": {
+    "name": "Latiasite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "latiosite": {
+    "name": "Latiosite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "laxincense": {
+    "name": "Lax Incense",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "leek": {
+    "name": "Leek",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "leppaberry": {
+    "name": "Leppa Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Fighting"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Fighting"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "liechiberry": {
+    "name": "Liechi Berry",
+    "changes": [
+      {
+        "generation": 4,
+        "changes": [
+          {
+            "field": "onResidual",
+            "from": true,
+            "to": false
+          }
+        ]
+      },
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 80,
+              "type": "Grass"
+            },
+            "to": {
+              "basePower": 100,
+              "type": "Grass"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "lopunnite": {
+    "name": "Lopunnite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "lucarionite": {
+    "name": "Lucarionite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "luckypunch": {
+    "name": "Lucky Punch",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "lumberry": {
+    "name": "Lum Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Flying"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Flying"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "lunaliumz": {
+    "name": "Lunalium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "lycaniumz": {
+    "name": "Lycanium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "machobrace": {
+    "name": "Macho Brace",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "magoberry": {
+    "name": "Mago Berry",
+    "changes": [
+      {
+        "generation": 4,
+        "changes": [
+          {
+            "field": "onResidual",
+            "from": true,
+            "to": false
+          }
+        ]
+      },
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Ghost"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Ghost"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "magostberry": {
+    "name": "Magost Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 70,
+              "type": "Rock"
+            },
+            "to": {
+              "basePower": 90,
+              "type": "Rock"
+            }
+          }
+        ]
+      },
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "mail": {
+    "name": "Mail",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "manectite": {
+    "name": "Manectite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "marshadiumz": {
+    "name": "Marshadium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "mawilite": {
+    "name": "Mawilite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "meadowplate": {
+    "name": "Meadow Plate",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      },
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": "Past",
+            "to": null
+          }
+        ]
+      }
+    ]
+  },
+  "medichamite": {
+    "name": "Medichamite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "metagrossite": {
+    "name": "Metagrossite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "metalpowder": {
+    "name": "Metal Powder",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "mewniumz": {
+    "name": "Mewnium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "mewtwonitex": {
+    "name": "Mewtwonite X",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "mewtwonitey": {
+    "name": "Mewtwonite Y",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "micleberry": {
+    "name": "Micle Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 80,
+              "type": "Rock"
+            },
+            "to": {
+              "basePower": 100,
+              "type": "Rock"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "mimikiumz": {
+    "name": "Mimikium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "mindplate": {
+    "name": "Mind Plate",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      },
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": "Past",
+            "to": null
+          }
+        ]
+      }
+    ]
+  },
+  "nanabberry": {
+    "name": "Nanab Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 70,
+              "type": "Water"
+            },
+            "to": {
+              "basePower": 90,
+              "type": "Water"
+            }
+          }
+        ]
+      },
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "nomelberry": {
+    "name": "Nomel Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 70,
+              "type": "Dragon"
+            },
+            "to": {
+              "basePower": 90,
+              "type": "Dragon"
+            }
+          }
+        ]
+      },
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "normaliumz": {
+    "name": "Normalium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "occaberry": {
+    "name": "Occa Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Fire"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Fire"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "oddincense": {
+    "name": "Odd Incense",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "oldamber": {
+    "name": "Old Amber",
+    "changes": [
+      {
+        "generation": 7,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "oranberry": {
+    "name": "Oran Berry",
+    "changes": [
+      {
+        "generation": 4,
+        "changes": [
+          {
+            "field": "onResidual",
+            "from": true,
+            "to": false
+          }
+        ]
+      },
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Poison"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Poison"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "pamtreberry": {
+    "name": "Pamtre Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 70,
+              "type": "Steel"
+            },
+            "to": {
+              "basePower": 90,
+              "type": "Steel"
+            }
+          }
+        ]
+      },
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "passhoberry": {
+    "name": "Passho Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Water"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Water"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "payapaberry": {
+    "name": "Payapa Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Psychic"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Psychic"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "pechaberry": {
+    "name": "Pecha Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Electric"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Electric"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "persimberry": {
+    "name": "Persim Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Ground"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Ground"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "petayaberry": {
+    "name": "Petaya Berry",
+    "changes": [
+      {
+        "generation": 4,
+        "changes": [
+          {
+            "field": "onResidual",
+            "from": true,
+            "to": false
+          }
+        ]
+      },
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 80,
+              "type": "Poison"
+            },
+            "to": {
+              "basePower": 100,
+              "type": "Poison"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "pidgeotite": {
+    "name": "Pidgeotite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "pikaniumz": {
+    "name": "Pikanium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "pikashuniumz": {
+    "name": "Pikashunium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "pinsirite": {
+    "name": "Pinsirite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "plumefossil": {
+    "name": "Plume Fossil",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "poisongem": {
+    "name": "Poison Gem",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "poisonmemory": {
+    "name": "Poison Memory",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "poisoniumz": {
+    "name": "Poisonium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "pomegberry": {
+    "name": "Pomeg Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 70,
+              "type": "Ice"
+            },
+            "to": {
+              "basePower": 90,
+              "type": "Ice"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "primariumz": {
+    "name": "Primarium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "psychicgem": {
+    "name": "Psychic Gem",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "psychicmemory": {
+    "name": "Psychic Memory",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "psychiumz": {
+    "name": "Psychium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "qualotberry": {
+    "name": "Qualot Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 70,
+              "type": "Poison"
+            },
+            "to": {
+              "basePower": 90,
+              "type": "Poison"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "quickpowder": {
+    "name": "Quick Powder",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "rabutaberry": {
+    "name": "Rabuta Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 70,
+              "type": "Ghost"
+            },
+            "to": {
+              "basePower": 90,
+              "type": "Ghost"
+            }
+          }
+        ]
+      },
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "rawstberry": {
+    "name": "Rawst Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Grass"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Grass"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "razorfang": {
+    "name": "Razor Fang",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      },
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": "Past",
+            "to": null
+          }
+        ]
+      }
+    ]
+  },
+  "razzberry": {
+    "name": "Razz Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Steel"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Steel"
+            }
+          }
+        ]
+      },
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "redorb": {
+    "name": "Red Orb",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "rindoberry": {
+    "name": "Rindo Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Grass"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Grass"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "rockgem": {
+    "name": "Rock Gem",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "rockincense": {
+    "name": "Rock Incense",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "rockmemory": {
+    "name": "Rock Memory",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "rockiumz": {
+    "name": "Rockium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "rootfossil": {
+    "name": "Root Fossil",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "roseincense": {
+    "name": "Rose Incense",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "rowapberry": {
+    "name": "Rowap Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 80,
+              "type": "Dark"
+            },
+            "to": {
+              "basePower": 100,
+              "type": "Dark"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "sablenite": {
+    "name": "Sablenite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "sachet": {
+    "name": "Sachet",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "sailfossil": {
+    "name": "Sail Fossil",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "salacberry": {
+    "name": "Salac Berry",
+    "changes": [
+      {
+        "generation": 4,
+        "changes": [
+          {
+            "field": "onResidual",
+            "from": true,
+            "to": false
+          }
+        ]
+      },
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 80,
+              "type": "Fighting"
+            },
+            "to": {
+              "basePower": 100,
+              "type": "Fighting"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "salamencite": {
+    "name": "Salamencite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "sceptilite": {
+    "name": "Sceptilite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "scizorite": {
+    "name": "Scizorite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "seaincense": {
+    "name": "Sea Incense",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "sharpedonite": {
+    "name": "Sharpedonite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "shockdrive": {
+    "name": "Shock Drive",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "shucaberry": {
+    "name": "Shuca Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Ground"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Ground"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "sitrusberry": {
+    "name": "Sitrus Berry",
+    "changes": [
+      {
+        "generation": 4,
+        "changes": [
+          {
+            "field": "onResidual",
+            "from": true,
+            "to": false
+          }
+        ]
+      },
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Psychic"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Psychic"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "skullfossil": {
+    "name": "Skull Fossil",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "skyplate": {
+    "name": "Sky Plate",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      },
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": "Past",
+            "to": null
+          }
+        ]
+      }
+    ]
+  },
+  "slowbronite": {
+    "name": "Slowbronite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "snorliumz": {
+    "name": "Snorlium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "solganiumz": {
+    "name": "Solganium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "spelonberry": {
+    "name": "Spelon Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 70,
+              "type": "Dark"
+            },
+            "to": {
+              "basePower": 90,
+              "type": "Dark"
+            }
+          }
+        ]
+      },
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "splashplate": {
+    "name": "Splash Plate",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      },
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": "Past",
+            "to": null
+          }
+        ]
+      }
+    ]
+  },
+  "spookyplate": {
+    "name": "Spooky Plate",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      },
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": "Past",
+            "to": null
+          }
+        ]
+      }
+    ]
+  },
+  "starfberry": {
+    "name": "Starf Berry",
+    "changes": [
+      {
+        "generation": 4,
+        "changes": [
+          {
+            "field": "onResidual",
+            "from": true,
+            "to": false
+          }
+        ]
+      },
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 80,
+              "type": "Psychic"
+            },
+            "to": {
+              "basePower": 100,
+              "type": "Psychic"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "steelixite": {
+    "name": "Steelixite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "steelgem": {
+    "name": "Steel Gem",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "steelmemory": {
+    "name": "Steel Memory",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "steeliumz": {
+    "name": "Steelium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "stick": {
+    "name": "Stick",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "stoneplate": {
+    "name": "Stone Plate",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      },
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": "Past",
+            "to": null
+          }
+        ]
+      }
+    ]
+  },
+  "swampertite": {
+    "name": "Swampertite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tamatoberry": {
+    "name": "Tamato Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 70,
+              "type": "Psychic"
+            },
+            "to": {
+              "basePower": 90,
+              "type": "Psychic"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "tangaberry": {
+    "name": "Tanga Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Bug"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Bug"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "tapuniumz": {
+    "name": "Tapunium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "thickclub": {
+    "name": "Thick Club",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "toxicplate": {
+    "name": "Toxic Plate",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      },
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": "Past",
+            "to": null
+          }
+        ]
+      }
+    ]
+  },
+  "tr00": {
+    "name": "TR00",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr01": {
+    "name": "TR01",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr02": {
+    "name": "TR02",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr03": {
+    "name": "TR03",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr04": {
+    "name": "TR04",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr05": {
+    "name": "TR05",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr06": {
+    "name": "TR06",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr07": {
+    "name": "TR07",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr08": {
+    "name": "TR08",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr09": {
+    "name": "TR09",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr10": {
+    "name": "TR10",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr11": {
+    "name": "TR11",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr12": {
+    "name": "TR12",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr13": {
+    "name": "TR13",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr14": {
+    "name": "TR14",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr15": {
+    "name": "TR15",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr16": {
+    "name": "TR16",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr17": {
+    "name": "TR17",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr18": {
+    "name": "TR18",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr19": {
+    "name": "TR19",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr20": {
+    "name": "TR20",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr21": {
+    "name": "TR21",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr22": {
+    "name": "TR22",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr23": {
+    "name": "TR23",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr24": {
+    "name": "TR24",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr25": {
+    "name": "TR25",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr26": {
+    "name": "TR26",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr27": {
+    "name": "TR27",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr28": {
+    "name": "TR28",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr29": {
+    "name": "TR29",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr30": {
+    "name": "TR30",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr31": {
+    "name": "TR31",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr32": {
+    "name": "TR32",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr33": {
+    "name": "TR33",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr34": {
+    "name": "TR34",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr35": {
+    "name": "TR35",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr36": {
+    "name": "TR36",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr37": {
+    "name": "TR37",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr38": {
+    "name": "TR38",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr39": {
+    "name": "TR39",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr40": {
+    "name": "TR40",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr41": {
+    "name": "TR41",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr42": {
+    "name": "TR42",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr43": {
+    "name": "TR43",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr44": {
+    "name": "TR44",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr45": {
+    "name": "TR45",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr46": {
+    "name": "TR46",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr47": {
+    "name": "TR47",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr48": {
+    "name": "TR48",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr49": {
+    "name": "TR49",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr50": {
+    "name": "TR50",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr51": {
+    "name": "TR51",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr52": {
+    "name": "TR52",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr53": {
+    "name": "TR53",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr54": {
+    "name": "TR54",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr55": {
+    "name": "TR55",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr56": {
+    "name": "TR56",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr57": {
+    "name": "TR57",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr58": {
+    "name": "TR58",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr59": {
+    "name": "TR59",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr60": {
+    "name": "TR60",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr61": {
+    "name": "TR61",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr62": {
+    "name": "TR62",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr63": {
+    "name": "TR63",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr64": {
+    "name": "TR64",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr65": {
+    "name": "TR65",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr66": {
+    "name": "TR66",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr67": {
+    "name": "TR67",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr68": {
+    "name": "TR68",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr69": {
+    "name": "TR69",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr70": {
+    "name": "TR70",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr71": {
+    "name": "TR71",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr72": {
+    "name": "TR72",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr73": {
+    "name": "TR73",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr74": {
+    "name": "TR74",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr75": {
+    "name": "TR75",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr76": {
+    "name": "TR76",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr77": {
+    "name": "TR77",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr78": {
+    "name": "TR78",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr79": {
+    "name": "TR79",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr80": {
+    "name": "TR80",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr81": {
+    "name": "TR81",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr82": {
+    "name": "TR82",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr83": {
+    "name": "TR83",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr84": {
+    "name": "TR84",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr85": {
+    "name": "TR85",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr86": {
+    "name": "TR86",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr87": {
+    "name": "TR87",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr88": {
+    "name": "TR88",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr89": {
+    "name": "TR89",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr90": {
+    "name": "TR90",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr91": {
+    "name": "TR91",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr92": {
+    "name": "TR92",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr93": {
+    "name": "TR93",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr94": {
+    "name": "TR94",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr95": {
+    "name": "TR95",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr96": {
+    "name": "TR96",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr97": {
+    "name": "TR97",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr98": {
+    "name": "TR98",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tr99": {
+    "name": "TR99",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "tyranitarite": {
+    "name": "Tyranitarite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "ultranecroziumz": {
+    "name": "Ultranecrozium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "venusaurite": {
+    "name": "Venusaurite",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "wacanberry": {
+    "name": "Wacan Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Electric"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Electric"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "watergem": {
+    "name": "Water Gem",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "watermemory": {
+    "name": "Water Memory",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "wateriumz": {
+    "name": "Waterium Z",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "watmelberry": {
+    "name": "Watmel Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 80,
+              "type": "Fire"
+            },
+            "to": {
+              "basePower": 100,
+              "type": "Fire"
+            }
+          }
+        ]
+      },
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "waveincense": {
+    "name": "Wave Incense",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "wepearberry": {
+    "name": "Wepear Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 70,
+              "type": "Electric"
+            },
+            "to": {
+              "basePower": 90,
+              "type": "Electric"
+            }
+          }
+        ]
+      },
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "whippeddream": {
+    "name": "Whipped Dream",
+    "changes": [
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "wikiberry": {
+    "name": "Wiki Berry",
+    "changes": [
+      {
+        "generation": 4,
+        "changes": [
+          {
+            "field": "onResidual",
+            "from": true,
+            "to": false
+          }
+        ]
+      },
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Rock"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Rock"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "yacheberry": {
+    "name": "Yache Berry",
+    "changes": [
+      {
+        "generation": 6,
+        "changes": [
+          {
+            "field": "naturalGift",
+            "from": {
+              "basePower": 60,
+              "type": "Ice"
+            },
+            "to": {
+              "basePower": 80,
+              "type": "Ice"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "zapplate": {
+    "name": "Zap Plate",
+    "changes": [
+      {
+        "generation": 8,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      },
+      {
+        "generation": 9,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": "Past",
+            "to": null
+          }
+        ]
+      }
+    ]
+  },
+  "berserkgene": {
+    "name": "Berserk Gene",
+    "changes": [
+      {
+        "generation": 3,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "berry": {
+    "name": "Berry",
+    "changes": [
+      {
+        "generation": 3,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "bitterberry": {
+    "name": "Bitter Berry",
+    "changes": [
+      {
+        "generation": 3,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "burntberry": {
+    "name": "Burnt Berry",
+    "changes": [
+      {
+        "generation": 3,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "goldberry": {
+    "name": "Gold Berry",
+    "changes": [
+      {
+        "generation": 3,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "iceberry": {
+    "name": "Ice Berry",
+    "changes": [
+      {
+        "generation": 3,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "mintberry": {
+    "name": "Mint Berry",
+    "changes": [
+      {
+        "generation": 3,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "miracleberry": {
+    "name": "Miracle Berry",
+    "changes": [
+      {
+        "generation": 3,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "mysteryberry": {
+    "name": "Mystery Berry",
+    "changes": [
+      {
+        "generation": 3,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "pinkbow": {
+    "name": "Pink Bow",
+    "changes": [
+      {
+        "generation": 3,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "polkadotbow": {
+    "name": "Polkadot Bow",
+    "changes": [
+      {
+        "generation": 3,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "przcureberry": {
+    "name": "PRZ Cure Berry",
+    "changes": [
+      {
+        "generation": 3,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  },
+  "psncureberry": {
+    "name": "PSN Cure Berry",
+    "changes": [
+      {
+        "generation": 3,
+        "changes": [
+          {
+            "field": "isNonstandard",
+            "from": null,
+            "to": "Past"
+          }
+        ]
+      }
+    ]
+  }
+}

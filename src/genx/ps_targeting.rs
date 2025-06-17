@@ -264,8 +264,11 @@ impl PSAutoTargetingEngine {
         use crate::battle_format::BattlePosition;
 
         // If move choice already has targets, don't modify them
-        if move_choice.target_positions().is_some() {
-            return Ok(());
+        // But treat empty target lists as needing auto-resolution
+        if let Some(targets) = move_choice.target_positions() {
+            if !targets.is_empty() {
+                return Ok(());
+            }
         }
 
         // Get the move index from the choice
@@ -302,49 +305,29 @@ impl PSAutoTargetingEngine {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::state::{State, Pokemon, PokemonStatus, StatBoosts};
-    use crate::move_choice::MoveIndex;
-    use std::collections::HashMap;
+    use crate::state::{State, Pokemon};
 
     fn create_test_state_doubles() -> State {
-        let mut state = State::new(BattleFormat::Doubles);
+        let mut state = State::new(BattleFormat::doubles());
         
         // Set up active Pokemon on both sides
-        state.side_one.active_pokemon = vec![Some(0), Some(1)];
-        state.side_two.active_pokemon = vec![Some(0), Some(1)];
+        state.side_one.active_pokemon_indices = vec![Some(0), Some(1)];
+        state.side_two.active_pokemon_indices = vec![Some(0), Some(1)];
         
         // Add some Pokemon to teams
         for _ in 0..2 {
-            state.side_one.pokemon.push(Pokemon {
-                species: "Test".to_string(),
-                level: 50,
-                hp: 100,
-                max_hp: 100,
-                status: PokemonStatus::None,
-                status_duration: 0,
-                stats: StatBoosts::default(),
-                stat_boosts: StatBoosts::default(),
-                moves: HashMap::new(),
-                types: vec!["Normal".to_string()],
-                volatile_statuses: HashMap::new(),
-                substitute_health: None,
-                ability: "Test".to_string(),
-            });
-            state.side_two.pokemon.push(Pokemon {
-                species: "Test".to_string(),
-                level: 50,
-                hp: 100,
-                max_hp: 100,
-                status: PokemonStatus::None,
-                status_duration: 0,
-                stats: StatBoosts::default(),
-                stat_boosts: StatBoosts::default(),
-                moves: HashMap::new(),
-                types: vec!["Normal".to_string()],
-                volatile_statuses: HashMap::new(),
-                substitute_health: None,
-                ability: "Test".to_string(),
-            });
+            let mut pokemon_one = Pokemon::new("Test".to_string());
+            pokemon_one.ability = "Test".to_string();
+            pokemon_one.hp = 100;
+            pokemon_one.max_hp = 100;
+            
+            let mut pokemon_two = Pokemon::new("Test".to_string());
+            pokemon_two.ability = "Test".to_string();
+            pokemon_two.hp = 100;
+            pokemon_two.max_hp = 100;
+            
+            state.side_one.pokemon.push(pokemon_one);
+            state.side_two.pokemon.push(pokemon_two);
         }
         
         state
@@ -353,7 +336,7 @@ mod tests {
     #[test]
     fn test_ps_self_targeting() {
         let state = create_test_state_doubles();
-        let engine = PSAutoTargetingEngine::new(BattleFormat::Doubles);
+        let engine = PSAutoTargetingEngine::new(BattleFormat::doubles());
         let user_pos = BattlePosition::new(SideReference::SideOne, 0);
         
         let targets = engine.resolve_targets(PSMoveTarget::Self_, user_pos, &state);
@@ -363,7 +346,7 @@ mod tests {
     #[test]
     fn test_ps_spread_move_targeting() {
         let state = create_test_state_doubles();
-        let engine = PSAutoTargetingEngine::new(BattleFormat::Doubles);
+        let engine = PSAutoTargetingEngine::new(BattleFormat::doubles());
         let user_pos = BattlePosition::new(SideReference::SideOne, 0);
         
         let targets = engine.resolve_targets(PSMoveTarget::AllAdjacentFoes, user_pos, &state);
@@ -375,7 +358,7 @@ mod tests {
     #[test]
     fn test_ps_ally_targeting() {
         let state = create_test_state_doubles();
-        let engine = PSAutoTargetingEngine::new(BattleFormat::Doubles);
+        let engine = PSAutoTargetingEngine::new(BattleFormat::doubles());
         let user_pos = BattlePosition::new(SideReference::SideOne, 0);
         
         let targets = engine.resolve_targets(PSMoveTarget::AdjacentAlly, user_pos, &state);

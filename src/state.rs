@@ -93,6 +93,22 @@ impl State {
         positions
     }
 
+    /// Get the generation mechanics for this battle
+    pub fn get_generation_mechanics(&self) -> crate::generation::GenerationMechanics {
+        self.format.generation.get_mechanics()
+    }
+
+    /// Get the generation for this battle
+    pub fn get_generation(&self) -> crate::generation::Generation {
+        self.format.generation
+    }
+
+    /// Check if a generation feature is available in this battle
+    pub fn has_generation_feature(&self, feature: crate::generation::GenerationFeature) -> bool {
+        use crate::generation::GenerationBattleMechanics;
+        self.get_generation_mechanics().has_feature(feature)
+    }
+
     /// Check if the battle is over
     pub fn is_battle_over(&self) -> bool {
         self.side_one.is_defeated() || self.side_two.is_defeated()
@@ -637,11 +653,13 @@ pub enum PokemonType {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::battle_format::{BattleFormat, FormatType};
+    use crate::generation::Generation;
 
     #[test]
     fn test_state_creation() {
-        let state = State::new(BattleFormat::Doubles);
-        assert_eq!(state.format, BattleFormat::Doubles);
+        let state = State::new(BattleFormat::new("Doubles".to_string(), Generation::Gen9, FormatType::Doubles));
+        assert_eq!(state.format, BattleFormat::new("Doubles".to_string(), Generation::Gen9, FormatType::Doubles));
         assert_eq!(state.turn, 1);
         assert_eq!(state.weather, Weather::NONE);
     }
@@ -678,7 +696,7 @@ mod tests {
 
     #[test]
     fn test_position_validity() {
-        let state = State::new(BattleFormat::Singles);
+        let state = State::new(BattleFormat::new("Singles".to_string(), Generation::Gen9, FormatType::Singles));
         let pos_valid = BattlePosition::new(SideReference::SideOne, 0);
         let pos_invalid = BattlePosition::new(SideReference::SideOne, 1);
 

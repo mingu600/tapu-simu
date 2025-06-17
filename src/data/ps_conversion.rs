@@ -1,57 +1,11 @@
 //! # Pokemon Showdown Data Conversion
 //! 
-//! This module provides conversion between rustemon/legacy formats and 
-//! Pokemon Showdown data formats.
+//! This module provides conversion utilities for Pokemon Showdown data formats.
 
-use crate::data::types::MoveTarget;
 use crate::data::ps_types::PSMoveTarget;
 
-/// Convert rustemon/PokeAPI move target to Pokemon Showdown target
-pub fn rustemon_to_ps_target(rustemon_target: MoveTarget) -> PSMoveTarget {
-    match rustemon_target {
-        // Direct mappings
-        MoveTarget::User => PSMoveTarget::Self_,
-        MoveTarget::Ally => PSMoveTarget::AdjacentAlly,
-        MoveTarget::UserOrAlly => PSMoveTarget::AdjacentAllyOrSelf,
-        MoveTarget::RandomOpponent => PSMoveTarget::RandomNormal,
-        MoveTarget::AllOpponents => PSMoveTarget::AllAdjacentFoes,
-        MoveTarget::EntireField => PSMoveTarget::All,
-        MoveTarget::UsersField => PSMoveTarget::AllySide,
-        MoveTarget::OpponentsField => PSMoveTarget::FoeSide,
-        MoveTarget::SpecificMove => PSMoveTarget::Scripted,
-        
-        // Complex mappings
-        MoveTarget::SelectedPokemon | MoveTarget::SelectedPokemonMeFirst => PSMoveTarget::Normal,
-        MoveTarget::AllOtherPokemon => PSMoveTarget::AllAdjacent, // Closest match
-        MoveTarget::UserAndAllies => PSMoveTarget::Allies, // Not exact but closest
-        MoveTarget::AllPokemon => PSMoveTarget::All, // Field effect is closest
-        MoveTarget::AllAllies => PSMoveTarget::Allies,
-        MoveTarget::FaintingPokemon => PSMoveTarget::Scripted, // Special handling needed
-    }
-}
-
-/// Convert rustemon/PokeAPI target string to Pokemon Showdown target
-pub fn rustemon_target_to_ps(rustemon_target: &str) -> PSMoveTarget {
-    match rustemon_target {
-        "specific-move" => PSMoveTarget::Scripted,
-        "selected-pokemon-me-first" => PSMoveTarget::Normal,
-        "ally" => PSMoveTarget::AdjacentAlly,
-        "users-field" => PSMoveTarget::AllySide,
-        "user-or-ally" => PSMoveTarget::AdjacentAllyOrSelf,
-        "opponents-field" => PSMoveTarget::FoeSide,
-        "user" => PSMoveTarget::Self_,
-        "random-opponent" => PSMoveTarget::RandomNormal,
-        "all-other-pokemon" => PSMoveTarget::AllAdjacent,
-        "selected-pokemon" => PSMoveTarget::Normal,
-        "all-opponents" => PSMoveTarget::AllAdjacentFoes,
-        "entire-field" => PSMoveTarget::All,
-        "user-and-allies" => PSMoveTarget::Allies,
-        "all-pokemon" => PSMoveTarget::All,
-        "all-allies" => PSMoveTarget::Allies,
-        "fainting-pokemon" => PSMoveTarget::Scripted,
-        _ => PSMoveTarget::Normal, // Default fallback
-    }
-}
+// This module previously handled conversion from legacy MoveTarget to PSMoveTarget
+// Since we now use PSMoveTarget throughout, only string conversion functions remain
 
 /// Convert Pokemon Showdown target string to enum
 pub fn ps_target_from_string(target: &str) -> PSMoveTarget {
@@ -78,14 +32,6 @@ pub fn ps_target_from_string(target: &str) -> PSMoveTarget {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_rustemon_to_ps_conversion() {
-        assert_eq!(rustemon_to_ps_target(MoveTarget::User), PSMoveTarget::Self_);
-        assert_eq!(rustemon_to_ps_target(MoveTarget::SelectedPokemon), PSMoveTarget::Normal);
-        assert_eq!(rustemon_to_ps_target(MoveTarget::AllOpponents), PSMoveTarget::AllAdjacentFoes);
-        assert_eq!(rustemon_to_ps_target(MoveTarget::EntireField), PSMoveTarget::All);
-    }
 
     #[test]
     fn test_ps_target_from_string() {

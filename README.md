@@ -121,33 +121,6 @@ let instructions = StateInstructions::new(100.0, vec![
 // affected_positions automatically populated
 ```
 
-### Spread Move Mechanics
-
-- Doubles/VGC: 0.75x damage multiplier for multi-target moves
-- Automatic target resolution based on move data
-- Format-aware ally damage calculation
-
-## 🎯 Features
-
-### ✅ **Pokemon Showdown Integration**
-- **Battle-tested accuracy** - Direct Pokemon Showdown data integration
-- **772+ moves** with complete metadata (flags, effects, secondary effects)
-- **Generation-specific data** - Historical move evolution across Gen 1-9
-- **244+ items** with comprehensive effect data
-
-### ✅ **Multi-Format Battle Engine**
-- **Singles, Doubles, VGC** format support
-- **Position-based targeting** with explicit move targeting
-- **Format-aware damage calculation** (spread move reduction, etc.)
-- **Advanced mechanics** - Redirection, ally interactions, critical hits
-
-### ✅ **Generation Support**
-- **Complete Gen 1-9 data** with 252-777 moves per generation
-- **Move change tracking** - 319 moves with historical evolution
-- **Generation-aware API** - Access moves as they existed in any generation
-- **Type evolution tracking** - Bite (Normal→Dark), Gust (Normal→Flying), etc.
-
-
 ## 📝 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.

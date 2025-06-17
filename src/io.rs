@@ -57,11 +57,28 @@ pub enum Commands {
 
 /// Parse battle format from string
 pub fn parse_battle_format(format_str: &str) -> Result<BattleFormat, String> {
+    use crate::battle_format::FormatType;
+    use crate::generation::Generation;
+    
     match format_str.to_lowercase().as_str() {
-        "singles" | "single" => Ok(BattleFormat::Singles),
-        "doubles" | "double" => Ok(BattleFormat::Doubles),
-        "vgc" => Ok(BattleFormat::Vgc),
-        "triples" | "triple" => Ok(BattleFormat::Triples),
+        "singles" | "single" => Ok(BattleFormat::new(
+            "Singles".to_string(), 
+            Generation::Gen9, 
+            FormatType::Singles
+        )),
+        "doubles" | "double" => Ok(BattleFormat::new(
+            "Doubles".to_string(), 
+            Generation::Gen9, 
+            FormatType::Doubles
+        )),
+        "vgc" => Ok(BattleFormat::vgc2024()),
+        "triples" | "triple" => Ok(BattleFormat::new(
+            "Triples".to_string(), 
+            Generation::Gen9, 
+            FormatType::Triples
+        )),
+        "gen9ou" | "gen9-ou" => Ok(BattleFormat::gen9_ou()),
+        "gen4ou" | "gen4-ou" => Ok(BattleFormat::gen4_ou()),
         _ => Err(format!("Unknown format: {}", format_str)),
     }
 }
@@ -93,13 +110,15 @@ pub fn print_engine_info() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::battle_format::{BattleFormat, FormatType};
+    use crate::generation::Generation;
 
     #[test]
     fn test_format_parsing() {
-        assert_eq!(parse_battle_format("singles").unwrap(), BattleFormat::Singles);
-        assert_eq!(parse_battle_format("doubles").unwrap(), BattleFormat::Doubles);
-        assert_eq!(parse_battle_format("vgc").unwrap(), BattleFormat::Vgc);
-        assert_eq!(parse_battle_format("triples").unwrap(), BattleFormat::Triples);
+        assert_eq!(parse_battle_format("singles").unwrap(), BattleFormat::new("Singles".to_string(), Generation::Gen9, FormatType::Singles));
+        assert_eq!(parse_battle_format("doubles").unwrap(), BattleFormat::new("Doubles".to_string(), Generation::Gen9, FormatType::Doubles));
+        assert_eq!(parse_battle_format("vgc").unwrap(), BattleFormat::vgc2024());
+        assert_eq!(parse_battle_format("triples").unwrap(), BattleFormat::new("Triples".to_string(), Generation::Gen9, FormatType::Triples));
         
         assert!(parse_battle_format("invalid").is_err());
     }

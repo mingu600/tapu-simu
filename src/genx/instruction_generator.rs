@@ -259,11 +259,12 @@ impl GenerationXInstructionGenerator {
     /// Check if this generator supports the given format
     pub fn supports_format(&self, format: &BattleFormat) -> bool {
         // This generation supports all current formats
-        matches!(format, 
-            BattleFormat::Singles | 
-            BattleFormat::Doubles | 
-            BattleFormat::Vgc | 
-            BattleFormat::Triples
+        use crate::battle_format::FormatType;
+        matches!(format.format_type, 
+            FormatType::Singles | 
+            FormatType::Doubles | 
+            FormatType::Vgc | 
+            FormatType::Triples
         )
     }
 }
@@ -273,11 +274,12 @@ mod tests {
     use super::*;
     use crate::state::{Pokemon, Move, MoveCategory};
     use crate::move_choice::MoveIndex;
-    use crate::data::types::MoveTarget;
-    use crate::battle_format::BattlePosition;
+    use crate::data::ps_types::PSMoveTarget;
+    use crate::battle_format::{BattlePosition, BattleFormat, FormatType};
+    use crate::generation::Generation;
 
     fn create_test_state() -> State {
-        let mut state = State::new(BattleFormat::Singles);
+        let mut state = State::new(BattleFormat::new("Singles".to_string(), Generation::Gen9, FormatType::Singles));
         
         // Add Pokemon to both sides
         let mut pokemon1 = Pokemon::new("Attacker".to_string());
@@ -290,7 +292,7 @@ mod tests {
             100,
             "Normal".to_string(),
             35,
-            MoveTarget::SelectedPokemon,
+            PSMoveTarget::Normal,
             MoveCategory::Physical,
             0,
         );
@@ -308,7 +310,7 @@ mod tests {
 
     #[test]
     fn test_basic_instruction_generation() {
-        let generator = GenerationXInstructionGenerator::new(BattleFormat::Singles);
+        let generator = GenerationXInstructionGenerator::new(BattleFormat::new("Singles".to_string(), Generation::Gen9, FormatType::Singles));
         let mut state = create_test_state();
         
         let move_choice = MoveChoice::new_move(
@@ -333,7 +335,7 @@ mod tests {
 
     #[test]
     fn test_auto_targeting() {
-        let generator = GenerationXInstructionGenerator::new(BattleFormat::Singles);
+        let generator = GenerationXInstructionGenerator::new(BattleFormat::new("Singles".to_string(), Generation::Gen9, FormatType::Singles));
         let mut state = create_test_state();
         
         // Move choice without explicit targets
@@ -348,8 +350,8 @@ mod tests {
 
     #[test]
     fn test_doubles_mechanics_integration() {
-        let generator = GenerationXInstructionGenerator::new(BattleFormat::Doubles);
-        let mut state = State::new(BattleFormat::Doubles);
+        let generator = GenerationXInstructionGenerator::new(BattleFormat::new("Doubles".to_string(), Generation::Gen9, FormatType::Doubles));
+        let mut state = State::new(BattleFormat::new("Doubles".to_string(), Generation::Gen9, FormatType::Doubles));
         
         // Add Pokemon to all positions
         for side in [SideReference::SideOne, SideReference::SideTwo] {
@@ -367,7 +369,7 @@ mod tests {
             100,
             "Normal".to_string(),
             20,
-            MoveTarget::User,
+            PSMoveTarget::Self_,
             MoveCategory::Status,
             2,
         );
@@ -394,11 +396,11 @@ mod tests {
 
     #[test]
     fn test_format_support() {
-        let generator = GenerationXInstructionGenerator::new(BattleFormat::Singles);
+        let generator = GenerationXInstructionGenerator::new(BattleFormat::new("Singles".to_string(), Generation::Gen9, FormatType::Singles));
         
-        assert!(generator.supports_format(&BattleFormat::Singles));
-        assert!(generator.supports_format(&BattleFormat::Doubles));
-        assert!(generator.supports_format(&BattleFormat::Vgc));
-        assert!(generator.supports_format(&BattleFormat::Triples));
+        assert!(generator.supports_format(&BattleFormat::new("Singles".to_string(), Generation::Gen9, FormatType::Singles)));
+        assert!(generator.supports_format(&BattleFormat::new("Doubles".to_string(), Generation::Gen9, FormatType::Doubles)));
+        assert!(generator.supports_format(&BattleFormat::vgc2024()));
+        assert!(generator.supports_format(&BattleFormat::new("Triples".to_string(), Generation::Gen9, FormatType::Triples)));
     }
 }

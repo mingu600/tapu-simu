@@ -7,7 +7,7 @@
 //! - Format-specific move behavior differences
 
 use crate::battle_format::{BattleFormat, BattlePosition, SideReference};
-use crate::data::types::MoveTarget;
+use crate::data::ps_types::PSMoveTarget;
 use crate::instruction::{
     Instruction, StateInstructions, PositionDamageInstruction, 
     ApplyVolatileStatusInstruction, VolatileStatus
@@ -27,19 +27,19 @@ impl DoublesSpecificMechanics {
     }
 
     /// Check if a move should hit the user's ally in doubles
-    pub fn move_hits_ally(&self, move_target: &MoveTarget, _user_position: BattlePosition) -> bool {
+    pub fn move_hits_ally(&self, move_target: &PSMoveTarget, _user_position: BattlePosition) -> bool {
         // Only relevant in multi-Pokemon formats
         if self.format.active_pokemon_count() <= 1 {
             return false;
         }
 
         match move_target {
-            MoveTarget::AllOtherPokemon => {
-                // Moves like Earthquake, Surf hit all other Pokemon including allies
+            PSMoveTarget::AllAdjacent => {
+                // Moves like Earthquake, Surf hit all adjacent Pokemon including allies
                 true
             }
-            MoveTarget::AllPokemon => {
-                // Moves like Self-Destruct hit all Pokemon including user and ally
+            PSMoveTarget::All => {
+                // Moves like Self-Destruct affect the entire field
                 true
             }
             _ => false,
@@ -165,7 +165,7 @@ impl DoublesSpecificMechanics {
     pub fn is_blocked_by_wide_guard(
         &self,
         state: &State,
-        move_target: &MoveTarget,
+        move_target: &PSMoveTarget,
         target_side: SideReference,
     ) -> bool {
         // Check if the target side has Wide Guard active
@@ -174,9 +174,9 @@ impl DoublesSpecificMechanics {
         // In a full implementation, this would check for WideGuard side condition
         // For now, just check the move target type
         matches!(move_target, 
-            MoveTarget::AllOpponents | 
-            MoveTarget::AllOtherPokemon | 
-            MoveTarget::AllPokemon
+            PSMoveTarget::AllAdjacentFoes | 
+            PSMoveTarget::AllAdjacent | 
+            PSMoveTarget::All
         )
     }
 
@@ -202,7 +202,7 @@ impl DoublesSpecificMechanics {
     pub fn calculate_ally_damage(
         &self,
         base_damage: i16,
-        move_target: &MoveTarget,
+        move_target: &PSMoveTarget,
         user_position: BattlePosition,
         ally_position: BattlePosition,
         state: &State,
@@ -231,7 +231,7 @@ impl DoublesSpecificMechanics {
         &self,
         state: &State,
         target_position: BattlePosition,
-        move_target: &MoveTarget,
+        move_target: &PSMoveTarget,
     ) -> bool {
         let pokemon = match state.get_pokemon_at_position(target_position) {
             Some(p) => p,
@@ -242,7 +242,7 @@ impl DoublesSpecificMechanics {
         if pokemon.volatile_statuses.contains(&VolatileStatus::Protect) {
             // Protect blocks most moves, but not status moves targeting allies
             match move_target {
-                MoveTarget::Ally | MoveTarget::UserAndAllies => false,
+                PSMoveTarget::AdjacentAlly | PSMoveTarget::AllyTeam => false,
                 _ => true,
             }
         } else {
@@ -301,9 +301,11 @@ mod tests {
     use super::*;
     use crate::state::Pokemon;
     use crate::move_choice::MoveIndex;
+    use crate::battle_format::{BattleFormat, FormatType};
+    use crate::generation::Generation;
 
     fn create_doubles_state() -> State {
-        let mut state = State::new(BattleFormat::Doubles);
+        let mut state = State::new(BattleFormat::new("Doubles".to_string(), Generation::Gen9, FormatType::Doubles));
         
         // Add Pokemon to all positions
         for side in [SideReference::SideOne, SideReference::SideTwo] {
@@ -319,7 +321,7 @@ mod tests {
 
     #[test]
     fn test_ally_position_calculation() {
-        let mechanics = DoublesSpecificMechanics::new(BattleFormat::Doubles);
+        let mechanics = DoublesSpecificMechanics::new(BattleFormat::new("Doubles".to_string(), Generation::Gen9, FormatType::Doubles));
         
         let pos_0_0 = BattlePosition::new(SideReference::SideOne, 0);
         let pos_0_1 = BattlePosition::new(SideReference::SideOne, 1);
@@ -330,22 +332,22 @@ mod tests {
 
     #[test]
     fn test_move_hits_ally() {
-        let mechanics = DoublesSpecificMechanics::new(BattleFormat::Doubles);
+        let mechanics = DoublesSpecificMechanics::new(BattleFormat::new("Doubles".to_string(), Generation::Gen9, FormatType::Doubles));
         let user_pos = BattlePosition::new(SideReference::SideOne, 0);
         
         // Earthquake should hit ally
-        assert!(mechanics.move_hits_ally(&MoveTarget::AllOtherPokemon, user_pos));
+        assert!(mechanics.move_hits_ally(&PSMoveTarget::AllAdjacent, user_pos));
         
         // Single target move should not hit ally
-        assert!(!mechanics.move_hits_ally(&MoveTarget::SelectedPokemon, user_pos));
+        assert!(!mechanics.move_hits_ally(&PSMoveTarget::Normal, user_pos));
         
         // Self-Destruct should hit ally
-        assert!(mechanics.move_hits_ally(&MoveTarget::AllPokemon, user_pos));
+        assert!(mechanics.move_hits_ally(&PSMoveTarget::All, user_pos));
     }
 
     #[test]
     fn test_adjacency_check() {
-        let mechanics = DoublesSpecificMechanics::new(BattleFormat::Doubles);
+        let mechanics = DoublesSpecificMechanics::new(BattleFormat::new("Doubles".to_string(), Generation::Gen9, FormatType::Doubles));
         
         let pos_1_0 = BattlePosition::new(SideReference::SideOne, 0);
         let pos_1_1 = BattlePosition::new(SideReference::SideOne, 1);
@@ -366,7 +368,7 @@ mod tests {
 
     #[test]
     fn test_redirection_mechanics() {
-        let mechanics = DoublesSpecificMechanics::new(BattleFormat::Doubles);
+        let mechanics = DoublesSpecificMechanics::new(BattleFormat::new("Doubles".to_string(), Generation::Gen9, FormatType::Doubles));
         let mut state = create_doubles_state();
         
         // Add Follow Me status to a Pokemon
@@ -389,7 +391,7 @@ mod tests {
 
     #[test]
     fn test_protect_interaction() {
-        let mechanics = DoublesSpecificMechanics::new(BattleFormat::Doubles);
+        let mechanics = DoublesSpecificMechanics::new(BattleFormat::new("Doubles".to_string(), Generation::Gen9, FormatType::Doubles));
         let mut state = create_doubles_state();
         
         // Add Protect status to a Pokemon
@@ -399,15 +401,15 @@ mod tests {
         }
         
         // Damaging move should be blocked
-        assert!(mechanics.handle_protect_interaction(&state, protected_pos, &MoveTarget::SelectedPokemon));
+        assert!(mechanics.handle_protect_interaction(&state, protected_pos, &PSMoveTarget::Normal));
         
         // Ally move should not be blocked
-        assert!(!mechanics.handle_protect_interaction(&state, protected_pos, &MoveTarget::Ally));
+        assert!(!mechanics.handle_protect_interaction(&state, protected_pos, &PSMoveTarget::AdjacentAlly));
     }
 
     #[test]
     fn test_follow_me_instruction_generation() {
-        let mechanics = DoublesSpecificMechanics::new(BattleFormat::Doubles);
+        let mechanics = DoublesSpecificMechanics::new(BattleFormat::new("Doubles".to_string(), Generation::Gen9, FormatType::Doubles));
         let user_pos = BattlePosition::new(SideReference::SideOne, 0);
         
         let instructions = mechanics.generate_follow_me_instructions(user_pos);
@@ -426,7 +428,7 @@ mod tests {
 
     #[test]
     fn test_helping_hand_instruction_generation() {
-        let mechanics = DoublesSpecificMechanics::new(BattleFormat::Doubles);
+        let mechanics = DoublesSpecificMechanics::new(BattleFormat::new("Doubles".to_string(), Generation::Gen9, FormatType::Doubles));
         let user_pos = BattlePosition::new(SideReference::SideOne, 0);
         let ally_pos = BattlePosition::new(SideReference::SideOne, 1);
         

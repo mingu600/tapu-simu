@@ -29,7 +29,7 @@
 //! use tapu_simu::battle_format::{BattlePosition, SideReference};
 //! 
 //! // Create a new singles battle
-//! let mut state = State::new(BattleFormat::Singles);
+//! let mut state = State::new(BattleFormat::gen9_ou());
 //! 
 //! // Create move choices
 //! let move1 = MoveChoice::new_move(
@@ -42,7 +42,7 @@
 //! );
 //! 
 //! // Generate instructions for moves
-//! let generator = InstructionGenerator::new(BattleFormat::Singles);
+//! let generator = InstructionGenerator::new(BattleFormat::gen9_ou());
 //! let instructions = generator.generate_instructions(&mut state, &move1, &move2);
 //! ```
 
@@ -71,12 +71,17 @@ pub mod move_choice;
 pub mod state;
 pub mod data;
 pub mod io;
+pub mod generation;
+
+// Test framework (available for integration tests)
+pub mod test_framework;
 
 // Re-exports for convenience
 pub use battle_format::{BattleFormat, BattlePosition};
 pub use instruction::{Instruction, StateInstructions, InstructionGenerator};
 pub use move_choice::MoveChoice;
 pub use state::State;
+pub use generation::{Generation, GenerationMechanics, GenerationBattleMechanics};
 
 // Ensure only one generation is enabled
 #[cfg(all(feature = "gen1", feature = "gen2"))]
