@@ -28,6 +28,10 @@ pub struct State {
     pub terrain_turns_remaining: Option<u8>,
     /// Current turn number
     pub turn: u32,
+    /// Whether Trick Room is currently active
+    pub trick_room_active: bool,
+    /// Trick Room duration (turns remaining)
+    pub trick_room_turns_remaining: Option<u8>,
 }
 
 impl State {
@@ -42,6 +46,8 @@ impl State {
             terrain: Terrain::NONE,
             terrain_turns_remaining: None,
             turn: 1,
+            trick_room_active: false,
+            trick_room_turns_remaining: None,
         }
     }
 
@@ -421,6 +427,10 @@ pub struct BattleSide {
     pub side_conditions: HashMap<SideCondition, u8>,
     /// Volatile statuses that affect the entire side
     pub side_volatile_statuses: HashSet<SideVolatileStatus>,
+    /// Wish healing scheduled for specific slots (heal_amount, turns_remaining)
+    pub wish_healing: HashMap<usize, (i16, u8)>,
+    /// Future Sight attacks scheduled for specific slots (attacker_position, damage_amount, turns_remaining, move_name)
+    pub future_sight_attacks: HashMap<usize, (BattlePosition, i16, u8, String)>,
 }
 
 impl BattleSide {
@@ -431,6 +441,8 @@ impl BattleSide {
             active_pokemon_indices: vec![None; 3], // Max 3 for triples, unused slots ignored
             side_conditions: HashMap::new(),
             side_volatile_statuses: HashSet::new(),
+            wish_healing: HashMap::new(),
+            future_sight_attacks: HashMap::new(),
         }
     }
 

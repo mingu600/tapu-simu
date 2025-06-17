@@ -752,6 +752,9 @@ pub enum VolatileStatus {
     SpeBoost1,
     SpeBoost2,
     SpeBoost3,
+    
+    // Toxic counter for tracking progressive toxic damage
+    ToxicCount,
 }
 
 /// Weather conditions (V1 compatible naming)
