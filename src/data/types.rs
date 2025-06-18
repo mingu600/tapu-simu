@@ -4,7 +4,7 @@
 //! battle mechanics while staying compatible with rustemon/PokeAPI data.
 
 use serde::{Deserialize, Serialize};
-use crate::state::MoveCategory;
+use crate::core::state::MoveCategory;
 
 /// Engine-optimized Pokemon data
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -14,19 +14,18 @@
 //! 
 //! ## Architecture Overview
 //! 
-//! - `battle_format`: Format definitions and position management
-//! - `engine`: Core battle mechanics (generation-specific)
-//! - `instruction`: Battle instruction system with position tracking
-//! - `move_choice`: Format-aware move choice system
-//! - `state`: Battle state representation
-//! - `data`: Pokemon data integration with rustemon/PokeAPI
+//! - `core`: Core types and abstractions (state, instructions, battle format)
+//! - `engine`: Battle mechanics implementation
+//! - `data`: Pokemon data integration with Pokemon Showdown
+//! - `testing`: Testing utilities and framework
+//! - `ui`: Testing UI interface
 //! 
 //! ## Example Usage
 //! 
 //! ```rust
-//! use tapu_simu::{BattleFormat, State, MoveChoice, InstructionGenerator};
-//! use tapu_simu::move_choice::{MoveIndex, PokemonIndex};
-//! use tapu_simu::battle_format::{BattlePosition, SideReference};
+//! use tapu_simu::{BattleFormat, State, MoveChoice};
+//! use tapu_simu::core::move_choice::{MoveIndex, PokemonIndex};
+//! use tapu_simu::core::battle_format::{BattlePosition, SideReference};
 //! 
 //! // Create a new singles battle
 //! let mut state = State::new(BattleFormat::gen9_ou());
@@ -40,47 +39,27 @@
 //!     MoveIndex::M0, 
 //!     vec![BattlePosition::new(SideReference::SideOne, 0)]
 //! );
-//! 
-//! // Generate instructions for moves
-//! let generator = InstructionGenerator::new(BattleFormat::gen9_ou());
-//! let instructions = generator.generate_instructions(&mut state, &move1, &move2);
 //! ```
 
-// Generation-specific modules
-#[cfg(feature = "gen1")]
-#[path = "gen1/mod.rs"]
+// Core modules
+pub mod core;
 pub mod engine;
-
-#[cfg(feature = "gen2")]
-#[path = "gen2/mod.rs"]
-pub mod engine;
-
-#[cfg(feature = "gen3")]
-#[path = "gen3/mod.rs"]
-pub mod engine;
-
-// Default generation (gen4-9)
-#[cfg(not(any(feature = "gen1", feature = "gen2", feature = "gen3")))]
-#[path = "genx/mod.rs"]
-pub mod engine;
-
-// Core V2 modules
-pub mod battle_format;
-pub mod instruction;
-pub mod move_choice;
-pub mod state;
 pub mod data;
-pub mod io;
+pub mod testing;
+pub mod ui;
 pub mod generation;
-
-// Test framework (available for integration tests)
-pub mod test_framework;
+pub mod io;
 
 // Re-exports for convenience
-pub use battle_format::{BattleFormat, BattlePosition};
-pub use instruction::{Instruction, StateInstructions, InstructionGenerator};
-pub use move_choice::MoveChoice;
-pub use state::State;
+pub use core::battle_format::{BattleFormat, BattlePosition, SideReference};
+pub use core::battle_environment::{
+    Player, RandomPlayer, FirstMovePlayer, DamageMaximizer,
+    BattleEnvironment, BattleResult, TurnInfo, ParallelBattleResults,
+    run_parallel_battles_with_states, run_battle_from_state
+};
+pub use core::instruction::{Instruction, StateInstructions};
+pub use core::move_choice::MoveChoice;
+pub use core::state::State;
 pub use generation::{Generation, GenerationMechanics, GenerationBattleMechanics};
 
 // Ensure only one generation is enabled

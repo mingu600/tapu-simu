@@ -46,6 +46,35 @@ pub enum PSMoveTarget {
 }
 
 impl PSMoveTarget {
+    /// Serialize the move target to a compact string format
+    pub fn serialize(&self) -> String {
+        (*self as u8).to_string()
+    }
+
+    /// Deserialize a move target from a string
+    pub fn deserialize(serialized: &str) -> Result<Self, String> {
+        let target_id = serialized.parse::<u8>()
+            .map_err(|_| format!("Invalid move target ID: {}", serialized))?;
+        match target_id {
+            0 => Ok(PSMoveTarget::Normal),
+            1 => Ok(PSMoveTarget::Self_),
+            2 => Ok(PSMoveTarget::AdjacentAlly),
+            3 => Ok(PSMoveTarget::AdjacentAllyOrSelf),
+            4 => Ok(PSMoveTarget::AdjacentFoe),
+            5 => Ok(PSMoveTarget::AllAdjacentFoes),
+            6 => Ok(PSMoveTarget::AllAdjacent),
+            7 => Ok(PSMoveTarget::All),
+            8 => Ok(PSMoveTarget::AllyTeam),
+            9 => Ok(PSMoveTarget::AllySide),
+            10 => Ok(PSMoveTarget::FoeSide),
+            11 => Ok(PSMoveTarget::Any),
+            12 => Ok(PSMoveTarget::RandomNormal),
+            13 => Ok(PSMoveTarget::Scripted),
+            14 => Ok(PSMoveTarget::Allies),
+            _ => Err(format!("Invalid move target ID: {}", target_id)),
+        }
+    }
+
     /// Returns true if this target requires user selection in the given format
     pub fn requires_target_selection(&self, active_per_side: usize) -> bool {
         match self {

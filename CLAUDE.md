@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with Ta
 ### Project Philosophy
 Tapu Simu is a **completely independent** Pokemon battle simulator designed from the ground up for multi-format support. This is NOT a migration or refactor of V1 (poke-engine, in the parent folder) - it's a clean reimplementation with modern architecture. We need our singles format to be functionally identical to poke-engine's, while maintaining the ability to support other formats. Do NOT make placeholders or compromises. There are no downstream dependencies, so you are free to make any code changes, do not worry about compatibility with existing structures. Any tests that skip are considered failures. All tests considered failures need to be fixed.
 
-**CRITICAL**: In the docs/ directory, read IMPLEMENTATION_PLAN.md carefully. All tests should use the test_framework laid out by test_framework.rs.
+**CRITICAL**: In the docs/ directory, read READ_ME.md carefully. All tests should use the test_framework laid out by test_framework.rs.
 
 ### Core Principles
 
@@ -68,33 +68,6 @@ Ask clarifying questions whenever my request is ambiguous or unclear
    - Don't copy V1 code patterns
 
 We also have tools/ps-data-extractor which is our JS scripts for extracting PS data.
-
-### 🔧 Working with Move Effects
-
-When implementing a move effect:
-
-```rust
-// V2 Style - Always position-aware
-pub fn apply_thunder_wave(
-    state: &mut State,
-    user_position: BattlePosition,
-    target_position: BattlePosition,
-) -> Vec<Instruction> {
-    let mut instructions = vec![];
-    
-    // Check if target can be paralyzed
-    if let Some(target) = state.get_pokemon_at_position(target_position) {
-        if target.status == PokemonStatus::None {
-            instructions.push(Instruction::ApplyStatus(ApplyStatusInstruction {
-                target_position,
-                status: PokemonStatus::Paralysis,
-            }));
-        }
-    }
-    
-    instructions
-}
-```
 
 ### 🎮 Battle Flow
 

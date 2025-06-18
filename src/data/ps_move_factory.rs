@@ -4,9 +4,9 @@
 //! replacing the rustemon-based move factory with PS data sources.
 
 use std::collections::HashMap;
-use crate::data::ps_move_service::{PSMoveService, EngineEnhancement};
-use crate::state::Move;
-use crate::move_choice::MoveIndex;
+use crate::data::services::move_service::{PSMoveService, EngineEnhancement};
+use crate::core::state::Move;
+use crate::core::move_choice::MoveIndex;
 
 /// Factory for creating moves with PS data and engine enhancements
 pub struct PSMoveFactory {

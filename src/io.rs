@@ -3,7 +3,7 @@
 //! This module provides CLI interface and subcommands for Tapu Simu.
 
 use clap::{Parser, Subcommand};
-use crate::BattleFormat;
+use crate::core::battle_format::BattleFormat;
 
 /// Tapu Simu CLI
 #[derive(Parser)]
@@ -57,7 +57,7 @@ pub enum Commands {
 
 /// Parse battle format from string
 pub fn parse_battle_format(format_str: &str) -> Result<BattleFormat, String> {
-    use crate::battle_format::FormatType;
+    use crate::core::battle_format::FormatType;
     use crate::generation::Generation;
     
     match format_str.to_lowercase().as_str() {
@@ -110,7 +110,7 @@ pub fn print_engine_info() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::battle_format::{BattleFormat, FormatType};
+    use crate::core::battle_format::{BattleFormat, FormatType};
     use crate::generation::Generation;
 
     #[test]

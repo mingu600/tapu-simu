@@ -8,8 +8,8 @@ use std::fs;
 use std::path::Path;
 use serde_json;
 use crate::data::ps_types::{PSMoveData, PSMoveTarget, PSItemData};
-use crate::data::ps_conversion::ps_target_from_string;
-use crate::state::{Move, MoveCategory};
+use crate::data::conversion::ps_target_from_string;
+use crate::core::state::{Move, MoveCategory};
 
 /// Generation configuration
 #[derive(Debug, Clone)]

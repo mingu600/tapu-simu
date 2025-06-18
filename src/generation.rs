@@ -20,6 +20,23 @@ pub enum Generation {
     Gen9 = 9,
 }
 
+impl From<u8> for Generation {
+    fn from(value: u8) -> Self {
+        match value {
+            1 => Generation::Gen1,
+            2 => Generation::Gen2,
+            3 => Generation::Gen3,
+            4 => Generation::Gen4,
+            5 => Generation::Gen5,
+            6 => Generation::Gen6,
+            7 => Generation::Gen7,
+            8 => Generation::Gen8,
+            9 => Generation::Gen9,
+            _ => Generation::Gen9, // Default to latest
+        }
+    }
+}
+
 impl Generation {
     /// Get all generations for iteration
     pub fn all() -> [Self; 9] {
