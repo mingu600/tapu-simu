@@ -46,7 +46,7 @@ impl Player for RandomPlayer {
         options: &[MoveChoice],
     ) -> MoveChoice {
         let mut rng = thread_rng();
-        options[rng.gen_range(0..options.len())]
+        options[rng.gen_range(0..options.len())].clone()
     }
 
     fn name(&self) -> &str {
@@ -72,7 +72,7 @@ impl Player for FirstMovePlayer {
         _side_ref: SideReference,
         options: &[MoveChoice],
     ) -> MoveChoice {
-        options[0]
+        options[0].clone()
     }
 
     fn name(&self) -> &str {
@@ -147,14 +147,14 @@ impl Player for DamageMaximizer {
         side_ref: SideReference,
         options: &[MoveChoice],
     ) -> MoveChoice {
-        let mut best_move = options[0];
+        let mut best_move = options[0].clone();
         let mut best_damage = self.estimate_damage(state, side_ref, &options[0]);
 
         for option in options.iter().skip(1) {
             let damage = self.estimate_damage(state, side_ref, option);
             if damage > best_damage {
                 best_damage = damage;
-                best_move = *option;
+                best_move = option.clone();
             }
         }
 
@@ -352,9 +352,49 @@ impl BattleEnvironment {
                 &side_two_choice,
             );
 
+            // Log generated instructions if verbose
+            if self.verbose {
+                let instructions_msg = format!(
+                    "\nInstructions Generated: {} possible sequences\n",
+                    instructions.len()
+                );
+
+                if let Some(ref mut file) = log_file {
+                    write!(file, "{}", instructions_msg).unwrap();
+                    for (i, instruction_set) in instructions.iter().enumerate() {
+                        writeln!(file, "  Sequence {}: {} instructions", i, instruction_set.instruction_list.len()).unwrap();
+                        for (j, instruction) in instruction_set.instruction_list.iter().enumerate() {
+                            writeln!(file, "    {}: {:?}", j, instruction).unwrap();
+                        }
+                    }
+                    writeln!(file, "").unwrap();
+                    file.flush().unwrap();
+                } else {
+                    print!("{}", instructions_msg);
+                    for (i, instruction_set) in instructions.iter().enumerate() {
+                        println!("  Sequence {}: {} instructions", i, instruction_set.instruction_list.len());
+                        for (j, instruction) in instruction_set.instruction_list.iter().enumerate() {
+                            println!("    {}: {:?}", j, instruction);
+                        }
+                    }
+                    println!();
+                }
+            }
+
             // Apply the instructions (sampling from possibilities)
             if !instructions.is_empty() {
                 let chosen_index = self.sample_instruction_index(&instructions);
+                
+                if self.verbose {
+                    let chosen_msg = format!("Applying instruction sequence {}\n", chosen_index);
+                    if let Some(ref mut file) = log_file {
+                        write!(file, "{}", chosen_msg).unwrap();
+                        file.flush().unwrap();
+                    } else {
+                        print!("{}", chosen_msg);
+                    }
+                }
+                
                 state.apply_instructions(&instructions[chosen_index].instruction_list);
             }
 

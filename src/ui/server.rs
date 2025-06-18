@@ -4,8 +4,8 @@
 //! It includes REST API endpoints and WebSocket support.
 
 use axum::{
-    extract::{Path, Query, State as AxumState, WebSocketUpgrade},
-    http::{HeaderValue, Method, StatusCode},
+    extract::{Path, State as AxumState, WebSocketUpgrade},
+    http::{Method, StatusCode},
     response::{Html, IntoResponse, Json},
     routing::{get, post, put},
     Router,
@@ -320,7 +320,7 @@ async fn serve_index() -> Html<&'static str> {
 }
 
 /// Serve static assets
-async fn serve_static(Path(file): Path<String>) -> impl IntoResponse {
+async fn serve_static(Path(_file): Path<String>) -> impl IntoResponse {
     // In a real implementation, this would serve files from the ui/dist directory
     (StatusCode::NOT_FOUND, "Static file serving not implemented")
 }

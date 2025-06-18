@@ -20,6 +20,7 @@ name = "ui-server"
 path = "src/bin/ui-server.rs"
 
 
+
 [profile.release]
 debug = 1
 

@@ -4,7 +4,6 @@
 //! Each generation has different rules, mechanics, and available content.
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 /// Pokemon generations with their specific mechanics
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]

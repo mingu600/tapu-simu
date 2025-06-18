@@ -410,11 +410,11 @@ mod weather_and_terrain_tests {
         assert_eq!(state.terrain, Terrain::NONE);
         assert_eq!(state.terrain_turns_remaining, None);
         
-        let instruction = Instruction::ChangeTerrain(ChangeTerrainInstruction { terrain: Terrain::ELECTRICTERRAIN, duration: Some(5), previous_terrain: Some(Terrain::NONE), previous_duration: Some(None), });
+        let instruction = Instruction::ChangeTerrain(ChangeTerrainInstruction { terrain: Terrain::ElectricTerrain, duration: Some(5), previous_terrain: Some(Terrain::NONE), previous_duration: Some(None), });
         
         state.apply_instruction(&instruction);
         
-        assert_eq!(state.terrain, Terrain::ELECTRICTERRAIN);
+        assert_eq!(state.terrain, Terrain::ElectricTerrain);
         assert_eq!(state.terrain_turns_remaining, Some(5));
     }
 
@@ -423,14 +423,14 @@ mod weather_and_terrain_tests {
         let mut state = create_test_state();
         
         // Set weather with duration
-        let instruction = Instruction::ChangeWeather(ChangeWeatherInstruction { weather: Weather::SUN, duration: Some(3), previous_weather: Some(Weather::NONE), previous_duration: Some(None), });
+        let instruction = Instruction::ChangeWeather(ChangeWeatherInstruction { weather: Weather::Sun, duration: Some(3), previous_weather: Some(Weather::NONE), previous_duration: Some(None), });
         state.apply_instruction(&instruction);
         
         // Decrement turns
         let decrement_instruction = Instruction::DecrementWeatherTurns;
         state.apply_instruction(&decrement_instruction);
         
-        assert_eq!(state.weather, Weather::SUN);
+        assert_eq!(state.weather, Weather::Sun);
         assert_eq!(state.weather_turns_remaining, Some(2));
         
         // Decrement to zero
@@ -447,14 +447,14 @@ mod weather_and_terrain_tests {
         let mut state = create_test_state();
         
         // Set terrain with duration
-        let instruction = Instruction::ChangeTerrain(ChangeTerrainInstruction { terrain: Terrain::GRASSYTERRAIN, duration: Some(2), previous_terrain: Some(Terrain::NONE), previous_duration: Some(None), });
+        let instruction = Instruction::ChangeTerrain(ChangeTerrainInstruction { terrain: Terrain::GrassyTerrain, duration: Some(2), previous_terrain: Some(Terrain::NONE), previous_duration: Some(None), });
         state.apply_instruction(&instruction);
         
         // Decrement turns
         let decrement_instruction = Instruction::DecrementTerrainTurns;
         state.apply_instruction(&decrement_instruction);
         
-        assert_eq!(state.terrain, Terrain::GRASSYTERRAIN);
+        assert_eq!(state.terrain, Terrain::GrassyTerrain);
         assert_eq!(state.terrain_turns_remaining, Some(1));
         
         // Decrement to zero

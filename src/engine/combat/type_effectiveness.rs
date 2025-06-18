@@ -5,7 +5,7 @@
 
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
-use crate::data::services::type_chart::{PSTypeChartLoader, create_ps_type_chart_loader};
+use crate::data::services::type_chart::create_ps_type_chart_loader;
 
 /// Pokemon types with numeric indices for the effectiveness matrix
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -127,6 +127,9 @@ impl TypeChart {
         }
         
         chart.add_special_cases();
+        
+        // Type effectiveness validation complete
+        
         chart
     }
 

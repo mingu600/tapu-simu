@@ -87,11 +87,11 @@ cargo run --bin tapu-simu -- battle \
 
 # Run battles with verbose logging
 cargo run --bin tapu-simu -- battle \
-  --format singles \
   --player-one first \
   --player-two random \
   --max-turns 50 \
-  --verbose
+  --verbose \
+  --log-file battle.log
 
 # Test different battle formats
 cargo run --bin tapu-simu -- battle --format vgc --runs 10
@@ -291,6 +291,40 @@ The engine automatically handles format-specific behavior:
 - **Singles**: Direct targeting, no redirection
 - **Doubles**: Spread move damage reduction, redirection abilities, position-aware targeting
 - **VGC**: Team preview, restricted legendaries, format-specific clauses
+
+### State Serialization Format
+
+The engine supports complete battle state serialization for debugging, logging, and replay functionality. States serialized to compact string format with hierarchical structure:
+
+```
+format/side_one/side_two/weather/terrain/turn/trick_room
+```
+
+**Format Structure:**
+- **Top Level**: `/` separates major components (format, sides, conditions)
+- **Components**: `|` separates fields within components  
+- **Pokemon Data**: `,` separates individual pokemon attributes
+- **Arrays**: `~` separates array elements (stats, types, moves)
+- **Move Data**: `!` separates move attributes, `#` separates count from data
+
+**Example Serialized State:**
+```
+Gen 9 Random Battle|9|0|6|1|2|###/6|Greninja-Bond,259,259,174~156~191~174~174,,0,x,,Battle Bond,Life Orb,Normal,80,1,0#Ice Beam!80!100!Normal!20!20!0!0!0~3#Dark Pulse!80!100!Normal!20!20!0!0!0|...|0,x,x||/6|Sawsbuck,284,284,191~210~191~171~191,,0,x,,Sap Sipper,Life Orb,Normal,88,1,2#Horn Leech!80!100!Normal!20!20!0!0!0~3#Double-Edge!80!100!Normal!20!20!0!0!0|...|3,x,x||/0/0/1/0
+```
+
+**Key Features:**
+- Complete battle state reconstruction from string
+- Compact format suitable for logging and transmission
+- Used in battle logs (`battle.log`) and testing framework
+- Supports undo system and state comparison
+
+```rust
+// Serialize current battle state
+let serialized = state.serialize();
+
+// Restore state from string
+let restored_state = State::deserialize(&serialized)?;
+```
 
 ## 🗂️ Data Integration
 

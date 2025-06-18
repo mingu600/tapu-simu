@@ -16,7 +16,7 @@ fn test_cloud_nine_negates_sun_fire_boost() {
         "charizard",     // Fire attacker
         "golduck",       // Cloud Nine Pokemon
         "Cloud Nine",    // Weather negation ability
-        Weather::SUN,    // Sun weather
+        Weather::Sun,    // Sun weather
         "flamethrower"   // Fire move that would be boosted by Sun
     ).expect("Failed to test weather negation");
 
@@ -48,7 +48,7 @@ fn test_sandstorm_rock_spdef_boost() {
         "kadabra",           // Special attacker
         "onix",              // Rock-type defender
         &["Rock", "Ground"], // Rock typing for Sandstorm boost
-        Weather::SAND,       // Sandstorm weather
+        Weather::Sand,       // Sandstorm weather
         "psychic"            // Special move
     ).expect("Failed to test weather stat boost");
 
@@ -70,7 +70,7 @@ fn test_snow_ice_def_boost() {
         "machop",          // Physical attacker
         "jynx",            // Ice-type defender
         &["Ice", "Psychic"], // Ice typing for Snow boost
-        Weather::SNOW,     // Snow weather
+        Weather::Snow,     // Snow weather
         "karatechop"       // Physical move
     ).expect("Failed to test weather stat boost");
 
@@ -91,7 +91,7 @@ fn test_misty_terrain_dragon_reduction() {
     let damage_multiplier = framework.test_terrain_effects(
         "dragonite",          // Dragon attacker
         "garchomp",           // Grounded defender
-        Terrain::MISTYTERRAIN, // Misty Terrain
+        Terrain::MistyTerrain, // Misty Terrain
         "dragonpulse"         // Dragon move
     ).expect("Failed to test terrain effects");
 
@@ -111,7 +111,7 @@ fn test_grassy_terrain_earthquake_reduction() {
     let damage_multiplier = framework.test_terrain_effects(
         "garchomp",             // Ground attacker
         "tyranitar",            // Grounded defender
-        Terrain::GRASSYTERRAIN, // Grassy Terrain
+        Terrain::GrassyTerrain, // Grassy Terrain
         "earthquake"            // Ground move
     ).expect("Failed to test terrain effects");
 
@@ -131,7 +131,7 @@ fn test_electric_terrain_boost_grounded() {
     let damage_multiplier = framework.test_terrain_effects(
         "pikachu",               // Electric attacker (grounded)
         "gyarados",              // Defender
-        Terrain::ELECTRICTERRAIN, // Electric Terrain
+        Terrain::ElectricTerrain, // Electric Terrain
         "thundershock"           // Electric move
     ).expect("Failed to test terrain effects");
 
@@ -151,7 +151,7 @@ fn test_levitate_prevents_terrain_boost() {
     let is_ungrounded = framework.test_grounded_immunity(
         "magnemite",             // Electric attacker
         "Levitate",              // Levitate ability (makes ungrounded)
-        Terrain::ELECTRICTERRAIN, // Electric Terrain
+        Terrain::ElectricTerrain, // Electric Terrain
         "thundershock"           // Electric move
     ).expect("Failed to test grounded immunity");
 

@@ -1,0 +1,9318 @@
+[
+  [
+    {
+      "name": "Umbreon",
+      "species": "Umbreon",
+      "level": 85,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Synchronize",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Support",
+      "teraType": "Poison",
+      "moves": [
+        "Moonlight",
+        "Helping Hand",
+        "Snarl",
+        "Foul Play"
+      ],
+      "nature": "Adamant"
+    },
+    {
+      "name": "Cresselia",
+      "species": "Cresselia",
+      "level": 80,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Levitate",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Support",
+      "teraType": "Steel",
+      "moves": [
+        "Helping Hand",
+        "Thunder Wave",
+        "Icy Wind",
+        "Lunar Blessing"
+      ],
+      "nature": "Naughty"
+    },
+    {
+      "name": "Landorus-Therian",
+      "species": "Landorus-Therian",
+      "level": 77,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Intimidate",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Steel",
+      "moves": [
+        "Stone Edge",
+        "Stomping Tantrum",
+        "Rock Slide",
+        "Protect"
+      ],
+      "nature": "Jolly"
+    },
+    {
+      "name": "Blastoise",
+      "species": "Blastoise",
+      "level": 83,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Torrent",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Dragon",
+      "moves": [
+        "Wave Crash",
+        "Life Dew",
+        "Yawn",
+        "Fake Out"
+      ],
+      "nature": "Quiet"
+    },
+    {
+      "name": "Sceptile",
+      "species": "Sceptile",
+      "level": 88,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Unburden",
+      "item": "White Herb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Offensive Protect",
+      "teraType": "Steel",
+      "moves": [
+        "Protect",
+        "Leaf Storm",
+        "Focus Blast",
+        "Breaking Swipe"
+      ],
+      "nature": "Hardy"
+    },
+    {
+      "name": "Oinkologne",
+      "species": "Oinkologne",
+      "level": 91,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Gluttony",
+      "item": "Mago Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Ghost",
+      "moves": [
+        "Double-Edge",
+        "Helping Hand",
+        "Yawn",
+        "Lash Out"
+      ],
+      "nature": "Relaxed"
+    }
+  ],
+  [
+    {
+      "name": "Malamar",
+      "species": "Malamar",
+      "level": 80,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Contrary",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Bulky Protect",
+      "teraType": "Fighting",
+      "moves": [
+        "Knock Off",
+        "Protect",
+        "Psycho Cut",
+        "Superpower"
+      ],
+      "nature": "Hasty"
+    },
+    {
+      "name": "Staraptor",
+      "species": "Staraptor",
+      "level": 82,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Intimidate",
+      "item": "Heavy-Duty Boots",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Offensive Protect",
+      "teraType": "Fighting",
+      "moves": [
+        "Close Combat",
+        "Quick Attack",
+        "Brave Bird",
+        "Double-Edge"
+      ],
+      "nature": "Bashful"
+    },
+    {
+      "name": "Arceus-Ice",
+      "species": "Arceus-Ice",
+      "level": 73,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Multitype",
+      "item": "Icicle Plate",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Bulky Setup",
+      "teraType": "Electric",
+      "moves": [
+        "Calm Mind",
+        "Earth Power",
+        "Judgment",
+        "Recover"
+      ],
+      "nature": "Hasty"
+    },
+    {
+      "name": "Deoxys-Attack",
+      "species": "Deoxys-Attack",
+      "level": 79,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Pressure",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Offensive Protect",
+      "teraType": "Ghost",
+      "moves": [
+        "Extreme Speed",
+        "Knock Off",
+        "Psycho Boost",
+        "Protect"
+      ],
+      "nature": "Relaxed"
+    },
+    {
+      "name": "Urshifu",
+      "species": "Urshifu",
+      "level": 75,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Unseen Fist",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Wallbreaker",
+      "teraType": "Poison",
+      "moves": [
+        "Protect",
+        "Sucker Punch",
+        "Wicked Blow",
+        "Close Combat"
+      ],
+      "nature": "Careful"
+    },
+    {
+      "name": "Plusle",
+      "species": "Plusle",
+      "level": 92,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Lightning Rod",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 0,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 0,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Fast Attacker",
+      "teraType": "Flying",
+      "moves": [
+        "Thunderbolt",
+        "Nasty Plot",
+        "Protect",
+        "Alluring Voice"
+      ],
+      "nature": "Naive"
+    }
+  ],
+  [
+    {
+      "name": "Masquerain",
+      "species": "Masquerain",
+      "level": 90,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Intimidate",
+      "item": "Heavy-Duty Boots",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Water",
+      "moves": [
+        "Baton Pass",
+        "Bug Buzz",
+        "Hydro Pump",
+        "Quiver Dance"
+      ],
+      "nature": "Rash"
+    },
+    {
+      "name": "Squawkabilly-White",
+      "species": "Squawkabilly-White",
+      "level": 91,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Intimidate",
+      "item": "Heavy-Duty Boots",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Offensive Protect",
+      "teraType": "Normal",
+      "moves": [
+        "Protect",
+        "Double-Edge",
+        "Parting Shot",
+        "Quick Attack"
+      ],
+      "nature": "Hardy"
+    },
+    {
+      "name": "Victreebel",
+      "species": "Victreebel",
+      "level": 91,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Chlorophyll",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Offensive Protect",
+      "teraType": "Dark",
+      "moves": [
+        "Protect",
+        "Sludge Bomb",
+        "Knock Off",
+        "Power Whip"
+      ],
+      "nature": "Adamant"
+    },
+    {
+      "name": "Tyranitar",
+      "species": "Tyranitar",
+      "level": 81,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Sand Stream",
+      "item": "Clear Amulet",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Setup",
+      "teraType": "Steel",
+      "moves": [
+        "Rock Slide",
+        "Protect",
+        "Stone Edge",
+        "Knock Off"
+      ],
+      "nature": "Timid"
+    },
+    {
+      "name": "Rhydon",
+      "species": "Rhydon",
+      "level": 86,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Lightning Rod",
+      "item": "Eviolite",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Bulky Protect",
+      "teraType": "Flying",
+      "moves": [
+        "Protect",
+        "High Horsepower",
+        "Stealth Rock",
+        "Helping Hand"
+      ],
+      "nature": "Careful"
+    },
+    {
+      "name": "Tinkaton",
+      "species": "Tinkaton",
+      "level": 82,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Mold Breaker",
+      "item": "Assault Vest",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Steel",
+      "moves": [
+        "Gigaton Hammer",
+        "Stealth Rock",
+        "Fake Out",
+        "Play Rough"
+      ],
+      "nature": "Quiet"
+    }
+  ],
+  [
+    {
+      "name": "Coalossal",
+      "species": "Coalossal",
+      "level": 91,
+      "gender": "M",
+      "shiny": true,
+      "ability": "Flame Body",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Water",
+      "moves": [
+        "Fire Blast",
+        "Heat Wave",
+        "Stealth Rock",
+        "Incinerate"
+      ],
+      "nature": "Careful"
+    },
+    {
+      "name": "Terrakion",
+      "species": "Terrakion",
+      "level": 78,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Justified",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Wallbreaker",
+      "teraType": "Ghost",
+      "moves": [
+        "High Horsepower",
+        "Stone Edge",
+        "Rock Slide",
+        "Close Combat"
+      ],
+      "nature": "Bashful"
+    },
+    {
+      "name": "Falinks",
+      "species": "Falinks",
+      "level": 87,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Defiant",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Steel",
+      "moves": [
+        "Close Combat",
+        "Iron Head",
+        "Protect",
+        "Knock Off"
+      ],
+      "nature": "Lonely"
+    },
+    {
+      "name": "Ludicolo",
+      "species": "Ludicolo",
+      "level": 89,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Swift Swim",
+      "item": "Assault Vest",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Steel",
+      "moves": [
+        "Leaf Storm",
+        "Hydro Pump",
+        "Fake Out",
+        "Icy Wind"
+      ],
+      "nature": "Brave"
+    },
+    {
+      "name": "Skeledirge",
+      "species": "Skeledirge",
+      "level": 80,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Unaware",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Bulky Protect",
+      "teraType": "Fairy",
+      "moves": [
+        "Slack Off",
+        "Shadow Ball",
+        "Torch Song",
+        "Protect"
+      ],
+      "nature": "Hasty"
+    },
+    {
+      "name": "Kleavor",
+      "species": "Kleavor",
+      "level": 79,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Sharpness",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Offensive Protect",
+      "teraType": "Steel",
+      "moves": [
+        "Stone Axe",
+        "U-turn",
+        "X-Scissor",
+        "Protect"
+      ],
+      "nature": "Relaxed"
+    }
+  ],
+  [
+    {
+      "name": "Shaymin",
+      "species": "Shaymin",
+      "level": 81,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Natural Cure",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Steel",
+      "moves": [
+        "Seed Flare",
+        "Protect",
+        "Synthesis",
+        "Tailwind"
+      ],
+      "nature": "Hardy"
+    },
+    {
+      "name": "Cresselia",
+      "species": "Cresselia",
+      "level": 80,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Levitate",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Support",
+      "teraType": "Poison",
+      "moves": [
+        "Lunar Blessing",
+        "Thunder Wave",
+        "Psychic",
+        "Icy Wind"
+      ],
+      "nature": "Sassy"
+    },
+    {
+      "name": "Zekrom",
+      "species": "Zekrom",
+      "level": 74,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Teravolt",
+      "item": "Clear Amulet",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Wallbreaker",
+      "teraType": "Grass",
+      "moves": [
+        "Dragon Dance",
+        "Dragon Claw",
+        "Bolt Strike",
+        "Protect"
+      ],
+      "nature": "Jolly"
+    },
+    {
+      "name": "Arceus-Ice",
+      "species": "Arceus-Ice",
+      "level": 73,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Multitype",
+      "item": "Icicle Plate",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Bulky Setup",
+      "teraType": "Electric",
+      "moves": [
+        "Earth Power",
+        "Recover",
+        "Judgment",
+        "Thunderbolt"
+      ],
+      "nature": "Docile"
+    },
+    {
+      "name": "Scyther",
+      "species": "Scyther",
+      "level": 80,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Technician",
+      "item": "Eviolite",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Bulky Protect",
+      "teraType": "Flying",
+      "moves": [
+        "Bug Bite",
+        "Dual Wingbeat",
+        "Protect",
+        "Tailwind"
+      ],
+      "nature": "Rash"
+    },
+    {
+      "name": "Arbok",
+      "species": "Arbok",
+      "level": 88,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Intimidate",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Dark",
+      "moves": [
+        "Knock Off",
+        "Gunk Shot",
+        "Toxic Spikes",
+        "Glare"
+      ],
+      "nature": "Naughty"
+    }
+  ],
+  [
+    {
+      "name": "Poliwrath",
+      "species": "Poliwrath",
+      "level": 90,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Water Absorb",
+      "item": "Assault Vest",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Fire",
+      "moves": [
+        "Close Combat",
+        "Coaching",
+        "Liquidation",
+        "Icy Wind"
+      ],
+      "nature": "Lax"
+    },
+    {
+      "name": "Vikavolt",
+      "species": "Vikavolt",
+      "level": 84,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Levitate",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Bulky Protect",
+      "teraType": "Electric",
+      "moves": [
+        "Bug Buzz",
+        "Electroweb",
+        "Protect",
+        "Sticky Web"
+      ],
+      "nature": "Hasty"
+    },
+    {
+      "name": "Klefki",
+      "species": "Klefki",
+      "level": 81,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Prankster",
+      "item": "Light Clay",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Support",
+      "teraType": "Water",
+      "moves": [
+        "Light Screen",
+        "Foul Play",
+        "Reflect",
+        "Spikes"
+      ],
+      "nature": "Serious"
+    },
+    {
+      "name": "Lunala",
+      "species": "Lunala",
+      "level": 71,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Shadow Shield",
+      "item": "Power Herb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Offensive Protect",
+      "teraType": "Fairy",
+      "moves": [
+        "Protect",
+        "Meteor Beam",
+        "Moongeist Beam",
+        "Moonblast"
+      ],
+      "nature": "Lax"
+    },
+    {
+      "name": "Uxie",
+      "species": "Uxie",
+      "level": 86,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Levitate",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Dark",
+      "moves": [
+        "Mystical Power",
+        "Knock Off",
+        "Helping Hand",
+        "Stealth Rock"
+      ],
+      "nature": "Lax"
+    },
+    {
+      "name": "Houndstone",
+      "species": "Houndstone",
+      "level": 73,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Fluffy",
+      "item": "Choice Scarf",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Choice Item user",
+      "teraType": "Ghost",
+      "moves": [
+        "Shadow Sneak",
+        "Last Respects",
+        "Trick",
+        "Body Press"
+      ],
+      "nature": "Naive"
+    }
+  ],
+  [
+    {
+      "name": "Altaria",
+      "species": "Altaria",
+      "level": 91,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Natural Cure",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Steel",
+      "moves": [
+        "Brave Bird",
+        "Helping Hand",
+        "Fire Blast",
+        "Roost"
+      ],
+      "nature": "Timid"
+    },
+    {
+      "name": "Spectrier",
+      "species": "Spectrier",
+      "level": 77,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Grim Neigh",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Dark",
+      "moves": [
+        "Shadow Ball",
+        "Protect",
+        "Nasty Plot",
+        "Dark Pulse"
+      ],
+      "nature": "Lonely"
+    },
+    {
+      "name": "Ursaluna",
+      "species": "Ursaluna",
+      "level": 77,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Guts",
+      "item": "Flame Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Wallbreaker",
+      "teraType": "Normal",
+      "moves": [
+        "Protect",
+        "Facade",
+        "Headlong Rush",
+        "Earthquake"
+      ],
+      "nature": "Gentle"
+    },
+    {
+      "name": "Gogoat",
+      "species": "Gogoat",
+      "level": 90,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Sap Sipper",
+      "item": "Assault Vest",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Ground",
+      "moves": [
+        "Double-Edge",
+        "High Horsepower",
+        "Horn Leech",
+        "Leaf Storm"
+      ],
+      "nature": "Hasty"
+    },
+    {
+      "name": "Gyarados",
+      "species": "Gyarados",
+      "level": 81,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Intimidate",
+      "item": "Clear Amulet",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Tera Blast user",
+      "teraType": "Flying",
+      "moves": [
+        "Waterfall",
+        "Dragon Dance",
+        "Protect",
+        "Tera Blast"
+      ],
+      "nature": "Lonely"
+    },
+    {
+      "name": "Armarouge",
+      "species": "Armarouge",
+      "level": 81,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Flash Fire",
+      "item": "Choice Specs",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Wallbreaker",
+      "teraType": "Fire",
+      "moves": [
+        "Heat Wave",
+        "Energy Ball",
+        "Psychic",
+        "Aura Sphere"
+      ],
+      "nature": "Naughty"
+    }
+  ],
+  [
+    {
+      "name": "Dedenne",
+      "species": "Dedenne",
+      "level": 85,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Cheek Pouch",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Flying",
+      "moves": [
+        "Dazzling Gleam",
+        "Helping Hand",
+        "Thunderbolt",
+        "Nuzzle"
+      ],
+      "nature": "Gentle"
+    },
+    {
+      "name": "Dondozo",
+      "species": "Dondozo",
+      "level": 85,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Unaware",
+      "item": "Assault Vest",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Grass",
+      "moves": [
+        "Avalanche",
+        "Body Press",
+        "Heavy Slam",
+        "Wave Crash"
+      ],
+      "nature": "Jolly"
+    },
+    {
+      "name": "Bronzong",
+      "species": "Bronzong",
+      "level": 87,
+      "gender": "F",
+      "shiny": true,
+      "ability": "Levitate",
+      "item": "Leftovers",
+      "evs": {
+        "spe": 0,
+        "atk": 0
+      },
+      "ivs": {
+        "spe": 0,
+        "atk": 0
+      },
+      "role": "Doubles Bulky Setup",
+      "teraType": "Fighting",
+      "moves": [
+        "Trick Room",
+        "Psychic Noise",
+        "Iron Defense",
+        "Body Press"
+      ],
+      "nature": "Timid"
+    },
+    {
+      "name": "Salamence",
+      "species": "Salamence",
+      "level": 80,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Intimidate",
+      "item": "Heavy-Duty Boots",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Fast Attacker",
+      "teraType": "Fire",
+      "moves": [
+        "Draco Meteor",
+        "Dual Wingbeat",
+        "Protect",
+        "Fire Blast"
+      ],
+      "nature": "Bashful"
+    },
+    {
+      "name": "Electivire",
+      "species": "Electivire",
+      "level": 86,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Motor Drive",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Fast Attacker",
+      "teraType": "Flying",
+      "moves": [
+        "Wild Charge",
+        "Ice Punch",
+        "Volt Switch",
+        "Flamethrower"
+      ],
+      "nature": "Serious"
+    },
+    {
+      "name": "Bruxish",
+      "species": "Bruxish",
+      "level": 86,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Strong Jaw",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Offensive Protect",
+      "teraType": "Psychic",
+      "moves": [
+        "Crunch",
+        "Protect",
+        "Psychic Fangs",
+        "Wave Crash"
+      ],
+      "nature": "Timid"
+    }
+  ],
+  [
+    {
+      "name": "Eternatus",
+      "species": "Eternatus",
+      "level": 70,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Pressure",
+      "item": "Power Herb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Offensive Protect",
+      "teraType": "Dragon",
+      "moves": [
+        "Dynamax Cannon",
+        "Protect",
+        "Fire Blast",
+        "Meteor Beam"
+      ],
+      "nature": "Quiet"
+    },
+    {
+      "name": "Mew",
+      "species": "Mew",
+      "level": 84,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Synchronize",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Steel",
+      "moves": [
+        "Imprison",
+        "Transform",
+        "Pollen Puff",
+        "Coaching"
+      ],
+      "nature": "Lonely"
+    },
+    {
+      "name": "Empoleon",
+      "species": "Empoleon",
+      "level": 83,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Competitive",
+      "item": "Assault Vest",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Flying",
+      "moves": [
+        "Ice Beam",
+        "Flash Cannon",
+        "Icy Wind",
+        "Knock Off"
+      ],
+      "nature": "Gentle"
+    },
+    {
+      "name": "Passimian",
+      "species": "Passimian",
+      "level": 82,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Defiant",
+      "item": "Choice Scarf",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Choice Item user",
+      "teraType": "Poison",
+      "moves": [
+        "Rock Slide",
+        "Knock Off",
+        "Gunk Shot",
+        "Close Combat"
+      ],
+      "nature": "Gentle"
+    },
+    {
+      "name": "Wigglytuff",
+      "species": "Wigglytuff",
+      "level": 91,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Competitive",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Support",
+      "teraType": "Steel",
+      "moves": [
+        "Disable",
+        "Dazzling Gleam",
+        "Heal Pulse",
+        "Helping Hand"
+      ],
+      "nature": "Hasty"
+    },
+    {
+      "name": "Bellibolt",
+      "species": "Bellibolt",
+      "level": 81,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Electromorphosis",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Water",
+      "moves": [
+        "Thunder Wave",
+        "Slack Off",
+        "Volt Switch",
+        "Thunderbolt"
+      ],
+      "nature": "Sassy"
+    }
+  ],
+  [
+    {
+      "name": "Regidrago",
+      "species": "Regidrago",
+      "level": 74,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Dragon's Maw",
+      "item": "Choice Scarf",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Choice Item user",
+      "teraType": "Dragon",
+      "moves": [
+        "Draco Meteor",
+        "Dragon Claw",
+        "Earth Power",
+        "Dragon Energy"
+      ],
+      "nature": "Sassy"
+    },
+    {
+      "name": "Sableye",
+      "species": "Sableye",
+      "level": 93,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Prankster",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Poison",
+      "moves": [
+        "Quash",
+        "Knock Off",
+        "Will-O-Wisp",
+        "Foul Play"
+      ],
+      "nature": "Hasty"
+    },
+    {
+      "name": "Iron Jugulis",
+      "species": "Iron Jugulis",
+      "level": 79,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Quark Drive",
+      "item": "Booster Energy",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Fast Attacker",
+      "teraType": "Steel",
+      "moves": [
+        "Hurricane",
+        "Protect",
+        "Earth Power",
+        "Tailwind"
+      ],
+      "nature": "Lax"
+    },
+    {
+      "name": "Moltres",
+      "species": "Moltres",
+      "level": 79,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Flame Body",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Ground",
+      "moves": [
+        "Tailwind",
+        "Scorching Sands",
+        "Protect",
+        "Heat Wave"
+      ],
+      "nature": "Hardy"
+    },
+    {
+      "name": "Krookodile",
+      "species": "Krookodile",
+      "level": 80,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Intimidate",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Choice Item user",
+      "teraType": "Dark",
+      "moves": [
+        "Gunk Shot",
+        "Rock Slide",
+        "High Horsepower",
+        "Knock Off"
+      ],
+      "nature": "Lonely"
+    },
+    {
+      "name": "Dudunsparce",
+      "species": "Dudunsparce",
+      "level": 86,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Rattled",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 0,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 0,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Normal",
+      "moves": [
+        "Helping Hand",
+        "Protect",
+        "Tailwind",
+        "Earth Power"
+      ],
+      "nature": "Bashful"
+    }
+  ],
+  [
+    {
+      "name": "Cyclizar",
+      "species": "Cyclizar",
+      "level": 87,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Regenerator",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Dragon",
+      "moves": [
+        "Breaking Swipe",
+        "Double-Edge",
+        "Knock Off",
+        "Taunt"
+      ],
+      "nature": "Rash"
+    },
+    {
+      "name": "Magnezone",
+      "species": "Magnezone",
+      "level": 84,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Sturdy",
+      "item": "Assault Vest",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Flying",
+      "moves": [
+        "Thunderbolt",
+        "Protect",
+        "Flash Cannon",
+        "Electroweb"
+      ],
+      "nature": "Quirky"
+    },
+    {
+      "name": "Lapras",
+      "species": "Lapras",
+      "level": 83,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Water Absorb",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Support",
+      "teraType": "Ground",
+      "moves": [
+        "Protect",
+        "Muddy Water",
+        "Life Dew",
+        "Icy Wind"
+      ],
+      "nature": "Quirky"
+    },
+    {
+      "name": "Wyrdeer",
+      "species": "Wyrdeer",
+      "level": 85,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Intimidate",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Fairy",
+      "moves": [
+        "Protect",
+        "Earth Power",
+        "Psychic",
+        "Body Slam"
+      ],
+      "nature": "Docile"
+    },
+    {
+      "name": "Oinkologne-F",
+      "species": "Oinkologne-F",
+      "level": 92,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Gluttony",
+      "item": "Mago Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Normal",
+      "moves": [
+        "Double-Edge",
+        "Helping Hand",
+        "Yawn",
+        "Lash Out"
+      ],
+      "nature": "Quirky"
+    },
+    {
+      "name": "Delphox",
+      "species": "Delphox",
+      "level": 83,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Blaze",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Fire",
+      "moves": [
+        "Nasty Plot",
+        "Heat Wave",
+        "Fire Blast",
+        "Psychic"
+      ],
+      "nature": "Naughty"
+    }
+  ],
+  [
+    {
+      "name": "Farigiraf",
+      "species": "Farigiraf",
+      "level": 84,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Armor Tail",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0,
+        "spe": 0
+      },
+      "ivs": {
+        "atk": 0,
+        "spe": 0
+      },
+      "role": "Doubles Wallbreaker",
+      "teraType": "Fairy",
+      "moves": [
+        "Nasty Plot",
+        "Hyper Voice",
+        "Psychic",
+        "Trick Room"
+      ],
+      "nature": "Lonely"
+    },
+    {
+      "name": "Mew",
+      "species": "Mew",
+      "level": 84,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Synchronize",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 0,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 0,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Fairy",
+      "moves": [
+        "Psychic",
+        "Pollen Puff",
+        "Nasty Plot",
+        "Fire Blast"
+      ],
+      "nature": "Calm"
+    },
+    {
+      "name": "Sawsbuck",
+      "species": "Sawsbuck",
+      "level": 91,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Sap Sipper",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Normal",
+      "moves": [
+        "Double-Edge",
+        "High Horsepower",
+        "Swords Dance",
+        "Horn Leech"
+      ],
+      "nature": "Quiet"
+    },
+    {
+      "name": "Arceus-Fire",
+      "species": "Arceus-Fire",
+      "level": 73,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Multitype",
+      "item": "Flame Plate",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Fire",
+      "moves": [
+        "Protect",
+        "Liquidation",
+        "Swords Dance",
+        "Flare Blitz"
+      ],
+      "nature": "Mild"
+    },
+    {
+      "name": "Lapras",
+      "species": "Lapras",
+      "level": 83,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Water Absorb",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Support",
+      "teraType": "Ground",
+      "moves": [
+        "Freeze-Dry",
+        "Icy Wind",
+        "Protect",
+        "Muddy Water"
+      ],
+      "nature": "Mild"
+    },
+    {
+      "name": "Alomomola",
+      "species": "Alomomola",
+      "level": 96,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Regenerator",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Steel",
+      "moves": [
+        "Flip Turn",
+        "Helping Hand",
+        "Icy Wind",
+        "Scald"
+      ],
+      "nature": "Careful"
+    }
+  ],
+  [
+    {
+      "name": "Calyrex-Shadow",
+      "species": "Calyrex-Shadow",
+      "level": 62,
+      "gender": "M",
+      "shiny": false,
+      "ability": "As One (Spectrier)",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Offensive Protect",
+      "teraType": "Ghost",
+      "moves": [
+        "Astral Barrage",
+        "Encore",
+        "Nasty Plot",
+        "Protect"
+      ],
+      "nature": "Lonely"
+    },
+    {
+      "name": "Arceus-Bug",
+      "species": "Arceus-Bug",
+      "level": 73,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Multitype",
+      "item": "Insect Plate",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Normal",
+      "moves": [
+        "Extreme Speed",
+        "Stomping Tantrum",
+        "Swords Dance",
+        "X-Scissor"
+      ],
+      "nature": "Impish"
+    },
+    {
+      "name": "Volcanion",
+      "species": "Volcanion",
+      "level": 75,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Water Absorb",
+      "item": "Assault Vest",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Ground",
+      "moves": [
+        "Earth Power",
+        "Steam Eruption",
+        "Sludge Bomb",
+        "Heat Wave"
+      ],
+      "nature": "Bold"
+    },
+    {
+      "name": "Magearna",
+      "species": "Magearna",
+      "level": 71,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Soul-Heart",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0,
+        "spe": 0
+      },
+      "ivs": {
+        "atk": 0,
+        "spe": 0
+      },
+      "role": "Doubles Wallbreaker",
+      "teraType": "Water",
+      "moves": [
+        "Dazzling Gleam",
+        "Trick Room",
+        "Flash Cannon",
+        "Protect"
+      ],
+      "nature": "Hardy"
+    },
+    {
+      "name": "Hitmonlee",
+      "species": "Hitmonlee",
+      "level": 86,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Unburden",
+      "item": "White Herb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Offensive Protect",
+      "teraType": "Poison",
+      "moves": [
+        "Knock Off",
+        "Fake Out",
+        "Protect",
+        "Poison Jab"
+      ],
+      "nature": "Bold"
+    },
+    {
+      "name": "Porygon-Z",
+      "species": "Porygon-Z",
+      "level": 84,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Adaptability",
+      "item": "Choice Specs",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Wallbreaker",
+      "teraType": "Ghost",
+      "moves": [
+        "Tri Attack",
+        "Swift",
+        "Shadow Ball",
+        "Trick"
+      ],
+      "nature": "Brave"
+    }
+  ],
+  [
+    {
+      "name": "Urshifu-Rapid-Strike",
+      "species": "Urshifu-Rapid-Strike",
+      "level": 75,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Unseen Fist",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Wallbreaker",
+      "teraType": "Water",
+      "moves": [
+        "Surging Strikes",
+        "U-turn",
+        "Protect",
+        "Aqua Jet"
+      ],
+      "nature": "Hasty"
+    },
+    {
+      "name": "Cramorant",
+      "species": "Cramorant",
+      "level": 86,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Gulp Missile",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Bulky Protect",
+      "teraType": "Ground",
+      "moves": [
+        "Tailwind",
+        "Roost",
+        "Surf",
+        "Protect"
+      ],
+      "nature": "Adamant"
+    },
+    {
+      "name": "Scream Tail",
+      "species": "Scream Tail",
+      "level": 82,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Protosynthesis",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Steel",
+      "moves": [
+        "Stealth Rock",
+        "Play Rough",
+        "Howl",
+        "Helping Hand"
+      ],
+      "nature": "Naughty"
+    },
+    {
+      "name": "Greedent",
+      "species": "Greedent",
+      "level": 86,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Cheek Pouch",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Setup",
+      "teraType": "Ground",
+      "moves": [
+        "Protect",
+        "Knock Off",
+        "High Horsepower",
+        "Swords Dance"
+      ],
+      "nature": "Mild"
+    },
+    {
+      "name": "Gardevoir",
+      "species": "Gardevoir",
+      "level": 83,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Trace",
+      "item": "Choice Scarf",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Choice Item user",
+      "teraType": "Steel",
+      "moves": [
+        "Trick",
+        "Mystical Fire",
+        "Psychic",
+        "Moonblast"
+      ],
+      "nature": "Naive"
+    },
+    {
+      "name": "Klefki",
+      "species": "Klefki",
+      "level": 81,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Prankster",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Support",
+      "teraType": "Water",
+      "moves": [
+        "Dazzling Gleam",
+        "Foul Play",
+        "Spikes",
+        "Reflect"
+      ],
+      "nature": "Docile"
+    }
+  ],
+  [
+    {
+      "name": "Furret",
+      "species": "Furret",
+      "level": 98,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Frisk",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Ghost",
+      "moves": [
+        "Knock Off",
+        "Follow Me",
+        "Body Slam",
+        "Protect"
+      ],
+      "nature": "Quirky"
+    },
+    {
+      "name": "Wigglytuff",
+      "species": "Wigglytuff",
+      "level": 91,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Competitive",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Support",
+      "teraType": "Fire",
+      "moves": [
+        "Helping Hand",
+        "Fire Blast",
+        "Dazzling Gleam",
+        "Heal Pulse"
+      ],
+      "nature": "Quiet"
+    },
+    {
+      "name": "Gastrodon",
+      "species": "Gastrodon",
+      "level": 82,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Storm Drain",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Fire",
+      "moves": [
+        "Earth Power",
+        "Icy Wind",
+        "Recover",
+        "Clear Smog"
+      ],
+      "nature": "Calm"
+    },
+    {
+      "name": "Arceus-Dragon",
+      "species": "Arceus-Dragon",
+      "level": 73,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Multitype",
+      "item": "Draco Plate",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Poison",
+      "moves": [
+        "Calm Mind",
+        "Fire Blast",
+        "Judgment",
+        "Recover"
+      ],
+      "nature": "Impish"
+    },
+    {
+      "name": "Lurantis",
+      "species": "Lurantis",
+      "level": 85,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Contrary",
+      "item": "Assault Vest",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Tera Blast user",
+      "teraType": "Stellar",
+      "moves": [
+        "Knock Off",
+        "Leaf Storm",
+        "Tera Blast",
+        "Superpower"
+      ],
+      "nature": "Docile"
+    },
+    {
+      "name": "Milotic",
+      "species": "Milotic",
+      "level": 82,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Competitive",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Steel",
+      "moves": [
+        "Scald",
+        "Protect",
+        "Icy Wind",
+        "Dragon Tail"
+      ],
+      "nature": "Lax"
+    }
+  ],
+  [
+    {
+      "name": "Vikavolt",
+      "species": "Vikavolt",
+      "level": 84,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Levitate",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Bulky Protect",
+      "teraType": "Electric",
+      "moves": [
+        "Thunderbolt",
+        "Sticky Web",
+        "Electroweb",
+        "Bug Buzz"
+      ],
+      "nature": "Careful"
+    },
+    {
+      "name": "Muk",
+      "species": "Muk",
+      "level": 86,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Poison Touch",
+      "item": "Assault Vest",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Dark",
+      "moves": [
+        "Drain Punch",
+        "Ice Punch",
+        "Poison Jab",
+        "Knock Off"
+      ],
+      "nature": "Bold"
+    },
+    {
+      "name": "Regirock",
+      "species": "Regirock",
+      "level": 83,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Clear Body",
+      "item": "Chesto Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Setup",
+      "teraType": "Fighting",
+      "moves": [
+        "Body Press",
+        "Curse",
+        "Rock Slide",
+        "Iron Defense"
+      ],
+      "nature": "Gentle"
+    },
+    {
+      "name": "Slowking-Galar",
+      "species": "Slowking-Galar",
+      "level": 86,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Regenerator",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0,
+        "spe": 0
+      },
+      "ivs": {
+        "atk": 0,
+        "spe": 0
+      },
+      "role": "Doubles Wallbreaker",
+      "teraType": "Poison",
+      "moves": [
+        "Trick Room",
+        "Sludge Bomb",
+        "Psychic",
+        "Protect"
+      ],
+      "nature": "Impish"
+    },
+    {
+      "name": "Grafaiai",
+      "species": "Grafaiai",
+      "level": 88,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Prankster",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Dark",
+      "moves": [
+        "Parting Shot",
+        "Gunk Shot",
+        "Encore",
+        "Knock Off"
+      ],
+      "nature": "Quiet"
+    },
+    {
+      "name": "Cresselia",
+      "species": "Cresselia",
+      "level": 80,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Levitate",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Support",
+      "teraType": "Poison",
+      "moves": [
+        "Helping Hand",
+        "Icy Wind",
+        "Lunar Blessing",
+        "Psychic"
+      ],
+      "nature": "Serious"
+    }
+  ],
+  [
+    {
+      "name": "Dondozo",
+      "species": "Dondozo",
+      "level": 85,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Unaware",
+      "item": "Assault Vest",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Dragon",
+      "moves": [
+        "Avalanche",
+        "Body Press",
+        "Wave Crash",
+        "Heavy Slam"
+      ],
+      "nature": "Jolly"
+    },
+    {
+      "name": "Toucannon",
+      "species": "Toucannon",
+      "level": 87,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Skill Link",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Fast Attacker",
+      "teraType": "Flying",
+      "moves": [
+        "Protect",
+        "Brave Bird",
+        "Tailwind",
+        "Bullet Seed"
+      ],
+      "nature": "Sassy"
+    },
+    {
+      "name": "Deoxys-Attack",
+      "species": "Deoxys-Attack",
+      "level": 79,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Pressure",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Offensive Protect",
+      "teraType": "Ghost",
+      "moves": [
+        "Psycho Boost",
+        "Superpower",
+        "Protect",
+        "Knock Off"
+      ],
+      "nature": "Adamant"
+    },
+    {
+      "name": "Noctowl",
+      "species": "Noctowl",
+      "level": 91,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Tinted Lens",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Offensive Protect",
+      "teraType": "Flying",
+      "moves": [
+        "Tailwind",
+        "Protect",
+        "Hurricane",
+        "Hyper Voice"
+      ],
+      "nature": "Gentle"
+    },
+    {
+      "name": "Zamazenta-Crowned",
+      "species": "Zamazenta-Crowned",
+      "level": 67,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Dauntless Shield",
+      "item": "Rusted Shield",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Steel",
+      "moves": [
+        "Iron Defense",
+        "Body Press",
+        "Protect",
+        "Heavy Slam"
+      ],
+      "nature": "Rash"
+    },
+    {
+      "name": "Toxtricity-Low-Key",
+      "species": "Toxtricity-Low-Key",
+      "level": 82,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Punk Rock",
+      "item": "Choice Specs",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Wallbreaker",
+      "teraType": "Flying",
+      "moves": [
+        "Sludge Bomb",
+        "Overdrive",
+        "Psychic Noise",
+        "Volt Switch"
+      ],
+      "nature": "Quiet"
+    }
+  ],
+  [
+    {
+      "name": "Rotom",
+      "species": "Rotom",
+      "level": 90,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Levitate",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Offensive Protect",
+      "teraType": "Electric",
+      "moves": [
+        "Shadow Ball",
+        "Protect",
+        "Will-O-Wisp",
+        "Nasty Plot"
+      ],
+      "nature": "Quirky"
+    },
+    {
+      "name": "Swalot",
+      "species": "Swalot",
+      "level": 90,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Gluttony",
+      "item": "Figy Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Dark",
+      "moves": [
+        "Toxic Spikes",
+        "Helping Hand",
+        "Poison Gas",
+        "Knock Off"
+      ],
+      "nature": "Brave"
+    },
+    {
+      "name": "Annihilape",
+      "species": "Annihilape",
+      "level": 77,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Defiant",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Bulky Protect",
+      "teraType": "Steel",
+      "moves": [
+        "Rage Fist",
+        "Bulk Up",
+        "Protect",
+        "Drain Punch"
+      ],
+      "nature": "Jolly"
+    },
+    {
+      "name": "Glimmora",
+      "species": "Glimmora",
+      "level": 77,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Toxic Debris",
+      "item": "Power Herb",
+      "evs": {
+        "hp": 85,
+        "atk": 0,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 0,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Offensive Protect",
+      "teraType": "Ground",
+      "moves": [
+        "Spiky Shield",
+        "Meteor Beam",
+        "Sludge Bomb",
+        "Earth Power"
+      ],
+      "nature": "Calm"
+    },
+    {
+      "name": "Deoxys-Attack",
+      "species": "Deoxys-Attack",
+      "level": 79,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Pressure",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Offensive Protect",
+      "teraType": "Ghost",
+      "moves": [
+        "Extreme Speed",
+        "Knock Off",
+        "Superpower",
+        "Psycho Boost"
+      ],
+      "nature": "Impish"
+    },
+    {
+      "name": "Sneasler",
+      "species": "Sneasler",
+      "level": 77,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Poison Touch",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Wallbreaker",
+      "teraType": "Poison",
+      "moves": [
+        "U-turn",
+        "Throat Chop",
+        "Fake Out",
+        "Dire Claw"
+      ],
+      "nature": "Hasty"
+    }
+  ],
+  [
+    {
+      "name": "Arceus-Dark",
+      "species": "Arceus-Dark",
+      "level": 73,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Multitype",
+      "item": "Dread Plate",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Poison",
+      "moves": [
+        "Tailwind",
+        "Gunk Shot",
+        "Recover",
+        "Judgment"
+      ],
+      "nature": "Serious"
+    },
+    {
+      "name": "Maushold",
+      "species": "Maushold",
+      "level": 79,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Technician",
+      "item": "Wide Lens",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Normal",
+      "moves": [
+        "Population Bomb",
+        "Follow Me",
+        "Protect",
+        "Encore"
+      ],
+      "nature": "Docile"
+    },
+    {
+      "name": "Alomomola",
+      "species": "Alomomola",
+      "level": 96,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Regenerator",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Steel",
+      "moves": [
+        "Helping Hand",
+        "Scald",
+        "Flip Turn",
+        "Wide Guard"
+      ],
+      "nature": "Modest"
+    },
+    {
+      "name": "Dewgong",
+      "species": "Dewgong",
+      "level": 91,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Thick Fat",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Grass",
+      "moves": [
+        "Icy Wind",
+        "Encore",
+        "Fake Out",
+        "Hydro Pump"
+      ],
+      "nature": "Hardy"
+    },
+    {
+      "name": "Scovillain",
+      "species": "Scovillain",
+      "level": 90,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Chlorophyll",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Support",
+      "teraType": "Steel",
+      "moves": [
+        "Rage Powder",
+        "Fire Blast",
+        "Energy Ball",
+        "Will-O-Wisp"
+      ],
+      "nature": "Lax"
+    },
+    {
+      "name": "Dedenne",
+      "species": "Dedenne",
+      "level": 85,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Cheek Pouch",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Flying",
+      "moves": [
+        "Dazzling Gleam",
+        "Helping Hand",
+        "Super Fang",
+        "Thunderbolt"
+      ],
+      "nature": "Calm"
+    }
+  ],
+  [
+    {
+      "name": "Oricorio-Pom-Pom",
+      "species": "Oricorio-Pom-Pom",
+      "level": 83,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Dancer",
+      "item": "Leftovers",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Bulky Protect",
+      "teraType": "Ground",
+      "moves": [
+        "Revelation Dance",
+        "Tailwind",
+        "Protect",
+        "Quiver Dance"
+      ],
+      "nature": "Adamant"
+    },
+    {
+      "name": "Urshifu",
+      "species": "Urshifu",
+      "level": 75,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Unseen Fist",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Wallbreaker",
+      "teraType": "Poison",
+      "moves": [
+        "Close Combat",
+        "Poison Jab",
+        "Protect",
+        "Sucker Punch"
+      ],
+      "nature": "Mild"
+    },
+    {
+      "name": "Ursaluna-Bloodmoon",
+      "species": "Ursaluna-Bloodmoon",
+      "level": 78,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Mind's Eye",
+      "item": "Silk Scarf",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Bulky Protect",
+      "teraType": "Normal",
+      "moves": [
+        "Earth Power",
+        "Protect",
+        "Hyper Voice",
+        "Blood Moon"
+      ],
+      "nature": "Serious"
+    },
+    {
+      "name": "Alomomola",
+      "species": "Alomomola",
+      "level": 96,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Regenerator",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Steel",
+      "moves": [
+        "Flip Turn",
+        "Helping Hand",
+        "Wide Guard",
+        "Icy Wind"
+      ],
+      "nature": "Naive"
+    },
+    {
+      "name": "Zacian-Crowned",
+      "species": "Zacian-Crowned",
+      "level": 66,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Intrepid Sword",
+      "item": "Rusted Sword",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Fighting",
+      "moves": [
+        "Behemoth Blade",
+        "Close Combat",
+        "Play Rough",
+        "Protect"
+      ],
+      "nature": "Quiet"
+    },
+    {
+      "name": "Calyrex",
+      "species": "Calyrex",
+      "level": 94,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Unnerve",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Support",
+      "teraType": "Steel",
+      "moves": [
+        "Psychic",
+        "Giga Drain",
+        "Pollen Puff",
+        "Helping Hand"
+      ],
+      "nature": "Brave"
+    }
+  ],
+  [
+    {
+      "name": "Vileplume",
+      "species": "Vileplume",
+      "level": 89,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Effect Spore",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Support",
+      "teraType": "Steel",
+      "moves": [
+        "Strength Sap",
+        "Stun Spore",
+        "Sludge Bomb",
+        "Pollen Puff"
+      ],
+      "nature": "Hardy"
+    },
+    {
+      "name": "Shaymin-Sky",
+      "species": "Shaymin-Sky",
+      "level": 77,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Serene Grace",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Offensive Protect",
+      "teraType": "Flying",
+      "moves": [
+        "Protect",
+        "Earth Power",
+        "Tailwind",
+        "Seed Flare"
+      ],
+      "nature": "Hasty"
+    },
+    {
+      "name": "Torkoal",
+      "species": "Torkoal",
+      "level": 86,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Drought",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Dragon",
+      "moves": [
+        "Fire Blast",
+        "Solar Beam",
+        "Will-O-Wisp",
+        "Body Press"
+      ],
+      "nature": "Adamant"
+    },
+    {
+      "name": "Diancie",
+      "species": "Diancie",
+      "level": 77,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Clear Body",
+      "item": "Sitrus Berry",
+      "evs": {
+        "spe": 0
+      },
+      "ivs": {
+        "spe": 0
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Fighting",
+      "moves": [
+        "Trick Room",
+        "Protect",
+        "Diamond Storm",
+        "Body Press"
+      ],
+      "nature": "Quirky"
+    },
+    {
+      "name": "Granbull",
+      "species": "Granbull",
+      "level": 88,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Intimidate",
+      "item": "Assault Vest",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Steel",
+      "moves": [
+        "Super Fang",
+        "Close Combat",
+        "Play Rough",
+        "Stomping Tantrum"
+      ],
+      "nature": "Careful"
+    },
+    {
+      "name": "Arceus-Poison",
+      "species": "Arceus-Poison",
+      "level": 72,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Multitype",
+      "item": "Toxic Plate",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Fire",
+      "moves": [
+        "Extreme Speed",
+        "Flare Blitz",
+        "Gunk Shot",
+        "Liquidation"
+      ],
+      "nature": "Lax"
+    }
+  ],
+  [
+    {
+      "name": "Cresselia",
+      "species": "Cresselia",
+      "level": 80,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Levitate",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Support",
+      "teraType": "Fire",
+      "moves": [
+        "Lunar Blessing",
+        "Icy Wind",
+        "Helping Hand",
+        "Thunder Wave"
+      ],
+      "nature": "Modest"
+    },
+    {
+      "name": "Zacian-Crowned",
+      "species": "Zacian-Crowned",
+      "level": 66,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Intrepid Sword",
+      "item": "Rusted Sword",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Fire",
+      "moves": [
+        "Protect",
+        "Close Combat",
+        "Swords Dance",
+        "Behemoth Blade"
+      ],
+      "nature": "Hasty"
+    },
+    {
+      "name": "Wugtrio",
+      "species": "Wugtrio",
+      "level": 92,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Gooey",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Choice Item user",
+      "teraType": "Dark",
+      "moves": [
+        "Stomping Tantrum",
+        "Liquidation",
+        "Throat Chop",
+        "Aqua Jet"
+      ],
+      "nature": "Impish"
+    },
+    {
+      "name": "Duraludon",
+      "species": "Duraludon",
+      "level": 83,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Stalwart",
+      "item": "Eviolite",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Fighting",
+      "moves": [
+        "Flash Cannon",
+        "Iron Defense",
+        "Draco Meteor",
+        "Body Press"
+      ],
+      "nature": "Bashful"
+    },
+    {
+      "name": "Zarude",
+      "species": "Zarude",
+      "level": 80,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Leaf Guard",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Offensive Protect",
+      "teraType": "Poison",
+      "moves": [
+        "Protect",
+        "Close Combat",
+        "Jungle Healing",
+        "Knock Off"
+      ],
+      "nature": "Gentle"
+    },
+    {
+      "name": "Glalie",
+      "species": "Glalie",
+      "level": 94,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Inner Focus",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Support",
+      "teraType": "Steel",
+      "moves": [
+        "Icy Wind",
+        "Freeze-Dry",
+        "Protect",
+        "Foul Play"
+      ],
+      "nature": "Quiet"
+    }
+  ],
+  [
+    {
+      "name": "Overqwil",
+      "species": "Overqwil",
+      "level": 82,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Intimidate",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Fast Attacker",
+      "teraType": "Water",
+      "moves": [
+        "Liquidation",
+        "Protect",
+        "Crunch",
+        "Throat Chop"
+      ],
+      "nature": "Quiet"
+    },
+    {
+      "name": "Arceus-Bug",
+      "species": "Arceus-Bug",
+      "level": 73,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Multitype",
+      "item": "Insect Plate",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Normal",
+      "moves": [
+        "Swords Dance",
+        "X-Scissor",
+        "Stomping Tantrum",
+        "Extreme Speed"
+      ],
+      "nature": "Naughty"
+    },
+    {
+      "name": "Arceus-Rock",
+      "species": "Arceus-Rock",
+      "level": 73,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Multitype",
+      "item": "Stone Plate",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Ground",
+      "moves": [
+        "Judgment",
+        "Fire Blast",
+        "Earth Power",
+        "Calm Mind"
+      ],
+      "nature": "Naughty"
+    },
+    {
+      "name": "Meowscarada",
+      "species": "Meowscarada",
+      "level": 79,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Protean",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Choice Item user",
+      "teraType": "Grass",
+      "moves": [
+        "U-turn",
+        "Sucker Punch",
+        "Knock Off",
+        "Triple Axel"
+      ],
+      "nature": "Mild"
+    },
+    {
+      "name": "Breloom",
+      "species": "Breloom",
+      "level": 84,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Technician",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Fast Attacker",
+      "teraType": "Fighting",
+      "moves": [
+        "Bullet Seed",
+        "Rock Tomb",
+        "Close Combat",
+        "Mach Punch"
+      ],
+      "nature": "Relaxed"
+    },
+    {
+      "name": "Rillaboom",
+      "species": "Rillaboom",
+      "level": 81,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Grassy Surge",
+      "item": "Assault Vest",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Steel",
+      "moves": [
+        "Wood Hammer",
+        "U-turn",
+        "Grassy Glide",
+        "Fake Out"
+      ],
+      "nature": "Jolly"
+    }
+  ],
+  [
+    {
+      "name": "Exeggutor-Alola",
+      "species": "Exeggutor-Alola",
+      "level": 87,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Harvest",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Fire",
+      "moves": [
+        "Wood Hammer",
+        "Flamethrower",
+        "Protect",
+        "Trick Room"
+      ],
+      "nature": "Quirky"
+    },
+    {
+      "name": "Annihilape",
+      "species": "Annihilape",
+      "level": 77,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Defiant",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Bulky Protect",
+      "teraType": "Steel",
+      "moves": [
+        "Drain Punch",
+        "Protect",
+        "Rage Fist",
+        "Bulk Up"
+      ],
+      "nature": "Lonely"
+    },
+    {
+      "name": "Scrafty",
+      "species": "Scrafty",
+      "level": 83,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Intimidate",
+      "item": "Assault Vest",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Poison",
+      "moves": [
+        "Coaching",
+        "Fake Out",
+        "Poison Jab",
+        "Close Combat"
+      ],
+      "nature": "Quiet"
+    },
+    {
+      "name": "Meowscarada",
+      "species": "Meowscarada",
+      "level": 79,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Protean",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Choice Item user",
+      "teraType": "Grass",
+      "moves": [
+        "Sucker Punch",
+        "Triple Axel",
+        "U-turn",
+        "Knock Off"
+      ],
+      "nature": "Relaxed"
+    },
+    {
+      "name": "Excadrill",
+      "species": "Excadrill",
+      "level": 82,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Sand Rush",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Water",
+      "moves": [
+        "Swords Dance",
+        "Protect",
+        "Iron Head",
+        "High Horsepower"
+      ],
+      "nature": "Serious"
+    },
+    {
+      "name": "Arceus-Rock",
+      "species": "Arceus-Rock",
+      "level": 73,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Multitype",
+      "item": "Stone Plate",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Ground",
+      "moves": [
+        "Calm Mind",
+        "Earth Power",
+        "Recover",
+        "Judgment"
+      ],
+      "nature": "Lonely"
+    }
+  ],
+  [
+    {
+      "name": "Muk",
+      "species": "Muk",
+      "level": 86,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Poison Touch",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Dark",
+      "moves": [
+        "Knock Off",
+        "Shadow Sneak",
+        "Drain Punch",
+        "Helping Hand"
+      ],
+      "nature": "Lonely"
+    },
+    {
+      "name": "Polteageist",
+      "species": "Polteageist",
+      "level": 85,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Cursed Body",
+      "item": "White Herb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Normal",
+      "moves": [
+        "Shell Smash",
+        "Shadow Ball",
+        "Protect",
+        "Baton Pass"
+      ],
+      "nature": "Naive"
+    },
+    {
+      "name": "Landorus-Therian",
+      "species": "Landorus-Therian",
+      "level": 77,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Intimidate",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Water",
+      "moves": [
+        "U-turn",
+        "Taunt",
+        "Stone Edge",
+        "Stomping Tantrum"
+      ],
+      "nature": "Quiet"
+    },
+    {
+      "name": "Giratina-Origin",
+      "species": "Giratina-Origin",
+      "level": 74,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Levitate",
+      "item": "Griseous Core",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Fast Attacker",
+      "teraType": "Dragon",
+      "moves": [
+        "Shadow Sneak",
+        "Poltergeist",
+        "Protect",
+        "Shadow Force"
+      ],
+      "nature": "Serious"
+    },
+    {
+      "name": "Alomomola",
+      "species": "Alomomola",
+      "level": 96,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Regenerator",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Steel",
+      "moves": [
+        "Helping Hand",
+        "Flip Turn",
+        "Icy Wind",
+        "Scald"
+      ],
+      "nature": "Hasty"
+    },
+    {
+      "name": "Cinderace",
+      "species": "Cinderace",
+      "level": 82,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Blaze",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Offensive Protect",
+      "teraType": "Fighting",
+      "moves": [
+        "U-turn",
+        "Sucker Punch",
+        "Pyro Ball",
+        "Protect"
+      ],
+      "nature": "Lonely"
+    }
+  ],
+  [
+    {
+      "name": "Phione",
+      "species": "Phione",
+      "level": 90,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Hydration",
+      "item": "Leftovers",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Bulky Protect",
+      "teraType": "Steel",
+      "moves": [
+        "Ice Beam",
+        "Take Heart",
+        "Scald",
+        "Protect"
+      ],
+      "nature": "Quirky"
+    },
+    {
+      "name": "Skuntank",
+      "species": "Skuntank",
+      "level": 85,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Aftermath",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Fast Attacker",
+      "teraType": "Flying",
+      "moves": [
+        "Taunt",
+        "Gunk Shot",
+        "Toxic Spikes",
+        "Fire Blast"
+      ],
+      "nature": "Calm"
+    },
+    {
+      "name": "Braviary",
+      "species": "Braviary",
+      "level": 82,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Defiant",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Offensive Protect",
+      "teraType": "Fighting",
+      "moves": [
+        "Brave Bird",
+        "Tailwind",
+        "Close Combat",
+        "Protect"
+      ],
+      "nature": "Hasty"
+    },
+    {
+      "name": "Lucario",
+      "species": "Lucario",
+      "level": 86,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Inner Focus",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Offensive Protect",
+      "teraType": "Normal",
+      "moves": [
+        "Flash Cannon",
+        "Extreme Speed",
+        "Protect",
+        "Close Combat"
+      ],
+      "nature": "Impish"
+    },
+    {
+      "name": "Kricketune",
+      "species": "Kricketune",
+      "level": 100,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Technician",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Steel",
+      "moves": [
+        "Helping Hand",
+        "Sticky Web",
+        "Knock Off",
+        "Taunt"
+      ],
+      "nature": "Docile"
+    },
+    {
+      "name": "Jirachi",
+      "species": "Jirachi",
+      "level": 80,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Serene Grace",
+      "item": "Choice Scarf",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Choice Item user",
+      "teraType": "Steel",
+      "moves": [
+        "Iron Head",
+        "Trick",
+        "Psychic",
+        "U-turn"
+      ],
+      "nature": "Naive"
+    }
+  ],
+  [
+    {
+      "name": "Zangoose",
+      "species": "Zangoose",
+      "level": 86,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Toxic Boost",
+      "item": "Toxic Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Offensive Protect",
+      "teraType": "Normal",
+      "moves": [
+        "Knock Off",
+        "Feint",
+        "Facade",
+        "Protect"
+      ],
+      "nature": "Hasty"
+    },
+    {
+      "name": "Magmar",
+      "species": "Magmar",
+      "level": 84,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Flame Body",
+      "item": "Eviolite",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Grass",
+      "moves": [
+        "Follow Me",
+        "Knock Off",
+        "Heat Wave",
+        "Protect"
+      ],
+      "nature": "Bold"
+    },
+    {
+      "name": "Probopass",
+      "species": "Probopass",
+      "level": 90,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Magnet Pull",
+      "item": "Leftovers",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Bulky Setup",
+      "teraType": "Fighting",
+      "moves": [
+        "Iron Defense",
+        "Rest",
+        "Flash Cannon",
+        "Thunder Wave"
+      ],
+      "nature": "Mild"
+    },
+    {
+      "name": "Breloom",
+      "species": "Breloom",
+      "level": 84,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Technician",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Fast Attacker",
+      "teraType": "Fighting",
+      "moves": [
+        "Rock Tomb",
+        "Close Combat",
+        "Protect",
+        "Spore"
+      ],
+      "nature": "Docile"
+    },
+    {
+      "name": "Kyurem",
+      "species": "Kyurem",
+      "level": 77,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Pressure",
+      "item": "Loaded Dice",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Offensive Protect",
+      "teraType": "Fairy",
+      "moves": [
+        "Earth Power",
+        "Icicle Spear",
+        "Protect",
+        "Scale Shot"
+      ],
+      "nature": "Naive"
+    },
+    {
+      "name": "Komala",
+      "species": "Komala",
+      "level": 92,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Comatose",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Grass",
+      "moves": [
+        "Double-Edge",
+        "Knock Off",
+        "U-turn",
+        "Rapid Spin"
+      ],
+      "nature": "Quirky"
+    }
+  ],
+  [
+    {
+      "name": "Coalossal",
+      "species": "Coalossal",
+      "level": 91,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Flame Body",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Water",
+      "moves": [
+        "Stone Edge",
+        "Stealth Rock",
+        "Fire Blast",
+        "Will-O-Wisp"
+      ],
+      "nature": "Bashful"
+    },
+    {
+      "name": "Krookodile",
+      "species": "Krookodile",
+      "level": 80,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Intimidate",
+      "item": "Choice Scarf",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Choice Item user",
+      "teraType": "Ground",
+      "moves": [
+        "Rock Slide",
+        "High Horsepower",
+        "Knock Off",
+        "Gunk Shot"
+      ],
+      "nature": "Impish"
+    },
+    {
+      "name": "Decidueye",
+      "species": "Decidueye",
+      "level": 89,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Overgrow",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Dark",
+      "moves": [
+        "Protect",
+        "Leaf Storm",
+        "Tailwind",
+        "Spirit Shackle"
+      ],
+      "nature": "Jolly"
+    },
+    {
+      "name": "Spectrier",
+      "species": "Spectrier",
+      "level": 77,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Grim Neigh",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Tera Blast user",
+      "teraType": "Fighting",
+      "moves": [
+        "Shadow Ball",
+        "Tera Blast",
+        "Nasty Plot",
+        "Protect"
+      ],
+      "nature": "Calm"
+    },
+    {
+      "name": "Iron Thorns",
+      "species": "Iron Thorns",
+      "level": 82,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Quark Drive",
+      "item": "Clear Amulet",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Grass",
+      "moves": [
+        "Rock Slide",
+        "Ice Punch",
+        "High Horsepower",
+        "Dragon Dance"
+      ],
+      "nature": "Quiet"
+    },
+    {
+      "name": "Groudon",
+      "species": "Groudon",
+      "level": 69,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Drought",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Setup",
+      "teraType": "Fire",
+      "moves": [
+        "Protect",
+        "Stone Edge",
+        "Precipice Blades",
+        "Swords Dance"
+      ],
+      "nature": "Bold"
+    }
+  ],
+  [
+    {
+      "name": "Toucannon",
+      "species": "Toucannon",
+      "level": 87,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Skill Link",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Fast Attacker",
+      "teraType": "Flying",
+      "moves": [
+        "Tailwind",
+        "Bullet Seed",
+        "Brave Bird",
+        "Protect"
+      ],
+      "nature": "Serious"
+    },
+    {
+      "name": "Shaymin",
+      "species": "Shaymin",
+      "level": 81,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Natural Cure",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Ground",
+      "moves": [
+        "Tailwind",
+        "Protect",
+        "Earth Power",
+        "Synthesis"
+      ],
+      "nature": "Relaxed"
+    },
+    {
+      "name": "Iron Moth",
+      "species": "Iron Moth",
+      "level": 78,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Quark Drive",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Offensive Protect",
+      "teraType": "Grass",
+      "moves": [
+        "Energy Ball",
+        "Fiery Dance",
+        "Heat Wave",
+        "Protect"
+      ],
+      "nature": "Docile"
+    },
+    {
+      "name": "Golem",
+      "species": "Golem",
+      "level": 87,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Sturdy",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Wallbreaker",
+      "teraType": "Grass",
+      "moves": [
+        "Fire Punch",
+        "High Horsepower",
+        "Stone Edge",
+        "Rock Slide"
+      ],
+      "nature": "Gentle"
+    },
+    {
+      "name": "Jumpluff",
+      "species": "Jumpluff",
+      "level": 93,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Infiltrator",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Bulky Protect",
+      "teraType": "Steel",
+      "moves": [
+        "Rage Powder",
+        "Pollen Puff",
+        "Tailwind",
+        "Encore"
+      ],
+      "nature": "Impish"
+    },
+    {
+      "name": "Kyurem-White",
+      "species": "Kyurem-White",
+      "level": 72,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Turboblaze",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Wallbreaker",
+      "teraType": "Fire",
+      "moves": [
+        "Protect",
+        "Ice Beam",
+        "Fusion Flare",
+        "Earth Power"
+      ],
+      "nature": "Impish"
+    }
+  ],
+  [
+    {
+      "name": "Oinkologne-F",
+      "species": "Oinkologne-F",
+      "level": 92,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Thick Fat",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Wallbreaker",
+      "teraType": "Normal",
+      "moves": [
+        "Lash Out",
+        "High Horsepower",
+        "Double-Edge",
+        "Play Rough"
+      ],
+      "nature": "Bold"
+    },
+    {
+      "name": "Amoonguss",
+      "species": "Amoonguss",
+      "level": 86,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Regenerator",
+      "item": "Rocky Helmet",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Steel",
+      "moves": [
+        "Pollen Puff",
+        "Spore",
+        "Rage Powder",
+        "Sludge Bomb"
+      ],
+      "nature": "Rash"
+    },
+    {
+      "name": "Flygon",
+      "species": "Flygon",
+      "level": 83,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Levitate",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Steel",
+      "moves": [
+        "Protect",
+        "Earth Power",
+        "Breaking Swipe",
+        "Tailwind"
+      ],
+      "nature": "Hardy"
+    },
+    {
+      "name": "Krookodile",
+      "species": "Krookodile",
+      "level": 80,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Intimidate",
+      "item": "Choice Scarf",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Choice Item user",
+      "teraType": "Ground",
+      "moves": [
+        "High Horsepower",
+        "Rock Slide",
+        "Gunk Shot",
+        "Knock Off"
+      ],
+      "nature": "Rash"
+    },
+    {
+      "name": "Arceus-Fire",
+      "species": "Arceus-Fire",
+      "level": 73,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Multitype",
+      "item": "Flame Plate",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Normal",
+      "moves": [
+        "Swords Dance",
+        "Protect",
+        "Liquidation",
+        "Flare Blitz"
+      ],
+      "nature": "Hardy"
+    },
+    {
+      "name": "Toedscruel",
+      "species": "Toedscruel",
+      "level": 87,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Mycelium Might",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Water",
+      "moves": [
+        "Knock Off",
+        "Giga Drain",
+        "Spore",
+        "Rage Powder"
+      ],
+      "nature": "Brave"
+    }
+  ],
+  [
+    {
+      "name": "Oricorio-Sensu",
+      "species": "Oricorio-Sensu",
+      "level": 86,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Dancer",
+      "item": "Leftovers",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Bulky Protect",
+      "teraType": "Ground",
+      "moves": [
+        "Hurricane",
+        "Protect",
+        "Quiver Dance",
+        "Revelation Dance"
+      ],
+      "nature": "Quiet"
+    },
+    {
+      "name": "Raichu",
+      "species": "Raichu",
+      "level": 87,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Lightning Rod",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 0,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 0,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Tera Blast user",
+      "teraType": "Ice",
+      "moves": [
+        "Tera Blast",
+        "Protect",
+        "Thunderbolt",
+        "Nasty Plot"
+      ],
+      "nature": "Naive"
+    },
+    {
+      "name": "Metagross",
+      "species": "Metagross",
+      "level": 80,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Clear Body",
+      "item": "Assault Vest",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Steel",
+      "moves": [
+        "Knock Off",
+        "Stomping Tantrum",
+        "Heavy Slam",
+        "Psychic Fangs"
+      ],
+      "nature": "Hasty"
+    },
+    {
+      "name": "Hitmonchan",
+      "species": "Hitmonchan",
+      "level": 90,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Inner Focus",
+      "item": "Assault Vest",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Dark",
+      "moves": [
+        "Fake Out",
+        "Coaching",
+        "Poison Jab",
+        "Knock Off"
+      ],
+      "nature": "Lonely"
+    },
+    {
+      "name": "Regice",
+      "species": "Regice",
+      "level": 84,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Clear Body",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Support",
+      "teraType": "Water",
+      "moves": [
+        "Icy Wind",
+        "Thunderbolt",
+        "Ice Beam",
+        "Protect"
+      ],
+      "nature": "Serious"
+    },
+    {
+      "name": "Terrakion",
+      "species": "Terrakion",
+      "level": 78,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Justified",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Wallbreaker",
+      "teraType": "Rock",
+      "moves": [
+        "High Horsepower",
+        "Stone Edge",
+        "Close Combat",
+        "Rock Slide"
+      ],
+      "nature": "Quirky"
+    }
+  ],
+  [
+    {
+      "name": "Ogerpon-Hearthflame",
+      "species": "Ogerpon-Hearthflame",
+      "level": 74,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Mold Breaker",
+      "item": "Hearthflame Mask",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Fire",
+      "moves": [
+        "Ivy Cudgel",
+        "Horn Leech",
+        "Spiky Shield",
+        "Follow Me"
+      ],
+      "nature": "Brave"
+    },
+    {
+      "name": "Hariyama",
+      "species": "Hariyama",
+      "level": 85,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Guts",
+      "item": "Flame Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Wallbreaker",
+      "teraType": "Normal",
+      "moves": [
+        "Facade",
+        "Close Combat",
+        "Knock Off",
+        "Headlong Rush"
+      ],
+      "nature": "Naughty"
+    },
+    {
+      "name": "Dudunsparce",
+      "species": "Dudunsparce",
+      "level": 86,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Rattled",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Bulky Protect",
+      "teraType": "Normal",
+      "moves": [
+        "Hyper Drill",
+        "Glare",
+        "Protect",
+        "Tailwind"
+      ],
+      "nature": "Relaxed"
+    },
+    {
+      "name": "Necrozma-Dawn-Wings",
+      "species": "Necrozma-Dawn-Wings",
+      "level": 74,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Prism Armor",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0,
+        "spe": 0
+      },
+      "ivs": {
+        "atk": 0,
+        "spe": 0
+      },
+      "role": "Doubles Wallbreaker",
+      "teraType": "Dark",
+      "moves": [
+        "Moongeist Beam",
+        "Trick Room",
+        "Photon Geyser",
+        "Protect"
+      ],
+      "nature": "Hardy"
+    },
+    {
+      "name": "Stonjourner",
+      "species": "Stonjourner",
+      "level": 88,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Power Spot",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Choice Item user",
+      "teraType": "Fire",
+      "moves": [
+        "Heat Crash",
+        "High Horsepower",
+        "Rock Slide",
+        "Stone Edge"
+      ],
+      "nature": "Rash"
+    },
+    {
+      "name": "Whimsicott",
+      "species": "Whimsicott",
+      "level": 80,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Prankster",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Support",
+      "teraType": "Fire",
+      "moves": [
+        "Encore",
+        "Moonblast",
+        "Stun Spore",
+        "Tailwind"
+      ],
+      "nature": "Quirky"
+    }
+  ],
+  [
+    {
+      "name": "Copperajah",
+      "species": "Copperajah",
+      "level": 86,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Heavy Metal",
+      "item": "Assault Vest",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Fire",
+      "moves": [
+        "Heat Crash",
+        "Heavy Slam",
+        "Stone Edge",
+        "High Horsepower"
+      ],
+      "nature": "Gentle"
+    },
+    {
+      "name": "Swalot",
+      "species": "Swalot",
+      "level": 90,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Gluttony",
+      "item": "Wiki Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Dark",
+      "moves": [
+        "Toxic Spikes",
+        "Thunder Wave",
+        "Gunk Shot",
+        "Poison Gas"
+      ],
+      "nature": "Modest"
+    },
+    {
+      "name": "Talonflame",
+      "species": "Talonflame",
+      "level": 82,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Gale Wings",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Ground",
+      "moves": [
+        "Overheat",
+        "Tailwind",
+        "U-turn",
+        "Brave Bird"
+      ],
+      "nature": "Rash"
+    },
+    {
+      "name": "Corviknight",
+      "species": "Corviknight",
+      "level": 81,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Mirror Armor",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Dragon",
+      "moves": [
+        "Brave Bird",
+        "Roost",
+        "Tailwind",
+        "U-turn"
+      ],
+      "nature": "Rash"
+    },
+    {
+      "name": "Heatran",
+      "species": "Heatran",
+      "level": 78,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Flash Fire",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Tera Blast user",
+      "teraType": "Grass",
+      "moves": [
+        "Heat Wave",
+        "Earth Power",
+        "Flash Cannon",
+        "Protect"
+      ],
+      "nature": "Careful"
+    },
+    {
+      "name": "Meganium",
+      "species": "Meganium",
+      "level": 91,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Overgrow",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Steel",
+      "moves": [
+        "Encore",
+        "Energy Ball",
+        "Leech Seed",
+        "Heal Pulse"
+      ],
+      "nature": "Bashful"
+    }
+  ],
+  [
+    {
+      "name": "Honchkrow",
+      "species": "Honchkrow",
+      "level": 85,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Moxie",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Offensive Protect",
+      "teraType": "Fire",
+      "moves": [
+        "Brave Bird",
+        "Tailwind",
+        "Heat Wave",
+        "Sucker Punch"
+      ],
+      "nature": "Quiet"
+    },
+    {
+      "name": "Thundurus-Therian",
+      "species": "Thundurus-Therian",
+      "level": 78,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Volt Absorb",
+      "item": "Choice Scarf",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Fast Attacker",
+      "teraType": "Electric",
+      "moves": [
+        "Grass Knot",
+        "Protect",
+        "Sludge Bomb",
+        "Volt Switch"
+      ],
+      "nature": "Relaxed"
+    },
+    {
+      "name": "Meowstic",
+      "species": "Meowstic",
+      "level": 87,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Prankster",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Dark",
+      "moves": [
+        "Fake Out",
+        "Psychic",
+        "Helping Hand",
+        "Thunder Wave"
+      ],
+      "nature": "Timid"
+    },
+    {
+      "name": "Cloyster",
+      "species": "Cloyster",
+      "level": 87,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Skill Link",
+      "item": "White Herb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Water",
+      "moves": [
+        "Hydro Pump",
+        "Icicle Spear",
+        "Rock Blast",
+        "Protect"
+      ],
+      "nature": "Quirky"
+    },
+    {
+      "name": "Quaquaval",
+      "species": "Quaquaval",
+      "level": 82,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Moxie",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Offensive Protect",
+      "teraType": "Water",
+      "moves": [
+        "Protect",
+        "Aqua Step",
+        "Knock Off",
+        "Aqua Jet"
+      ],
+      "nature": "Naive"
+    },
+    {
+      "name": "Toxtricity-Low-Key",
+      "species": "Toxtricity-Low-Key",
+      "level": 82,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Punk Rock",
+      "item": "Choice Specs",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Wallbreaker",
+      "teraType": "Psychic",
+      "moves": [
+        "Overdrive",
+        "Psychic Noise",
+        "Sludge Bomb",
+        "Volt Switch"
+      ],
+      "nature": "Adamant"
+    }
+  ],
+  [
+    {
+      "name": "Lunala",
+      "species": "Lunala",
+      "level": 71,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Shadow Shield",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Support",
+      "teraType": "Dark",
+      "moves": [
+        "Will-O-Wisp",
+        "Moongeist Beam",
+        "Tailwind",
+        "Icy Wind"
+      ],
+      "nature": "Sassy"
+    },
+    {
+      "name": "Qwilfish",
+      "species": "Qwilfish",
+      "level": 87,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Intimidate",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Grass",
+      "moves": [
+        "Flip Turn",
+        "Gunk Shot",
+        "Toxic Spikes",
+        "Thunder Wave"
+      ],
+      "nature": "Careful"
+    },
+    {
+      "name": "Ursaluna-Bloodmoon",
+      "species": "Ursaluna-Bloodmoon",
+      "level": 78,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Mind's Eye",
+      "item": "Assault Vest",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Normal",
+      "moves": [
+        "Vacuum Wave",
+        "Earth Power",
+        "Blood Moon",
+        "Hyper Voice"
+      ],
+      "nature": "Sassy"
+    },
+    {
+      "name": "Groudon",
+      "species": "Groudon",
+      "level": 69,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Drought",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Fire",
+      "moves": [
+        "Protect",
+        "Heat Crash",
+        "Stone Edge",
+        "Precipice Blades"
+      ],
+      "nature": "Serious"
+    },
+    {
+      "name": "Necrozma-Dawn-Wings",
+      "species": "Necrozma-Dawn-Wings",
+      "level": 74,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Prism Armor",
+      "item": "Power Herb",
+      "evs": {
+        "atk": 0,
+        "spe": 0
+      },
+      "ivs": {
+        "atk": 0,
+        "spe": 0
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Dark",
+      "moves": [
+        "Trick Room",
+        "Photon Geyser",
+        "Moongeist Beam",
+        "Meteor Beam"
+      ],
+      "nature": "Bold"
+    },
+    {
+      "name": "Basculegion",
+      "species": "Basculegion",
+      "level": 69,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Adaptability",
+      "item": "Choice Scarf",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Choice Item user",
+      "teraType": "Ghost",
+      "moves": [
+        "Wave Crash",
+        "Aqua Jet",
+        "Flip Turn",
+        "Last Respects"
+      ],
+      "nature": "Gentle"
+    }
+  ],
+  [
+    {
+      "name": "Suicune",
+      "species": "Suicune",
+      "level": 79,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Inner Focus",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Support",
+      "teraType": "Grass",
+      "moves": [
+        "Ice Beam",
+        "Protect",
+        "Tailwind",
+        "Scald"
+      ],
+      "nature": "Bold"
+    },
+    {
+      "name": "Kyurem",
+      "species": "Kyurem",
+      "level": 77,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Pressure",
+      "item": "Loaded Dice",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Offensive Protect",
+      "teraType": "Fairy",
+      "moves": [
+        "Earth Power",
+        "Protect",
+        "Icicle Spear",
+        "Scale Shot"
+      ],
+      "nature": "Gentle"
+    },
+    {
+      "name": "Zamazenta-Crowned",
+      "species": "Zamazenta-Crowned",
+      "level": 67,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Dauntless Shield",
+      "item": "Rusted Shield",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Steel",
+      "moves": [
+        "Iron Defense",
+        "Heavy Slam",
+        "Body Press",
+        "Snarl"
+      ],
+      "nature": "Jolly"
+    },
+    {
+      "name": "Arceus-Dragon",
+      "species": "Arceus-Dragon",
+      "level": 73,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Multitype",
+      "item": "Draco Plate",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Poison",
+      "moves": [
+        "Fire Blast",
+        "Judgment",
+        "Calm Mind",
+        "Sludge Bomb"
+      ],
+      "nature": "Lax"
+    },
+    {
+      "name": "Lilligant-Hisui",
+      "species": "Lilligant-Hisui",
+      "level": 84,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Hustle",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Steel",
+      "moves": [
+        "Sleep Powder",
+        "Protect",
+        "Leaf Blade",
+        "Victory Dance"
+      ],
+      "nature": "Adamant"
+    },
+    {
+      "name": "Iron Bundle",
+      "species": "Iron Bundle",
+      "level": 78,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Quark Drive",
+      "item": "Booster Energy",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Fast Attacker",
+      "teraType": "Dragon",
+      "moves": [
+        "Icy Wind",
+        "Hydro Pump",
+        "Encore",
+        "Freeze-Dry"
+      ],
+      "nature": "Bold"
+    }
+  ],
+  [
+    {
+      "name": "Landorus",
+      "species": "Landorus",
+      "level": 75,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Sheer Force",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Wallbreaker",
+      "teraType": "Poison",
+      "moves": [
+        "Earth Power",
+        "Nasty Plot",
+        "Psychic",
+        "Sandsear Storm"
+      ],
+      "nature": "Docile"
+    },
+    {
+      "name": "Probopass",
+      "species": "Probopass",
+      "level": 90,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Magnet Pull",
+      "item": "Leftovers",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Fighting",
+      "moves": [
+        "Thunder Wave",
+        "Body Press",
+        "Iron Defense",
+        "Power Gem"
+      ],
+      "nature": "Quiet"
+    },
+    {
+      "name": "Iron Bundle",
+      "species": "Iron Bundle",
+      "level": 78,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Quark Drive",
+      "item": "Booster Energy",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Fast Attacker",
+      "teraType": "Dragon",
+      "moves": [
+        "Icy Wind",
+        "Hydro Pump",
+        "Freeze-Dry",
+        "Encore"
+      ],
+      "nature": "Lonely"
+    },
+    {
+      "name": "Sawsbuck",
+      "species": "Sawsbuck",
+      "level": 91,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Sap Sipper",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Normal",
+      "moves": [
+        "Protect",
+        "Horn Leech",
+        "High Horsepower",
+        "Swords Dance"
+      ],
+      "nature": "Quirky"
+    },
+    {
+      "name": "Arcanine-Hisui",
+      "species": "Arcanine-Hisui",
+      "level": 79,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Intimidate",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Choice Item user",
+      "teraType": "Rock",
+      "moves": [
+        "Extreme Speed",
+        "Stone Edge",
+        "Flare Blitz",
+        "Rock Slide"
+      ],
+      "nature": "Serious"
+    },
+    {
+      "name": "Oricorio-Sensu",
+      "species": "Oricorio-Sensu",
+      "level": 86,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Dancer",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Bulky Protect",
+      "teraType": "Fighting",
+      "moves": [
+        "Tailwind",
+        "Revelation Dance",
+        "Quiver Dance",
+        "Protect"
+      ],
+      "nature": "Brave"
+    }
+  ],
+  [
+    {
+      "name": "Sandaconda",
+      "species": "Sandaconda",
+      "level": 88,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Shed Skin",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Setup",
+      "teraType": "Steel",
+      "moves": [
+        "Coil",
+        "High Horsepower",
+        "Rest",
+        "Stone Edge"
+      ],
+      "nature": "Lax"
+    },
+    {
+      "name": "Sableye",
+      "species": "Sableye",
+      "level": 93,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Prankster",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Steel",
+      "moves": [
+        "Quash",
+        "Knock Off",
+        "Foul Play",
+        "Fake Out"
+      ],
+      "nature": "Lax"
+    },
+    {
+      "name": "Tornadus",
+      "species": "Tornadus",
+      "level": 77,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Prankster",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Steel",
+      "moves": [
+        "Protect",
+        "Taunt",
+        "Knock Off",
+        "Heat Wave"
+      ],
+      "nature": "Rash"
+    },
+    {
+      "name": "Zacian",
+      "species": "Zacian",
+      "level": 70,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Intrepid Sword",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Fighting",
+      "moves": [
+        "Close Combat",
+        "Play Rough",
+        "Swords Dance",
+        "Protect"
+      ],
+      "nature": "Bold"
+    },
+    {
+      "name": "Arceus-Poison",
+      "species": "Arceus-Poison",
+      "level": 72,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Multitype",
+      "item": "Toxic Plate",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Poison",
+      "moves": [
+        "Gunk Shot",
+        "Flare Blitz",
+        "Extreme Speed",
+        "Swords Dance"
+      ],
+      "nature": "Hardy"
+    },
+    {
+      "name": "Arceus-Fire",
+      "species": "Arceus-Fire",
+      "level": 73,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Multitype",
+      "item": "Flame Plate",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Fire",
+      "moves": [
+        "Extreme Speed",
+        "Flare Blitz",
+        "Protect",
+        "Liquidation"
+      ],
+      "nature": "Lonely"
+    }
+  ],
+  [
+    {
+      "name": "Arceus-Ground",
+      "species": "Arceus-Ground",
+      "level": 72,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Multitype",
+      "item": "Earth Plate",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Normal",
+      "moves": [
+        "Swords Dance",
+        "Extreme Speed",
+        "Stone Edge",
+        "Earthquake"
+      ],
+      "nature": "Naive"
+    },
+    {
+      "name": "Lanturn",
+      "species": "Lanturn",
+      "level": 87,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Volt Absorb",
+      "item": "Assault Vest",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Flying",
+      "moves": [
+        "Volt Switch",
+        "Scald",
+        "Ice Beam",
+        "Electroweb"
+      ],
+      "nature": "Serious"
+    },
+    {
+      "name": "Basculin",
+      "species": "Basculin",
+      "level": 87,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Adaptability",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Wallbreaker",
+      "teraType": "Water",
+      "moves": [
+        "Aqua Jet",
+        "Wave Crash",
+        "Flip Turn",
+        "Psychic Fangs"
+      ],
+      "nature": "Quiet"
+    },
+    {
+      "name": "Slowbro",
+      "species": "Slowbro",
+      "level": 88,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Regenerator",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0,
+        "spe": 0
+      },
+      "ivs": {
+        "atk": 0,
+        "spe": 0
+      },
+      "role": "Doubles Wallbreaker",
+      "teraType": "Water",
+      "moves": [
+        "Trick Room",
+        "Scald",
+        "Fire Blast",
+        "Psychic"
+      ],
+      "nature": "Serious"
+    },
+    {
+      "name": "Clefable",
+      "species": "Clefable",
+      "level": 87,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Unaware",
+      "item": "Rocky Helmet",
+      "evs": {
+        "hp": 85,
+        "atk": 0,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 0,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Water",
+      "moves": [
+        "Fire Blast",
+        "Moonblast",
+        "Encore",
+        "Helping Hand"
+      ],
+      "nature": "Sassy"
+    },
+    {
+      "name": "Sudowoodo",
+      "species": "Sudowoodo",
+      "level": 94,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Rock Head",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Wallbreaker",
+      "teraType": "Grass",
+      "moves": [
+        "Wood Hammer",
+        "Sucker Punch",
+        "Protect",
+        "High Horsepower"
+      ],
+      "nature": "Serious"
+    }
+  ],
+  [
+    {
+      "name": "Decidueye-Hisui",
+      "species": "Decidueye-Hisui",
+      "level": 85,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Scrappy",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Steel",
+      "moves": [
+        "Knock Off",
+        "Triple Arrows",
+        "Leaf Blade",
+        "Protect"
+      ],
+      "nature": "Quirky"
+    },
+    {
+      "name": "Deoxys-Speed",
+      "species": "Deoxys-Speed",
+      "level": 84,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Pressure",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Fighting",
+      "moves": [
+        "Icy Wind",
+        "Psycho Boost",
+        "Superpower",
+        "Taunt"
+      ],
+      "nature": "Quiet"
+    },
+    {
+      "name": "Shaymin",
+      "species": "Shaymin",
+      "level": 81,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Natural Cure",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Steel",
+      "moves": [
+        "Earth Power",
+        "Protect",
+        "Seed Flare",
+        "Tailwind"
+      ],
+      "nature": "Naive"
+    },
+    {
+      "name": "Arceus-Dark",
+      "species": "Arceus-Dark",
+      "level": 73,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Multitype",
+      "item": "Dread Plate",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Poison",
+      "moves": [
+        "Tailwind",
+        "Recover",
+        "Judgment",
+        "Gunk Shot"
+      ],
+      "nature": "Relaxed"
+    },
+    {
+      "name": "Politoed",
+      "species": "Politoed",
+      "level": 82,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Drizzle",
+      "item": "Choice Scarf",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Choice Item user",
+      "teraType": "Water",
+      "moves": [
+        "Muddy Water",
+        "Weather Ball",
+        "Hydro Pump",
+        "Ice Beam"
+      ],
+      "nature": "Calm"
+    },
+    {
+      "name": "Arbok",
+      "species": "Arbok",
+      "level": 88,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Intimidate",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Bulky Protect",
+      "teraType": "Dark",
+      "moves": [
+        "Protect",
+        "Coil",
+        "Gunk Shot",
+        "Stomping Tantrum"
+      ],
+      "nature": "Timid"
+    }
+  ],
+  [
+    {
+      "name": "Glalie",
+      "species": "Glalie",
+      "level": 94,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Inner Focus",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Support",
+      "teraType": "Steel",
+      "moves": [
+        "Disable",
+        "Foul Play",
+        "Freeze-Dry",
+        "Protect"
+      ],
+      "nature": "Jolly"
+    },
+    {
+      "name": "Giratina",
+      "species": "Giratina",
+      "level": 76,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Pressure",
+      "item": "Chesto Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Fairy",
+      "moves": [
+        "Breaking Swipe",
+        "Icy Wind",
+        "Thunder Wave",
+        "Shadow Ball"
+      ],
+      "nature": "Gentle"
+    },
+    {
+      "name": "Oricorio-Pa'u",
+      "species": "Oricorio-Pa'u",
+      "level": 89,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Dancer",
+      "item": "Leftovers",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Bulky Protect",
+      "teraType": "Ground",
+      "moves": [
+        "Revelation Dance",
+        "Protect",
+        "Hurricane",
+        "Tailwind"
+      ],
+      "nature": "Naive"
+    },
+    {
+      "name": "Dugtrio-Alola",
+      "species": "Dugtrio-Alola",
+      "level": 89,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Tangling Hair",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Offensive Protect",
+      "teraType": "Water",
+      "moves": [
+        "Protect",
+        "Iron Head",
+        "Rock Slide",
+        "Stomping Tantrum"
+      ],
+      "nature": "Careful"
+    },
+    {
+      "name": "Toxtricity",
+      "species": "Toxtricity",
+      "level": 82,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Punk Rock",
+      "item": "Choice Specs",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Wallbreaker",
+      "teraType": "Psychic",
+      "moves": [
+        "Overdrive",
+        "Psychic Noise",
+        "Sludge Bomb",
+        "Volt Switch"
+      ],
+      "nature": "Bashful"
+    },
+    {
+      "name": "Reshiram",
+      "species": "Reshiram",
+      "level": 72,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Turboblaze",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Wallbreaker",
+      "teraType": "Fire",
+      "moves": [
+        "Protect",
+        "Tailwind",
+        "Heat Wave",
+        "Draco Meteor"
+      ],
+      "nature": "Docile"
+    }
+  ],
+  [
+    {
+      "name": "Regice",
+      "species": "Regice",
+      "level": 84,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Clear Body",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Electric",
+      "moves": [
+        "Thunderbolt",
+        "Icy Wind",
+        "Protect",
+        "Blizzard"
+      ],
+      "nature": "Brave"
+    },
+    {
+      "name": "Venomoth",
+      "species": "Venomoth",
+      "level": 90,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Tinted Lens",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Bug",
+      "moves": [
+        "Quiver Dance",
+        "Protect",
+        "Sludge Bomb",
+        "Bug Buzz"
+      ],
+      "nature": "Bold"
+    },
+    {
+      "name": "Hawlucha",
+      "species": "Hawlucha",
+      "level": 84,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Unburden",
+      "item": "White Herb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Flying",
+      "moves": [
+        "Swords Dance",
+        "Protect",
+        "Close Combat",
+        "Brave Bird"
+      ],
+      "nature": "Modest"
+    },
+    {
+      "name": "Wo-Chien",
+      "species": "Wo-Chien",
+      "level": 85,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Tablets of Ruin",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Bulky Protect",
+      "teraType": "Poison",
+      "moves": [
+        "Leech Seed",
+        "Knock Off",
+        "Pollen Puff",
+        "Protect"
+      ],
+      "nature": "Lonely"
+    },
+    {
+      "name": "Magmar",
+      "species": "Magmar",
+      "level": 84,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Flame Body",
+      "item": "Eviolite",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Grass",
+      "moves": [
+        "Heat Wave",
+        "Protect",
+        "Follow Me",
+        "Will-O-Wisp"
+      ],
+      "nature": "Sassy"
+    },
+    {
+      "name": "Decidueye",
+      "species": "Decidueye",
+      "level": 89,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Overgrow",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Water",
+      "moves": [
+        "Protect",
+        "Leaf Storm",
+        "Knock Off",
+        "Spirit Shackle"
+      ],
+      "nature": "Brave"
+    }
+  ],
+  [
+    {
+      "name": "Indeedee-F",
+      "species": "Indeedee-F",
+      "level": 90,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Psychic Surge",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Support",
+      "teraType": "Fairy",
+      "moves": [
+        "Follow Me",
+        "Heal Pulse",
+        "Helping Hand",
+        "Psychic"
+      ],
+      "nature": "Mild"
+    },
+    {
+      "name": "Gliscor",
+      "species": "Gliscor",
+      "level": 81,
+      "gender": "M",
+      "shiny": true,
+      "ability": "Poison Heal",
+      "item": "Toxic Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Setup",
+      "teraType": "Normal",
+      "moves": [
+        "Swords Dance",
+        "Earthquake",
+        "Protect",
+        "Facade"
+      ],
+      "nature": "Rash"
+    },
+    {
+      "name": "Kingambit",
+      "species": "Kingambit",
+      "level": 77,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Defiant",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Bulky Protect",
+      "teraType": "Fire",
+      "moves": [
+        "Sucker Punch",
+        "Kowtow Cleave",
+        "Iron Head",
+        "Protect"
+      ],
+      "nature": "Timid"
+    },
+    {
+      "name": "Persian-Alola",
+      "species": "Persian-Alola",
+      "level": 88,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Fur Coat",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Poison",
+      "moves": [
+        "Knock Off",
+        "Taunt",
+        "Foul Play",
+        "Snarl"
+      ],
+      "nature": "Naughty"
+    },
+    {
+      "name": "Basculegion",
+      "species": "Basculegion",
+      "level": 69,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Adaptability",
+      "item": "Choice Scarf",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Choice Item user",
+      "teraType": "Ghost",
+      "moves": [
+        "Wave Crash",
+        "Last Respects",
+        "Flip Turn",
+        "Aqua Jet"
+      ],
+      "nature": "Jolly"
+    },
+    {
+      "name": "Uxie",
+      "species": "Uxie",
+      "level": 86,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Levitate",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Poison",
+      "moves": [
+        "Helping Hand",
+        "Mystical Power",
+        "Encore",
+        "Knock Off"
+      ],
+      "nature": "Careful"
+    }
+  ],
+  [
+    {
+      "name": "Munkidori",
+      "species": "Munkidori",
+      "level": 80,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Toxic Chain",
+      "item": "Assault Vest",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Fighting",
+      "moves": [
+        "U-turn",
+        "Focus Blast",
+        "Sludge Bomb",
+        "Fake Out"
+      ],
+      "nature": "Careful"
+    },
+    {
+      "name": "Kingambit",
+      "species": "Kingambit",
+      "level": 77,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Defiant",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Bulky Protect",
+      "teraType": "Dark",
+      "moves": [
+        "Kowtow Cleave",
+        "Sucker Punch",
+        "Protect",
+        "Iron Head"
+      ],
+      "nature": "Hardy"
+    },
+    {
+      "name": "Vikavolt",
+      "species": "Vikavolt",
+      "level": 84,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Levitate",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Bulky Protect",
+      "teraType": "Electric",
+      "moves": [
+        "Electroweb",
+        "Sticky Web",
+        "Bug Buzz",
+        "Thunderbolt"
+      ],
+      "nature": "Timid"
+    },
+    {
+      "name": "Hawlucha",
+      "species": "Hawlucha",
+      "level": 84,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Unburden",
+      "item": "White Herb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Fire",
+      "moves": [
+        "Protect",
+        "Close Combat",
+        "Swords Dance",
+        "Brave Bird"
+      ],
+      "nature": "Quiet"
+    },
+    {
+      "name": "Mew",
+      "species": "Mew",
+      "level": 84,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Synchronize",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 0,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 0,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Fairy",
+      "moves": [
+        "Pollen Puff",
+        "Psychic",
+        "Fire Blast",
+        "Baton Pass"
+      ],
+      "nature": "Jolly"
+    },
+    {
+      "name": "Revavroom",
+      "species": "Revavroom",
+      "level": 84,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Filter",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Fast Attacker",
+      "teraType": "Ground",
+      "moves": [
+        "Gunk Shot",
+        "High Horsepower",
+        "Shift Gear",
+        "Protect"
+      ],
+      "nature": "Careful"
+    }
+  ],
+  [
+    {
+      "name": "Azelf",
+      "species": "Azelf",
+      "level": 83,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Levitate",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 0,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 0,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Offensive Protect",
+      "teraType": "Electric",
+      "moves": [
+        "Fire Blast",
+        "Dazzling Gleam",
+        "Thunderbolt",
+        "Psychic"
+      ],
+      "nature": "Lax"
+    },
+    {
+      "name": "Breloom",
+      "species": "Breloom",
+      "level": 84,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Technician",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Fast Attacker",
+      "teraType": "Fighting",
+      "moves": [
+        "Close Combat",
+        "Protect",
+        "Rock Tomb",
+        "Spore"
+      ],
+      "nature": "Calm"
+    },
+    {
+      "name": "Golduck",
+      "species": "Golduck",
+      "level": 91,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Cloud Nine",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Fast Attacker",
+      "teraType": "Grass",
+      "moves": [
+        "Ice Beam",
+        "Protect",
+        "Icy Wind",
+        "Hydro Pump"
+      ],
+      "nature": "Naive"
+    },
+    {
+      "name": "Duraludon",
+      "species": "Duraludon",
+      "level": 83,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Stalwart",
+      "item": "Eviolite",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Bulky Setup",
+      "teraType": "Fighting",
+      "moves": [
+        "Iron Defense",
+        "Protect",
+        "Flash Cannon",
+        "Snarl"
+      ],
+      "nature": "Jolly"
+    },
+    {
+      "name": "Altaria",
+      "species": "Altaria",
+      "level": 91,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Natural Cure",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Steel",
+      "moves": [
+        "Brave Bird",
+        "Will-O-Wisp",
+        "Roost",
+        "Tailwind"
+      ],
+      "nature": "Relaxed"
+    },
+    {
+      "name": "Bellossom",
+      "species": "Bellossom",
+      "level": 87,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Healer",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Bulky Setup",
+      "teraType": "Poison",
+      "moves": [
+        "Protect",
+        "Giga Drain",
+        "Strength Sap",
+        "Baton Pass"
+      ],
+      "nature": "Jolly"
+    }
+  ],
+  [
+    {
+      "name": "Glimmora",
+      "species": "Glimmora",
+      "level": 77,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Toxic Debris",
+      "item": "Power Herb",
+      "evs": {
+        "hp": 85,
+        "atk": 0,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 0,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Offensive Protect",
+      "teraType": "Ground",
+      "moves": [
+        "Earth Power",
+        "Meteor Beam",
+        "Sludge Bomb",
+        "Spiky Shield"
+      ],
+      "nature": "Quirky"
+    },
+    {
+      "name": "Eelektross",
+      "species": "Eelektross",
+      "level": 86,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Levitate",
+      "item": "Assault Vest",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Poison",
+      "moves": [
+        "Flamethrower",
+        "Giga Drain",
+        "Knock Off",
+        "Thunderbolt"
+      ],
+      "nature": "Impish"
+    },
+    {
+      "name": "Mamoswine",
+      "species": "Mamoswine",
+      "level": 82,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Thick Fat",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Offensive Protect",
+      "teraType": "Ground",
+      "moves": [
+        "Ice Shard",
+        "High Horsepower",
+        "Icicle Crash",
+        "Protect"
+      ],
+      "nature": "Naughty"
+    },
+    {
+      "name": "Jumpluff",
+      "species": "Jumpluff",
+      "level": 93,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Infiltrator",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Bulky Protect",
+      "teraType": "Steel",
+      "moves": [
+        "Sleep Powder",
+        "Encore",
+        "Rage Powder",
+        "Acrobatics"
+      ],
+      "nature": "Gentle"
+    },
+    {
+      "name": "Zapdos",
+      "species": "Zapdos",
+      "level": 77,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Static",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Support",
+      "teraType": "Electric",
+      "moves": [
+        "Hurricane",
+        "Roost",
+        "Protect",
+        "Tailwind"
+      ],
+      "nature": "Brave"
+    },
+    {
+      "name": "Snorlax",
+      "species": "Snorlax",
+      "level": 84,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Gluttony",
+      "item": "Wiki Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Ground",
+      "moves": [
+        "Icy Wind",
+        "Helping Hand",
+        "Recycle",
+        "Encore"
+      ],
+      "nature": "Docile"
+    }
+  ],
+  [
+    {
+      "name": "Goodra-Hisui",
+      "species": "Goodra-Hisui",
+      "level": 82,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Sap Sipper",
+      "item": "Assault Vest",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Water",
+      "moves": [
+        "Draco Meteor",
+        "Hydro Pump",
+        "Dragon Tail",
+        "Thunderbolt"
+      ],
+      "nature": "Rash"
+    },
+    {
+      "name": "Zarude",
+      "species": "Zarude",
+      "level": 80,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Leaf Guard",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Offensive Protect",
+      "teraType": "Poison",
+      "moves": [
+        "Power Whip",
+        "Close Combat",
+        "Protect",
+        "Jungle Healing"
+      ],
+      "nature": "Brave"
+    },
+    {
+      "name": "Sudowoodo",
+      "species": "Sudowoodo",
+      "level": 94,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Rock Head",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Wallbreaker",
+      "teraType": "Grass",
+      "moves": [
+        "Head Smash",
+        "High Horsepower",
+        "Wood Hammer",
+        "Protect"
+      ],
+      "nature": "Serious"
+    },
+    {
+      "name": "Flamigo",
+      "species": "Flamigo",
+      "level": 84,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Scrappy",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Choice Item user",
+      "teraType": "Fighting",
+      "moves": [
+        "U-turn",
+        "Brave Bird",
+        "Throat Chop",
+        "Close Combat"
+      ],
+      "nature": "Lonely"
+    },
+    {
+      "name": "Qwilfish",
+      "species": "Qwilfish",
+      "level": 87,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Intimidate",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Grass",
+      "moves": [
+        "Icy Wind",
+        "Gunk Shot",
+        "Thunder Wave",
+        "Taunt"
+      ],
+      "nature": "Lax"
+    },
+    {
+      "name": "Necrozma",
+      "species": "Necrozma",
+      "level": 80,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Prism Armor",
+      "item": "Clear Amulet",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Fighting",
+      "moves": [
+        "Brick Break",
+        "Knock Off",
+        "Dragon Dance",
+        "Photon Geyser"
+      ],
+      "nature": "Bold"
+    }
+  ],
+  [
+    {
+      "name": "Quagsire",
+      "species": "Quagsire",
+      "level": 91,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Water Absorb",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Poison",
+      "moves": [
+        "Yawn",
+        "Helping Hand",
+        "High Horsepower",
+        "Recover"
+      ],
+      "nature": "Hardy"
+    },
+    {
+      "name": "Flygon",
+      "species": "Flygon",
+      "level": 83,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Levitate",
+      "item": "Loaded Dice",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Steel",
+      "moves": [
+        "Tailwind",
+        "Scale Shot",
+        "Protect",
+        "Earth Power"
+      ],
+      "nature": "Hardy"
+    },
+    {
+      "name": "Arcanine",
+      "species": "Arcanine",
+      "level": 82,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Intimidate",
+      "item": "Heavy-Duty Boots",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Water",
+      "moves": [
+        "Extreme Speed",
+        "Will-O-Wisp",
+        "Flare Blitz",
+        "Snarl"
+      ],
+      "nature": "Hasty"
+    },
+    {
+      "name": "Vileplume",
+      "species": "Vileplume",
+      "level": 89,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Effect Spore",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Support",
+      "teraType": "Steel",
+      "moves": [
+        "Pollen Puff",
+        "Sludge Bomb",
+        "Stun Spore",
+        "Strength Sap"
+      ],
+      "nature": "Careful"
+    },
+    {
+      "name": "Arceus-Ice",
+      "species": "Arceus-Ice",
+      "level": 73,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Multitype",
+      "item": "Icicle Plate",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Bulky Setup",
+      "teraType": "Electric",
+      "moves": [
+        "Earth Power",
+        "Recover",
+        "Thunderbolt",
+        "Calm Mind"
+      ],
+      "nature": "Hardy"
+    },
+    {
+      "name": "Armarouge",
+      "species": "Armarouge",
+      "level": 81,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Flash Fire",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0,
+        "spe": 0
+      },
+      "ivs": {
+        "atk": 0,
+        "spe": 0
+      },
+      "role": "Offensive Protect",
+      "teraType": "Dark",
+      "moves": [
+        "Protect",
+        "Trick Room",
+        "Heat Wave",
+        "Psychic"
+      ],
+      "nature": "Quiet"
+    }
+  ],
+  [
+    {
+      "name": "Carbink",
+      "species": "Carbink",
+      "level": 88,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Clear Body",
+      "item": "Leftovers",
+      "evs": {
+        "atk": 0,
+        "spe": 0
+      },
+      "ivs": {
+        "atk": 0,
+        "spe": 0
+      },
+      "role": "Doubles Bulky Setup",
+      "teraType": "Fighting",
+      "moves": [
+        "Trick Room",
+        "Moonblast",
+        "Iron Defense",
+        "Body Press"
+      ],
+      "nature": "Calm"
+    },
+    {
+      "name": "Armarouge",
+      "species": "Armarouge",
+      "level": 81,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Weak Armor",
+      "item": "Power Herb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Grass",
+      "moves": [
+        "Psychic",
+        "Protect",
+        "Meteor Beam",
+        "Heat Wave"
+      ],
+      "nature": "Gentle"
+    },
+    {
+      "name": "Garchomp",
+      "species": "Garchomp",
+      "level": 77,
+      "gender": "M",
+      "shiny": true,
+      "ability": "Rough Skin",
+      "item": "Loaded Dice",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Dragon",
+      "moves": [
+        "Earthquake",
+        "Protect",
+        "Scale Shot",
+        "Swords Dance"
+      ],
+      "nature": "Modest"
+    },
+    {
+      "name": "Meganium",
+      "species": "Meganium",
+      "level": 91,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Overgrow",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Bulky Attacker",
+      "teraType": "Poison",
+      "moves": [
+        "Encore",
+        "Knock Off",
+        "Energy Ball",
+        "Leech Seed"
+      ],
+      "nature": "Hardy"
+    },
+    {
+      "name": "Ambipom",
+      "species": "Ambipom",
+      "level": 87,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Technician",
+      "item": "Silk Scarf",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Fast Attacker",
+      "teraType": "Normal",
+      "moves": [
+        "Double-Edge",
+        "Fake Out",
+        "Protect",
+        "Knock Off"
+      ],
+      "nature": "Gentle"
+    },
+    {
+      "name": "Tauros-Paldea-Blaze",
+      "species": "Tauros-Paldea-Blaze",
+      "level": 79,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Intimidate",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Bulky Protect",
+      "teraType": "Fighting",
+      "moves": [
+        "Bulk Up",
+        "Close Combat",
+        "Protect",
+        "Will-O-Wisp"
+      ],
+      "nature": "Hasty"
+    }
+  ],
+  [
+    {
+      "name": "Frosmoth",
+      "species": "Frosmoth",
+      "level": 86,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Ice Scales",
+      "item": "Heavy-Duty Boots",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Setup Sweeper",
+      "teraType": "Ground",
+      "moves": [
+        "Bug Buzz",
+        "Ice Beam",
+        "Quiver Dance",
+        "Protect"
+      ],
+      "nature": "Relaxed"
+    },
+    {
+      "name": "Rotom-Heat",
+      "species": "Rotom-Heat",
+      "level": 84,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Levitate",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Bulky Protect",
+      "teraType": "Steel",
+      "moves": [
+        "Volt Switch",
+        "Thunderbolt",
+        "Electroweb",
+        "Overheat"
+      ],
+      "nature": "Bashful"
+    },
+    {
+      "name": "Vileplume",
+      "species": "Vileplume",
+      "level": 89,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Effect Spore",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Support",
+      "teraType": "Water",
+      "moves": [
+        "Sludge Bomb",
+        "Pollen Puff",
+        "Stun Spore",
+        "Strength Sap"
+      ],
+      "nature": "Serious"
+    },
+    {
+      "name": "Arceus-Fairy",
+      "species": "Arceus-Fairy",
+      "level": 70,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Multitype",
+      "item": "Pixie Plate",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "role": "Doubles Bulky Setup",
+      "teraType": "Fire",
+      "moves": [
+        "Earth Power",
+        "Recover",
+        "Dazzling Gleam",
+        "Calm Mind"
+      ],
+      "nature": "Lonely"
+    },
+    {
+      "name": "Mienshao",
+      "species": "Mienshao",
+      "level": 84,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Regenerator",
+      "item": "Focus Sash",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Fast Attacker",
+      "teraType": "Dark",
+      "moves": [
+        "Knock Off",
+        "Close Combat",
+        "Fake Out",
+        "Triple Axel"
+      ],
+      "nature": "Impish"
+    },
+    {
+      "name": "Deoxys-Defense",
+      "species": "Deoxys-Defense",
+      "level": 88,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Pressure",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "role": "Doubles Support",
+      "teraType": "Steel",
+      "moves": [
+        "Spikes",
+        "Thunder Wave",
+        "Icy Wind",
+        "Knock Off"
+      ],
+      "nature": "Serious"
+    }
+  ]
+]

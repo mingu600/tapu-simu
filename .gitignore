@@ -1,2 +1,25 @@
 /target
 http-cacache/
+
+# Debug files and temporary artifacts
+debug_*
+*.log
+server.log
+battle.log
+frontend.log
+
+# Python test files 
+test_*.py
+
+# Node modules (should be in specific dirs but adding as safety)
+node_modules/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db

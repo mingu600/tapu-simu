@@ -190,16 +190,19 @@ impl FormatInstructionGenerator {
             
             let final_damage = (base_damage as f32 * damage_multiplier) as i16;
 
+            // Get the actual previous HP for accurate damage tracking
+            let previous_hp = state.get_pokemon_at_position(targets[0]).map(|p| p.hp);
+            
             let mut instruction_list = vec![
                 Instruction::PositionDamage(PositionDamageInstruction {
                     target_position: targets[0],
                     damage_amount: final_damage,
-                    previous_hp: Some(0), // This should be set to actual previous HP
+                    previous_hp,
                 })
             ];
 
             // Add recoil/drain effects after damage
-            self.add_recoil_drain_effects(move_data, user_position, final_damage, &mut instruction_list);
+            self.add_recoil_drain_effects(state, move_data, user_position, final_damage, &mut instruction_list);
 
             instructions.push(StateInstructions::new(100.0, instruction_list));
         } else if targets.len() > 1 {
@@ -232,7 +235,7 @@ impl FormatInstructionGenerator {
             ];
 
             // Add recoil/drain effects after damage (based on total damage for multi-target)
-            self.add_recoil_drain_effects(move_data, user_position, total_damage, &mut instruction_list);
+            self.add_recoil_drain_effects(state, move_data, user_position, total_damage, &mut instruction_list);
 
             instructions.push(StateInstructions::new(100.0, instruction_list));
         }
@@ -275,6 +278,7 @@ impl FormatInstructionGenerator {
     /// Add recoil and drain effects to instruction list
     fn add_recoil_drain_effects(
         &self,
+        state: &State,
         move_data: &Move,
         user_position: BattlePosition,
         damage_dealt: i16,
@@ -287,10 +291,11 @@ impl FormatInstructionGenerator {
         if let Some(recoil_ratio) = ps_move_service.get_recoil_ratio(&move_data.name) {
             let recoil_damage = (damage_dealt as f32 * recoil_ratio).max(1.0) as i16;
             if recoil_damage > 0 {
+                let previous_hp = state.get_pokemon_at_position(user_position).map(|p| p.hp);
                 instructions.push(Instruction::PositionDamage(PositionDamageInstruction {
                 target_position: user_position,
                 damage_amount: recoil_damage,
-                previous_hp: Some(0),
+                previous_hp,
             }));
             }
         }
@@ -299,24 +304,14 @@ impl FormatInstructionGenerator {
         if let Some(drain_ratio) = ps_move_service.get_drain_ratio(&move_data.name) {
             let heal_amount = (damage_dealt as f32 * drain_ratio).max(1.0) as i16;
             if heal_amount > 0 {
+                let previous_hp = state.get_pokemon_at_position(user_position).map(|p| p.hp);
                 instructions.push(Instruction::PositionHeal(PositionHealInstruction {
                     target_position: user_position,
                     heal_amount,
-                    previous_hp: Some(0),
+                    previous_hp,
                 }));
             }
         }
-    }
-
-    /// Check if a move targets the user (self-targeting)
-    fn is_self_targeting_move(&self, move_data: &Move) -> bool {
-        // Check move target - moves that target the user are not blocked by opponent's Substitute
-        matches!(move_data.target, 
-            crate::data::ps_types::PSMoveTarget::Self_ | 
-            crate::data::ps_types::PSMoveTarget::AllySide |
-            crate::data::ps_types::PSMoveTarget::AllyTeam |
-            crate::data::ps_types::PSMoveTarget::AdjacentAllyOrSelf
-        )
     }
 
     /// Calculate base damage for a move against a target
@@ -327,15 +322,33 @@ impl FormatInstructionGenerator {
         user_position: BattlePosition,
         target_position: BattlePosition,
     ) -> i16 {
+        self.calculate_base_damage_with_switches(state, move_data, user_position, target_position, None, None)
+    }
+
+    /// Calculate base damage for a move against a target, accounting for pending switches
+    fn calculate_base_damage_with_switches(
+        &self,
+        state: &State,
+        move_data: &Move,
+        user_position: BattlePosition,
+        target_position: BattlePosition,
+        side_one_choice: Option<&MoveChoice>,
+        side_two_choice: Option<&MoveChoice>,
+    ) -> i16 {
         // Get attacking Pokemon
         let attacker = state
             .get_pokemon_at_position(user_position)
             .expect("Attacker position should be valid");
 
-        // Get defending Pokemon
-        let defender = state
-            .get_pokemon_at_position(target_position)
-            .expect("Target position should be valid");
+        // Get defending Pokemon - check if there's a switch affecting the target position
+        let defender = if let Some(switch_pokemon) = self.get_switched_pokemon(state, target_position, side_one_choice, side_two_choice) {
+            // Use the Pokemon that will be switched in
+            switch_pokemon
+        } else {
+            // Use the current Pokemon at that position
+            state.get_pokemon_at_position(target_position)
+                .expect("Target position should be valid")
+        };
 
         // Create a simple EngineMoveData for the damage calculator
         let engine_move_data = crate::data::types::EngineMoveData {
@@ -443,7 +456,7 @@ impl FormatInstructionGenerator {
                     Instruction::PositionDamage(PositionDamageInstruction {
                 target_position: damage_instr.target_position,
                 damage_amount: crit_damage,
-                previous_hp: Some(0),
+                previous_hp: damage_instr.previous_hp, // Preserve original previous_hp
             })
                 }
                 Instruction::MultiTargetDamage(multi_damage) => {
@@ -467,7 +480,7 @@ impl FormatInstructionGenerator {
                     Instruction::PositionHeal(PositionHealInstruction {
                 target_position: heal_instr.target_position,
                 heal_amount: crit_heal,
-                previous_hp: Some(0),
+                previous_hp: heal_instr.previous_hp, // Preserve original previous_hp
             })
                 }
                 other => other.clone(),
@@ -509,6 +522,37 @@ impl FormatInstructionGenerator {
         } else {
             false
         }
+    }
+
+    /// Get the Pokemon that will be switched in to a position, if any
+    /// This handles the critical switch-attack interaction where the defender
+    /// changes mid-turn due to a switch occurring first
+    fn get_switched_pokemon<'a>(
+        &self,
+        state: &'a State,
+        target_position: BattlePosition,
+        side_one_choice: Option<&MoveChoice>,
+        side_two_choice: Option<&MoveChoice>,
+    ) -> Option<&'a crate::core::state::Pokemon> {
+        // Check if the target position's side is switching
+        let target_side = target_position.side;
+        
+        // Determine which choice affects the target position
+        let relevant_choice = match target_side {
+            SideReference::SideOne => side_one_choice,
+            SideReference::SideTwo => side_two_choice,
+        };
+        
+        // Check if there's a switch for this position
+        if let Some(MoveChoice::Switch(pokemon_index)) = relevant_choice {
+            // Get the Pokemon being switched in
+            let side = state.get_side(target_side);
+            if let Some(pokemon) = side.pokemon.get(pokemon_index.to_index()) {
+                return Some(pokemon);
+            }
+        }
+        
+        None
     }
 }
 

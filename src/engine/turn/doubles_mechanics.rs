@@ -9,7 +9,7 @@
 use crate::core::battle_format::{BattleFormat, BattlePosition, SideReference};
 use crate::data::ps_types::PSMoveTarget;
 use crate::core::instruction::{
-    Instruction, StateInstructions, PositionDamageInstruction, 
+    Instruction, StateInstructions, 
     ApplyVolatileStatusInstruction, VolatileStatus
 };
 use crate::core::state::State;
@@ -125,7 +125,7 @@ impl DoublesSpecificMechanics {
     /// Generate Helping Hand effect instructions
     pub fn generate_helping_hand_instructions(
         &self,
-        user_position: BattlePosition,
+        _user_position: BattlePosition,
         ally_position: Option<BattlePosition>,
     ) -> Vec<StateInstructions> {
         if let Some(ally_pos) = ally_position {
@@ -300,7 +300,6 @@ impl DoublesSpecificMechanics {
 mod tests {
     use super::*;
     use crate::core::state::Pokemon;
-    use crate::core::move_choice::MoveIndex;
     use crate::core::battle_format::{BattleFormat, FormatType};
     use crate::generation::Generation;
 

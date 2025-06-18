@@ -375,6 +375,78 @@ impl BattleFormat {
         )
     }
 
+    /// Random Battle Formats - These use predetermined teams from data files
+    pub fn gen9_random_battle() -> Self {
+        Self::new(
+            "Gen 9 Random Battle".to_string(),
+            Generation::Gen9,
+            FormatType::Singles,
+        )
+        .with_clauses(vec![
+            FormatClause::SpeciesClause,
+        ])
+    }
+
+    pub fn gen9_random_doubles() -> Self {
+        Self::new(
+            "Gen 9 Random Doubles".to_string(),
+            Generation::Gen9,
+            FormatType::Doubles,
+        )
+        .with_clauses(vec![
+            FormatClause::SpeciesClause,
+        ])
+    }
+
+    pub fn gen8_random_battle() -> Self {
+        Self::new(
+            "Gen 8 Random Battle".to_string(),
+            Generation::Gen8,
+            FormatType::Singles,
+        )
+        .with_clauses(vec![
+            FormatClause::SpeciesClause,
+        ])
+    }
+
+    pub fn gen8_random_doubles() -> Self {
+        Self::new(
+            "Gen 8 Random Doubles".to_string(),
+            Generation::Gen8,
+            FormatType::Doubles,
+        )
+        .with_clauses(vec![
+            FormatClause::SpeciesClause,
+        ])
+    }
+
+    pub fn gen7_random_battle() -> Self {
+        Self::new(
+            "Gen 7 Random Battle".to_string(),
+            Generation::Gen7,
+            FormatType::Singles,
+        )
+        .with_clauses(vec![
+            FormatClause::SpeciesClause,
+        ])
+    }
+
+    /// Returns all available random battle formats
+    pub fn random_battle_formats() -> Vec<Self> {
+        vec![
+            Self::gen9_random_battle(),
+            Self::gen9_random_doubles(),
+            Self::gen8_random_battle(),
+            Self::gen8_random_doubles(),
+            Self::gen7_random_battle(),
+        ]
+    }
+
+    /// Check if this format is a random battle format
+    pub fn is_random_battle(&self) -> bool {
+        self.name.contains("Random")
+    }
+
 }
 
 impl Default for BattleFormat {

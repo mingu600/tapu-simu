@@ -57,6 +57,66 @@ pub enum TypeEffectiveness {
     NoEffect,       // 0.0x
 }
 
+/// Pokemon natures that affect stat growth
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum Nature {
+    Hardy, Lonely, Brave, Adamant, Naughty,
+    Bold, Docile, Relaxed, Impish, Lax,
+    Timid, Hasty, Serious, Jolly, Naive,
+    Modest, Mild, Quiet, Bashful, Rash,
+    Calm, Gentle, Sassy, Careful, Quirky,
+}
+
+/// Type alias for stats - using EngineBaseStats as the standard stats structure
+pub type Stats = EngineBaseStats;
+
+impl Nature {
+    /// Get the attack stat modifier for this nature
+    pub fn attack_modifier(&self) -> f64 {
+        match self {
+            Nature::Lonely | Nature::Brave | Nature::Adamant | Nature::Naughty => 1.1,
+            Nature::Bold | Nature::Timid | Nature::Modest | Nature::Calm => 0.9,
+            _ => 1.0,
+        }
+    }
+    
+    /// Get the defense stat modifier for this nature
+    pub fn defense_modifier(&self) -> f64 {
+        match self {
+            Nature::Bold | Nature::Relaxed | Nature::Impish | Nature::Lax => 1.1,
+            Nature::Lonely | Nature::Hasty | Nature::Mild | Nature::Gentle => 0.9,
+            _ => 1.0,
+        }
+    }
+    
+    /// Get the special attack stat modifier for this nature
+    pub fn special_attack_modifier(&self) -> f64 {
+        match self {
+            Nature::Modest | Nature::Mild | Nature::Quiet | Nature::Rash => 1.1,
+            Nature::Adamant | Nature::Impish | Nature::Jolly | Nature::Careful => 0.9,
+            _ => 1.0,
+        }
+    }
+    
+    /// Get the special defense stat modifier for this nature
+    pub fn special_defense_modifier(&self) -> f64 {
+        match self {
+            Nature::Calm | Nature::Gentle | Nature::Sassy | Nature::Careful => 1.1,
+            Nature::Naughty | Nature::Lax | Nature::Naive | Nature::Rash => 0.9,
+            _ => 1.0,
+        }
+    }
+    
+    /// Get the speed stat modifier for this nature
+    pub fn speed_modifier(&self) -> f64 {
+        match self {
+            Nature::Timid | Nature::Hasty | Nature::Jolly | Nature::Naive => 1.1,
+            Nature::Brave | Nature::Relaxed | Nature::Quiet | Nature::Sassy => 0.9,
+            _ => 1.0,
+        }
+    }
+}
+
 impl TypeEffectiveness {
     /// Get the damage multiplier for this effectiveness
     pub fn multiplier(&self) -> f32 {

@@ -7,7 +7,9 @@ pub mod conversion;
 pub mod loader;
 pub mod ps_generation_loader;
 pub mod ps_move_factory;
+pub mod ps_pokemon_factory;
 pub mod ps_types;
+pub mod random_team_loader;
 pub mod services;
 pub mod types;
 
@@ -16,9 +18,12 @@ pub use conversion::*;
 pub use loader::PSDataRepository;
 pub use ps_generation_loader::PSGenerationRepository;
 pub use ps_move_factory::PSMoveFactory;
+pub use ps_pokemon_factory::PSPokemonFactory;
 pub use ps_types::*;
+pub use random_team_loader::{RandomTeamLoader, RandomPokemonSet, RandomTeam};
 pub use services::move_service::PSMoveService;
+pub use services::pokemon_service::PSPokemonService;
 pub use services::type_chart::{create_ps_type_chart_loader, PSTypeChartLoader};
 
 // Legacy types still needed for some compatibility
-pub use types::{EngineMoveData, TypeEffectiveness};
+pub use types::{EngineMoveData, TypeEffectiveness, Nature, Stats};

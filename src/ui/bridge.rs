@@ -801,11 +801,11 @@ impl EngineBridge {
         // Convert and set weather
         state.weather = match ui_state.weather.as_str() {
             "None" => crate::core::instruction::Weather::None,
-            "Sun" => crate::core::instruction::Weather::SUN,
+            "Sun" => crate::core::instruction::Weather::Sun,
             "Rain" => crate::core::instruction::Weather::Rain,
-            "Sandstorm" => crate::core::instruction::Weather::SAND,
-            "Hail" => crate::core::instruction::Weather::HAIL,
-            "Snow" => crate::core::instruction::Weather::SNOW,
+            "Sandstorm" => crate::core::instruction::Weather::Sand,
+            "Hail" => crate::core::instruction::Weather::Hail,
+            "Snow" => crate::core::instruction::Weather::Snow,
             _ => crate::core::instruction::Weather::None,
         };
         state.weather_turns_remaining = ui_state.weather_turns_remaining;
@@ -813,10 +813,10 @@ impl EngineBridge {
         // Convert and set terrain
         state.terrain = match ui_state.terrain.as_str() {
             "None" => crate::core::instruction::Terrain::None,
-            "Electric" => crate::core::instruction::Terrain::ELECTRICTERRAIN,
-            "Grassy" => crate::core::instruction::Terrain::GRASSYTERRAIN,
-            "Misty" => crate::core::instruction::Terrain::MISTYTERRAIN,
-            "Psychic" => crate::core::instruction::Terrain::PSYCHICTERRAIN,
+            "Electric" => crate::core::instruction::Terrain::ElectricTerrain,
+            "Grassy" => crate::core::instruction::Terrain::GrassyTerrain,
+            "Misty" => crate::core::instruction::Terrain::MistyTerrain,
+            "Psychic" => crate::core::instruction::Terrain::PsychicTerrain,
             _ => crate::core::instruction::Terrain::None,
         };
         state.terrain_turns_remaining = ui_state.terrain_turns_remaining;

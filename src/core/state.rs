@@ -51,6 +51,62 @@ impl State {
         }
     }
 
+    /// Create a new battle state with teams from random team data
+    pub fn new_with_teams(
+        format: BattleFormat,
+        team_one: Vec<crate::data::RandomPokemonSet>,
+        team_two: Vec<crate::data::RandomPokemonSet>,
+    ) -> Self {
+        let mut state = Self::new(format.clone());
+        
+        // Create factories for proper move and Pokemon data
+        let move_factory = match crate::data::ps_move_factory::PSMoveFactory::new() {
+            Ok(factory) => factory,
+            Err(e) => {
+                eprintln!("Warning: Failed to create move factory: {}. Using placeholder moves.", e);
+                // Create a basic factory that will use fallbacks
+                crate::data::ps_move_factory::PSMoveFactory::new().unwrap_or_else(|_| {
+                    panic!("Could not create fallback move factory")
+                })
+            }
+        };
+        
+        let pokemon_factory = match crate::data::ps_pokemon_factory::PSPokemonFactory::new() {
+            Ok(factory) => factory,
+            Err(e) => {
+                eprintln!("Warning: Failed to create Pokemon factory: {}. Using placeholder Pokemon data.", e);
+                // Create a basic factory that will use fallbacks
+                crate::data::ps_pokemon_factory::PSPokemonFactory::new().unwrap_or_else(|_| {
+                    panic!("Could not create fallback Pokemon factory")
+                })
+            }
+        };
+        
+        // Convert and add Pokemon to each side
+        for pokemon_set in team_one {
+            let pokemon = pokemon_set.to_battle_pokemon(&move_factory, &pokemon_factory);
+            state.side_one.add_pokemon(pokemon);
+        }
+        
+        for pokemon_set in team_two {
+            let pokemon = pokemon_set.to_battle_pokemon(&move_factory, &pokemon_factory);
+            state.side_two.add_pokemon(pokemon);
+        }
+        
+        // Set initial active Pokemon based on format
+        let active_count = format.active_pokemon_count();
+        for slot in 0..active_count {
+            if slot < state.side_one.pokemon.len() {
+                state.side_one.set_active_pokemon_at_slot(slot, Some(slot));
+            }
+            if slot < state.side_two.pokemon.len() {
+                state.side_two.set_active_pokemon_at_slot(slot, Some(slot));
+            }
+        }
+        
+        state
+    }
+
     /// Serialize the battle state to a compact string format
     /// Format: format/side1/side2/weather/terrain/turn/trick_room
     pub fn serialize(&self) -> String {
@@ -335,13 +391,31 @@ impl State {
             Instruction::SetLastUsedMove(instr) => {
                 self.set_last_used_move(instr.target_position, &instr.move_name, instr.move_id);
             }
+            Instruction::RestoreLastUsedMove(_instr) => {
+                // TODO: Implement restore last used move logic
+            }
             
             // Pokemon Attribute Instructions
             Instruction::ChangeAbility(instr) => {
                 self.change_ability(instr.target_position, &instr.new_ability);
             }
+            Instruction::ToggleAbility(_instr) => {
+                // TODO: Implement toggle ability logic
+            }
             Instruction::ChangeItem(instr) => {
                 self.change_item(instr.target_position, instr.new_item.as_deref());
+            }
+            Instruction::RemoveItem(_instr) => {
+                // TODO: Implement remove item logic
+            }
+            Instruction::GiveItem(_instr) => {
+                // TODO: Implement give item logic
+            }
+            Instruction::Faint(_instr) => {
+                // TODO: Implement faint logic
+            }
+            Instruction::ToggleGravity(_instr) => {
+                // TODO: Implement toggle gravity logic
             }
             Instruction::ChangeType(instr) => {
                 self.change_type(instr.target_position, &instr.new_types);
@@ -650,6 +724,26 @@ impl State {
             Instruction::MultiTargetDamage(instr) => {
                 self.reverse_multi_target_damage(&instr.target_damages);
             }
+            
+            // Missing instruction patterns (TODO: implement proper reversal logic)
+            Instruction::RestoreLastUsedMove(_instr) => {
+                // TODO: Implement reverse logic for RestoreLastUsedMove
+            }
+            Instruction::ToggleAbility(_instr) => {
+                // TODO: Implement reverse logic for ToggleAbility
+            }
+            Instruction::RemoveItem(_instr) => {
+                // TODO: Implement reverse logic for RemoveItem
+            }
+            Instruction::GiveItem(_instr) => {
+                // TODO: Implement reverse logic for GiveItem
+            }
+            Instruction::Faint(_instr) => {
+                // TODO: Implement reverse logic for Faint
+            }
+            Instruction::ToggleGravity(_instr) => {
+                // TODO: Implement reverse logic for ToggleGravity
+            }
         }
     }
 
@@ -915,7 +1009,7 @@ impl State {
     }
 
     /// Enable a move at the specified position
-    fn enable_move(&mut self, position: BattlePosition, move_index: u8) {
+    fn enable_move(&mut self, position: BattlePosition, _move_index: u8) {
         if let Some(pokemon) = self.get_pokemon_at_position_mut(position) {
             // Remove disable status - in a full implementation this would enable specific moves
             pokemon.volatile_statuses.remove(&VolatileStatus::Disable);
@@ -941,10 +1035,9 @@ impl State {
     }
 
     /// Set the last used move at the specified position
-    fn set_last_used_move(&mut self, position: BattlePosition, move_name: &str, move_id: Option<u16>) {
+    fn set_last_used_move(&mut self, _position: BattlePosition, _move_name: &str, _move_id: Option<u16>) {
         // In tapu-simu, we'd need to add a last_used_move field to Pokemon or BattleSide
         // For now, this is a placeholder that could be extended
-        let side = self.get_side_mut(position.side);
         
         // Store in side conditions or add new field - this is a simplified implementation
         // A full implementation would track this per Pokemon or per side
@@ -1235,19 +1328,19 @@ impl State {
     // ========== Damage Tracking Implementation ==========
 
     /// Change damage dealt at the specified position
-    fn change_damage_dealt(&mut self, position: BattlePosition, damage_amount: i16) {
+    fn change_damage_dealt(&mut self, _position: BattlePosition, _damage_amount: i16) {
         // This would require additional state tracking for damage analytics
         // For now, this is a placeholder
     }
 
     /// Change damage dealt move category at the specified position
-    fn change_damage_dealt_move_category(&mut self, position: BattlePosition, move_category: crate::core::instruction::MoveCategory) {
+    fn change_damage_dealt_move_category(&mut self, _position: BattlePosition, _move_category: crate::core::instruction::MoveCategory) {
         // This would require additional state tracking for move category analytics
         // For now, this is a placeholder
     }
 
     /// Toggle damage dealt hit substitute at the specified position
-    fn toggle_damage_dealt_hit_substitute(&mut self, position: BattlePosition, hit_substitute: bool) {
+    fn toggle_damage_dealt_hit_substitute(&mut self, _position: BattlePosition, _hit_substitute: bool) {
         // This would require additional state tracking for substitute hit analytics
         // For now, this is a placeholder
     }
@@ -1745,11 +1838,12 @@ impl State {
         }
         
         // Side information
+        let active_slots = self.format.active_pokemon_count();
         output.push_str("\n--- Side One ---\n");
-        output.push_str(&self.side_one.pretty_print());
+        output.push_str(&self.side_one.pretty_print_with_format(active_slots));
         
         output.push_str("\n--- Side Two ---\n");
-        output.push_str(&self.side_two.pretty_print());
+        output.push_str(&self.side_two.pretty_print_with_format(active_slots));
         
         output
     }
@@ -1955,20 +2049,29 @@ impl BattleSide {
 
     /// Pretty print the side information for logging/debugging
     pub fn pretty_print(&self) -> String {
+        self.pretty_print_with_format(3) // Default to 3 slots for backward compatibility
+    }
+    
+    /// Pretty print the side information with format-aware slot display
+    pub fn pretty_print_with_format(&self, max_active_slots: usize) -> String {
         let mut output = String::new();
         
         // Active Pokemon
         if !self.active_pokemon_indices.is_empty() {
             output.push_str("Active Pokemon:\n");
-            for (slot, pokemon_index_opt) in self.active_pokemon_indices.iter().enumerate() {
-                if let Some(pokemon_index) = pokemon_index_opt {
-                    if let Some(pokemon) = self.pokemon.get(*pokemon_index) {
-                        output.push_str(&format!("  Slot {}: {}\n", slot, pokemon.pretty_print()));
+            let slots_to_show = max_active_slots.min(self.active_pokemon_indices.len());
+            
+            for slot in 0..slots_to_show {
+                if let Some(pokemon_index_opt) = self.active_pokemon_indices.get(slot) {
+                    if let Some(pokemon_index) = pokemon_index_opt {
+                        if let Some(pokemon) = self.pokemon.get(*pokemon_index) {
+                            output.push_str(&format!("  Slot {}: {}\n", slot, pokemon.pretty_print()));
+                        } else {
+                            output.push_str(&format!("  Slot {}: Invalid Pokemon index {}\n", slot, pokemon_index));
+                        }
                     } else {
-                        output.push_str(&format!("  Slot {}: Invalid Pokemon index {}\n", slot, pokemon_index));
+                        output.push_str(&format!("  Slot {}: Empty\n", slot));
                     }
-                } else {
-                    output.push_str(&format!("  Slot {}: Empty\n", slot));
                 }
             }
         } else {
@@ -2383,14 +2486,16 @@ pub struct Move {
 
 impl Move {
     /// Create a new move with default values
+    /// Note: This constructor should primarily be used for testing.
+    /// Production code should use PSMoveFactory to get accurate move data.
     pub fn new(name: String) -> Self {
         Self {
             name,
-            base_power: 80,
+            base_power: 60,  // More reasonable default than 80
             accuracy: 100,
             move_type: "Normal".to_string(),
-            pp: 20,
-            max_pp: 20,
+            pp: 15,          // More reasonable default than 20
+            max_pp: 15,
             target: crate::data::ps_types::PSMoveTarget::Normal,
             category: MoveCategory::Physical,
             priority: 0,
@@ -2853,7 +2958,7 @@ mod tests {
         
         // Test Weather
         assert_eq!(Weather::from(0), Weather::None);
-        assert_eq!(Weather::from(1), Weather::SUN);
+        assert_eq!(Weather::from(1), Weather::Sun);
         assert_eq!(Weather::from(2), Weather::Rain);
         
         // Test Generation
@@ -2868,7 +2973,7 @@ mod tests {
         state.turn = 5;
         state.weather = Weather::Rain;
         state.weather_turns_remaining = Some(3);
-        state.terrain = Terrain::ELECTRICTERRAIN;
+        state.terrain = Terrain::ElectricTerrain;
         state.terrain_turns_remaining = Some(2);
         state.trick_room_active = true;
         state.trick_room_turns_remaining = Some(4);

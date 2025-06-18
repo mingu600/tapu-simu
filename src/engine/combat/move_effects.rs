@@ -350,10 +350,10 @@ pub fn apply_poison_powder(
 
 /// Apply Swords Dance - raises Attack by 2 stages
 pub fn apply_swords_dance(
-    state: &State,
+    _state: &State,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
-    generation: &GenerationMechanics,
+    _generation: &GenerationMechanics,
 ) -> Vec<StateInstructions> {
     let target_position = if target_positions.is_empty() {
         user_position // Self-targeting move
@@ -375,10 +375,10 @@ pub fn apply_swords_dance(
 
 /// Apply Dragon Dance - raises Attack and Speed by 1 stage each
 pub fn apply_dragon_dance(
-    state: &State,
+    _state: &State,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
-    generation: &GenerationMechanics,
+    _generation: &GenerationMechanics,
 ) -> Vec<StateInstructions> {
     let target_position = if target_positions.is_empty() {
         user_position
@@ -401,10 +401,10 @@ pub fn apply_dragon_dance(
 
 /// Apply Nasty Plot - raises Special Attack by 2 stages
 pub fn apply_nasty_plot(
-    state: &State,
+    _state: &State,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
-    generation: &GenerationMechanics,
+    _generation: &GenerationMechanics,
 ) -> Vec<StateInstructions> {
     let target_position = if target_positions.is_empty() {
         user_position
@@ -426,10 +426,10 @@ pub fn apply_nasty_plot(
 
 /// Apply Agility - raises Speed by 2 stages
 pub fn apply_agility(
-    state: &State,
+    _state: &State,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
-    generation: &GenerationMechanics,
+    _generation: &GenerationMechanics,
 ) -> Vec<StateInstructions> {
     let target_position = if target_positions.is_empty() {
         user_position
@@ -451,10 +451,10 @@ pub fn apply_agility(
 
 /// Apply Growl - lowers target's Attack by 1 stage
 pub fn apply_growl(
-    state: &State,
-    user_position: BattlePosition,
+    _state: &State,
+    _user_position: BattlePosition,
     target_positions: &[BattlePosition],
-    generation: &GenerationMechanics,
+    _generation: &GenerationMechanics,
 ) -> Vec<StateInstructions> {
     let mut instructions = Vec::new();
     
@@ -480,10 +480,10 @@ pub fn apply_growl(
 
 /// Apply Leer - lowers target's Defense by 1 stage
 pub fn apply_leer(
-    state: &State,
-    user_position: BattlePosition,
+    _state: &State,
+    _user_position: BattlePosition,
     target_positions: &[BattlePosition],
-    generation: &GenerationMechanics,
+    _generation: &GenerationMechanics,
 ) -> Vec<StateInstructions> {
     let mut instructions = Vec::new();
     
@@ -699,7 +699,7 @@ fn apply_weather_accuracy_modifiers(
                 modified_accuracy = 1.0;
             }
         }
-        crate::core::instruction::Weather::SUN | crate::core::instruction::Weather::HARSHSUN => {
+        crate::core::instruction::Weather::Sun | crate::core::instruction::Weather::HarshSun => {
             // Thunder has reduced accuracy in sun
             if move_data.name.to_lowercase() == "thunder" {
                 modified_accuracy *= 0.5;
@@ -709,13 +709,13 @@ fn apply_weather_accuracy_modifiers(
                 modified_accuracy *= 0.5;
             }
         }
-        crate::core::instruction::Weather::SAND => {
+        crate::core::instruction::Weather::Sand => {
             // Rock-type moves have perfect accuracy in sandstorm
             if move_data.move_type.to_lowercase() == "rock" {
                 modified_accuracy = 1.0;
             }
         }
-        crate::core::instruction::Weather::HAIL | crate::core::instruction::Weather::SNOW => {
+        crate::core::instruction::Weather::Hail | crate::core::instruction::Weather::Snow => {
             // Blizzard has perfect accuracy in hail/snow
             if move_data.name.to_lowercase() == "blizzard" {
                 modified_accuracy = 1.0;
@@ -768,7 +768,7 @@ pub fn apply_recover(
     state: &State,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
-    generation: &GenerationMechanics,
+    _generation: &GenerationMechanics,
 ) -> Vec<StateInstructions> {
     let target_position = if target_positions.is_empty() {
         user_position
@@ -815,11 +815,11 @@ pub fn apply_moonlight(
     
     if let Some(pokemon) = state.get_pokemon_at_position(target_position) {
         let heal_amount = match state.weather {
-            crate::core::instruction::Weather::SUN | crate::core::instruction::Weather::HARSHSUN => {
+            crate::core::instruction::Weather::Sun | crate::core::instruction::Weather::HarshSun => {
                 (pokemon.max_hp * 2) / 3 // 66% in sun
             }
-            crate::core::instruction::Weather::Rain | crate::core::instruction::Weather::SAND | 
-            crate::core::instruction::Weather::HAIL | crate::core::instruction::Weather::SNOW => {
+            crate::core::instruction::Weather::Rain | crate::core::instruction::Weather::Sand | 
+            crate::core::instruction::Weather::Hail | crate::core::instruction::Weather::Snow => {
                 pokemon.max_hp / 4 // 25% in other weather
             }
             _ => pokemon.max_hp / 2, // 50% in clear weather
@@ -1586,11 +1586,11 @@ fn create_flinch_instructions(target_positions: &[BattlePosition]) -> Vec<Instru
 /// Apply recoil move effects - now handled automatically by instruction generator
 /// This function is kept for compatibility but recoil is now handled via PS data
 pub fn apply_recoil_move(
-    state: &State,
-    user_position: BattlePosition,
-    target_positions: &[BattlePosition],
-    generation: &GenerationMechanics,
-    recoil_percentage: i16,
+    _state: &State,
+    _user_position: BattlePosition,
+    _target_positions: &[BattlePosition],
+    _generation: &GenerationMechanics,
+    _recoil_percentage: i16,
 ) -> Vec<StateInstructions> {
     // Recoil is now handled automatically in the instruction generator
     // based on PS move data, so we just return empty instructions
@@ -1600,11 +1600,11 @@ pub fn apply_recoil_move(
 /// Apply drain move effects - now handled automatically by instruction generator
 /// This function is kept for compatibility but drain is now handled via PS data
 pub fn apply_drain_move(
-    state: &State,
-    user_position: BattlePosition,
-    target_positions: &[BattlePosition],
-    generation: &GenerationMechanics,
-    drain_percentage: i16,
+    _state: &State,
+    _user_position: BattlePosition,
+    _target_positions: &[BattlePosition],
+    _generation: &GenerationMechanics,
+    _drain_percentage: i16,
 ) -> Vec<StateInstructions> {
     // Drain is now handled automatically in the instruction generator
     // based on PS move data, so we just return empty instructions
@@ -1737,7 +1737,7 @@ fn is_immune_to_poison(pokemon: &Pokemon, generation: &GenerationMechanics) -> b
 
 /// Check if a Pokemon is immune to burn
 /// Generation-aware: Fire types are always immune to burn
-fn is_immune_to_burn(pokemon: &Pokemon, generation: &GenerationMechanics) -> bool {
+fn is_immune_to_burn(pokemon: &Pokemon, _generation: &GenerationMechanics) -> bool {
     // Fire types are immune to burn in all generations
     pokemon.types.iter().any(|t| t.to_lowercase() == "fire")
 }

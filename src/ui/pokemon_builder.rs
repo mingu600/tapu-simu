@@ -304,12 +304,6 @@ impl PokemonBuilder {
         })
     }
 
-    /// Calculate stats for a Pokemon at a given level
-    fn calculate_stats(&self, base_stats: &PSBaseStats, level: u8) -> UIPokemonStats {
-        // Default to 31 IVs, 0 EVs, Hardy nature for backwards compatibility
-        self.calculate_stats_with_ivs_evs(base_stats, level, &[31; 6], &[0; 6], "Hardy")
-    }
-
     /// Calculate stats with IVs, EVs, and nature
     /// ivs and evs are arrays in order: [HP, Atk, Def, SpA, SpD, Spe]
     fn calculate_stats_with_ivs_evs(&self, base_stats: &PSBaseStats, level: u8, ivs: &[u8; 6], evs: &[u8; 6], nature: &str) -> UIPokemonStats {

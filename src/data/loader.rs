@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use serde_json;
-use crate::data::ps_types::{PSMoveData, PSMoveTarget, PSItemData};
+use crate::data::ps_types::{PSMoveData, PSItemData};
 
 /// Pokemon Showdown data repository
 pub struct PSDataRepository {

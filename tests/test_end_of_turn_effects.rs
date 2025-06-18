@@ -159,7 +159,7 @@ fn test_sandstorm_damage() {
         .unwrap();
     
     // Set up sandstorm
-    state.weather = Weather::SAND;
+    state.weather = Weather::Sand;
     state.weather_turns_remaining = Some(3);
     
     // Set the attacker's HP (vulnerable to sandstorm - not Rock/Ground/Steel)
@@ -194,7 +194,7 @@ fn test_hail_damage() {
         .unwrap();
     
     // Set up hail
-    state.weather = Weather::HAIL;
+    state.weather = Weather::Hail;
     state.weather_turns_remaining = Some(3);
     
     // Set the attacker's HP (vulnerable to hail - not Ice type)
@@ -229,7 +229,7 @@ fn test_ice_body_healing_in_hail() {
         .unwrap();
     
     // Set up hail
-    state.weather = Weather::HAIL;
+    state.weather = Weather::Hail;
     state.weather_turns_remaining = Some(3);
     
     // Set the attacker to have Ice Body ability
@@ -521,7 +521,7 @@ fn test_solar_power_sun_damage() {
     let generation = GenerationMechanics::new(Generation::Gen9);
     
     // Set up sun
-    state.weather = Weather::SUN;
+    state.weather = Weather::Sun;
     state.weather_turns_remaining = Some(3);
     
     // Set the attacker to have Solar Power ability
@@ -593,7 +593,7 @@ fn test_grassy_terrain_healing() {
     let generation = GenerationMechanics::new(Generation::Gen9);
     
     // Set up Grassy Terrain
-    state.terrain = Terrain::GRASSYTERRAIN;
+    state.terrain = Terrain::GrassyTerrain;
     state.terrain_turns_remaining = Some(3);
     
     // Set the attacker to be grounded
@@ -793,7 +793,7 @@ fn test_multiple_end_of_turn_effects_processing_order() {
     let generation = GenerationMechanics::new(Generation::Gen9);
     
     // Set up multiple end-of-turn effects
-    state.weather = Weather::SAND;
+    state.weather = Weather::Sand;
     state.weather_turns_remaining = Some(2);
     
     // Set the attacker to have multiple end-of-turn effects
@@ -822,7 +822,7 @@ fn test_magic_guard_immunity() {
     
     
     // Set up sandstorm
-    state.weather = Weather::SAND;
+    state.weather = Weather::Sand;
     state.weather_turns_remaining = Some(3);
     
     // Set the attacker to have Magic Guard ability and burn status

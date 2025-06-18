@@ -4,7 +4,7 @@
 //! All instructions are position-aware and designed for multi-format support.
 //! Optional undo support is built into each instruction type.
 
-use crate::core::battle_format::{BattlePosition, BattleFormat, SideReference};
+use crate::core::battle_format::{BattlePosition, SideReference};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

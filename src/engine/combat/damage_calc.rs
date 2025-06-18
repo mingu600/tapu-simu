@@ -576,7 +576,7 @@ pub fn get_terrain_damage_modifier(
                 1.0
             }
         }
-        Terrain::MISTYTERRAIN => {
+        Terrain::MistyTerrain => {
             // Misty Terrain reduces Dragon moves by 0.5x when target is grounded
             if move_type.to_lowercase() == "dragon" && is_grounded(defender) {
                 0.5

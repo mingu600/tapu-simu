@@ -7,11 +7,11 @@
 //! Following poke-engine's pattern, switch effects are processed in a specific order
 //! to match official game mechanics.
 
-use crate::core::battle_format::{BattlePosition, SideReference};
+use crate::core::battle_format::BattlePosition;
 use crate::core::instruction::{
-    Instruction, StateInstructions, PositionDamageInstruction, PositionHealInstruction,
-    ApplyStatusInstruction, ApplyVolatileStatusInstruction, BoostStatsInstruction,
-    SideCondition, PokemonStatus, VolatileStatus, Stat, RemoveVolatileStatusInstruction
+    Instruction, StateInstructions, PositionDamageInstruction,
+    ApplyStatusInstruction, BoostStatsInstruction,
+    SideCondition, PokemonStatus, Stat, RemoveVolatileStatusInstruction
 };
 use crate::core::state::{State, Pokemon};
 use crate::generation::GenerationMechanics;
@@ -173,7 +173,7 @@ fn process_switch_in_abilities(
         "drought" => {
             instructions.push(StateInstructions::new(100.0, vec![
                 Instruction::ChangeWeather(crate::core::instruction::ChangeWeatherInstruction {
-                    weather: crate::core::instruction::Weather::SUN,
+                    weather: crate::core::instruction::Weather::Sun,
                     duration: Some(5),
                     previous_weather: Some(state.weather),
                     previous_duration: Some(state.weather_turns_remaining),
@@ -193,7 +193,7 @@ fn process_switch_in_abilities(
         "sand stream" | "sandstream" => {
             instructions.push(StateInstructions::new(100.0, vec![
                 Instruction::ChangeWeather(crate::core::instruction::ChangeWeatherInstruction {
-                    weather: crate::core::instruction::Weather::SAND,
+                    weather: crate::core::instruction::Weather::Sand,
                     duration: Some(5),
                     previous_weather: Some(state.weather),
                     previous_duration: Some(state.weather_turns_remaining),
@@ -202,9 +202,9 @@ fn process_switch_in_abilities(
         }
         "snow warning" | "snowwarning" => {
             let weather = if generation.generation.number() >= 9 {
-                crate::core::instruction::Weather::SNOW
+                crate::core::instruction::Weather::Snow
             } else {
-                crate::core::instruction::Weather::HAIL
+                crate::core::instruction::Weather::Hail
             };
             instructions.push(StateInstructions::new(100.0, vec![
                 Instruction::ChangeWeather(crate::core::instruction::ChangeWeatherInstruction {
@@ -220,7 +220,7 @@ fn process_switch_in_abilities(
         "electric surge" | "electricsurge" => {
             instructions.push(StateInstructions::new(100.0, vec![
                 Instruction::ChangeTerrain(crate::core::instruction::ChangeTerrainInstruction {
-                    terrain: crate::core::instruction::Terrain::ELECTRICTERRAIN,
+                    terrain: crate::core::instruction::Terrain::ElectricTerrain,
                     duration: Some(5),
                     previous_terrain: Some(state.terrain),
                     previous_duration: Some(state.terrain_turns_remaining),
@@ -230,7 +230,7 @@ fn process_switch_in_abilities(
         "grassy surge" | "grassysurge" => {
             instructions.push(StateInstructions::new(100.0, vec![
                 Instruction::ChangeTerrain(crate::core::instruction::ChangeTerrainInstruction {
-                    terrain: crate::core::instruction::Terrain::GRASSYTERRAIN,
+                    terrain: crate::core::instruction::Terrain::GrassyTerrain,
                     duration: Some(5),
                     previous_terrain: Some(state.terrain),
                     previous_duration: Some(state.terrain_turns_remaining),
@@ -240,7 +240,7 @@ fn process_switch_in_abilities(
         "misty surge" | "mistysurge" => {
             instructions.push(StateInstructions::new(100.0, vec![
                 Instruction::ChangeTerrain(crate::core::instruction::ChangeTerrainInstruction {
-                    terrain: crate::core::instruction::Terrain::MISTYTERRAIN,
+                    terrain: crate::core::instruction::Terrain::MistyTerrain,
                     duration: Some(5),
                     previous_terrain: Some(state.terrain),
                     previous_duration: Some(state.terrain_turns_remaining),
@@ -250,7 +250,7 @@ fn process_switch_in_abilities(
         "psychic surge" | "psychicsurge" => {
             instructions.push(StateInstructions::new(100.0, vec![
                 Instruction::ChangeTerrain(crate::core::instruction::ChangeTerrainInstruction {
-                    terrain: crate::core::instruction::Terrain::PSYCHICTERRAIN,
+                    terrain: crate::core::instruction::Terrain::PsychicTerrain,
                     duration: Some(5),
                     previous_terrain: Some(state.terrain),
                     previous_duration: Some(state.terrain_turns_remaining),
@@ -402,9 +402,9 @@ fn apply_trace_effect(
 
 /// Process switch-in items
 fn process_switch_in_items(
-    state: &State,
-    switching_position: BattlePosition,
-    generation: &GenerationMechanics,
+    _state: &State,
+    _switching_position: BattlePosition,
+    _generation: &GenerationMechanics,
 ) -> Vec<StateInstructions> {
     let mut instructions = Vec::new();
     
@@ -416,9 +416,9 @@ fn process_switch_in_items(
 
 /// Process switch-out abilities
 fn process_switch_out_abilities(
-    state: &State,
-    switching_position: BattlePosition,
-    generation: &GenerationMechanics,
+    _state: &State,
+    _switching_position: BattlePosition,
+    _generation: &GenerationMechanics,
 ) -> Vec<StateInstructions> {
     let mut instructions = Vec::new();
     
@@ -430,9 +430,9 @@ fn process_switch_out_abilities(
 
 /// Process switch-out items
 fn process_switch_out_items(
-    state: &State,
-    switching_position: BattlePosition,
-    generation: &GenerationMechanics,
+    _state: &State,
+    _switching_position: BattlePosition,
+    _generation: &GenerationMechanics,
 ) -> Vec<StateInstructions> {
     let mut instructions = Vec::new();
     

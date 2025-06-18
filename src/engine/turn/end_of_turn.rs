@@ -77,7 +77,7 @@ pub fn process_end_of_turn_effects(
 /// Process field effect decrements (weather, terrain, trick room)
 fn process_field_effect_decrements(
     state: &State,
-    generation: &GenerationMechanics,
+    _generation: &GenerationMechanics,
 ) -> Vec<StateInstructions> {
     let mut instructions = Vec::new();
     let mut instruction_list = Vec::new();
@@ -232,18 +232,18 @@ fn process_status_damage(
 /// Process weather effects (damage/healing)
 fn process_weather_effects(
     state: &State,
-    generation: &GenerationMechanics,
+    _generation: &GenerationMechanics,
 ) -> Vec<StateInstructions> {
     let mut instructions = Vec::new();
     
     match state.weather {
-        Weather::SAND => {
-            instructions.extend(process_sandstorm_damage(state, generation));
+        Weather::Sand => {
+            instructions.extend(process_sandstorm_damage(state, _generation));
         }
-        Weather::HAIL => {
-            instructions.extend(process_hail_damage(state, generation));
+        Weather::Hail => {
+            instructions.extend(process_hail_damage(state, _generation));
         }
-        Weather::SNOW => {
+        Weather::Snow => {
             // Snow doesn't deal damage in modern generations
             // But might have other effects
         }
@@ -256,7 +256,7 @@ fn process_weather_effects(
 /// Process sandstorm damage
 fn process_sandstorm_damage(
     state: &State,
-    generation: &GenerationMechanics,
+    _generation: &GenerationMechanics,
 ) -> Vec<StateInstructions> {
     let mut instructions = Vec::new();
     
@@ -295,7 +295,7 @@ fn process_sandstorm_damage(
 /// Process hail damage
 fn process_hail_damage(
     state: &State,
-    generation: &GenerationMechanics,
+    _generation: &GenerationMechanics,
 ) -> Vec<StateInstructions> {
     let mut instructions = Vec::new();
     
@@ -351,7 +351,7 @@ fn process_terrain_effects(
     let mut instructions = Vec::new();
     
     match state.terrain {
-        Terrain::GRASSYTERRAIN => {
+        Terrain::GrassyTerrain => {
             instructions.extend(process_grassy_terrain_healing(state, generation));
         }
         _ => {}
@@ -826,7 +826,7 @@ fn calculate_burn_damage(pokemon: &crate::core::state::Pokemon, generation: &Gen
 }
 
 /// Calculate poison damage
-fn calculate_poison_damage(pokemon: &crate::core::state::Pokemon, generation: &GenerationMechanics) -> i16 {
+fn calculate_poison_damage(pokemon: &crate::core::state::Pokemon, _generation: &GenerationMechanics) -> i16 {
     // Check for Magic Guard ability (prevents all indirect damage)
     if pokemon.ability.to_lowercase().replace(" ", "") == "magicguard" {
         return 0;
@@ -842,7 +842,7 @@ fn calculate_poison_damage(pokemon: &crate::core::state::Pokemon, generation: &G
 }
 
 /// Calculate toxic damage (increases each turn)
-fn calculate_toxic_damage(pokemon: &crate::core::state::Pokemon, generation: &GenerationMechanics) -> i16 {
+fn calculate_toxic_damage(pokemon: &crate::core::state::Pokemon, _generation: &GenerationMechanics) -> i16 {
     // Check for Magic Guard ability (prevents all indirect damage)
     if pokemon.ability.to_lowercase().replace(" ", "") == "magicguard" {
         return 0;
@@ -1236,7 +1236,7 @@ fn process_ability_effects(
                                         ]));
                                     }
                                 }
-                                crate::core::instruction::Weather::SUN => {
+                                crate::core::instruction::Weather::Sun => {
                                     let damage = pokemon.max_hp / 8;
                                     instructions.push(StateInstructions::new(100.0, vec![
                                         Instruction::PositionDamage(PositionDamageInstruction {
@@ -1265,7 +1265,7 @@ fn process_ability_effects(
                     }
                     "solarpower" => {
                         // Take 1/8 HP damage in sun
-                        if pokemon.hp > 0 && state.weather == crate::core::instruction::Weather::SUN {
+                        if pokemon.hp > 0 && state.weather == crate::core::instruction::Weather::Sun {
                             let damage = pokemon.max_hp / 8;
                             instructions.push(StateInstructions::new(100.0, vec![
                                 Instruction::PositionDamage(PositionDamageInstruction {

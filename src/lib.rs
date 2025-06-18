@@ -62,6 +62,12 @@ pub use core::move_choice::MoveChoice;
 pub use core::state::State;
 pub use generation::{Generation, GenerationMechanics, GenerationBattleMechanics};
 
+// Test framework re-export
+pub use testing::framework::TestFramework;
+
+// Engine module re-exports for testing
+pub use engine::combat::damage_calc;
+
 // Ensure only one generation is enabled
 #[cfg(all(feature = "gen1", feature = "gen2"))]
 compile_error!("Features 'gen1' and 'gen2' cannot be used together");

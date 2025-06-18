@@ -13,7 +13,6 @@ use crate::data::types::EngineMoveData;
 use crate::core::move_choice::{MoveChoice, MoveIndex};
 use crate::core::instruction::{Instruction, StateInstructions, PokemonStatus, Stat};
 use crate::generation::Generation;
-use serde_json::Value;
 
 /// Normalize names to match PS conventions (lowercase, no spaces/hyphens)
 pub fn normalize_name(name: &str) -> String {

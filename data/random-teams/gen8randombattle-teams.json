@@ -1,0 +1,8742 @@
+[
+  [
+    {
+      "name": "Slowbro",
+      "species": "Slowbro",
+      "level": 86,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Regenerator",
+      "item": "Leftovers",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Future Sight",
+        "Ice Beam",
+        "Thunder Wave",
+        "Slack Off"
+      ],
+      "nature": "Naughty"
+    },
+    {
+      "name": "Gastrodon",
+      "species": "Gastrodon",
+      "level": 85,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Storm Drain",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Recover",
+        "Ice Beam",
+        "Toxic",
+        "Clear Smog"
+      ],
+      "nature": "Timid"
+    },
+    {
+      "name": "Chansey",
+      "species": "Chansey",
+      "level": 85,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Natural Cure",
+      "item": "Eviolite",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Aromatherapy",
+        "Seismic Toss",
+        "Soft-Boiled",
+        "Stealth Rock"
+      ],
+      "nature": "Sassy"
+    },
+    {
+      "name": "Whimsicott",
+      "species": "Whimsicott",
+      "level": 84,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Prankster",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Defog",
+        "Taunt",
+        "Stun Spore",
+        "Energy Ball"
+      ],
+      "nature": "Lonely"
+    },
+    {
+      "name": "Incineroar",
+      "species": "Incineroar",
+      "level": 80,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Intimidate",
+      "item": "Choice Scarf",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Knock Off",
+        "Flare Blitz",
+        "U-turn",
+        "Will-O-Wisp"
+      ],
+      "nature": "Relaxed"
+    },
+    {
+      "name": "Regieleki",
+      "species": "Regieleki",
+      "level": 78,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Transistor",
+      "item": "Magnet",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Explosion",
+        "Substitute",
+        "Thunderbolt",
+        "Volt Switch"
+      ],
+      "nature": "Jolly"
+    }
+  ],
+  [
+    {
+      "name": "Unfezant",
+      "species": "Unfezant",
+      "level": 85,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Super Luck",
+      "item": "Scope Lens",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "U-turn",
+        "Roost",
+        "Night Slash",
+        "Defog"
+      ],
+      "nature": "Adamant"
+    },
+    {
+      "name": "Sableye",
+      "species": "Sableye",
+      "level": 90,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Prankster",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Knock Off",
+        "Recover",
+        "Taunt",
+        "Will-O-Wisp"
+      ],
+      "nature": "Sassy"
+    },
+    {
+      "name": "Pinsir",
+      "species": "Pinsir",
+      "level": 84,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Mold Breaker",
+      "item": "Focus Sash",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Earthquake",
+        "Stealth Rock",
+        "Stone Edge",
+        "Knock Off"
+      ],
+      "nature": "Quirky"
+    },
+    {
+      "name": "Appletun",
+      "species": "Appletun",
+      "level": 91,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Thick Fat",
+      "item": "Leftovers",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Dragon Pulse",
+        "Recover",
+        "Leech Seed",
+        "Apple Acid"
+      ],
+      "nature": "Jolly"
+    },
+    {
+      "name": "Arcanine",
+      "species": "Arcanine",
+      "level": 82,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Intimidate",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Extreme Speed",
+        "Will-O-Wisp",
+        "Wild Charge",
+        "Morning Sun"
+      ],
+      "nature": "Serious"
+    },
+    {
+      "name": "Zamazenta",
+      "species": "Zamazenta",
+      "level": 71,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Dauntless Shield",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Close Combat",
+        "Crunch",
+        "Psychic Fangs",
+        "Wild Charge"
+      ],
+      "nature": "Jolly"
+    }
+  ],
+  [
+    {
+      "name": "Vileplume",
+      "species": "Vileplume",
+      "level": 85,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Chlorophyll",
+      "item": "Black Sludge",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Sludge Bomb",
+        "Giga Drain",
+        "Aromatherapy",
+        "Strength Sap"
+      ],
+      "nature": "Relaxed"
+    },
+    {
+      "name": "Sawk",
+      "species": "Sawk",
+      "level": 85,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Mold Breaker",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Bulk Up",
+        "Close Combat",
+        "Knock Off",
+        "Stone Edge"
+      ],
+      "nature": "Hasty"
+    },
+    {
+      "name": "Kyogre",
+      "species": "Kyogre",
+      "level": 70,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Drizzle",
+      "item": "Leftovers",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Origin Pulse",
+        "Thunder",
+        "Ice Beam",
+        "Water Spout"
+      ],
+      "nature": "Naughty"
+    },
+    {
+      "name": "Gengar-Gmax",
+      "species": "Gengar-Gmax",
+      "level": 79,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Cursed Body",
+      "item": "Focus Sash",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Focus Blast",
+        "Nasty Plot",
+        "Shadow Ball",
+        "Sludge Wave"
+      ],
+      "nature": "Sassy"
+    },
+    {
+      "name": "Kabutops",
+      "species": "Kabutops",
+      "level": 83,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Swift Swim",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Aqua Jet",
+        "Knock Off",
+        "Liquidation",
+        "Rapid Spin"
+      ],
+      "nature": "Quirky"
+    },
+    {
+      "name": "Stakataka",
+      "species": "Stakataka",
+      "level": 80,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Beast Boost",
+      "item": "Choice Band",
+      "evs": {
+        "spe": 0
+      },
+      "ivs": {
+        "spe": 0
+      },
+      "moves": [
+        "Body Press",
+        "Earthquake",
+        "Trick Room",
+        "Gyro Ball"
+      ],
+      "nature": "Impish"
+    }
+  ],
+  [
+    {
+      "name": "Dracozolt",
+      "species": "Dracozolt",
+      "level": 76,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Sand Rush",
+      "item": "Choice Scarf",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Outrage",
+        "Aerial Ace",
+        "Low Kick",
+        "Bolt Beak"
+      ],
+      "nature": "Rash"
+    },
+    {
+      "name": "Tapu Bulu",
+      "species": "Tapu Bulu",
+      "level": 82,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Grassy Surge",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Close Combat",
+        "Stone Edge",
+        "Swords Dance",
+        "Megahorn"
+      ],
+      "nature": "Relaxed"
+    },
+    {
+      "name": "Moltres-Galar",
+      "species": "Moltres-Galar",
+      "level": 74,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Berserk",
+      "item": "Chesto Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Hurricane",
+        "Fiery Wrath",
+        "Rest",
+        "Nasty Plot"
+      ],
+      "nature": "Modest"
+    },
+    {
+      "name": "Rhydon",
+      "species": "Rhydon",
+      "level": 85,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Rock Head",
+      "item": "Eviolite",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Earthquake",
+        "Toxic",
+        "Megahorn",
+        "Stone Edge"
+      ],
+      "nature": "Rash"
+    },
+    {
+      "name": "Duraludon",
+      "species": "Duraludon",
+      "level": 83,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Light Metal",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Stealth Rock",
+        "Body Press",
+        "Thunderbolt",
+        "Draco Meteor"
+      ],
+      "nature": "Hasty"
+    },
+    {
+      "name": "Skuntank",
+      "species": "Skuntank",
+      "level": 84,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Aftermath",
+      "item": "Black Sludge",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Fire Blast",
+        "Sucker Punch",
+        "Defog",
+        "Crunch"
+      ],
+      "nature": "Impish"
+    }
+  ],
+  [
+    {
+      "name": "Golurk",
+      "species": "Golurk",
+      "level": 82,
+      "gender": "M",
+      "shiny": false,
+      "ability": "No Guard",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Dynamic Punch",
+        "Rock Polish",
+        "Earthquake",
+        "Stone Edge"
+      ],
+      "nature": "Relaxed"
+    },
+    {
+      "name": "Slowking-Galar",
+      "species": "Slowking-Galar",
+      "level": 83,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Regenerator",
+      "item": "Black Sludge",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Sludge Bomb",
+        "Slack Off",
+        "Trick",
+        "Psyshock"
+      ],
+      "nature": "Naive"
+    },
+    {
+      "name": "Primarina",
+      "species": "Primarina",
+      "level": 81,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Torrent",
+      "item": "Choice Scarf",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Scald",
+        "Hydro Pump",
+        "Moonblast",
+        "Energy Ball"
+      ],
+      "nature": "Timid"
+    },
+    {
+      "name": "Cloyster",
+      "species": "Cloyster",
+      "level": 78,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Skill Link",
+      "item": "White Herb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Rock Blast",
+        "Shell Smash",
+        "Icicle Spear",
+        "Hydro Pump"
+      ],
+      "nature": "Lax"
+    },
+    {
+      "name": "Stunfisk-Galar",
+      "species": "Stunfisk-Galar",
+      "level": 84,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Mimicry",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Earthquake",
+        "Stealth Rock",
+        "Thunder Wave",
+        "Stone Edge"
+      ],
+      "nature": "Naive"
+    },
+    {
+      "name": "Pelipper",
+      "species": "Pelipper",
+      "level": 87,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Drizzle",
+      "item": "Heavy-Duty Boots",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Hydro Pump",
+        "Hurricane",
+        "Scald",
+        "Roost"
+      ],
+      "nature": "Careful"
+    }
+  ],
+  [
+    {
+      "name": "Turtonator",
+      "species": "Turtonator",
+      "level": 83,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Shell Armor",
+      "item": "White Herb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Shell Smash",
+        "Body Press",
+        "Fire Blast",
+        "Draco Meteor"
+      ],
+      "nature": "Calm"
+    },
+    {
+      "name": "Marshadow",
+      "species": "Marshadow",
+      "level": 69,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Technician",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Rock Tomb",
+        "Ice Punch",
+        "Close Combat",
+        "Spectral Thief"
+      ],
+      "nature": "Jolly"
+    },
+    {
+      "name": "Silvally-Psychic",
+      "species": "Silvally-Psychic",
+      "level": 83,
+      "gender": "M",
+      "shiny": false,
+      "ability": "RKS System",
+      "item": "Psychic Memory",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Multi-Attack",
+        "U-turn",
+        "Crunch",
+        "Swords Dance"
+      ],
+      "nature": "Lax"
+    },
+    {
+      "name": "Corsola",
+      "species": "Corsola",
+      "level": 97,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Regenerator",
+      "item": "Rocky Helmet",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Toxic",
+        "Power Gem",
+        "Stealth Rock",
+        "Scald"
+      ],
+      "nature": "Adamant"
+    },
+    {
+      "name": "Arctovish",
+      "species": "Arctovish",
+      "level": 87,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Slush Rush",
+      "item": "Assault Vest",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Freeze-Dry",
+        "Psychic Fangs",
+        "Icicle Crash",
+        "Fishious Rend"
+      ],
+      "nature": "Serious"
+    },
+    {
+      "name": "Golisopod",
+      "species": "Golisopod",
+      "level": 85,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Emergency Exit",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Leech Life",
+        "Liquidation",
+        "Knock Off",
+        "Spikes"
+      ],
+      "nature": "Careful"
+    }
+  ],
+  [
+    {
+      "name": "Salamence",
+      "species": "Salamence",
+      "level": 73,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Moxie",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Dragon Dance",
+        "Dual Wingbeat",
+        "Earthquake",
+        "Outrage"
+      ],
+      "nature": "Lax"
+    },
+    {
+      "name": "Tornadus",
+      "species": "Tornadus",
+      "level": 80,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Prankster",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Nasty Plot",
+        "Hurricane",
+        "Heat Wave",
+        "Grass Knot"
+      ],
+      "nature": "Bashful"
+    },
+    {
+      "name": "Grimmsnarl",
+      "species": "Grimmsnarl",
+      "level": 85,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Prankster",
+      "item": "Light Clay",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Thunder Wave",
+        "Light Screen",
+        "Taunt",
+        "Reflect"
+      ],
+      "nature": "Rash"
+    },
+    {
+      "name": "Silvally-Ground",
+      "species": "Silvally-Ground",
+      "level": 83,
+      "gender": "F",
+      "shiny": false,
+      "ability": "RKS System",
+      "item": "Ground Memory",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Multi-Attack",
+        "Defog",
+        "Toxic",
+        "Flamethrower"
+      ],
+      "nature": "Naughty"
+    },
+    {
+      "name": "Lucario",
+      "species": "Lucario",
+      "level": 81,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Justified",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Close Combat",
+        "Extreme Speed",
+        "Meteor Mash",
+        "Stone Edge"
+      ],
+      "nature": "Jolly"
+    },
+    {
+      "name": "Snorlax-Gmax",
+      "species": "Snorlax-Gmax",
+      "level": 82,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Thick Fat",
+      "item": "Chesto Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Body Slam",
+        "Curse",
+        "Rest",
+        "Darkest Lariat"
+      ],
+      "nature": "Impish"
+    }
+  ],
+  [
+    {
+      "name": "Rapidash",
+      "species": "Rapidash",
+      "level": 84,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Flash Fire",
+      "item": "Heavy-Duty Boots",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "High Horsepower",
+        "Swords Dance",
+        "Will-O-Wisp",
+        "Morning Sun"
+      ],
+      "nature": "Relaxed"
+    },
+    {
+      "name": "Wobbuffet",
+      "species": "Wobbuffet",
+      "level": 98,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Shadow Tag",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Encore",
+        "Counter",
+        "Mirror Coat",
+        "Charm"
+      ],
+      "nature": "Calm"
+    },
+    {
+      "name": "Gourgeist-Large",
+      "species": "Gourgeist-Large",
+      "level": 85,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Frisk",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Poltergeist",
+        "Power Whip",
+        "Will-O-Wisp",
+        "Synthesis"
+      ],
+      "nature": "Serious"
+    },
+    {
+      "name": "Mandibuzz",
+      "species": "Mandibuzz",
+      "level": 82,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Overcoat",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Foul Play",
+        "Roost",
+        "Toxic",
+        "Defog"
+      ],
+      "nature": "Hasty"
+    },
+    {
+      "name": "Cherrim",
+      "species": "Cherrim",
+      "level": 94,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Flower Gift",
+      "item": "Choice Scarf",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Dazzling Gleam",
+        "Healing Wish",
+        "Pollen Puff",
+        "Petal Dance"
+      ],
+      "nature": "Quiet"
+    },
+    {
+      "name": "Coalossal-Gmax",
+      "species": "Coalossal-Gmax",
+      "level": 89,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Flame Body",
+      "item": "Air Balloon",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Will-O-Wisp",
+        "Rapid Spin",
+        "Stone Edge",
+        "Spikes"
+      ],
+      "nature": "Bold"
+    }
+  ],
+  [
+    {
+      "name": "Swampert",
+      "species": "Swampert",
+      "level": 80,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Torrent",
+      "item": "Assault Vest",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Ice Beam",
+        "Scald",
+        "Toxic",
+        "Stealth Rock"
+      ],
+      "nature": "Serious"
+    },
+    {
+      "name": "Celesteela",
+      "species": "Celesteela",
+      "level": 76,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Beast Boost",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Protect",
+        "Earthquake",
+        "Leech Seed",
+        "Fire Blast"
+      ],
+      "nature": "Modest"
+    },
+    {
+      "name": "Zamazenta-Crowned",
+      "species": "Zamazenta-Crowned",
+      "level": 68,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Dauntless Shield",
+      "item": "Rusted Shield",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Behemoth Bash",
+        "Howl",
+        "Close Combat",
+        "Crunch"
+      ],
+      "nature": "Relaxed"
+    },
+    {
+      "name": "Tapu Bulu",
+      "species": "Tapu Bulu",
+      "level": 82,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Grassy Surge",
+      "item": "Choice Scarf",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "High Horsepower",
+        "Horn Leech",
+        "Swords Dance",
+        "Close Combat"
+      ],
+      "nature": "Brave"
+    },
+    {
+      "name": "Stunfisk",
+      "species": "Stunfisk",
+      "level": 84,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Static",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Stealth Rock",
+        "Sludge Bomb",
+        "Foul Play",
+        "Earth Power"
+      ],
+      "nature": "Mild"
+    },
+    {
+      "name": "Vikavolt",
+      "species": "Vikavolt",
+      "level": 82,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Levitate",
+      "item": "Choice Specs",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Energy Ball",
+        "Sticky Web",
+        "Thunderbolt",
+        "Volt Switch"
+      ],
+      "nature": "Bold"
+    }
+  ],
+  [
+    {
+      "name": "Dialga",
+      "species": "Dialga",
+      "level": 72,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Pressure",
+      "item": "Choice Scarf",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Draco Meteor",
+        "Fire Blast",
+        "Toxic",
+        "Stealth Rock"
+      ],
+      "nature": "Naive"
+    },
+    {
+      "name": "Tentacruel",
+      "species": "Tentacruel",
+      "level": 83,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Clear Body",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Haze",
+        "Knock Off",
+        "Scald",
+        "Toxic Spikes"
+      ],
+      "nature": "Mild"
+    },
+    {
+      "name": "Stoutland",
+      "species": "Stoutland",
+      "level": 87,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Scrappy",
+      "item": "Choice Scarf",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Superpower",
+        "Crunch",
+        "Facade",
+        "Play Rough"
+      ],
+      "nature": "Serious"
+    },
+    {
+      "name": "Jirachi",
+      "species": "Jirachi",
+      "level": 78,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Serene Grace",
+      "item": "Choice Scarf",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Fire Punch",
+        "Stealth Rock",
+        "Body Slam",
+        "Toxic"
+      ],
+      "nature": "Serious"
+    },
+    {
+      "name": "Moltres-Galar",
+      "species": "Moltres-Galar",
+      "level": 74,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Berserk",
+      "item": "Chesto Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Fiery Wrath",
+        "Hurricane",
+        "Nasty Plot",
+        "Rest"
+      ],
+      "nature": "Careful"
+    },
+    {
+      "name": "Dracozolt",
+      "species": "Dracozolt",
+      "level": 76,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Sand Rush",
+      "item": "Choice Scarf",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Outrage",
+        "Low Kick",
+        "Bolt Beak",
+        "Earthquake"
+      ],
+      "nature": "Quiet"
+    }
+  ],
+  [
+    {
+      "name": "Silvally-Poison",
+      "species": "Silvally-Poison",
+      "level": 83,
+      "gender": "M",
+      "shiny": false,
+      "ability": "RKS System",
+      "item": "Poison Memory",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Defog",
+        "Multi-Attack",
+        "Toxic",
+        "Parting Shot"
+      ],
+      "nature": "Jolly"
+    },
+    {
+      "name": "Blastoise-Gmax",
+      "species": "Blastoise-Gmax",
+      "level": 81,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Torrent",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Ice Beam",
+        "Protect",
+        "Rapid Spin",
+        "Scald"
+      ],
+      "nature": "Quiet"
+    },
+    {
+      "name": "Grimmsnarl-Gmax",
+      "species": "Grimmsnarl-Gmax",
+      "level": 85,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Prankster",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Bulk Up",
+        "Sucker Punch",
+        "Rest",
+        "Play Rough"
+      ],
+      "nature": "Quiet"
+    },
+    {
+      "name": "Obstagoon",
+      "species": "Obstagoon",
+      "level": 80,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Guts",
+      "item": "Flame Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Knock Off",
+        "Close Combat",
+        "Facade",
+        "Bulk Up"
+      ],
+      "nature": "Timid"
+    },
+    {
+      "name": "Bisharp",
+      "species": "Bisharp",
+      "level": 80,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Defiant",
+      "item": "Focus Sash",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Iron Head",
+        "Swords Dance",
+        "Knock Off",
+        "Stealth Rock"
+      ],
+      "nature": "Calm"
+    },
+    {
+      "name": "Sawk",
+      "species": "Sawk",
+      "level": 85,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Sturdy",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Poison Jab",
+        "Knock Off",
+        "Close Combat",
+        "Stone Edge"
+      ],
+      "nature": "Brave"
+    }
+  ],
+  [
+    {
+      "name": "Clefable",
+      "species": "Clefable",
+      "level": 81,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Magic Guard",
+      "item": "Leftovers",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Soft-Boiled",
+        "Calm Mind",
+        "Moonblast",
+        "Thunder Wave"
+      ],
+      "nature": "Impish"
+    },
+    {
+      "name": "Rotom",
+      "species": "Rotom",
+      "level": 85,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Levitate",
+      "item": "Leftovers",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Nasty Plot",
+        "Shadow Ball",
+        "Thunderbolt",
+        "Volt Switch"
+      ],
+      "nature": "Mild"
+    },
+    {
+      "name": "Rapidash-Galar",
+      "species": "Rapidash-Galar",
+      "level": 83,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Pastel Veil",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "High Horsepower",
+        "Morning Sun",
+        "Play Rough",
+        "Swords Dance"
+      ],
+      "nature": "Brave"
+    },
+    {
+      "name": "Armaldo",
+      "species": "Armaldo",
+      "level": 89,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Swift Swim",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Stone Edge",
+        "Stealth Rock",
+        "Earthquake",
+        "Rapid Spin"
+      ],
+      "nature": "Docile"
+    },
+    {
+      "name": "Obstagoon",
+      "species": "Obstagoon",
+      "level": 80,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Guts",
+      "item": "Flame Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Facade",
+        "Close Combat",
+        "Knock Off",
+        "Bulk Up"
+      ],
+      "nature": "Lax"
+    },
+    {
+      "name": "Naganadel",
+      "species": "Naganadel",
+      "level": 72,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Beast Boost",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Draco Meteor",
+        "Sludge Wave",
+        "Fire Blast",
+        "Air Slash"
+      ],
+      "nature": "Quiet"
+    }
+  ],
+  [
+    {
+      "name": "Pikachu",
+      "species": "Pikachu",
+      "level": 92,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Lightning Rod",
+      "item": "Light Ball",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Surf",
+        "Play Rough",
+        "Volt Switch",
+        "Knock Off"
+      ],
+      "nature": "Calm"
+    },
+    {
+      "name": "Exeggutor",
+      "species": "Exeggutor",
+      "level": 86,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Chlorophyll",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Substitute",
+        "Sleep Powder",
+        "Leech Seed",
+        "Giga Drain"
+      ],
+      "nature": "Timid"
+    },
+    {
+      "name": "Swoobat",
+      "species": "Swoobat",
+      "level": 89,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Simple",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Air Slash",
+        "Stored Power",
+        "Roost",
+        "Heat Wave"
+      ],
+      "nature": "Relaxed"
+    },
+    {
+      "name": "Silvally",
+      "species": "Silvally",
+      "level": 83,
+      "gender": "M",
+      "shiny": false,
+      "ability": "RKS System",
+      "item": "Assault Vest",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Multi-Attack",
+        "U-turn",
+        "Flamethrower",
+        "Flame Charge"
+      ],
+      "nature": "Careful"
+    },
+    {
+      "name": "Copperajah-Gmax",
+      "species": "Copperajah-Gmax",
+      "level": 84,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Heavy Metal",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Earthquake",
+        "Heat Crash",
+        "Stone Edge",
+        "Power Whip"
+      ],
+      "nature": "Lonely"
+    },
+    {
+      "name": "Heatmor",
+      "species": "Heatmor",
+      "level": 92,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Flash Fire",
+      "item": "Heavy-Duty Boots",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Fire Lash",
+        "Substitute",
+        "Giga Drain",
+        "Knock Off"
+      ],
+      "nature": "Gentle"
+    }
+  ],
+  [
+    {
+      "name": "Articuno-Galar",
+      "species": "Articuno-Galar",
+      "level": 81,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Competitive",
+      "item": "Heavy-Duty Boots",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Freezing Glare",
+        "Recover",
+        "Calm Mind",
+        "Air Slash"
+      ],
+      "nature": "Impish"
+    },
+    {
+      "name": "Hawlucha",
+      "species": "Hawlucha",
+      "level": 78,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Unburden",
+      "item": "White Herb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Stone Edge",
+        "Roost",
+        "Throat Chop",
+        "Close Combat"
+      ],
+      "nature": "Naughty"
+    },
+    {
+      "name": "Gourgeist-Large",
+      "species": "Gourgeist-Large",
+      "level": 85,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Frisk",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Synthesis",
+        "Shadow Sneak",
+        "Power Whip",
+        "Poltergeist"
+      ],
+      "nature": "Adamant"
+    },
+    {
+      "name": "Inteleon",
+      "species": "Inteleon",
+      "level": 80,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Torrent",
+      "item": "Choice Specs",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Hydro Pump",
+        "Dark Pulse",
+        "Ice Beam",
+        "Scald"
+      ],
+      "nature": "Sassy"
+    },
+    {
+      "name": "Cursola",
+      "species": "Cursola",
+      "level": 88,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Weak Armor",
+      "item": "Choice Specs",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Strength Sap",
+        "Hydro Pump",
+        "Earth Power",
+        "Stealth Rock"
+      ],
+      "nature": "Jolly"
+    },
+    {
+      "name": "Greedent",
+      "species": "Greedent",
+      "level": 84,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Cheek Pouch",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Body Slam",
+        "Earthquake",
+        "Fire Fang",
+        "Payback"
+      ],
+      "nature": "Lax"
+    }
+  ],
+  [
+    {
+      "name": "Poliwrath",
+      "species": "Poliwrath",
+      "level": 86,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Swift Swim",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Rain Dance",
+        "Close Combat",
+        "Darkest Lariat",
+        "Liquidation"
+      ],
+      "nature": "Careful"
+    },
+    {
+      "name": "Groudon",
+      "species": "Groudon",
+      "level": 71,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Drought",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Stealth Rock",
+        "Precipice Blades",
+        "Swords Dance",
+        "Heavy Slam"
+      ],
+      "nature": "Lax"
+    },
+    {
+      "name": "Nihilego",
+      "species": "Nihilego",
+      "level": 76,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Beast Boost",
+      "item": "Choice Specs",
+      "evs": {
+        "atk": 0,
+        "spd": 53
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Sludge Wave",
+        "Power Gem",
+        "Toxic Spikes",
+        "Thunderbolt"
+      ],
+      "nature": "Bashful"
+    },
+    {
+      "name": "Zygarde-10%",
+      "species": "Zygarde-10%",
+      "level": 81,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Aura Break",
+      "item": "Focus Sash",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Thousand Arrows",
+        "Iron Tail",
+        "Outrage",
+        "Extreme Speed"
+      ],
+      "nature": "Quiet"
+    },
+    {
+      "name": "Grimmsnarl-Gmax",
+      "species": "Grimmsnarl-Gmax",
+      "level": 85,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Prankster",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Rest",
+        "Play Rough",
+        "Darkest Lariat",
+        "Sucker Punch"
+      ],
+      "nature": "Lax"
+    },
+    {
+      "name": "Aggron",
+      "species": "Aggron",
+      "level": 86,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Rock Head",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Body Press",
+        "Earthquake",
+        "Heavy Slam",
+        "Stealth Rock"
+      ],
+      "nature": "Sassy"
+    }
+  ],
+  [
+    {
+      "name": "Lugia",
+      "species": "Lugia",
+      "level": 73,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Multiscale",
+      "item": "Heavy-Duty Boots",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Roost",
+        "Toxic",
+        "Earthquake",
+        "Air Slash"
+      ],
+      "nature": "Modest"
+    },
+    {
+      "name": "Stakataka",
+      "species": "Stakataka",
+      "level": 80,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Beast Boost",
+      "item": "Choice Band",
+      "evs": {
+        "spe": 0
+      },
+      "ivs": {
+        "spe": 0
+      },
+      "moves": [
+        "Gyro Ball",
+        "Earthquake",
+        "Trick Room",
+        "Stone Edge"
+      ],
+      "nature": "Relaxed"
+    },
+    {
+      "name": "Corsola-Galar",
+      "species": "Corsola-Galar",
+      "level": 83,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Cursed Body",
+      "item": "Eviolite",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Strength Sap",
+        "Stealth Rock",
+        "Night Shade",
+        "Will-O-Wisp"
+      ],
+      "nature": "Jolly"
+    },
+    {
+      "name": "Kommo-o",
+      "species": "Kommo-o",
+      "level": 80,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Bulletproof",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Clanging Scales",
+        "Clangorous Soul",
+        "Stealth Rock",
+        "Close Combat"
+      ],
+      "nature": "Naughty"
+    },
+    {
+      "name": "Marshadow",
+      "species": "Marshadow",
+      "level": 69,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Technician",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Bulk Up",
+        "Ice Punch",
+        "Spectral Thief",
+        "Shadow Sneak"
+      ],
+      "nature": "Lax"
+    },
+    {
+      "name": "Toxapex",
+      "species": "Toxapex",
+      "level": 79,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Regenerator",
+      "item": "Black Sludge",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Scald",
+        "Recover",
+        "Toxic Spikes",
+        "Toxic"
+      ],
+      "nature": "Impish"
+    }
+  ],
+  [
+    {
+      "name": "Dragonite",
+      "species": "Dragonite",
+      "level": 74,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Multiscale",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Dragon Dance",
+        "Dual Wingbeat",
+        "Outrage",
+        "Earthquake"
+      ],
+      "nature": "Adamant"
+    },
+    {
+      "name": "Obstagoon",
+      "species": "Obstagoon",
+      "level": 80,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Guts",
+      "item": "Flame Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Facade",
+        "Bulk Up",
+        "Parting Shot",
+        "Close Combat"
+      ],
+      "nature": "Naughty"
+    },
+    {
+      "name": "Rotom-Heat",
+      "species": "Rotom-Heat",
+      "level": 82,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Levitate",
+      "item": "Heavy-Duty Boots",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Defog",
+        "Will-O-Wisp",
+        "Nasty Plot",
+        "Overheat"
+      ],
+      "nature": "Sassy"
+    },
+    {
+      "name": "Gourgeist-Super",
+      "species": "Gourgeist-Super",
+      "level": 85,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Frisk",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Trick Room",
+        "Shadow Sneak",
+        "Rock Slide",
+        "Power Whip"
+      ],
+      "nature": "Impish"
+    },
+    {
+      "name": "Tangrowth",
+      "species": "Tangrowth",
+      "level": 85,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Regenerator",
+      "item": "Assault Vest",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Sludge Bomb",
+        "Sleep Powder",
+        "Leech Seed",
+        "Knock Off"
+      ],
+      "nature": "Hardy"
+    },
+    {
+      "name": "Blacephalon",
+      "species": "Blacephalon",
+      "level": 79,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Beast Boost",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Calm Mind",
+        "Trick",
+        "Fire Blast",
+        "Psyshock"
+      ],
+      "nature": "Bold"
+    }
+  ],
+  [
+    {
+      "name": "Toxtricity",
+      "species": "Toxtricity",
+      "level": 82,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Punk Rock",
+      "item": "Choice Scarf",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Sludge Wave",
+        "Overdrive",
+        "Volt Switch",
+        "Boomburst"
+      ],
+      "nature": "Timid"
+    },
+    {
+      "name": "Lapras-Gmax",
+      "species": "Lapras-Gmax",
+      "level": 85,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Water Absorb",
+      "item": "Leftovers",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Toxic",
+        "Thunderbolt",
+        "Sparkling Aria",
+        "Protect"
+      ],
+      "nature": "Bashful"
+    },
+    {
+      "name": "Silvally-Ice",
+      "species": "Silvally-Ice",
+      "level": 83,
+      "gender": "F",
+      "shiny": false,
+      "ability": "RKS System",
+      "item": "Ice Memory",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Swords Dance",
+        "Psychic Fangs",
+        "Flame Charge",
+        "Multi-Attack"
+      ],
+      "nature": "Rash"
+    },
+    {
+      "name": "Malamar",
+      "species": "Malamar",
+      "level": 81,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Contrary",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Psycho Cut",
+        "Knock Off",
+        "Substitute",
+        "Superpower"
+      ],
+      "nature": "Mild"
+    },
+    {
+      "name": "Tapu Bulu",
+      "species": "Tapu Bulu",
+      "level": 82,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Grassy Surge",
+      "item": "Lum Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Wood Hammer",
+        "Stone Edge",
+        "Swords Dance",
+        "Megahorn"
+      ],
+      "nature": "Hasty"
+    },
+    {
+      "name": "Magnezone",
+      "species": "Magnezone",
+      "level": 83,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Magnet Pull",
+      "item": "Choice Scarf",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Thunderbolt",
+        "Mirror Coat",
+        "Flash Cannon",
+        "Volt Switch"
+      ],
+      "nature": "Sassy"
+    }
+  ],
+  [
+    {
+      "name": "Silvally",
+      "species": "Silvally",
+      "level": 83,
+      "gender": "F",
+      "shiny": false,
+      "ability": "RKS System",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Multi-Attack",
+        "Swords Dance",
+        "Crunch",
+        "Explosion"
+      ],
+      "nature": "Quiet"
+    },
+    {
+      "name": "Indeedee-F",
+      "species": "Indeedee-F",
+      "level": 85,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Psychic Surge",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Expanding Force",
+        "Calm Mind",
+        "Hyper Voice",
+        "Mystical Fire"
+      ],
+      "nature": "Gentle"
+    },
+    {
+      "name": "Darmanitan",
+      "species": "Darmanitan",
+      "level": 79,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Sheer Force",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Flare Blitz",
+        "U-turn",
+        "Superpower",
+        "Rock Slide"
+      ],
+      "nature": "Relaxed"
+    },
+    {
+      "name": "Omastar",
+      "species": "Omastar",
+      "level": 82,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Swift Swim",
+      "item": "White Herb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Ice Beam",
+        "Hydro Pump",
+        "Shell Smash",
+        "Earth Power"
+      ],
+      "nature": "Sassy"
+    },
+    {
+      "name": "Duraludon",
+      "species": "Duraludon",
+      "level": 83,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Light Metal",
+      "item": "Assault Vest",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Flash Cannon",
+        "Draco Meteor",
+        "Thunderbolt",
+        "Body Press"
+      ],
+      "nature": "Bold"
+    },
+    {
+      "name": "Steelix",
+      "species": "Steelix",
+      "level": 83,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Sturdy",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Stealth Rock",
+        "Heavy Slam",
+        "Toxic",
+        "Head Smash"
+      ],
+      "nature": "Jolly"
+    }
+  ],
+  [
+    {
+      "name": "Togedemaru",
+      "species": "Togedemaru",
+      "level": 86,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Lightning Rod",
+      "item": "Focus Sash",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "U-turn",
+        "Nuzzle",
+        "Iron Head",
+        "Spiky Shield"
+      ],
+      "nature": "Jolly"
+    },
+    {
+      "name": "Rhydon",
+      "species": "Rhydon",
+      "level": 85,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Lightning Rod",
+      "item": "Eviolite",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Stone Edge",
+        "Toxic",
+        "Megahorn",
+        "Stealth Rock"
+      ],
+      "nature": "Naughty"
+    },
+    {
+      "name": "Blastoise",
+      "species": "Blastoise",
+      "level": 81,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Torrent",
+      "item": "White Herb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Shell Smash",
+        "Earthquake",
+        "Hydro Pump",
+        "Ice Beam"
+      ],
+      "nature": "Serious"
+    },
+    {
+      "name": "Gallade",
+      "species": "Gallade",
+      "level": 82,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Justified",
+      "item": "Choice Scarf",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Knock Off",
+        "Swords Dance",
+        "Zen Headbutt",
+        "Trick"
+      ],
+      "nature": "Hasty"
+    },
+    {
+      "name": "Vikavolt",
+      "species": "Vikavolt",
+      "level": 82,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Levitate",
+      "item": "Heavy-Duty Boots",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Bug Buzz",
+        "Energy Ball",
+        "Volt Switch",
+        "Sticky Web"
+      ],
+      "nature": "Careful"
+    },
+    {
+      "name": "Pangoro",
+      "species": "Pangoro",
+      "level": 84,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Scrappy",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Close Combat",
+        "Gunk Shot",
+        "Ice Punch",
+        "Parting Shot"
+      ],
+      "nature": "Adamant"
+    }
+  ],
+  [
+    {
+      "name": "Bisharp",
+      "species": "Bisharp",
+      "level": 80,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Defiant",
+      "item": "Focus Sash",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Swords Dance",
+        "Sucker Punch",
+        "Stealth Rock",
+        "Knock Off"
+      ],
+      "nature": "Quirky"
+    },
+    {
+      "name": "Hawlucha",
+      "species": "Hawlucha",
+      "level": 78,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Mold Breaker",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Roost",
+        "Close Combat",
+        "Throat Chop",
+        "Brave Bird"
+      ],
+      "nature": "Lonely"
+    },
+    {
+      "name": "Shiinotic",
+      "species": "Shiinotic",
+      "level": 89,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Effect Spore",
+      "item": "Leftovers",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Energy Ball",
+        "Leech Seed",
+        "Moonblast",
+        "Spore"
+      ],
+      "nature": "Bashful"
+    },
+    {
+      "name": "Golisopod",
+      "species": "Golisopod",
+      "level": 85,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Emergency Exit",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Liquidation",
+        "Leech Life",
+        "Spikes",
+        "Knock Off"
+      ],
+      "nature": "Impish"
+    },
+    {
+      "name": "Thundurus-Therian",
+      "species": "Thundurus-Therian",
+      "level": 78,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Volt Absorb",
+      "item": "Choice Scarf",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Volt Switch",
+        "Thunderbolt",
+        "Psychic",
+        "Nasty Plot"
+      ],
+      "nature": "Brave"
+    },
+    {
+      "name": "Naganadel",
+      "species": "Naganadel",
+      "level": 72,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Beast Boost",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Air Slash",
+        "Sludge Wave",
+        "Nasty Plot",
+        "Draco Meteor"
+      ],
+      "nature": "Jolly"
+    }
+  ],
+  [
+    {
+      "name": "Silvally-Steel",
+      "species": "Silvally-Steel",
+      "level": 83,
+      "gender": "M",
+      "shiny": false,
+      "ability": "RKS System",
+      "item": "Steel Memory",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Toxic",
+        "Thunderbolt",
+        "Parting Shot",
+        "Multi-Attack"
+      ],
+      "nature": "Relaxed"
+    },
+    {
+      "name": "Silvally-Dragon",
+      "species": "Silvally-Dragon",
+      "level": 83,
+      "gender": "F",
+      "shiny": false,
+      "ability": "RKS System",
+      "item": "Dragon Memory",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Flame Charge",
+        "Parting Shot",
+        "Multi-Attack",
+        "Swords Dance"
+      ],
+      "nature": "Brave"
+    },
+    {
+      "name": "Lugia",
+      "species": "Lugia",
+      "level": 73,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Multiscale",
+      "item": "Heavy-Duty Boots",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Toxic",
+        "Roost",
+        "Earthquake",
+        "Substitute"
+      ],
+      "nature": "Jolly"
+    },
+    {
+      "name": "Gengar-Gmax",
+      "species": "Gengar-Gmax",
+      "level": 79,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Cursed Body",
+      "item": "Focus Sash",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Focus Blast",
+        "Nasty Plot",
+        "Sludge Wave",
+        "Trick"
+      ],
+      "nature": "Docile"
+    },
+    {
+      "name": "Rhyperior",
+      "species": "Rhyperior",
+      "level": 79,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Solid Rock",
+      "item": "Weakness Policy",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Earthquake",
+        "Fire Punch",
+        "Megahorn",
+        "Rock Polish"
+      ],
+      "nature": "Bold"
+    },
+    {
+      "name": "Eternatus",
+      "species": "Eternatus",
+      "level": 69,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Pressure",
+      "item": "Metronome",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Dynamax Cannon",
+        "Flamethrower",
+        "Toxic",
+        "Recover"
+      ],
+      "nature": "Docile"
+    }
+  ],
+  [
+    {
+      "name": "Articuno-Galar",
+      "species": "Articuno-Galar",
+      "level": 81,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Competitive",
+      "item": "Leftovers",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Recover",
+        "Freezing Glare",
+        "Air Slash",
+        "Calm Mind"
+      ],
+      "nature": "Adamant"
+    },
+    {
+      "name": "Exploud",
+      "species": "Exploud",
+      "level": 86,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Scrappy",
+      "item": "Choice Specs",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Focus Blast",
+        "Boomburst",
+        "Surf",
+        "Fire Blast"
+      ],
+      "nature": "Timid"
+    },
+    {
+      "name": "Coalossal-Gmax",
+      "species": "Coalossal-Gmax",
+      "level": 89,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Flame Body",
+      "item": "Heavy-Duty Boots",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Stealth Rock",
+        "Will-O-Wisp",
+        "Overheat",
+        "Rapid Spin"
+      ],
+      "nature": "Naive"
+    },
+    {
+      "name": "Skarmory",
+      "species": "Skarmory",
+      "level": 80,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Sturdy",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Spikes",
+        "Body Press",
+        "Whirlwind",
+        "Brave Bird"
+      ],
+      "nature": "Relaxed"
+    },
+    {
+      "name": "Corsola",
+      "species": "Corsola",
+      "level": 97,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Regenerator",
+      "item": "Rocky Helmet",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Power Gem",
+        "Recover",
+        "Scald",
+        "Stealth Rock"
+      ],
+      "nature": "Gentle"
+    },
+    {
+      "name": "Cresselia",
+      "species": "Cresselia",
+      "level": 80,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Levitate",
+      "item": "Leftovers",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Thunder Wave",
+        "Moonblast",
+        "Toxic",
+        "Calm Mind"
+      ],
+      "nature": "Rash"
+    }
+  ],
+  [
+    {
+      "name": "Klinklang",
+      "species": "Klinklang",
+      "level": 83,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Clear Body",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Wild Charge",
+        "Substitute",
+        "Gear Grind",
+        "Shift Gear"
+      ],
+      "nature": "Docile"
+    },
+    {
+      "name": "Giratina",
+      "species": "Giratina",
+      "level": 74,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Pressure",
+      "item": "Leftovers",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Rest",
+        "Hex",
+        "Sleep Talk",
+        "Will-O-Wisp"
+      ],
+      "nature": "Serious"
+    },
+    {
+      "name": "Corviknight",
+      "species": "Corviknight",
+      "level": 78,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Mirror Armor",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Body Press",
+        "Bulk Up",
+        "Brave Bird",
+        "Roost"
+      ],
+      "nature": "Brave"
+    },
+    {
+      "name": "Hitmonchan",
+      "species": "Hitmonchan",
+      "level": 88,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Iron Fist",
+      "item": "Assault Vest",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Throat Chop",
+        "Drain Punch",
+        "Rapid Spin",
+        "Bulk Up"
+      ],
+      "nature": "Careful"
+    },
+    {
+      "name": "Stunfisk-Galar",
+      "species": "Stunfisk-Galar",
+      "level": 84,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Mimicry",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Pain Split",
+        "Stealth Rock",
+        "Thunder Wave",
+        "Stone Edge"
+      ],
+      "nature": "Quirky"
+    },
+    {
+      "name": "Coalossal-Gmax",
+      "species": "Coalossal-Gmax",
+      "level": 89,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Flame Body",
+      "item": "Air Balloon",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Overheat",
+        "Rapid Spin",
+        "Will-O-Wisp",
+        "Stealth Rock"
+      ],
+      "nature": "Hardy"
+    }
+  ],
+  [
+    {
+      "name": "Gourgeist-Super",
+      "species": "Gourgeist-Super",
+      "level": 85,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Frisk",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Trick Room",
+        "Rock Slide",
+        "Shadow Sneak",
+        "Power Whip"
+      ],
+      "nature": "Modest"
+    },
+    {
+      "name": "Rhyperior",
+      "species": "Rhyperior",
+      "level": 79,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Solid Rock",
+      "item": "Weakness Policy",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Earthquake",
+        "Rock Polish",
+        "Megahorn",
+        "Fire Punch"
+      ],
+      "nature": "Rash"
+    },
+    {
+      "name": "Eiscue",
+      "species": "Eiscue",
+      "level": 82,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Ice Face",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 81
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Liquidation",
+        "Icicle Crash",
+        "Belly Drum",
+        "Substitute"
+      ],
+      "nature": "Jolly"
+    },
+    {
+      "name": "Krookodile",
+      "species": "Krookodile",
+      "level": 78,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Intimidate",
+      "item": "Focus Sash",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Stealth Rock",
+        "Knock Off",
+        "Stone Edge",
+        "Earthquake"
+      ],
+      "nature": "Sassy"
+    },
+    {
+      "name": "Bewear",
+      "species": "Bewear",
+      "level": 83,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Fluffy",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Ice Punch",
+        "Darkest Lariat",
+        "Swords Dance",
+        "Close Combat"
+      ],
+      "nature": "Sassy"
+    },
+    {
+      "name": "Audino",
+      "species": "Audino",
+      "level": 92,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Regenerator",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Protect",
+        "Knock Off",
+        "Wish",
+        "Toxic"
+      ],
+      "nature": "Lonely"
+    }
+  ],
+  [
+    {
+      "name": "Golduck",
+      "species": "Golduck",
+      "level": 85,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Swift Swim",
+      "item": "Leftovers",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Substitute",
+        "Calm Mind",
+        "Focus Blast",
+        "Ice Beam"
+      ],
+      "nature": "Lax"
+    },
+    {
+      "name": "Silvally-Ice",
+      "species": "Silvally-Ice",
+      "level": 83,
+      "gender": "F",
+      "shiny": false,
+      "ability": "RKS System",
+      "item": "Ice Memory",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Multi-Attack",
+        "Swords Dance",
+        "Psychic Fangs",
+        "Flame Charge"
+      ],
+      "nature": "Bashful"
+    },
+    {
+      "name": "Zapdos",
+      "species": "Zapdos",
+      "level": 78,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Static",
+      "item": "Heavy-Duty Boots",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Defog",
+        "Roost",
+        "Discharge",
+        "Hurricane"
+      ],
+      "nature": "Mild"
+    },
+    {
+      "name": "Obstagoon",
+      "species": "Obstagoon",
+      "level": 80,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Guts",
+      "item": "Flame Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Parting Shot",
+        "Knock Off",
+        "Facade",
+        "Close Combat"
+      ],
+      "nature": "Naive"
+    },
+    {
+      "name": "Silvally-Fire",
+      "species": "Silvally-Fire",
+      "level": 83,
+      "gender": "F",
+      "shiny": false,
+      "ability": "RKS System",
+      "item": "Fire Memory",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Iron Head",
+        "Swords Dance",
+        "Multi-Attack",
+        "Crunch"
+      ],
+      "nature": "Timid"
+    },
+    {
+      "name": "Corsola",
+      "species": "Corsola",
+      "level": 97,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Regenerator",
+      "item": "Rocky Helmet",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Scald",
+        "Recover",
+        "Stealth Rock",
+        "Toxic"
+      ],
+      "nature": "Quirky"
+    }
+  ],
+  [
+    {
+      "name": "Rapidash",
+      "species": "Rapidash",
+      "level": 84,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Flash Fire",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Swords Dance",
+        "Will-O-Wisp",
+        "Morning Sun",
+        "Flare Blitz"
+      ],
+      "nature": "Naughty"
+    },
+    {
+      "name": "Ninetales",
+      "species": "Ninetales",
+      "level": 82,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Drought",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Scorching Sands",
+        "Nasty Plot",
+        "Will-O-Wisp",
+        "Solar Beam"
+      ],
+      "nature": "Quirky"
+    },
+    {
+      "name": "Gyarados",
+      "species": "Gyarados",
+      "level": 74,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Intimidate",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Bounce",
+        "Earthquake",
+        "Waterfall",
+        "Dragon Dance"
+      ],
+      "nature": "Rash"
+    },
+    {
+      "name": "Jolteon",
+      "species": "Jolteon",
+      "level": 82,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Volt Absorb",
+      "item": "Choice Specs",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Hyper Voice",
+        "Volt Switch",
+        "Shadow Ball",
+        "Thunderbolt"
+      ],
+      "nature": "Modest"
+    },
+    {
+      "name": "Toxtricity-Low-Key",
+      "species": "Toxtricity-Low-Key",
+      "level": 82,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Punk Rock",
+      "item": "Choice Specs",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Boomburst",
+        "Volt Switch",
+        "Overdrive",
+        "Sludge Wave"
+      ],
+      "nature": "Gentle"
+    },
+    {
+      "name": "Haxorus",
+      "species": "Haxorus",
+      "level": 77,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Mold Breaker",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Earthquake",
+        "Poison Jab",
+        "Outrage",
+        "Dragon Dance"
+      ],
+      "nature": "Hardy"
+    }
+  ],
+  [
+    {
+      "name": "Kingdra",
+      "species": "Kingdra",
+      "level": 82,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Swift Swim",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Draco Meteor",
+        "Rain Dance",
+        "Flip Turn",
+        "Hurricane"
+      ],
+      "nature": "Relaxed"
+    },
+    {
+      "name": "Latias",
+      "species": "Latias",
+      "level": 80,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Levitate",
+      "item": "Choice Scarf",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Draco Meteor",
+        "Roost",
+        "Calm Mind",
+        "Psyshock"
+      ],
+      "nature": "Hardy"
+    },
+    {
+      "name": "Chandelure",
+      "species": "Chandelure",
+      "level": 82,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Flash Fire",
+      "item": "Leftovers",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Calm Mind",
+        "Energy Ball",
+        "Fire Blast",
+        "Trick"
+      ],
+      "nature": "Careful"
+    },
+    {
+      "name": "Druddigon",
+      "species": "Druddigon",
+      "level": 85,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Mold Breaker",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Glare",
+        "Sucker Punch",
+        "Gunk Shot",
+        "Earthquake"
+      ],
+      "nature": "Modest"
+    },
+    {
+      "name": "Grimmsnarl-Gmax",
+      "species": "Grimmsnarl-Gmax",
+      "level": 85,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Prankster",
+      "item": "Chesto Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Trick",
+        "Darkest Lariat",
+        "Bulk Up",
+        "Rest"
+      ],
+      "nature": "Hardy"
+    },
+    {
+      "name": "Sudowoodo",
+      "species": "Sudowoodo",
+      "level": 89,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Rock Head",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Sucker Punch",
+        "Wood Hammer",
+        "Earthquake",
+        "Head Smash"
+      ],
+      "nature": "Hardy"
+    }
+  ],
+  [
+    {
+      "name": "Jynx",
+      "species": "Jynx",
+      "level": 85,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Dry Skin",
+      "item": "Leftovers",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Focus Blast",
+        "Ice Beam",
+        "Trick",
+        "Lovely Kiss"
+      ],
+      "nature": "Impish"
+    },
+    {
+      "name": "Sudowoodo",
+      "species": "Sudowoodo",
+      "level": 89,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Rock Head",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Earthquake",
+        "Head Smash",
+        "Sucker Punch",
+        "Wood Hammer"
+      ],
+      "nature": "Naughty"
+    },
+    {
+      "name": "Cherrim",
+      "species": "Cherrim",
+      "level": 94,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Flower Gift",
+      "item": "Choice Scarf",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Pollen Puff",
+        "Petal Dance",
+        "Healing Wish",
+        "Energy Ball"
+      ],
+      "nature": "Quirky"
+    },
+    {
+      "name": "Toxicroak",
+      "species": "Toxicroak",
+      "level": 85,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Dry Skin",
+      "item": "Black Sludge",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Drain Punch",
+        "Gunk Shot",
+        "Ice Punch",
+        "Knock Off"
+      ],
+      "nature": "Rash"
+    },
+    {
+      "name": "Eternatus",
+      "species": "Eternatus",
+      "level": 69,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Pressure",
+      "item": "Metronome",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Dynamax Cannon",
+        "Flamethrower",
+        "Toxic",
+        "Recover"
+      ],
+      "nature": "Careful"
+    },
+    {
+      "name": "Pyukumuku",
+      "species": "Pyukumuku",
+      "level": 86,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Unaware",
+      "item": "Leftovers",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Mirror Coat",
+        "Counter",
+        "Recover",
+        "Toxic"
+      ],
+      "nature": "Calm"
+    }
+  ],
+  [
+    {
+      "name": "Scolipede",
+      "species": "Scolipede",
+      "level": 79,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Speed Boost",
+      "item": "Focus Sash",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Protect",
+        "Toxic Spikes",
+        "Swords Dance",
+        "Megahorn"
+      ],
+      "nature": "Rash"
+    },
+    {
+      "name": "Tangrowth",
+      "species": "Tangrowth",
+      "level": 85,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Regenerator",
+      "item": "Rocky Helmet",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Leech Seed",
+        "Giga Drain",
+        "Sludge Bomb",
+        "Earthquake"
+      ],
+      "nature": "Brave"
+    },
+    {
+      "name": "Hitmontop",
+      "species": "Hitmontop",
+      "level": 86,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Technician",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Triple Axel",
+        "Close Combat",
+        "Toxic",
+        "Earthquake"
+      ],
+      "nature": "Lonely"
+    },
+    {
+      "name": "Salazzle",
+      "species": "Salazzle",
+      "level": 81,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Corrosion",
+      "item": "Black Sludge",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Toxic",
+        "Substitute",
+        "Protect",
+        "Flamethrower"
+      ],
+      "nature": "Impish"
+    },
+    {
+      "name": "Shiinotic",
+      "species": "Shiinotic",
+      "level": 89,
+      "gender": "F",
+      "shiny": true,
+      "ability": "Effect Spore",
+      "item": "Leftovers",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Moonblast",
+        "Strength Sap",
+        "Spore",
+        "Leech Seed"
+      ],
+      "nature": "Bold"
+    },
+    {
+      "name": "Lurantis",
+      "species": "Lurantis",
+      "level": 89,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Contrary",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Superpower",
+        "Knock Off",
+        "Defog",
+        "Leaf Storm"
+      ],
+      "nature": "Impish"
+    }
+  ],
+  [
+    {
+      "name": "Magmortar",
+      "species": "Magmortar",
+      "level": 88,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Flame Body",
+      "item": "Heavy-Duty Boots",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Thunderbolt",
+        "Focus Blast",
+        "Fire Blast",
+        "Psychic"
+      ],
+      "nature": "Quiet"
+    },
+    {
+      "name": "Octillery",
+      "species": "Octillery",
+      "level": 90,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Suction Cups",
+      "item": "Choice Specs",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Energy Ball",
+        "Ice Beam",
+        "Hydro Pump",
+        "Thunder Wave"
+      ],
+      "nature": "Gentle"
+    },
+    {
+      "name": "Pinsir",
+      "species": "Pinsir",
+      "level": 84,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Moxie",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Close Combat",
+        "Earthquake",
+        "X-Scissor",
+        "Knock Off"
+      ],
+      "nature": "Brave"
+    },
+    {
+      "name": "Seaking",
+      "species": "Seaking",
+      "level": 90,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Swift Swim",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Swords Dance",
+        "Drill Run",
+        "Waterfall",
+        "Knock Off"
+      ],
+      "nature": "Serious"
+    },
+    {
+      "name": "Blastoise-Gmax",
+      "species": "Blastoise-Gmax",
+      "level": 81,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Torrent",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Ice Beam",
+        "Protect",
+        "Toxic",
+        "Rapid Spin"
+      ],
+      "nature": "Lonely"
+    },
+    {
+      "name": "Gallade",
+      "species": "Gallade",
+      "level": 82,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Justified",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Swords Dance",
+        "Zen Headbutt",
+        "Knock Off",
+        "Trick"
+      ],
+      "nature": "Relaxed"
+    }
+  ],
+  [
+    {
+      "name": "Primarina",
+      "species": "Primarina",
+      "level": 81,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Torrent",
+      "item": "Choice Scarf",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Moonblast",
+        "Hydro Pump",
+        "Psychic",
+        "Energy Ball"
+      ],
+      "nature": "Gentle"
+    },
+    {
+      "name": "Mantine",
+      "species": "Mantine",
+      "level": 87,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Water Absorb",
+      "item": "Leftovers",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Scald",
+        "Defog",
+        "Hurricane",
+        "Toxic"
+      ],
+      "nature": "Rash"
+    },
+    {
+      "name": "Roserade",
+      "species": "Roserade",
+      "level": 84,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Natural Cure",
+      "item": "Black Sludge",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Leaf Storm",
+        "Toxic Spikes",
+        "Synthesis",
+        "Sleep Powder"
+      ],
+      "nature": "Brave"
+    },
+    {
+      "name": "Sableye",
+      "species": "Sableye",
+      "level": 90,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Prankster",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Toxic",
+        "Recover",
+        "Taunt",
+        "Knock Off"
+      ],
+      "nature": "Quirky"
+    },
+    {
+      "name": "Virizion",
+      "species": "Virizion",
+      "level": 81,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Justified",
+      "item": "Lum Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Close Combat",
+        "Swords Dance",
+        "Leaf Blade",
+        "Stone Edge"
+      ],
+      "nature": "Docile"
+    },
+    {
+      "name": "Stunfisk-Galar",
+      "species": "Stunfisk-Galar",
+      "level": 84,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Mimicry",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Stealth Rock",
+        "Earthquake",
+        "Stone Edge",
+        "Thunder Wave"
+      ],
+      "nature": "Gentle"
+    }
+  ],
+  [
+    {
+      "name": "Reshiram",
+      "species": "Reshiram",
+      "level": 72,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Turboblaze",
+      "item": "Assault Vest",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Earth Power",
+        "Defog",
+        "Stone Edge",
+        "Roost"
+      ],
+      "nature": "Lax"
+    },
+    {
+      "name": "Dubwool",
+      "species": "Dubwool",
+      "level": 87,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Fluffy",
+      "item": "Leftovers",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Body Press",
+        "Cotton Guard",
+        "Rest",
+        "Sleep Talk"
+      ],
+      "nature": "Mild"
+    },
+    {
+      "name": "Porygon-Z",
+      "species": "Porygon-Z",
+      "level": 80,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Adaptability",
+      "item": "Choice Scarf",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Dark Pulse",
+        "Thunderbolt",
+        "Ice Beam",
+        "Tri Attack"
+      ],
+      "nature": "Jolly"
+    },
+    {
+      "name": "Espeon",
+      "species": "Espeon",
+      "level": 81,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Magic Bounce",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Dazzling Gleam",
+        "Calm Mind",
+        "Psychic",
+        "Morning Sun"
+      ],
+      "nature": "Hasty"
+    },
+    {
+      "name": "Xurkitree",
+      "species": "Xurkitree",
+      "level": 76,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Beast Boost",
+      "item": "Choice Specs",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Hypnosis",
+        "Thunderbolt",
+        "Energy Ball",
+        "Volt Switch"
+      ],
+      "nature": "Sassy"
+    },
+    {
+      "name": "Cinderace-Gmax",
+      "species": "Cinderace-Gmax",
+      "level": 73,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Libero",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Pyro Ball",
+        "Sucker Punch",
+        "High Jump Kick",
+        "Bulk Up"
+      ],
+      "nature": "Timid"
+    }
+  ],
+  [
+    {
+      "name": "Skuntank",
+      "species": "Skuntank",
+      "level": 84,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Aftermath",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Toxic",
+        "Taunt",
+        "Crunch",
+        "Defog"
+      ],
+      "nature": "Brave"
+    },
+    {
+      "name": "Bisharp",
+      "species": "Bisharp",
+      "level": 80,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Defiant",
+      "item": "Focus Sash",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Iron Head",
+        "Knock Off",
+        "Swords Dance",
+        "Stealth Rock"
+      ],
+      "nature": "Brave"
+    },
+    {
+      "name": "Aerodactyl",
+      "species": "Aerodactyl",
+      "level": 83,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Unnerve",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Dual Wingbeat",
+        "Earthquake",
+        "Stone Edge",
+        "Aqua Tail"
+      ],
+      "nature": "Quirky"
+    },
+    {
+      "name": "Dunsparce",
+      "species": "Dunsparce",
+      "level": 90,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Serene Grace",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Roost",
+        "Body Slam",
+        "Coil",
+        "Earthquake"
+      ],
+      "nature": "Naive"
+    },
+    {
+      "name": "Drapion",
+      "species": "Drapion",
+      "level": 80,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Sniper",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Aqua Tail",
+        "Taunt",
+        "Toxic Spikes",
+        "Earthquake"
+      ],
+      "nature": "Hardy"
+    },
+    {
+      "name": "Pangoro",
+      "species": "Pangoro",
+      "level": 84,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Scrappy",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Ice Punch",
+        "Gunk Shot",
+        "Knock Off",
+        "Parting Shot"
+      ],
+      "nature": "Hasty"
+    }
+  ],
+  [
+    {
+      "name": "Ninetales",
+      "species": "Ninetales",
+      "level": 82,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Drought",
+      "item": "Leftovers",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Fire Blast",
+        "Scorching Sands",
+        "Nasty Plot",
+        "Will-O-Wisp"
+      ],
+      "nature": "Naive"
+    },
+    {
+      "name": "Drifblim",
+      "species": "Drifblim",
+      "level": 86,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Unburden",
+      "item": "Sitrus Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Thunderbolt",
+        "Strength Sap",
+        "Shadow Ball",
+        "Calm Mind"
+      ],
+      "nature": "Docile"
+    },
+    {
+      "name": "Golisopod",
+      "species": "Golisopod",
+      "level": 85,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Emergency Exit",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Liquidation",
+        "Knock Off",
+        "First Impression",
+        "Leech Life"
+      ],
+      "nature": "Brave"
+    },
+    {
+      "name": "Scrafty",
+      "species": "Scrafty",
+      "level": 82,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Intimidate",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Poison Jab",
+        "Knock Off",
+        "Ice Punch",
+        "Dragon Dance"
+      ],
+      "nature": "Serious"
+    },
+    {
+      "name": "Venusaur",
+      "species": "Venusaur",
+      "level": 84,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Overgrow",
+      "item": "Black Sludge",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Sleep Powder",
+        "Giga Drain",
+        "Sludge Bomb",
+        "Substitute"
+      ],
+      "nature": "Hardy"
+    },
+    {
+      "name": "Lurantis",
+      "species": "Lurantis",
+      "level": 89,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Contrary",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Synthesis",
+        "Defog",
+        "Knock Off",
+        "Leaf Storm"
+      ],
+      "nature": "Adamant"
+    }
+  ],
+  [
+    {
+      "name": "Aegislash",
+      "species": "Aegislash",
+      "level": 79,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Stance Change",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Substitute",
+        "Flash Cannon",
+        "Shadow Sneak",
+        "Shadow Ball"
+      ],
+      "nature": "Sassy"
+    },
+    {
+      "name": "Keldeo-Resolute",
+      "species": "Keldeo-Resolute",
+      "level": 77,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Justified",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Calm Mind",
+        "Substitute",
+        "Hydro Pump",
+        "Scald"
+      ],
+      "nature": "Lax"
+    },
+    {
+      "name": "Sceptile",
+      "species": "Sceptile",
+      "level": 86,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Overgrow",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Leech Seed",
+        "Leaf Storm",
+        "Focus Blast",
+        "Giga Drain"
+      ],
+      "nature": "Relaxed"
+    },
+    {
+      "name": "Torkoal",
+      "species": "Torkoal",
+      "level": 87,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Drought",
+      "item": "Heavy-Duty Boots",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Solar Beam",
+        "Rapid Spin",
+        "Lava Plume",
+        "Earthquake"
+      ],
+      "nature": "Timid"
+    },
+    {
+      "name": "Gourgeist-Large",
+      "species": "Gourgeist-Large",
+      "level": 85,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Frisk",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Shadow Sneak",
+        "Power Whip",
+        "Will-O-Wisp",
+        "Poltergeist"
+      ],
+      "nature": "Jolly"
+    },
+    {
+      "name": "Hawlucha",
+      "species": "Hawlucha",
+      "level": 78,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Unburden",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Close Combat",
+        "Stone Edge",
+        "Swords Dance",
+        "Brave Bird"
+      ],
+      "nature": "Quiet"
+    }
+  ],
+  [
+    {
+      "name": "Abomasnow",
+      "species": "Abomasnow",
+      "level": 83,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Snow Warning",
+      "item": "Light Clay",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Aurora Veil",
+        "Ice Shard",
+        "Blizzard",
+        "Wood Hammer"
+      ],
+      "nature": "Serious"
+    },
+    {
+      "name": "Haxorus",
+      "species": "Haxorus",
+      "level": 77,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Mold Breaker",
+      "item": "Choice Scarf",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Outrage",
+        "Dragon Dance",
+        "Earthquake",
+        "Poison Jab"
+      ],
+      "nature": "Brave"
+    },
+    {
+      "name": "Exeggutor-Alola",
+      "species": "Exeggutor-Alola",
+      "level": 86,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Frisk",
+      "item": "Choice Specs",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Leaf Storm",
+        "Giga Drain",
+        "Flamethrower",
+        "Trick Room"
+      ],
+      "nature": "Brave"
+    },
+    {
+      "name": "Bouffalant",
+      "species": "Bouffalant",
+      "level": 84,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Sap Sipper",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Close Combat",
+        "Megahorn",
+        "Earthquake",
+        "Head Charge"
+      ],
+      "nature": "Hasty"
+    },
+    {
+      "name": "Lopunny",
+      "species": "Lopunny",
+      "level": 93,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Cute Charm",
+      "item": "Toxic Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Healing Wish",
+        "Facade",
+        "Switcheroo",
+        "Close Combat"
+      ],
+      "nature": "Timid"
+    },
+    {
+      "name": "Dunsparce",
+      "species": "Dunsparce",
+      "level": 90,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Serene Grace",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Coil",
+        "Earthquake",
+        "Roost",
+        "Body Slam"
+      ],
+      "nature": "Quiet"
+    }
+  ],
+  [
+    {
+      "name": "Zeraora",
+      "species": "Zeraora",
+      "level": 76,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Volt Absorb",
+      "item": "Assault Vest",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Volt Switch",
+        "Bulk Up",
+        "Grass Knot",
+        "Plasma Fists"
+      ],
+      "nature": "Calm"
+    },
+    {
+      "name": "Marshadow",
+      "species": "Marshadow",
+      "level": 69,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Technician",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Rock Tomb",
+        "Shadow Sneak",
+        "Spectral Thief",
+        "Close Combat"
+      ],
+      "nature": "Hardy"
+    },
+    {
+      "name": "Rotom-Heat",
+      "species": "Rotom-Heat",
+      "level": 82,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Levitate",
+      "item": "Leftovers",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Overheat",
+        "Nasty Plot",
+        "Volt Switch",
+        "Defog"
+      ],
+      "nature": "Quiet"
+    },
+    {
+      "name": "Beheeyem",
+      "species": "Beheeyem",
+      "level": 89,
+      "gender": "F",
+      "shiny": true,
+      "ability": "Analytic",
+      "item": "Choice Specs",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Dark Pulse",
+        "Psychic",
+        "Thunderbolt",
+        "Trick Room"
+      ],
+      "nature": "Timid"
+    },
+    {
+      "name": "Scizor",
+      "species": "Scizor",
+      "level": 79,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Technician",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Bullet Punch",
+        "Dual Wingbeat",
+        "Knock Off",
+        "Roost"
+      ],
+      "nature": "Adamant"
+    },
+    {
+      "name": "Naganadel",
+      "species": "Naganadel",
+      "level": 72,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Beast Boost",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Sludge Wave",
+        "Fire Blast",
+        "Draco Meteor",
+        "Air Slash"
+      ],
+      "nature": "Adamant"
+    }
+  ],
+  [
+    {
+      "name": "Skarmory",
+      "species": "Skarmory",
+      "level": 80,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Sturdy",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Body Press",
+        "Stealth Rock",
+        "Spikes",
+        "Brave Bird"
+      ],
+      "nature": "Lonely"
+    },
+    {
+      "name": "Vanilluxe",
+      "species": "Vanilluxe",
+      "level": 82,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Snow Warning",
+      "item": "Assault Vest",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Blizzard",
+        "Freeze-Dry",
+        "Flash Cannon",
+        "Aurora Veil"
+      ],
+      "nature": "Timid"
+    },
+    {
+      "name": "Runerigus",
+      "species": "Runerigus",
+      "level": 84,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Wandering Spirit",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Stealth Rock",
+        "Poltergeist",
+        "Haze",
+        "Toxic Spikes"
+      ],
+      "nature": "Docile"
+    },
+    {
+      "name": "Gengar-Gmax",
+      "species": "Gengar-Gmax",
+      "level": 79,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Cursed Body",
+      "item": "Choice Specs",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Trick",
+        "Sludge Wave",
+        "Shadow Ball",
+        "Nasty Plot"
+      ],
+      "nature": "Lax"
+    },
+    {
+      "name": "Morpeko",
+      "species": "Morpeko",
+      "level": 86,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Hunger Switch",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Psychic Fangs",
+        "Protect",
+        "Parting Shot",
+        "Foul Play"
+      ],
+      "nature": "Hasty"
+    },
+    {
+      "name": "Arctovish",
+      "species": "Arctovish",
+      "level": 87,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Water Absorb",
+      "item": "Assault Vest",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Fishious Rend",
+        "Icicle Crash",
+        "Body Slam",
+        "Psychic Fangs"
+      ],
+      "nature": "Bashful"
+    }
+  ],
+  [
+    {
+      "name": "Pangoro",
+      "species": "Pangoro",
+      "level": 84,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Scrappy",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Ice Punch",
+        "Gunk Shot",
+        "Parting Shot",
+        "Close Combat"
+      ],
+      "nature": "Sassy"
+    },
+    {
+      "name": "Golurk",
+      "species": "Golurk",
+      "level": 82,
+      "gender": "F",
+      "shiny": false,
+      "ability": "No Guard",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Stone Edge",
+        "Earthquake",
+        "Dynamic Punch",
+        "Rock Polish"
+      ],
+      "nature": "Jolly"
+    },
+    {
+      "name": "Blaziken",
+      "species": "Blaziken",
+      "level": 75,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Speed Boost",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Swords Dance",
+        "Stone Edge",
+        "Knock Off",
+        "Flare Blitz"
+      ],
+      "nature": "Lonely"
+    },
+    {
+      "name": "Conkeldurr",
+      "species": "Conkeldurr",
+      "level": 78,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Guts",
+      "item": "Flame Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Close Combat",
+        "Drain Punch",
+        "Mach Punch",
+        "Facade"
+      ],
+      "nature": "Calm"
+    },
+    {
+      "name": "Polteageist",
+      "species": "Polteageist",
+      "level": 77,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Cursed Body",
+      "item": "White Herb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Shell Smash",
+        "Strength Sap",
+        "Shadow Ball",
+        "Stored Power"
+      ],
+      "nature": "Serious"
+    },
+    {
+      "name": "Runerigus",
+      "species": "Runerigus",
+      "level": 84,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Wandering Spirit",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Poltergeist",
+        "Stealth Rock",
+        "Haze",
+        "Toxic Spikes"
+      ],
+      "nature": "Lax"
+    }
+  ],
+  [
+    {
+      "name": "Groudon",
+      "species": "Groudon",
+      "level": 71,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Drought",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Swords Dance",
+        "Precipice Blades",
+        "Heavy Slam",
+        "Heat Crash"
+      ],
+      "nature": "Bold"
+    },
+    {
+      "name": "Togekiss",
+      "species": "Togekiss",
+      "level": 80,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Serene Grace",
+      "item": "Choice Scarf",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Aura Sphere",
+        "Thunder Wave",
+        "Trick",
+        "Air Slash"
+      ],
+      "nature": "Docile"
+    },
+    {
+      "name": "Volcanion",
+      "species": "Volcanion",
+      "level": 78,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Water Absorb",
+      "item": "Choice Scarf",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Sludge Bomb",
+        "Defog",
+        "Steam Eruption",
+        "Earth Power"
+      ],
+      "nature": "Quirky"
+    },
+    {
+      "name": "Reshiram",
+      "species": "Reshiram",
+      "level": 72,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Turboblaze",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Earth Power",
+        "Draco Meteor",
+        "Defog",
+        "Toxic"
+      ],
+      "nature": "Impish"
+    },
+    {
+      "name": "Persian",
+      "species": "Persian",
+      "level": 89,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Limber",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Play Rough",
+        "Double-Edge",
+        "Knock Off",
+        "U-turn"
+      ],
+      "nature": "Bashful"
+    },
+    {
+      "name": "Nidoqueen",
+      "species": "Nidoqueen",
+      "level": 82,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Sheer Force",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Toxic Spikes",
+        "Earth Power",
+        "Ice Beam",
+        "Sludge Wave"
+      ],
+      "nature": "Hasty"
+    }
+  ],
+  [
+    {
+      "name": "Copperajah-Gmax",
+      "species": "Copperajah-Gmax",
+      "level": 84,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Heavy Metal",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Earthquake",
+        "Heat Crash",
+        "Heavy Slam",
+        "Stone Edge"
+      ],
+      "nature": "Lonely"
+    },
+    {
+      "name": "Azelf",
+      "species": "Azelf",
+      "level": 81,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Levitate",
+      "item": "Focus Sash",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Dazzling Gleam",
+        "Stealth Rock",
+        "U-turn",
+        "Taunt"
+      ],
+      "nature": "Naughty"
+    },
+    {
+      "name": "Tapu Bulu",
+      "species": "Tapu Bulu",
+      "level": 82,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Grassy Surge",
+      "item": "Lum Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Swords Dance",
+        "Stone Edge",
+        "Horn Leech",
+        "High Horsepower"
+      ],
+      "nature": "Bold"
+    },
+    {
+      "name": "Lopunny",
+      "species": "Lopunny",
+      "level": 93,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Cute Charm",
+      "item": "Toxic Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Healing Wish",
+        "Close Combat",
+        "Facade",
+        "Switcheroo"
+      ],
+      "nature": "Naughty"
+    },
+    {
+      "name": "Ninjask",
+      "species": "Ninjask",
+      "level": 86,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Speed Boost",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Swords Dance",
+        "U-turn",
+        "Leech Life",
+        "Acrobatics"
+      ],
+      "nature": "Gentle"
+    },
+    {
+      "name": "Absol",
+      "species": "Absol",
+      "level": 84,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Justified",
+      "item": "Focus Sash",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Close Combat",
+        "Play Rough",
+        "Knock Off",
+        "Swords Dance"
+      ],
+      "nature": "Hardy"
+    }
+  ],
+  [
+    {
+      "name": "Indeedee",
+      "species": "Indeedee",
+      "level": 84,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Psychic Surge",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Expanding Force",
+        "Mystical Fire",
+        "Trick",
+        "Calm Mind"
+      ],
+      "nature": "Quirky"
+    },
+    {
+      "name": "Talonflame",
+      "species": "Talonflame",
+      "level": 81,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Flame Body",
+      "item": "Heavy-Duty Boots",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "U-turn",
+        "Roost",
+        "Flare Blitz",
+        "Swords Dance"
+      ],
+      "nature": "Adamant"
+    },
+    {
+      "name": "Glastrier",
+      "species": "Glastrier",
+      "level": 83,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Chilling Neigh",
+      "item": "Lum Berry",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Close Combat",
+        "High Horsepower",
+        "Icicle Crash",
+        "Swords Dance"
+      ],
+      "nature": "Naive"
+    },
+    {
+      "name": "Magearna",
+      "species": "Magearna",
+      "level": 73,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Soul-Heart",
+      "item": "Leftovers",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Flash Cannon",
+        "Calm Mind",
+        "Agility",
+        "Fleur Cannon"
+      ],
+      "nature": "Calm"
+    },
+    {
+      "name": "Stunfisk",
+      "species": "Stunfisk",
+      "level": 84,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Static",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Discharge",
+        "Earth Power",
+        "Foul Play",
+        "Stealth Rock"
+      ],
+      "nature": "Lax"
+    },
+    {
+      "name": "Noivern",
+      "species": "Noivern",
+      "level": 83,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Infiltrator",
+      "item": "Heavy-Duty Boots",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Hurricane",
+        "Draco Meteor",
+        "Switcheroo",
+        "Defog"
+      ],
+      "nature": "Adamant"
+    }
+  ],
+  [
+    {
+      "name": "Gastrodon",
+      "species": "Gastrodon",
+      "level": 85,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Storm Drain",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Recover",
+        "Ice Beam",
+        "Scald",
+        "Earthquake"
+      ],
+      "nature": "Hasty"
+    },
+    {
+      "name": "Solgaleo",
+      "species": "Solgaleo",
+      "level": 71,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Full Metal Body",
+      "item": "Choice Scarf",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Sunsteel Strike",
+        "Knock Off",
+        "Flare Blitz",
+        "Psychic Fangs"
+      ],
+      "nature": "Careful"
+    },
+    {
+      "name": "Lycanroc-Midnight",
+      "species": "Lycanroc-Midnight",
+      "level": 84,
+      "gender": "M",
+      "shiny": false,
+      "ability": "No Guard",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Stone Edge",
+        "Stealth Rock",
+        "Sucker Punch",
+        "Close Combat"
+      ],
+      "nature": "Naive"
+    },
+    {
+      "name": "Lunatone",
+      "species": "Lunatone",
+      "level": 88,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Levitate",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Stealth Rock",
+        "Psychic",
+        "Power Gem",
+        "Nasty Plot"
+      ],
+      "nature": "Lonely"
+    },
+    {
+      "name": "Scyther",
+      "species": "Scyther",
+      "level": 82,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Technician",
+      "item": "Eviolite",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "U-turn",
+        "Roost",
+        "Dual Wingbeat",
+        "Brick Break"
+      ],
+      "nature": "Timid"
+    },
+    {
+      "name": "Barbaracle",
+      "species": "Barbaracle",
+      "level": 80,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Tough Claws",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Stone Edge",
+        "Earthquake",
+        "Cross Chop",
+        "Liquidation"
+      ],
+      "nature": "Bashful"
+    }
+  ],
+  [
+    {
+      "name": "Cradily",
+      "species": "Cradily",
+      "level": 87,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Storm Drain",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Swords Dance",
+        "Toxic",
+        "Stone Edge",
+        "Stealth Rock"
+      ],
+      "nature": "Bashful"
+    },
+    {
+      "name": "Cinderace",
+      "species": "Cinderace",
+      "level": 73,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Libero",
+      "item": "Heavy-Duty Boots",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Pyro Ball",
+        "High Jump Kick",
+        "Zen Headbutt",
+        "U-turn"
+      ],
+      "nature": "Calm"
+    },
+    {
+      "name": "Kartana",
+      "species": "Kartana",
+      "level": 72,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Beast Boost",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Swords Dance",
+        "Sacred Sword",
+        "Leaf Blade",
+        "Knock Off"
+      ],
+      "nature": "Adamant"
+    },
+    {
+      "name": "Latias",
+      "species": "Latias",
+      "level": 80,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Levitate",
+      "item": "Leftovers",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Mystical Fire",
+        "Calm Mind",
+        "Draco Meteor",
+        "Healing Wish"
+      ],
+      "nature": "Hardy"
+    },
+    {
+      "name": "Copperajah",
+      "species": "Copperajah",
+      "level": 84,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Sheer Force",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Stealth Rock",
+        "Iron Head",
+        "Earthquake",
+        "Rock Slide"
+      ],
+      "nature": "Lax"
+    },
+    {
+      "name": "Hitmonchan",
+      "species": "Hitmonchan",
+      "level": 88,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Iron Fist",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Drain Punch",
+        "Ice Punch",
+        "Bulk Up",
+        "Throat Chop"
+      ],
+      "nature": "Gentle"
+    }
+  ],
+  [
+    {
+      "name": "Marshadow",
+      "species": "Marshadow",
+      "level": 69,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Technician",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Rock Tomb",
+        "Ice Punch",
+        "Spectral Thief",
+        "Close Combat"
+      ],
+      "nature": "Docile"
+    },
+    {
+      "name": "Dracovish",
+      "species": "Dracovish",
+      "level": 78,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Sand Rush",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Fishious Rend",
+        "Crunch",
+        "Ice Fang",
+        "Psychic Fangs"
+      ],
+      "nature": "Adamant"
+    },
+    {
+      "name": "Scyther",
+      "species": "Scyther",
+      "level": 82,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Technician",
+      "item": "Eviolite",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Roost",
+        "Knock Off",
+        "Swords Dance",
+        "Dual Wingbeat"
+      ],
+      "nature": "Naughty"
+    },
+    {
+      "name": "Oranguru",
+      "species": "Oranguru",
+      "level": 90,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Inner Focus",
+      "item": "Leftovers",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Nasty Plot",
+        "Focus Blast",
+        "Psychic",
+        "Trick Room"
+      ],
+      "nature": "Naive"
+    },
+    {
+      "name": "Politoed",
+      "species": "Politoed",
+      "level": 87,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Drizzle",
+      "item": "Chesto Berry",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Encore",
+        "Protect",
+        "Scald",
+        "Ice Beam"
+      ],
+      "nature": "Jolly"
+    },
+    {
+      "name": "Krookodile",
+      "species": "Krookodile",
+      "level": 78,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Intimidate",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Stealth Rock",
+        "Knock Off",
+        "Stone Edge",
+        "Earthquake"
+      ],
+      "nature": "Adamant"
+    }
+  ],
+  [
+    {
+      "name": "Naganadel",
+      "species": "Naganadel",
+      "level": 72,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Beast Boost",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Sludge Wave",
+        "Draco Meteor",
+        "Air Slash",
+        "Fire Blast"
+      ],
+      "nature": "Sassy"
+    },
+    {
+      "name": "Rapidash-Galar",
+      "species": "Rapidash-Galar",
+      "level": 83,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Pastel Veil",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Swords Dance",
+        "Play Rough",
+        "Morning Sun",
+        "High Horsepower"
+      ],
+      "nature": "Naive"
+    },
+    {
+      "name": "Mienshao",
+      "species": "Mienshao",
+      "level": 81,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Regenerator",
+      "item": "Choice Scarf",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Stone Edge",
+        "U-turn",
+        "Close Combat",
+        "Fake Out"
+      ],
+      "nature": "Mild"
+    },
+    {
+      "name": "Slurpuff",
+      "species": "Slurpuff",
+      "level": 79,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Unburden",
+      "item": "Sitrus Berry",
+      "evs": {
+        "hp": 81
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Belly Drum",
+        "Drain Punch",
+        "Facade",
+        "Play Rough"
+      ],
+      "nature": "Impish"
+    },
+    {
+      "name": "Magmortar",
+      "species": "Magmortar",
+      "level": 88,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Vital Spirit",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Psychic",
+        "Fire Blast",
+        "Earthquake",
+        "Focus Blast"
+      ],
+      "nature": "Sassy"
+    },
+    {
+      "name": "Silvally-Electric",
+      "species": "Silvally-Electric",
+      "level": 83,
+      "gender": "M",
+      "shiny": false,
+      "ability": "RKS System",
+      "item": "Electric Memory",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Toxic",
+        "Flamethrower",
+        "Ice Beam",
+        "Parting Shot"
+      ],
+      "nature": "Lax"
+    }
+  ],
+  [
+    {
+      "name": "Hitmontop",
+      "species": "Hitmontop",
+      "level": 86,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Intimidate",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Sucker Punch",
+        "Toxic",
+        "Triple Axel",
+        "Close Combat"
+      ],
+      "nature": "Bold"
+    },
+    {
+      "name": "Palossand",
+      "species": "Palossand",
+      "level": 88,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Sand Veil",
+      "item": "Leftovers",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Scorching Sands",
+        "Shore Up",
+        "Stealth Rock",
+        "Earth Power"
+      ],
+      "nature": "Impish"
+    },
+    {
+      "name": "Ribombee",
+      "species": "Ribombee",
+      "level": 80,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Shield Dust",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Moonblast",
+        "Psychic",
+        "U-turn",
+        "Sticky Web"
+      ],
+      "nature": "Hardy"
+    },
+    {
+      "name": "Carracosta",
+      "species": "Carracosta",
+      "level": 83,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Swift Swim",
+      "item": "White Herb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Aqua Jet",
+        "Superpower",
+        "Stone Edge",
+        "Hydro Pump"
+      ],
+      "nature": "Adamant"
+    },
+    {
+      "name": "Relicanth",
+      "species": "Relicanth",
+      "level": 88,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Rock Head",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Body Press",
+        "Earthquake",
+        "Head Smash",
+        "Liquidation"
+      ],
+      "nature": "Brave"
+    },
+    {
+      "name": "Porygon2",
+      "species": "Porygon2",
+      "level": 82,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Trace",
+      "item": "Eviolite",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Toxic",
+        "Recover",
+        "Ice Beam",
+        "Tri Attack"
+      ],
+      "nature": "Mild"
+    }
+  ],
+  [
+    {
+      "name": "Silvally-Electric",
+      "species": "Silvally-Electric",
+      "level": 83,
+      "gender": "M",
+      "shiny": false,
+      "ability": "RKS System",
+      "item": "Electric Memory",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Flamethrower",
+        "Ice Beam",
+        "Multi-Attack",
+        "Parting Shot"
+      ],
+      "nature": "Mild"
+    },
+    {
+      "name": "Diancie",
+      "species": "Diancie",
+      "level": 82,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Clear Body",
+      "item": "Assault Vest",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Body Press",
+        "Diamond Storm",
+        "Earth Power",
+        "Moonblast"
+      ],
+      "nature": "Naughty"
+    },
+    {
+      "name": "Salamence",
+      "species": "Salamence",
+      "level": 73,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Moxie",
+      "item": "Life Orb",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Earthquake",
+        "Dual Wingbeat",
+        "Dragon Dance",
+        "Outrage"
+      ],
+      "nature": "Timid"
+    },
+    {
+      "name": "Butterfree-Gmax",
+      "species": "Butterfree-Gmax",
+      "level": 87,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Tinted Lens",
+      "item": "Heavy-Duty Boots",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Sleep Powder",
+        "Bug Buzz",
+        "Air Slash",
+        "Quiver Dance"
+      ],
+      "nature": "Hardy"
+    },
+    {
+      "name": "Klinklang",
+      "species": "Klinklang",
+      "level": 83,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Clear Body",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Gear Grind",
+        "Substitute",
+        "Shift Gear",
+        "Wild Charge"
+      ],
+      "nature": "Brave"
+    },
+    {
+      "name": "Silvally-Ghost",
+      "species": "Silvally-Ghost",
+      "level": 83,
+      "gender": "F",
+      "shiny": false,
+      "ability": "RKS System",
+      "item": "Ghost Memory",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Swords Dance",
+        "X-Scissor",
+        "Flame Charge",
+        "Multi-Attack"
+      ],
+      "nature": "Relaxed"
+    }
+  ],
+  [
+    {
+      "name": "Espeon",
+      "species": "Espeon",
+      "level": 81,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Magic Bounce",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Shadow Ball",
+        "Psychic",
+        "Morning Sun",
+        "Dazzling Gleam"
+      ],
+      "nature": "Brave"
+    },
+    {
+      "name": "Throh",
+      "species": "Throh",
+      "level": 86,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Guts",
+      "item": "Leftovers",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Circle Throw",
+        "Rest",
+        "Knock Off",
+        "Bulk Up"
+      ],
+      "nature": "Quirky"
+    },
+    {
+      "name": "Silvally-Ice",
+      "species": "Silvally-Ice",
+      "level": 83,
+      "gender": "M",
+      "shiny": false,
+      "ability": "RKS System",
+      "item": "Ice Memory",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Psychic Fangs",
+        "Swords Dance",
+        "Multi-Attack",
+        "Flame Charge"
+      ],
+      "nature": "Relaxed"
+    },
+    {
+      "name": "Golduck",
+      "species": "Golduck",
+      "level": 85,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Swift Swim",
+      "item": "Life Orb",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Substitute",
+        "Ice Beam",
+        "Focus Blast",
+        "Calm Mind"
+      ],
+      "nature": "Careful"
+    },
+    {
+      "name": "Genesect",
+      "species": "Genesect",
+      "level": 72,
+      "gender": "M",
+      "shiny": false,
+      "ability": "Download",
+      "item": "Choice Band",
+      "evs": {
+        "hp": 85,
+        "atk": 85,
+        "def": 85,
+        "spa": 85,
+        "spd": 85,
+        "spe": 85
+      },
+      "ivs": {
+        "hp": 31,
+        "atk": 31,
+        "def": 31,
+        "spa": 31,
+        "spd": 31,
+        "spe": 31
+      },
+      "moves": [
+        "Extreme Speed",
+        "Blaze Kick",
+        "U-turn",
+        "Leech Life"
+      ],
+      "nature": "Sassy"
+    },
+    {
+      "name": "Wigglytuff",
+      "species": "Wigglytuff",
+      "level": 95,
+      "gender": "F",
+      "shiny": false,
+      "ability": "Frisk",
+      "item": "Light Clay",
+      "evs": {
+        "atk": 0
+      },
+      "ivs": {
+        "atk": 0
+      },
+      "moves": [
+        "Light Screen",
+        "Reflect",
+        "Fire Blast",
+        "Stealth Rock"
+      ],
+      "nature": "Impish"
+    }
+  ]
+]

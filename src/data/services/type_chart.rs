@@ -5,7 +5,6 @@
 
 use std::collections::HashMap;
 use std::fs;
-use serde_json::Value;
 use crate::engine::combat::type_effectiveness::PokemonType;
 
 /// Type effectiveness values from Pokemon Showdown
@@ -177,6 +176,9 @@ impl PSTypeChartLoader {
 pub fn create_ps_type_chart_loader() -> PSTypeChartLoader {
     // Assuming pokemon-showdown is in the parent directory
     let ps_path = "../pokemon-showdown/data".to_string();
+    
+    // PS type chart loader created
+    
     PSTypeChartLoader::new(ps_path)
 }
 

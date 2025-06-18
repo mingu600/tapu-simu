@@ -3,11 +3,13 @@
   "version": "1.0.0",
   "description": "Extract move and item data from Pokemon Showdown for use in Tapu Simu",
   "main": "extract.js",
-  "type": "module",
   "scripts": {
     "extract": "node extract.js",
     "extract-moves": "node extract.js moves",
-    "extract-items": "node extract.js items"
+    "extract-items": "node extract.js items",
+    "extract-teams": "node extract-teams-simple.js",
+    "generate-teams": "node generate-teams-from-randbats.js",
+    "generate-gen9-teams": "node generate-teams-from-randbats.js gen9randombattle 1000"
   },
   "dependencies": {
     "@pkmn/sim": "^0.8.1",

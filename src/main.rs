@@ -5,6 +5,7 @@
 use clap::Parser;
 use tapu_simu::{State, BattleFormat};
 use tapu_simu::io::{Cli, Commands, parse_battle_format, print_engine_info};
+use tapu_simu::data::RandomTeamLoader;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
@@ -17,9 +18,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             max_turns,
             runs,
             verbose,
+            log_file,
         } => {
             let battle_format = parse_battle_format(&format)?;
-            run_battle(battle_format, &player_one, &player_two, max_turns, runs, verbose)?;
+            run_battle(battle_format, &player_one, &player_two, max_turns, runs, verbose, log_file)?;
         }
         
         Commands::ValidateFormat { format } => {
@@ -43,8 +45,9 @@ fn run_battle(
     max_turns: u32,
     runs: u32,
     verbose: bool,
+    log_file: Option<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    use tapu_simu::{RandomPlayer, FirstMovePlayer, DamageMaximizer, BattleEnvironment, run_battle_from_state};
+    use tapu_simu::{RandomPlayer, FirstMovePlayer, DamageMaximizer, BattleEnvironment};
     
     println!("Running {} battle(s) in {} format", runs, format);
     
@@ -76,16 +79,21 @@ fn run_battle(
             println!("=== Battle {} ===", run);
         }
         
-        // Create initial battle state with the format
-        let mut state = State::new(format.clone());
+        // Load random teams for the battle
+        let mut team_loader = RandomTeamLoader::new();
+        let team_one = team_loader.get_random_team(&format).map_err(|e| format!("Failed to load team one: {}", e))?;
+        let team_two = team_loader.get_random_team(&format).map_err(|e| format!("Failed to load team two: {}", e))?;
         
-        // TODO: In a real implementation, we'd load teams from JSON or other sources
-        // For now, create a minimal state that can at least test the battle flow
+        // Create initial battle state with the format and teams
+        let mut state = State::new_with_teams(format.clone(), team_one, team_two);
+        
         if verbose && run == 1 {
             println!("Initialized battle state with format: {}", state.format);
             println!("Turn: {}", state.turn);
             println!("Weather: {:?}", state.weather);
             println!("Terrain: {:?}", state.terrain);
+            println!("Side one team: {} Pokemon", state.side_one.pokemon_count());
+            println!("Side two team: {} Pokemon", state.side_two.pokemon_count());
             println!();
         }
         
@@ -93,14 +101,19 @@ fn run_battle(
         let p1 = create_player(player_one, format!("Player1_{}", run));
         let p2 = create_player(player_two, format!("Player2_{}", run));
         
+        // Create battle environment with log file support
+        let mut env = BattleEnvironment::new(p1, p2, max_turns as usize, verbose && runs == 1);
+        if let Some(ref log_path) = log_file {
+            let battle_log_path = if runs > 1 {
+                format!("{}.battle_{}", log_path, run)
+            } else {
+                log_path.clone()
+            };
+            env.log_file = Some(battle_log_path);
+        }
+        
         // Run the battle
-        let result = run_battle_from_state(
-            state,
-            p1,
-            p2,
-            max_turns as usize,
-            verbose && runs == 1, // Only verbose for single runs
-        );
+        let result = env.run_battle(state);
         
         // Track results
         match result.winner {
