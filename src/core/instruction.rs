@@ -434,6 +434,7 @@ pub struct RemoveItemInstruction {
 pub struct GiveItemInstruction {
     pub target_position: BattlePosition,
     pub item: String,
+    pub previous_item: Option<String>,
 }
 
 /// Change Pokemon types
@@ -456,6 +457,7 @@ pub struct FormeChangeInstruction {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FaintInstruction {
     pub target_position: BattlePosition,
+    pub previous_hp: i16,
 }
 
 /// Toggle terastallization state
@@ -821,6 +823,22 @@ pub enum VolatileStatus {
     
     // Toxic counter for tracking progressive toxic damage
     ToxicCount,
+    
+    // Item-related volatile statuses
+    AirBalloon,
+    ChoiceLock,
+    IronBall,
+    ToxicOrb,
+    FlameOrb,
+    MentalHerb,
+    PowerHerb,
+    
+    // Trapping-related statuses
+    Trap,
+    PartialTrap,
+    MeanLook,
+    SpiderWeb,
+    Block,
 }
 
 /// Weather conditions

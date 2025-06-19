@@ -1,8 +1,10 @@
-use tapu_simu::battle_format::{BattleFormat, BattlePosition, SideReference};
+use tapu_simu::{BattleFormat, BattlePosition, SideReference};
 use tapu_simu::generation::Generation;
-use tapu_simu::instruction::*;
-use tapu_simu::move_choice::MoveIndex;
-use tapu_simu::state::{State, Pokemon, Move, MoveCategory, PokemonStats};
+use tapu_simu::core::instruction::*;
+use tapu_simu::core::move_choice::MoveIndex;
+use tapu_simu::{State};
+use tapu_simu::core::state::{Pokemon, Move, MoveCategory};
+use tapu_simu::data::types::Stats;
 use std::collections::HashMap;
 
 /// Helper function to create a basic battle state for testing
@@ -13,7 +15,8 @@ fn create_test_state() -> State {
     let mut pokemon1 = Pokemon::new("Pikachu".to_string());
     pokemon1.hp = 100;
     pokemon1.max_hp = 100;
-    pokemon1.stats = PokemonStats {
+    pokemon1.stats = Stats {
+        hp: 100,
         attack: 120,
         defense: 80,
         special_attack: 100,
@@ -40,7 +43,8 @@ fn create_test_state() -> State {
     let mut pokemon2 = Pokemon::new("Charizard".to_string());
     pokemon2.hp = 120;
     pokemon2.max_hp = 120;
-    pokemon2.stats = PokemonStats {
+    pokemon2.stats = Stats {
+        hp: 120,
         attack: 104,
         defense: 98,
         special_attack: 129,
@@ -394,6 +398,7 @@ mod special_mechanics_tests {
         let damage_instruction = Instruction::PositionDamage(PositionDamageInstruction {
             target_position: position,
             damage_amount: 40,
+            previous_hp: Some(100),
         });
         state.apply_instruction(&damage_instruction);
         
@@ -571,7 +576,7 @@ mod sleep_rest_tests {
         state.apply_instruction(&instruction);
         
         let pokemon = state.get_pokemon_at_position(position).unwrap();
-        assert_eq!(pokemon.status, PokemonStatus::SLEEP);
+        assert_eq!(pokemon.status, PokemonStatus::Sleep);
         assert_eq!(pokemon.status_duration, Some(3));
     }
 
@@ -588,7 +593,7 @@ mod sleep_rest_tests {
         state.apply_instruction(&instruction);
         
         let pokemon = state.get_pokemon_at_position(position).unwrap();
-        assert_eq!(pokemon.status, PokemonStatus::SLEEP);
+        assert_eq!(pokemon.status, PokemonStatus::Sleep);
         assert_eq!(pokemon.status_duration, Some(2));
     }
 
@@ -611,14 +616,14 @@ mod sleep_rest_tests {
         state.apply_instruction(&decrement_instruction);
         
         let pokemon = state.get_pokemon_at_position(position).unwrap();
-        assert_eq!(pokemon.status, PokemonStatus::SLEEP);
+        assert_eq!(pokemon.status, PokemonStatus::Sleep);
         assert_eq!(pokemon.status_duration, Some(1));
         
         // Decrement to zero (should wake up)
         state.apply_instruction(&decrement_instruction);
         
         let pokemon = state.get_pokemon_at_position(position).unwrap();
-        assert_eq!(pokemon.status, PokemonStatus::NONE);
+        assert_eq!(pokemon.status, PokemonStatus::None);
         assert_eq!(pokemon.status_duration, None);
     }
 }
@@ -830,7 +835,7 @@ mod placeholder_instruction_tests {
         
         let category_instruction = Instruction::ChangeDamageDealtMoveCategory(ChangeDamageDealtMoveCategoryInstruction {
             target_position: position,
-            move_category: tapu_simu::instruction::MoveCategory::Physical,
+            move_category: MoveCategory::Physical,
         });
         
         let substitute_instruction = Instruction::ToggleDamageDealtHitSubstitute(ToggleDamageDealtHitSubstituteInstruction {
@@ -881,9 +886,9 @@ mod comprehensive_state_test {
         
         // Apply multiple different instruction types
         let instructions = vec![
-            Instruction::PositionDamage(PositionDamageInstruction { target_position: pos1, damage_amount: 20 }),
-            Instruction::ApplyStatus(ApplyStatusInstruction { target_position: pos1, status: PokemonStatus::BURN }),
-            Instruction::ChangeWeather(ChangeWeatherInstruction { weather: Weather::RAIN, duration: Some(5) , previous_weather: Some(Weather::NONE), previous_duration: Some(None), }),
+            Instruction::PositionDamage(PositionDamageInstruction { target_position: pos1, damage_amount: 20, previous_hp: Some(100) }),
+            Instruction::ApplyStatus(ApplyStatusInstruction { target_position: pos1, status: PokemonStatus::Burn, previous_status: Some(PokemonStatus::None), previous_status_duration: Some(None) }),
+            Instruction::ChangeWeather(ChangeWeatherInstruction { weather: Weather::Rain, duration: Some(5) , previous_weather: Some(Weather::None), previous_duration: Some(None), }),
             Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction { 
                 target_position: pos2, 
                 volatile_status: VolatileStatus::Confusion, 
@@ -901,13 +906,13 @@ mod comprehensive_state_test {
         // Verify all changes were applied
         let pokemon1 = state.get_pokemon_at_position(pos1).unwrap();
         assert_eq!(pokemon1.hp, 80); // 100 - 20 = 80
-        assert_eq!(pokemon1.status, PokemonStatus::BURN);
+        assert_eq!(pokemon1.status, PokemonStatus::Burn);
         
         let pokemon2 = state.get_pokemon_at_position(pos2).unwrap();
         assert!(pokemon2.volatile_statuses.contains(&VolatileStatus::Confusion));
         assert_eq!(pokemon2.volatile_status_durations.get(&VolatileStatus::Confusion), Some(&3));
         
-        assert_eq!(state.weather, Weather::RAIN);
+        assert_eq!(state.weather, Weather::Rain);
         assert_eq!(state.weather_turns_remaining, Some(5));
         
         assert_eq!(state.trick_room_active, true);

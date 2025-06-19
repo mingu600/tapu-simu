@@ -1,13 +1,9 @@
 /// Integration test for instruction generation using the TestFramework
 /// This test verifies that our instruction generation properly integrates
 /// damage calculation with move effects using real Pokemon Showdown data
-use tapu_simu::test_framework::TestFramework;
-use tapu_simu::{
-    battle_format::{BattlePosition, SideReference},
-    instruction::PokemonStatus,
-    instruction::Stat,
-    move_choice::MoveChoice,
-};
+use tapu_simu::TestFramework;
+use tapu_simu::{BattlePosition, SideReference, MoveChoice};
+use tapu_simu::core::instruction::{PokemonStatus, Stat};
 
 #[test]
 fn test_tackle_generates_damage_with_critical_hit_branching() {
@@ -67,7 +63,7 @@ fn test_thunder_wave_generates_paralysis_status() {
 
     // Should generate paralysis status instruction
     assert!(
-        framework.verify_status_instructions(&instructions, PokemonStatus::PARALYZE),
+        framework.verify_status_instructions(&instructions, PokemonStatus::Paralysis),
         "Thunder Wave should generate paralysis status instruction"
     );
 
@@ -116,7 +112,7 @@ fn test_electric_type_immunity_to_thunder_wave() {
             "thunderwave",
             "raichu",
             &["Electric"], // Electric types immune to paralysis
-            PokemonStatus::PARALYZE,
+            PokemonStatus::Paralysis,
         )
         .expect("Failed to test immunity");
 
@@ -174,7 +170,7 @@ fn test_critical_hit_damage_multiplier() {
     let mut damage_amounts = Vec::new();
     for instr_set in &instructions {
         for instr in &instr_set.instruction_list {
-            if let tapu_simu::instruction::Instruction::PositionDamage(damage_instr) = instr {
+            if let tapu_simu::core::instruction::Instruction::PositionDamage(damage_instr) = instr {
                 damage_amounts.push(damage_instr.damage_amount);
             }
         }
@@ -260,7 +256,7 @@ fn test_multiple_move_instructions() {
     let thunder_wave_instructions =
         framework.test_instruction_generation(&mut state, thunder_wave_choice, None);
     assert!(
-        framework.verify_status_instructions(&thunder_wave_instructions, PokemonStatus::PARALYZE)
+        framework.verify_status_instructions(&thunder_wave_instructions, PokemonStatus::Paralysis)
     );
 
     // Swords Dance - stat boost instructions

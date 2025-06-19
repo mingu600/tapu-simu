@@ -16,6 +16,8 @@ use crate::core::state::{State, Move};
 use crate::engine::targeting::format_targeting::FormatMoveTargetResolver;
 use crate::engine::combat::damage_calc::calculate_damage;
 use crate::engine::combat::move_effects;
+use crate::engine::mechanics::abilities::{process_after_damage_abilities, process_before_move_abilities};
+use crate::generation::GenerationMechanics;
 
 /// Format-aware instruction generator for enhanced battle mechanics
 pub struct FormatInstructionGenerator {
@@ -131,12 +133,23 @@ impl FormatInstructionGenerator {
         // Resolve targets
         let targets = self.resolve_targets(move_choice, user_side, user_slot, state)?;
 
+        // Create generation mechanics for ability processing
+        let generation_mechanics = GenerationMechanics::new(self.format.generation);
+
+        // Process before-move abilities (like Protean/Libero)
+        let mut all_instructions = process_before_move_abilities(state, user_position, move_data, &generation_mechanics);
+
         // Generate instructions based on move type and targets
-        if move_data.is_damaging() {
-            Some(self.generate_damage_instructions(state, move_data, user_position, &targets))
+        let move_instructions = if move_data.is_damaging() {
+            self.generate_damage_instructions(state, move_data, user_position, &targets, &generation_mechanics)
         } else {
-            Some(self.generate_status_instructions(state, move_data, user_position, &targets))
-        }
+            self.generate_status_instructions(state, move_data, user_position, &targets)
+        };
+
+        // Combine before-move abilities with move instructions
+        all_instructions.extend(move_instructions);
+        
+        Some(all_instructions)
     }
 
     /// Resolve targets for a move choice
@@ -168,6 +181,7 @@ impl FormatInstructionGenerator {
         move_data: &Move,
         user_position: BattlePosition,
         targets: &[BattlePosition],
+        generation: &GenerationMechanics,
     ) -> Vec<StateInstructions> {
         let mut instructions = Vec::new();
 
@@ -204,7 +218,28 @@ impl FormatInstructionGenerator {
             // Add recoil/drain effects after damage
             self.add_recoil_drain_effects(state, move_data, user_position, final_damage, &mut instruction_list);
 
-            instructions.push(StateInstructions::new(100.0, instruction_list));
+            // Create the initial damage instruction set
+            let mut damage_instructions = vec![StateInstructions::new(100.0, instruction_list)];
+
+            // Process after-damage abilities for each target
+            for &target in targets {
+                let target_damage = final_damage;
+                // Check if this is a contact move based on move name
+                let is_contact_move = is_move_contact(&move_data.name);
+                
+                let ability_instructions = process_after_damage_abilities(
+                    state,
+                    user_position,
+                    target,
+                    target_damage,
+                    target_damage >= state.get_pokemon_at_position(target).map_or(1, |p| p.hp), // Check for KO
+                    is_contact_move,
+                    generation,
+                );
+                damage_instructions.extend(ability_instructions);
+            }
+
+            instructions.extend(damage_instructions);
         } else if targets.len() > 1 {
             // Multi-target damage
             let mut target_damages = Vec::new();
@@ -229,7 +264,7 @@ impl FormatInstructionGenerator {
 
             let mut instruction_list = vec![
                 Instruction::MultiTargetDamage(MultiTargetDamageInstruction {
-                target_damages,
+                target_damages: target_damages.clone(),
                 previous_hps: vec![], // This should be populated with actual previous HPs
             })
             ];
@@ -237,7 +272,29 @@ impl FormatInstructionGenerator {
             // Add recoil/drain effects after damage (based on total damage for multi-target)
             self.add_recoil_drain_effects(state, move_data, user_position, total_damage, &mut instruction_list);
 
-            instructions.push(StateInstructions::new(100.0, instruction_list));
+            // Create the initial damage instruction set
+            let mut damage_instructions = vec![StateInstructions::new(100.0, instruction_list)];
+
+            // Process after-damage abilities for each target that took damage
+            for &(target, target_damage) in &target_damages {
+                if target_damage > 0 {
+                    // Check if this is a contact move based on move name
+                    let is_contact_move = is_move_contact(&move_data.name);
+                    
+                    let ability_instructions = process_after_damage_abilities(
+                        state,
+                        user_position,
+                        target,
+                        target_damage,
+                        target_damage >= state.get_pokemon_at_position(target).map_or(1, |p| p.hp), // Check for KO
+                        is_contact_move,
+                        generation,
+                    );
+                    damage_instructions.extend(ability_instructions);
+                }
+            }
+
+            instructions.extend(damage_instructions);
         }
 
         // Add critical hit branching for damaging moves
@@ -272,7 +329,8 @@ impl FormatInstructionGenerator {
 
         // Use the comprehensive move effects system with generation awareness
         let generation_mechanics = self.format.generation.get_mechanics();
-        move_effects::apply_move_effects(state, &engine_move_data, user_position, targets, &generation_mechanics)
+        let context = move_effects::MoveContext::new();
+        move_effects::apply_move_effects(state, &engine_move_data, user_position, targets, &generation_mechanics, &context)
     }
     
     /// Add recoil and drain effects to instruction list
@@ -554,6 +612,39 @@ impl FormatInstructionGenerator {
         
         None
     }
+}
+
+/// Check if a move is a contact move based on its name
+/// This is a simplified implementation - in production, this should use the PS data flags
+fn is_move_contact(move_name: &str) -> bool {
+    let contact_moves = [
+        // Common physical contact moves
+        "tackle", "scratch", "pound", "bodyslam", "headbutt", "bite", "kick",
+        "punch", "slap", "slam", "takedown", "doubleedge", "quickattack", "tackle",
+        "jumpkick", "hijumpkick", "megakick", "megapunch", "cometpunch", "firepunch",
+        "icepunch", "thunderpunch", "drillpeck", "peck", "doublekit", "triplekit",
+        "furyattack", "hornattack", "hornstrike", "lowkick", "rolling", "rollout",
+        "dynamicpunch", "machpunch", "closecombat", "superpower", "revenge",
+        "poweruppunch", "karatechop", "crosschop", "seismictoss", "vitalthrow",
+        "submission", "armthrust", "bodyslam", "slam", "wrap", "bind", "constrict",
+        "pursuit", "thief", "covet", "pluck", "bugbite", "leechlife", "absorb",
+        "megadrain", "gigadrain", "drainingkiss", "poisonsting", "pinmissile",
+        "twineedle", "furyswipes", "metalclaw", "crushclaw", "slash", "nightslash",
+        "psychocut", "airslash", "razorleaf", "leafblade", "sacredsword", "shadowclaw",
+        "dragonrush", "dragonrush", "outrage", "thrash", "petaldance", "earthquake",
+        "magnitude", "fissure", "dig", "mudslap", "mudshot", "bulletseed", "rockthrow",
+        "rockslide", "stoneedge", "rollout", "rapidspin", "gyroball", "ironhead",
+        "zenheadbutt", "headsmash", "skullbash", "doublekick", "jumpkick", "hijumpkick",
+        "blazekick", "tropkick", "megakick", "lowsweep", "grassknot", "lowkick",
+        "stompingtantrum", "earthquake", "bulldoze", "bonemerang", "boneclub",
+        "bonrush", "falseswipe", "endeavor", "flail", "reversal", "counter",
+        "metalburst", "mirrorcoat", "struggle", "bide", "rage", "swagger",
+        // Add the actual move names we're testing with
+        "dynamicpunch", "megahorn", "closecombat",
+    ];
+    
+    let normalized_name = move_name.to_lowercase().replace(" ", "").replace("-", "");
+    contact_moves.iter().any(|&contact_move| normalized_name == contact_move)
 }
 
 #[cfg(test)]

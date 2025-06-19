@@ -14,8 +14,7 @@ pub enum MoveChoice {
         move_index: MoveIndex,
         target_positions: Vec<BattlePosition>,
     },
-    /// Use a move with Terastallization
-    #[cfg(feature = "terastallization")]
+    /// Use a move with Terastallization (Gen 9+ only)
     MoveTera {
         move_index: MoveIndex,
         target_positions: Vec<BattlePosition>,
@@ -36,8 +35,7 @@ impl MoveChoice {
         }
     }
 
-    /// Create a new Terastallization move choice
-    #[cfg(feature = "terastallization")]
+    /// Create a new Terastallization move choice (Gen 9+ only)
     pub fn new_tera_move(
         move_index: MoveIndex,
         target_positions: Vec<BattlePosition>,
@@ -59,7 +57,6 @@ impl MoveChoice {
     pub fn target_positions(&self) -> Option<&Vec<BattlePosition>> {
         match self {
             Self::Move { target_positions, .. } => Some(target_positions),
-            #[cfg(feature = "terastallization")]
             Self::MoveTera { target_positions, .. } => Some(target_positions),
             Self::Switch(_) | Self::None => None,
         }
@@ -69,7 +66,6 @@ impl MoveChoice {
     pub fn move_index(&self) -> Option<MoveIndex> {
         match self {
             Self::Move { move_index, .. } => Some(*move_index),
-            #[cfg(feature = "terastallization")]
             Self::MoveTera { move_index, .. } => Some(*move_index),
             Self::Switch(_) | Self::None => None,
         }
@@ -79,7 +75,6 @@ impl MoveChoice {
     pub fn is_move(&self) -> bool {
         match self {
             Self::Move { .. } => true,
-            #[cfg(feature = "terastallization")]
             Self::MoveTera { .. } => true,
             _ => false,
         }
@@ -90,14 +85,12 @@ impl MoveChoice {
         matches!(self, Self::Switch(_))
     }
 
-    /// Returns true if this choice uses Terastallization
-    #[cfg(feature = "terastallization")]
+    /// Returns true if this choice uses Terastallization (Gen 9+ only)
     pub fn is_tera(&self) -> bool {
         matches!(self, Self::MoveTera { .. })
     }
 
-    /// Returns the Tera type if this is a Tera move
-    #[cfg(feature = "terastallization")]
+    /// Returns the Tera type if this is a Tera move (Gen 9+ only)
     pub fn tera_type(&self) -> Option<PokemonType> {
         match self {
             Self::MoveTera { tera_type, .. } => Some(*tera_type),
@@ -144,7 +137,6 @@ impl MoveChoice {
     pub fn set_target_positions(&mut self, new_targets: Vec<BattlePosition>) {
         match self {
             Self::Move { target_positions, .. } => *target_positions = new_targets,
-            #[cfg(feature = "terastallization")]
             Self::MoveTera { target_positions, .. } => *target_positions = new_targets,
             _ => {} // No effect on switch or none choices
         }
@@ -173,7 +165,6 @@ impl MoveChoice {
                     format!("{} -> [{}]", move_name, targets.join(", "))
                 }
             }
-            #[cfg(feature = "terastallization")]
             Self::MoveTera { move_index, target_positions, tera_type } => {
                 let move_name = if let Some(pokemon) = side.get_active_pokemon_at_slot(0) {
                     if let Some(move_data) = pokemon.get_move(*move_index) {
@@ -305,8 +296,7 @@ impl PokemonIndex {
     }
 }
 
-/// Pokemon types for Terastallization
-#[cfg(feature = "terastallization")]
+/// Pokemon types for Terastallization (Gen 9+ only)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum PokemonType {
     Normal,
@@ -330,7 +320,6 @@ pub enum PokemonType {
     Unknown,
 }
 
-#[cfg(feature = "terastallization")]
 impl PokemonType {
     /// Get all Pokemon types
     pub fn all() -> Vec<PokemonType> {
@@ -383,7 +372,6 @@ mod tests {
         assert_eq!(switch_choice.target_positions(), None);
     }
 
-    #[cfg(feature = "terastallization")]
     #[test]
     fn test_tera_move_choice() {
         let target_pos = BattlePosition::new(SideReference::SideTwo, 0);

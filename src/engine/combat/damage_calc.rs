@@ -171,8 +171,12 @@ pub fn calculate_damage_with_generation(
         damage *= generation_mechanics.get_critical_multiplier();
     }
 
-    // Type effectiveness
-    let move_type = PokemonType::from_str(&move_data.move_type).unwrap_or(PokemonType::Normal);
+    // Type effectiveness - check for ability-based type changes
+    let effective_move_type = ability_modifier.changed_move_type
+        .as_ref()
+        .unwrap_or(&move_data.move_type);
+    let move_type = PokemonType::from_str(effective_move_type).unwrap_or(PokemonType::Normal);
+    
     let defender_type1 = PokemonType::from_str(&defender.types[0]).unwrap_or(PokemonType::Normal);
     let defender_type2 = if defender.types.len() > 1 {
         PokemonType::from_str(&defender.types[1]).unwrap_or(defender_type1)
@@ -216,6 +220,7 @@ pub fn calculate_damage_with_generation(
         get_tera_type(attacker), // Tera type support
         has_adaptability_ability(attacker),
     );
+    
     damage *= stab_multiplier;
 
     // Apply burn modifier (generation-specific)
@@ -678,11 +683,9 @@ fn apply_base_power_modifications(
     base_power
 }
 
-/// Get the Tera type of a Pokemon if it's Terastallized
+/// Get the Tera type of a Pokemon if it's Terastallized (Gen 9+ only)
 fn get_tera_type(pokemon: &Pokemon) -> Option<super::type_effectiveness::PokemonType> {
-    #[cfg(feature = "terastallization")]
-    {
-        if pokemon.is_terastallized {
+    if pokemon.is_terastallized {
             pokemon.tera_type.map(|tera_type| {
                 // Convert from move_choice::PokemonType to type_effectiveness::PokemonType
                 use super::type_effectiveness::PokemonType;
@@ -708,13 +711,7 @@ fn get_tera_type(pokemon: &Pokemon) -> Option<super::type_effectiveness::Pokemon
                     crate::core::move_choice::PokemonType::Unknown => PokemonType::Normal, // Fallback to Normal
                 }
             })
-        } else {
-            None
-        }
-    }
-    
-    #[cfg(not(feature = "terastallization"))]
-    {
+    } else {
         None
     }
 }

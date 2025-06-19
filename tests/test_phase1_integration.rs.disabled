@@ -4,8 +4,8 @@
 //! Tests weather negation, stat boosts, terrain interactions, and screen mechanics
 //! with actual competitive Pokemon and moves.
 
-use tapu_simu::test_framework::TestFramework;
-use tapu_simu::instruction::{Weather, Terrain, SideCondition};
+use tapu_simu::TestFramework;
+use tapu_simu::core::instruction::{Weather, Terrain, SideCondition};
 
 #[test]
 fn test_cloud_nine_negates_sun_fire_boost() {
@@ -32,7 +32,7 @@ fn test_air_lock_negates_rain_water_boost() {
         "gyarados",      // Water attacker
         "rayquaza",      // Air Lock Pokemon
         "Air Lock",      // Weather negation ability
-        Weather::RAIN,   // Rain weather
+        Weather::Rain,   // Rain weather
         "surf"           // Water move that would be boosted by Rain
     ).expect("Failed to test weather negation");
 

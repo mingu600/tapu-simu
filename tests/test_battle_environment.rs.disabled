@@ -4,9 +4,10 @@
 
 use tapu_simu::{
     BattleFormat, State, RandomPlayer, FirstMovePlayer, 
-    BattleEnvironment, run_battle_from_state
+    BattleEnvironment, run_battle_from_state, Player
 };
 use tapu_simu::core::move_choice::PokemonIndex;
+use tapu_simu::testing::framework::TestFramework;
 
 #[test]
 fn test_battle_environment_creation() {
@@ -21,7 +22,18 @@ fn test_battle_environment_creation() {
 
 #[test]
 fn test_battle_from_state() {
-    let state = State::new(BattleFormat::gen9_ou());
+    let framework = TestFramework::new().unwrap();
+    let mut state = State::new(BattleFormat::gen9_ou());
+    
+    // Create actual Pokemon for the battle
+    let attacker = framework.create_pokemon_from_ps_data("blastoise", None, None).unwrap();
+    let defender = framework.create_pokemon_from_ps_data("venusaur", None, None).unwrap();
+    
+    state.side_one.pokemon = vec![attacker];
+    state.side_one.set_active_pokemon_at_slot(0, Some(0));
+    state.side_two.pokemon = vec![defender];
+    state.side_two.set_active_pokemon_at_slot(0, Some(0));
+    
     let player_one = Box::new(RandomPlayer::new("RandomBot".to_string()));
     let player_two = Box::new(FirstMovePlayer::new("FirstBot".to_string()));
     
@@ -34,7 +46,18 @@ fn test_battle_from_state() {
 
 #[test]
 fn test_battle_result_structure() {
-    let state = State::new(BattleFormat::gen9_ou());
+    let framework = TestFramework::new().unwrap();
+    let mut state = State::new(BattleFormat::gen9_ou());
+    
+    // Create actual Pokemon for the battle
+    let attacker = framework.create_pokemon_from_ps_data("pikachu", None, None).unwrap();
+    let defender = framework.create_pokemon_from_ps_data("charizard", None, None).unwrap();
+    
+    state.side_one.pokemon = vec![attacker];
+    state.side_one.set_active_pokemon_at_slot(0, Some(0));
+    state.side_two.pokemon = vec![defender];
+    state.side_two.set_active_pokemon_at_slot(0, Some(0));
+    
     let player_one = Box::new(RandomPlayer::new("P1".to_string()));
     let player_two = Box::new(RandomPlayer::new("P2".to_string()));
     
@@ -53,7 +76,17 @@ fn test_battle_result_structure() {
 
 #[test]
 fn test_different_player_types() {
-    let state = State::new(BattleFormat::gen9_ou());
+    let framework = TestFramework::new().unwrap();
+    let mut state = State::new(BattleFormat::gen9_ou());
+    
+    // Create actual Pokemon for the battle
+    let attacker = framework.create_pokemon_from_ps_data("garchomp", None, None).unwrap();
+    let defender = framework.create_pokemon_from_ps_data("metagross", None, None).unwrap();
+    
+    state.side_one.pokemon = vec![attacker];
+    state.side_one.set_active_pokemon_at_slot(0, Some(0));
+    state.side_two.pokemon = vec![defender];
+    state.side_two.set_active_pokemon_at_slot(0, Some(0));
     
     // Test RandomPlayer vs FirstMovePlayer
     let player_one = Box::new(RandomPlayer::new("Random".to_string()));

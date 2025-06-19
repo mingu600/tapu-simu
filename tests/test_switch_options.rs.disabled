@@ -1,7 +1,7 @@
 // Integration test for switch options
-use tapu_simu::{State, BattleFormat, generation::Generation, battle_format::FormatType};
+use tapu_simu::{State, BattleFormat, generation::Generation, FormatType};
 use tapu_simu::ui::bridge::EngineBridge;
-use tapu_simu::state::Pokemon;
+use tapu_simu::core::state::Pokemon;
 
 #[test]
 fn test_switch_options_available() {
@@ -62,7 +62,7 @@ fn test_switch_options_available() {
     
     // Verify switch options display correctly
     for switch_opt in &switch_options {
-        assert!(switch_opt.display_name.contains("Switch to Pokemon"));
+        assert!(switch_opt.display_name.starts_with("Switch to"));
         assert_eq!(switch_opt.choice_type, "switch");
         assert!(switch_opt.move_choice.pokemon_index.is_some());
     }

@@ -1,9 +1,9 @@
 //! Tests for Phase 3 advanced abilities with 100% poke-engine parity
 
-use tapu_simu::test_framework::TestFramework;
-use tapu_simu::state::State;
-use tapu_simu::battle_format::BattleFormat;
-use tapu_simu::engine::damage_calc;
+use tapu_simu::TestFramework;
+use tapu_simu::State;
+use tapu_simu::BattleFormat;
+use tapu_simu::damage_calc;
 
 #[test]
 fn test_solid_rock_reduces_super_effective_damage() {

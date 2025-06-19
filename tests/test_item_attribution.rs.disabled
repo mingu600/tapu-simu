@@ -1,7 +1,7 @@
-use tapu_simu::test_framework::TestFramework;
-use tapu_simu::state::State;
-use tapu_simu::battle_format::BattleFormat;
-use tapu_simu::engine::damage_calc;
+use tapu_simu::TestFramework;
+use tapu_simu::State;
+use tapu_simu::BattleFormat;
+use tapu_simu::engine::combat::damage_calc;
 
 /// Test that item attribution is correct - attacker vs defender items
 #[test]
@@ -166,7 +166,7 @@ fn test_reactive_items_attribution() {
     // For now we're just testing that the item attribution is correct
     
     // Test that it's a defender item
-    use tapu_simu::engine::items::get_item_by_name;
+    use tapu_simu::engine::mechanics::items::get_item_by_name;
     let weakness_policy = get_item_by_name("Weakness Policy").unwrap();
     assert!(!weakness_policy.is_attacker_item(), "Weakness Policy should not be an attacker item");
     assert!(weakness_policy.is_defender_item(), "Weakness Policy should be a defender item");
@@ -188,7 +188,7 @@ fn test_reactive_items_attribution() {
 /// Test that attacker items are properly categorized
 #[test]
 fn test_attacker_items_attribution() {
-    use tapu_simu::engine::items::get_item_by_name;
+    use tapu_simu::engine::mechanics::items::get_item_by_name;
     
     // Choice items should be attacker items
     let choice_band = get_item_by_name("Choice Band").unwrap();

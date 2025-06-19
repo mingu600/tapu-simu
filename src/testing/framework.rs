@@ -637,5 +637,49 @@ impl TestFramework {
         // If immune, should NOT have damage instructions
         Ok(!self.verify_damage_instructions(&instructions))
     }
+
+    /// Test contact ability status effects
+    pub fn test_contact_ability_status(
+        &self,
+        attacker_species: &str,
+        defender_species: &str,
+        defender_ability: &str,
+        move_name: &str,
+    ) -> Result<ContactStatusResult, Box<dyn std::error::Error>> {
+        let (mut state, move_indices) = self.create_test_battle(
+            attacker_species,
+            &[move_name],
+            defender_species,
+            None,
+        )?;
+
+        // Set defender ability
+        if let Some(defender) = state.side_two.get_active_pokemon_at_slot_mut(0) {
+            defender.ability = normalize_name(defender_ability);
+        }
+
+        let move_choice = MoveChoice::new_move(
+            move_indices[0],
+            vec![BattlePosition::new(SideReference::SideTwo, 0)],
+        );
+
+        let instructions = self.test_instruction_generation(&mut state, move_choice, None);
+        
+        // Check if there are any status application instructions
+        let has_status_chance = instructions.iter().any(|instruction_set| {
+            instruction_set.instruction_list.iter().any(|instruction| {
+                matches!(instruction, Instruction::ApplyStatus(_))
+            })
+        });
+
+        Ok(ContactStatusResult {
+            has_status_chance,
+        })
+    }
+}
+
+/// Result of contact ability status test
+pub struct ContactStatusResult {
+    pub has_status_chance: bool,
 }
 

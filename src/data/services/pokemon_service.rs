@@ -40,6 +40,7 @@ pub struct PSPokemonSpecies {
     pub types: Vec<String>,
     pub base_stats: PSPokemonBaseStats,
     pub abilities: HashMap<String, String>, // slot -> ability name
+    pub weight_kg: Option<f32>, // Weight in kilograms
 }
 
 /// Service for loading Pokemon species data
@@ -122,12 +123,16 @@ impl PSPokemonService {
             }
         }
 
+        // Parse weight
+        let weight_kg = data.get("weightkg").and_then(|w| w.as_f64()).map(|w| w as f32);
+
         Some(PSPokemonSpecies {
             id: id.to_string(),
             name,
             types,
             base_stats,
             abilities,
+            weight_kg,
         })
     }
 
@@ -167,6 +172,12 @@ impl PSPokemonService {
     /// Get the default ability (slot 0) for a Pokemon
     pub fn get_default_ability(&self, pokemon_name: &str) -> Option<String> {
         self.get_ability(pokemon_name, "0")
+    }
+
+    /// Get Pokemon weight in kilograms
+    pub fn get_weight(&self, pokemon_name: &str) -> Option<f32> {
+        self.get_pokemon_by_name(pokemon_name)?
+            .weight_kg
     }
 
     /// Get all Pokemon names (for debugging/testing)

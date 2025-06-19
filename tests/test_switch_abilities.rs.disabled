@@ -1,0 +1,408 @@
+use tapu_simu::core::battle_format::{BattleFormat, BattlePosition, SideReference};
+use tapu_simu::core::instruction::{
+    Instruction, StateInstructions, Weather, Terrain, BoostStatsInstruction, Stat,
+    ChangeWeatherInstruction, ChangeTerrainInstruction, PokemonStatus
+};
+use tapu_simu::core::move_choice::{MoveChoice, PokemonIndex};
+use tapu_simu::core::state::{State, BattleSide, Pokemon};
+use tapu_simu::engine::turn::format_instruction_generator::FormatInstructionGenerator;
+use tapu_simu::generation::{GenerationMechanics, Generation};
+use std::collections::HashMap;
+
+fn create_test_pokemon(name: &str, ability: &str) -> Pokemon {
+    Pokemon {
+        species: name.to_string(),
+        types: vec!["Normal".to_string()],
+        ability: ability.to_string(),
+        level: 100,
+        max_hp: 100,
+        hp: 100,
+        stats: tapu_simu::core::state::Stats {
+            attack: 100,
+        defense: 100,
+        special_attack: 100,
+        special_defense: 100,
+        speed: 100,
+        moves: HashMap::new(),
+        status: PokemonStatus::None,
+        status_duration: None,
+        volatile_statuses: Vec::new(),
+        stat_boosts: HashMap::new(),
+        item: None,
+    }
+}
+
+fn create_test_state_with_abilities(p1_ability: &str, p2_ability: &str) -> State {
+    let format = BattleFormat::Singles(Generation::Gen8);
+    
+    let pokemon1 = create_test_pokemon("Pokemon1", p1_ability);
+    let pokemon2 = create_test_pokemon("Pokemon2", "No Ability");
+    let pokemon3 = create_test_pokemon("Pokemon3", p2_ability);
+    let pokemon4 = create_test_pokemon("Pokemon4", "No Ability");
+    
+    let side_one = Side::new(0, vec![pokemon1, pokemon2]);
+    let side_two = Side::new(1, vec![pokemon3, pokemon4]);
+    
+    State::new_with_teams(format, side_one, side_two)
+}
+
+#[test]
+fn test_intimidate_on_switch_in() {
+    let mut state = create_test_state_with_abilities("No Ability", "Intimidate");
+    
+    // Switch in the Intimidate Pokemon
+    let switch_position = BattlePosition::new(SideReference::SideTwo, 0);
+    let generation = GenerationMechanics::new(Generation::Gen8);
+    let mut generator = FormatInstructionGenerator::new(state.format.clone());
+    
+    // Generate switch instructions for Pokemon with Intimidate switching in
+    let move_choice = MoveChoice::Switch(PokemonIndex::P1);
+    let instructions = generator.generate_move_instructions(
+        &state,
+        &move_choice,
+        switch_position.side,
+        switch_position.slot
+    );
+    
+    // Should have instructions for switch + intimidate effect
+    assert!(instructions.is_some());
+    let instruction_sets = instructions.unwrap();
+    
+    // Look for stat boost instruction (Intimidate lowering Attack)
+    let mut found_intimidate = false;
+    for instruction_set in &instruction_sets {
+        for instruction in &instruction_set.instruction_list {
+            if let Instruction::BoostStats(boost_instruction) = instruction {
+                if boost_instruction.stat_boosts.get(&Stat::Attack) == Some(&-1) {
+                    found_intimidate = true;
+                    break;
+                }
+            }
+        }
+    }
+    
+    assert!(found_intimidate, "Intimidate should lower opponent's Attack when switching in");
+}
+
+#[test]
+fn test_drought_on_switch_in() {
+    let mut state = create_test_state_with_abilities("No Ability", "Drought");
+    
+    let switch_position = BattlePosition::new(SideReference::SideTwo, 0);
+    let generation = GenerationMechanics::new(Generation::Gen8);
+    let mut generator = FormatInstructionGenerator::new(state.format.clone());
+    
+    let move_choice = MoveChoice::Switch(PokemonIndex::P1);
+    let instructions = generator.generate_move_instructions(
+        &state,
+        &move_choice,
+        switch_position.side,
+        switch_position.slot
+    );
+    
+    assert!(instructions.is_some());
+    let instruction_sets = instructions.unwrap();
+    
+    // Look for weather change instruction
+    let mut found_sun = false;
+    for instruction_set in &instruction_sets {
+        for instruction in &instruction_set.instruction_list {
+            if let Instruction::ChangeWeather(weather_instruction) = instruction {
+                if weather_instruction.weather == Weather::Sun {
+                    found_sun = true;
+                    assert_eq!(weather_instruction.duration, Some(5));
+                    break;
+                }
+            }
+        }
+    }
+    
+    assert!(found_sun, "Drought should set Sun weather when switching in");
+}
+
+#[test]
+fn test_drizzle_on_switch_in() {
+    let mut state = create_test_state_with_abilities("No Ability", "Drizzle");
+    
+    let switch_position = BattlePosition::new(SideReference::SideTwo, 0);
+    let generation = GenerationMechanics::new(Generation::Gen8);
+    let mut generator = FormatInstructionGenerator::new(state.format.clone());
+    
+    let move_choice = MoveChoice::Switch(PokemonIndex::P1);
+    let instructions = generator.generate_move_instructions(
+        &state,
+        &move_choice,
+        switch_position.side,
+        switch_position.slot
+    );
+    
+    assert!(instructions.is_some());
+    let instruction_sets = instructions.unwrap();
+    
+    let mut found_rain = false;
+    for instruction_set in &instruction_sets {
+        for instruction in &instruction_set.instruction_list {
+            if let Instruction::ChangeWeather(weather_instruction) = instruction {
+                if weather_instruction.weather == Weather::Rain {
+                    found_rain = true;
+                    assert_eq!(weather_instruction.duration, Some(5));
+                    break;
+                }
+            }
+        }
+    }
+    
+    assert!(found_rain, "Drizzle should set Rain weather when switching in");
+}
+
+#[test]
+fn test_electric_surge_on_switch_in() {
+    let mut state = create_test_state_with_abilities("No Ability", "Electric Surge");
+    
+    let switch_position = BattlePosition::new(SideReference::SideTwo, 0);
+    let generation = GenerationMechanics::new(Generation::Gen8);
+    let mut generator = FormatInstructionGenerator::new(state.format.clone());
+    
+    let move_choice = MoveChoice::Switch(PokemonIndex::P1);
+    let instructions = generator.generate_move_instructions(
+        &state,
+        &move_choice,
+        switch_position.side,
+        switch_position.slot
+    );
+    
+    assert!(instructions.is_some());
+    let instruction_sets = instructions.unwrap();
+    
+    let mut found_electric_terrain = false;
+    for instruction_set in &instruction_sets {
+        for instruction in &instruction_set.instruction_list {
+            if let Instruction::ChangeTerrain(terrain_instruction) = instruction {
+                if terrain_instruction.terrain == Terrain::ElectricTerrain {
+                    found_electric_terrain = true;
+                    assert_eq!(terrain_instruction.duration, Some(5));
+                    break;
+                }
+            }
+        }
+    }
+    
+    assert!(found_electric_terrain, "Electric Surge should set Electric Terrain when switching in");
+}
+
+#[test]
+fn test_sand_stream_on_switch_in() {
+    let mut state = create_test_state_with_abilities("No Ability", "Sand Stream");
+    
+    let switch_position = BattlePosition::new(SideReference::SideTwo, 0);
+    let generation = GenerationMechanics::new(Generation::Gen8);
+    let mut generator = FormatInstructionGenerator::new(state.format.clone());
+    
+    let move_choice = MoveChoice::Switch(PokemonIndex::P1);
+    let instructions = generator.generate_move_instructions(
+        &state,
+        &move_choice,
+        switch_position.side,
+        switch_position.slot
+    );
+    
+    assert!(instructions.is_some());
+    let instruction_sets = instructions.unwrap();
+    
+    let mut found_sand = false;
+    for instruction_set in &instruction_sets {
+        for instruction in &instruction_set.instruction_list {
+            if let Instruction::ChangeWeather(weather_instruction) = instruction {
+                if weather_instruction.weather == Weather::Sand {
+                    found_sand = true;
+                    assert_eq!(weather_instruction.duration, Some(5));
+                    break;
+                }
+            }
+        }
+    }
+    
+    assert!(found_sand, "Sand Stream should set Sand weather when switching in");
+}
+
+#[test] 
+fn test_snow_warning_generation_difference() {
+    // Test Gen 9 - should set Snow
+    let mut state = create_test_state_with_abilities("No Ability", "Snow Warning");
+    
+    let switch_position = BattlePosition::new(SideReference::SideTwo, 0);
+    let generation = GenerationMechanics::new(Generation::Gen9);
+    let mut generator = FormatInstructionGenerator::new(state.format.clone());
+    
+    let move_choice = MoveChoice::Switch(PokemonIndex::P1);
+    let instructions = generator.generate_move_instructions(
+        &state,
+        &move_choice,
+        switch_position.side,
+        switch_position.slot
+    );
+    
+    assert!(instructions.is_some());
+    let instruction_sets = instructions.unwrap();
+    
+    let mut found_snow = false;
+    for instruction_set in &instruction_sets {
+        for instruction in &instruction_set.instruction_list {
+            if let Instruction::ChangeWeather(weather_instruction) = instruction {
+                if weather_instruction.weather == Weather::Snow {
+                    found_snow = true;
+                    break;
+                }
+            }
+        }
+    }
+    
+    assert!(found_snow, "Snow Warning should set Snow weather in Gen 9");
+    
+    // Test Gen 8 - should set Hail
+    let generation_8 = GenerationMechanics::new(Generation::Gen8);
+    let mut generator_8 = FormatInstructionGenerator::new(state.format.clone());
+    
+    let instructions_8 = generator_8.generate_move_instructions(
+        &state,
+        &move_choice,
+        switch_position.side,
+        switch_position.slot
+    );
+    
+    assert!(instructions_8.is_some());
+    let instruction_sets_8 = instructions_8.unwrap();
+    
+    let mut found_hail = false;
+    for instruction_set in &instruction_sets_8 {
+        for instruction in &instruction_set.instruction_list {
+            if let Instruction::ChangeWeather(weather_instruction) = instruction {
+                if weather_instruction.weather == Weather::Hail {
+                    found_hail = true;
+                    break;
+                }
+            }
+        }
+    }
+    
+    assert!(found_hail, "Snow Warning should set Hail weather in Gen 8");
+}
+
+#[test]
+fn test_intimidate_immunity() {
+    let mut state = create_test_state_with_abilities("Clear Body", "Intimidate");
+    
+    let switch_position = BattlePosition::new(SideReference::SideTwo, 0);
+    let generation = GenerationMechanics::new(Generation::Gen8);
+    let mut generator = FormatInstructionGenerator::new(state.format.clone());
+    
+    let move_choice = MoveChoice::Switch(PokemonIndex::P1);
+    let instructions = generator.generate_move_instructions(
+        &state,
+        &move_choice,
+        switch_position.side,
+        switch_position.slot
+    );
+    
+    assert!(instructions.is_some());
+    let instruction_sets = instructions.unwrap();
+    
+    // Should NOT find an Attack reduction due to Clear Body immunity
+    let mut found_attack_reduction = false;
+    for instruction_set in &instruction_sets {
+        for instruction in &instruction_set.instruction_list {
+            if let Instruction::BoostStats(boost_instruction) = instruction {
+                if boost_instruction.stat_boosts.get(&Stat::Attack) == Some(&-1) {
+                    found_attack_reduction = true;
+                    break;
+                }
+            }
+        }
+    }
+    
+    assert!(!found_attack_reduction, "Clear Body should prevent Intimidate from lowering Attack");
+}
+
+#[test]
+fn test_multiple_switch_abilities_interaction() {
+    // Test what happens when multiple Pokemon with switch abilities are present
+    let mut state = create_test_state_with_abilities("Drought", "Drizzle");
+    
+    // First switch in Drought Pokemon
+    let switch_position = BattlePosition::new(SideReference::SideOne, 0);
+    let generation = GenerationMechanics::new(Generation::Gen8);
+    let mut generator = FormatInstructionGenerator::new(state.format.clone());
+    
+    let move_choice = MoveChoice::Switch(PokemonIndex::P1);
+    let instructions = generator.generate_move_instructions(
+        &state,
+        &move_choice,
+        switch_position.side,
+        switch_position.slot
+    );
+    
+    // Verify Sun is set
+    assert!(instructions.is_some());
+    let instruction_sets = instructions.unwrap();
+    
+    let mut found_sun = false;
+    for instruction_set in &instruction_sets {
+        for instruction in &instruction_set.instruction_list {
+            if let Instruction::ChangeWeather(weather_instruction) = instruction {
+                if weather_instruction.weather == Weather::Sun {
+                    found_sun = true;
+                    break;
+                }
+            }
+        }
+    }
+    
+    assert!(found_sun, "First ability should set weather");
+}
+
+#[test]
+fn test_switch_abilities_in_doubles() {
+    let format = BattleFormat::doubles();
+    
+    let pokemon1 = create_test_pokemon("Pokemon1", "No Ability");
+    let pokemon2 = create_test_pokemon("Pokemon2", "Intimidate");
+    let pokemon3 = create_test_pokemon("Pokemon3", "No Ability");
+    let pokemon4 = create_test_pokemon("Pokemon4", "No Ability");
+    let pokemon5 = create_test_pokemon("Pokemon5", "No Ability");
+    let pokemon6 = create_test_pokemon("Pokemon6", "No Ability");
+    
+    let side_one = Side::new(0, vec![pokemon1, pokemon2, pokemon3]);
+    let side_two = Side::new(1, vec![pokemon4, pokemon5, pokemon6]);
+    
+    let mut state = State::new_with_teams(format.clone(), side_one, side_two);
+    
+    // In doubles, Intimidate should affect both opposing Pokemon
+    let switch_position = BattlePosition::new(SideReference::SideOne, 1);
+    let generation = GenerationMechanics::new(Generation::Gen8);
+    let mut generator = FormatInstructionGenerator::new(format);
+    
+    let move_choice = MoveChoice::Switch(PokemonIndex::P1);
+    let instructions = generator.generate_move_instructions(
+        &state,
+        &move_choice,
+        switch_position.side,
+        switch_position.slot
+    );
+    
+    assert!(instructions.is_some());
+    let instruction_sets = instructions.unwrap();
+    
+    // Count how many Attack reductions there are - should be 2 in doubles
+    let mut attack_reductions = 0;
+    for instruction_set in &instruction_sets {
+        for instruction in &instruction_set.instruction_list {
+            if let Instruction::BoostStats(boost_instruction) = instruction {
+                if boost_instruction.stat_boosts.get(&Stat::Attack) == Some(&-1) {
+                    attack_reductions += 1;
+                }
+            }
+        }
+    }
+    
+    assert_eq!(attack_reductions, 2, "Intimidate should affect both opposing Pokemon in doubles");
+}

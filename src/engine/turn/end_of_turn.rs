@@ -1279,10 +1279,7 @@ fn process_ability_effects(
                     // Forme change abilities
                     "hungerswitch" => {
                         // Morpeko alternates between Full Belly and Hangry forms
-                        #[cfg(feature = "terastallization")]
                         let is_terastallized = pokemon.is_terastallized;
-                        #[cfg(not(feature = "terastallization"))]
-                        let is_terastallized = false;
                         
                         if pokemon.hp > 0 && !is_terastallized {
                             instructions.extend(process_hunger_switch_forme_change(state, generation, position, pokemon));
@@ -1298,6 +1295,32 @@ fn process_ability_effects(
                         // Wishiwashi changes form based on HP (25% threshold)
                         if pokemon.hp > 0 {
                             instructions.extend(process_schooling_forme_change(state, generation, position, pokemon));
+                        }
+                    }
+                    "shedskin" => {
+                        // 30% chance to cure status conditions at end of turn
+                        if pokemon.hp > 0 && pokemon.status != PokemonStatus::None {
+                            // 30% chance to cure status
+                            if rand::random::<f32>() < 0.3 {
+                                instructions.push(StateInstructions::new(100.0, vec![
+                                    Instruction::RemoveStatus(RemoveStatusInstruction {
+                                        target_position: position,
+                                        previous_status: Some(pokemon.status),
+                                        previous_status_duration: Some(pokemon.status_duration),
+                                    })
+                                ]));
+                            }
+                        }
+                    }
+                    "iceface" => {
+                        // Restore Ice Face forme in Snow/Hail weather
+                        if pokemon.hp > 0 {
+                            match state.weather {
+                                crate::core::instruction::Weather::Hail | crate::core::instruction::Weather::Snow => {
+                                    instructions.extend(process_ice_face_forme_restoration(state, generation, position, pokemon));
+                                }
+                                _ => {}
+                            }
                         }
                     }
                     _ => {}
@@ -1487,6 +1510,32 @@ fn process_schooling_forme_change(
             Instruction::FormeChange(FormeChangeInstruction {
                 target_position: position,
                 new_forme: "wishiwashi".to_string(),
+                previous_forme: Some(pokemon.species.clone()),
+            })
+        ]));
+    }
+    
+    instructions
+}
+
+/// Process Ice Face forme restoration for Eiscue
+fn process_ice_face_forme_restoration(
+    _state: &State,
+    _generation: &GenerationMechanics,
+    position: BattlePosition,
+    pokemon: &crate::core::state::Pokemon,
+) -> Vec<StateInstructions> {
+    let mut instructions = Vec::new();
+    
+    // Check if Pokemon is currently in Noice (broken) form
+    let is_currently_noice = pokemon.species.to_lowercase().contains("noice");
+    
+    if is_currently_noice {
+        // Restore to Ice Face form in Hail/Snow weather
+        instructions.push(StateInstructions::new(100.0, vec![
+            Instruction::FormeChange(FormeChangeInstruction {
+                target_position: position,
+                new_forme: "eiscue".to_string(),
                 previous_forme: Some(pokemon.species.clone()),
             })
         ]));

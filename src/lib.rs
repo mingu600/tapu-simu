@@ -51,7 +51,7 @@ pub mod generation;
 pub mod io;
 
 // Re-exports for convenience
-pub use core::battle_format::{BattleFormat, BattlePosition, SideReference};
+pub use core::battle_format::{BattleFormat, BattlePosition, SideReference, FormatType};
 pub use core::battle_environment::{
     Player, RandomPlayer, FirstMovePlayer, DamageMaximizer,
     BattleEnvironment, BattleResult, TurnInfo, ParallelBattleResults,
@@ -63,128 +63,13 @@ pub use core::state::State;
 pub use generation::{Generation, GenerationMechanics, GenerationBattleMechanics};
 
 // Test framework re-export
-pub use testing::framework::TestFramework;
+pub use testing::framework::{TestFramework, ContactStatusResult};
 
 // Engine module re-exports for testing
 pub use engine::combat::damage_calc;
+pub use engine::combat::type_effectiveness;
+pub use engine::mechanics::items;
+pub use engine::turn::end_of_turn;
 
-// Ensure only one generation is enabled
-#[cfg(all(feature = "gen1", feature = "gen2"))]
-compile_error!("Features 'gen1' and 'gen2' cannot be used together");
+// No compile-time feature restrictions - everything handled at runtime
 
-#[cfg(all(feature = "gen1", feature = "gen3"))]
-compile_error!("Features 'gen1' and 'gen3' cannot be used together");
-
-#[cfg(all(feature = "gen2", feature = "gen3"))]
-compile_error!("Features 'gen2' and 'gen3' cannot be used together");
-
-// Add more generation mutual exclusion checks as needed...
-
-// Terastallization requires Gen 9
-#[cfg(all(feature = "terastallization", not(feature = "gen9")))]
-compile_error!("Feature 'terastallization' requires 'gen9'");
-
-// Macro for enum generation (copied from V1)
-#[macro_export]
-macro_rules! define_enum_with_from_str {
-    // Case when a default variant is provided
-    (
-        #[repr($repr:ident)]
-        $(#[$meta:meta])*
-        $name:ident {
-            $($variant:ident),+ $(,)?
-        },
-        default = $default_variant:ident
-    ) => {
-        #[repr($repr)]
-        $(#[$meta])*
-        pub enum $name {
-            $($variant),+
-        }
-
-        impl std::str::FromStr for $name {
-            type Err = ();
-
-            fn from_str(input: &str) -> Result<Self, Self::Err> {
-                match input.to_uppercase().as_str() {
-                    $(
-                        stringify!($variant) => Ok($name::$variant),
-                    )+
-                    _ => Ok($name::$default_variant),
-                }
-            }
-        }
-
-        impl std::fmt::Display for $name {
-            fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-                write!(f, "{:?}", self)
-            }
-        }
-
-        impl From<$repr> for $name {
-            fn from(value: $repr) -> $name {
-                match value {
-                    $(
-                        x if x == $name::$variant as $repr => $name::$variant,
-                    )+
-                    _ => $name::$default_variant,
-                }
-            }
-        }
-        impl Into<$repr> for $name {
-            fn into(self) -> $repr {
-                self as $repr
-            }
-        }
-    };
-
-    // Case when no default variant is provided
-    (
-        #[repr($repr:ident)]
-        $(#[$meta:meta])*
-        $name:ident {
-            $($variant:ident),+ $(,)?
-        }
-    ) => {
-        #[repr($repr)]
-        $(#[$meta])*
-        pub enum $name {
-            $($variant),+
-        }
-
-        impl std::str::FromStr for $name {
-            type Err = ();
-
-            fn from_str(input: &str) -> Result<Self, Self::Err> {
-                match input.to_uppercase().as_str() {
-                    $(
-                        stringify!($variant) => Ok($name::$variant),
-                    )+
-                    _ => panic!("Invalid {}: {}", stringify!($name), input.to_uppercase().as_str()),
-                }
-            }
-        }
-
-        impl std::fmt::Display for $name {
-            fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-                write!(f, "{:?}", self)
-            }
-        }
-
-        impl From<$repr> for $name {
-            fn from(value: $repr) -> $name {
-                match value {
-                    $(
-                        x if x == $name::$variant as $repr => $name::$variant,
-                    )+
-                    _ => panic!("Invalid {}: {}", stringify!($name), value),
-                }
-            }
-        }
-        impl Into<$repr> for $name {
-            fn into(self) -> $repr {
-                self as $repr
-            }
-        }
-    };
-}

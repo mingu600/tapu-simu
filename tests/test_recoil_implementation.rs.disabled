@@ -1,9 +1,10 @@
-use tapu_simu::test_framework::TestFramework;
-use tapu_simu::state::{State, Pokemon};
-use tapu_simu::battle_format::{BattleFormat, BattlePosition, SideReference};
+use tapu_simu::TestFramework;
+use tapu_simu::{State};
+use tapu_simu::core::state::Pokemon;
+use tapu_simu::{BattleFormat, BattlePosition, SideReference};
 use tapu_simu::generation::Generation;
 use tapu_simu::data::types::EngineMoveData;
-use tapu_simu::state::MoveCategory;
+use tapu_simu::core::state::MoveCategory;
 
 /// Test the recoil instruction generation system
 #[test]
@@ -158,7 +159,7 @@ fn test_minimum_recoil_damage() {
 // Helper functions for creating test data
 
 fn create_test_battle_state() -> State {
-    let format = BattleFormat::new("Singles".to_string(), Generation::Gen9, tapu_simu::battle_format::FormatType::Singles);
+    let format = BattleFormat::new("Singles".to_string(), Generation::Gen9, tapu_simu::core::battle_format::FormatType::Singles);
     let mut state = State::new(format);
     
     // Add test Pokemon

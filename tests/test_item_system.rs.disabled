@@ -5,10 +5,10 @@
 //! defensive items, gems, and integration with damage calculation.
 //! All tests use the TestFramework with real Pokemon Showdown data.
 
-use tapu_simu::test_framework::TestFramework;
-use tapu_simu::state::State;
-use tapu_simu::battle_format::BattleFormat;
-use tapu_simu::engine::damage_calc;
+use tapu_simu::TestFramework;
+use tapu_simu::State;
+use tapu_simu::BattleFormat;
+use tapu_simu::damage_calc;
 
 // =============================================================================
 // TYPE BOOSTER ITEMS
@@ -544,7 +544,7 @@ fn test_berry_activation_conditions() {
 
 #[test]
 fn test_status_berries_availability() {
-    use tapu_simu::engine::items::get_item_by_name;
+    use tapu_simu::items::get_item_by_name;
     
     // Test that all status berries can be found
     assert!(get_item_by_name("Lum Berry").is_some(), "Lum Berry should be available");
@@ -554,7 +554,7 @@ fn test_status_berries_availability() {
 
 #[test]
 fn test_stat_boost_berries_availability() {
-    use tapu_simu::engine::items::get_item_by_name;
+    use tapu_simu::items::get_item_by_name;
     
     // Test that all stat boost berries can be found
     assert!(get_item_by_name("Liechi Berry").is_some(), "Liechi Berry should be available");
@@ -564,7 +564,7 @@ fn test_stat_boost_berries_availability() {
 
 #[test]
 fn test_terrain_seeds_availability() {
-    use tapu_simu::engine::items::get_item_by_name;
+    use tapu_simu::items::get_item_by_name;
     
     // Test that all terrain seeds can be found
     assert!(get_item_by_name("Electric Seed").is_some(), "Electric Seed should be available");
@@ -575,7 +575,7 @@ fn test_terrain_seeds_availability() {
 
 #[test]
 fn test_end_of_turn_items_availability() {
-    use tapu_simu::engine::items::get_item_by_name;
+    use tapu_simu::items::get_item_by_name;
     
     // Test that all end-of-turn items can be found
     assert!(get_item_by_name("Black Sludge").is_some(), "Black Sludge should be available");
@@ -585,7 +585,7 @@ fn test_end_of_turn_items_availability() {
 
 #[test]
 fn test_utility_items_availability() {
-    use tapu_simu::engine::items::get_item_by_name;
+    use tapu_simu::items::get_item_by_name;
     
     // Test that all utility items can be found
     assert!(get_item_by_name("Protective Pads").is_some(), "Protective Pads should be available");
@@ -601,7 +601,7 @@ fn test_utility_items_availability() {
 
 #[test]
 fn test_legendary_items_availability() {
-    use tapu_simu::engine::items::get_item_by_name;
+    use tapu_simu::items::get_item_by_name;
     
     // Test that all legendary items can be found
     assert!(get_item_by_name("Rusted Sword").is_some(), "Rusted Sword should be available");
@@ -614,7 +614,7 @@ fn test_legendary_items_availability() {
 #[test]
 fn test_stat_boost_berries_trigger_conditions() {
     let framework = TestFramework::new().expect("Failed to create test framework");
-    use tapu_simu::engine::items::get_item_by_name;
+    use tapu_simu::items::get_item_by_name;
     
     // Test that stat boost berries can be found
     assert!(get_item_by_name("Liechi Berry").is_some(), "Liechi Berry should be available");
@@ -641,7 +641,7 @@ fn test_stat_boost_berries_trigger_conditions() {
 #[test]
 fn test_protective_pads_contact_removal() {
     let framework = TestFramework::new().expect("Failed to create test framework");
-    use tapu_simu::engine::items::get_item_by_name;
+    use tapu_simu::items::get_item_by_name;
     
     // Test that Protective Pads exists
     assert!(get_item_by_name("Protective Pads").is_some(), "Protective Pads should be available");
@@ -666,7 +666,7 @@ fn test_protective_pads_contact_removal() {
 #[test]
 fn test_iron_ball_speed_reduction() {
     let framework = TestFramework::new().expect("Failed to create test framework");
-    use tapu_simu::engine::items::get_item_by_name;
+    use tapu_simu::items::get_item_by_name;
     
     // Test that Iron Ball exists
     assert!(get_item_by_name("Iron Ball").is_some(), "Iron Ball should be available");
@@ -691,7 +691,7 @@ fn test_iron_ball_speed_reduction() {
 #[test]
 fn test_ogerpon_masks_species_specificity() {
     let framework = TestFramework::new().expect("Failed to create test framework");
-    use tapu_simu::engine::items::get_item_by_name;
+    use tapu_simu::items::get_item_by_name;
     
     // Test that Ogerpon masks exist
     assert!(get_item_by_name("Cornerstone Mask").is_some(), "Cornerstone Mask should be available");
@@ -718,7 +718,7 @@ fn test_ogerpon_masks_species_specificity() {
 #[test]
 fn test_sitrus_berry_generation_differences() {
     let framework = TestFramework::new().expect("Failed to create test framework");
-    use tapu_simu::engine::items::get_item_by_name_with_generation;
+    use tapu_simu::items::get_item_by_name_with_generation;
     
     // Test that Sitrus Berry can be created for different generations
     assert!(get_item_by_name_with_generation("Sitrus Berry", 3).is_some(), "Sitrus Berry should be available in Gen 3");
@@ -743,7 +743,7 @@ fn test_sitrus_berry_generation_differences() {
 
 #[test]
 fn test_item_attribution_new_items() {
-    use tapu_simu::engine::items::get_item_by_name;
+    use tapu_simu::items::get_item_by_name;
     
     // Test that attacker items are properly categorized
     let protective_pads = get_item_by_name("Protective Pads").unwrap();
@@ -783,7 +783,7 @@ fn test_dragon_scale_availability_and_boost() {
     let framework = TestFramework::new().expect("Failed to create test framework");
     
     // Test Dragon Scale availability
-    use tapu_simu::engine::items::get_item_by_name;
+    use tapu_simu::items::get_item_by_name;
     assert!(get_item_by_name("Dragon Scale").is_some(), "Dragon Scale should be available");
     
     // Test Dragon Scale boost
@@ -819,7 +819,7 @@ fn test_sea_incense_generation_specific_boost() {
     let framework = TestFramework::new().expect("Failed to create test framework");
     
     // Test Sea Incense availability
-    use tapu_simu::engine::items::get_item_by_name;
+    use tapu_simu::items::get_item_by_name;
     assert!(get_item_by_name("Sea Incense").is_some(), "Sea Incense should be available");
     
     let defender = framework
@@ -864,7 +864,7 @@ fn test_pink_bow_polkadot_bow_consistent_boost() {
     let framework = TestFramework::new().expect("Failed to create test framework");
     
     // Test availability
-    use tapu_simu::engine::items::get_item_by_name;
+    use tapu_simu::items::get_item_by_name;
     assert!(get_item_by_name("Pink Bow").is_some(), "Pink Bow should be available");
     assert!(get_item_by_name("Polkadot Bow").is_some(), "Polkadot Bow should be available");
     
@@ -930,7 +930,7 @@ fn test_pink_bow_polkadot_bow_consistent_boost() {
 #[test]
 fn test_miracle_berry_mint_berry_availability() {
     // Test availability
-    use tapu_simu::engine::items::get_item_by_name;
+    use tapu_simu::items::get_item_by_name;
     assert!(get_item_by_name("Miracle Berry").is_some(), "Miracle Berry should be available");
     assert!(get_item_by_name("Mint Berry").is_some(), "Mint Berry should be available");
 }
@@ -938,7 +938,7 @@ fn test_miracle_berry_mint_berry_availability() {
 #[test]
 fn test_miracle_berry_mint_berry_generation_specificity() {
     let framework = TestFramework::new().expect("Failed to create test framework");
-    use tapu_simu::engine::items::get_item_by_name;
+    use tapu_simu::items::get_item_by_name;
     
     // Test that Gen 2 exclusive berries exist
     assert!(get_item_by_name("Miracle Berry").is_some(), "Miracle Berry should be available");
@@ -969,7 +969,7 @@ fn test_miracle_berry_mint_berry_generation_specificity() {
 #[test]
 fn test_comprehensive_item_coverage_verification() {
     // Verify all critical items from checklist are now implemented
-    use tapu_simu::engine::items::get_item_by_name;
+    use tapu_simu::items::get_item_by_name;
     
     // The 4 critical items that were missing/broken
     assert!(get_item_by_name("Dragon Scale").is_some(), "Dragon Scale should now be implemented");

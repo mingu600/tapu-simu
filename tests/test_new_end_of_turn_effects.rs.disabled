@@ -3,12 +3,12 @@
 //! Simple verification tests for the newly implemented end-of-turn effects.
 //! These tests verify that our implementations compile and integrate correctly.
 
-use tapu_simu::test_framework::TestFramework;
-use tapu_simu::state::State;
-use tapu_simu::battle_format::BattleFormat;
-use tapu_simu::engine::end_of_turn::process_end_of_turn_effects;
+use tapu_simu::TestFramework;
+use tapu_simu::State;
+use tapu_simu::BattleFormat;
+use tapu_simu::end_of_turn::process_end_of_turn_effects;
 use tapu_simu::generation::{GenerationMechanics, Generation};
-use tapu_simu::instruction::{PokemonStatus, VolatileStatus, Weather};
+use tapu_simu::core::instruction::{PokemonStatus, VolatileStatus, Weather};
 
 #[test]
 fn test_end_of_turn_processing_compiles() {
@@ -60,7 +60,7 @@ fn test_weather_effects_integration() {
     let generation = GenerationMechanics::new(Generation::Gen9);
     
     // Set up weather
-    state.weather = Weather::RAIN;
+    state.weather = Weather::Rain;
     state.weather_turns_remaining = Some(5);
     
     let instructions = process_end_of_turn_effects(&state, &generation);

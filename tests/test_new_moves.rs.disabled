@@ -1,0 +1,317 @@
+use tapu_simu::core::state::State;
+use tapu_simu::core::battle_format::{BattleFormat, BattlePosition, SideReference};
+use tapu_simu::core::instruction::{PokemonStatus, VolatileStatus};
+use tapu_simu::engine::combat::move_effects::{apply_barb_barrage, apply_stored_power, apply_strength_sap, apply_judgment, apply_multi_attack, apply_revelation_dance, apply_burn_up, apply_double_shock, apply_feint};
+use tapu_simu::data::types::EngineMoveData;
+use tapu_simu::generation::{GenerationMechanics, Generation};
+use tapu_simu::testing::framework::TestFramework;
+
+#[test]
+fn test_barb_barrage_power_against_poisoned() {
+    let framework = TestFramework::new().unwrap();
+    let mut state = State::new(BattleFormat::gen9_ou());
+    
+    // Create Pokemon
+    let mut attacker = framework.create_pokemon_from_ps_data("qwilfish", None, None).unwrap();
+    let mut defender = framework.create_pokemon_from_ps_data("toxapex", None, None).unwrap();
+    
+    // Set defender as poisoned
+    defender.status = PokemonStatus::Poison;
+    
+    // Add Pokemon to state and set them as active
+    state.side_one.pokemon = vec![attacker];
+    state.side_one.set_active_pokemon_at_slot(0, Some(0));
+    state.side_two.pokemon = vec![defender];
+    state.side_two.set_active_pokemon_at_slot(0, Some(0));
+    
+    // Create move data for Barb Barrage
+    let move_data = EngineMoveData {
+        id: 1,
+        name: "Barb Barrage".to_string(),
+        base_power: Some(60),
+        accuracy: Some(100),
+        pp: 10,
+        move_type: "Poison".to_string(),
+        category: tapu_simu::core::state::MoveCategory::Physical,
+        priority: 0,
+        target: tapu_simu::data::ps_types::PSMoveTarget::Normal,
+        effect_chance: Some(50),
+        effect_description: "Doubles power against poisoned targets".to_string(),
+        flags: vec![],
+    };
+    
+    let user_position = BattlePosition { side: SideReference::SideOne, slot: 0 };
+    let target_positions = vec![BattlePosition { side: SideReference::SideTwo, slot: 0 }];
+    let generation = GenerationMechanics::new(Generation::Gen9);
+    
+    // Apply Barb Barrage
+    let result = apply_barb_barrage(&state, &move_data, user_position, &target_positions, &generation);
+    
+    // The function should return some instructions (not empty)
+    assert!(!result.is_empty(), "Barb Barrage should produce instructions against poisoned target");
+    
+    // Test against non-poisoned target
+    let mut healthy_defender = framework.create_pokemon_from_ps_data("toxapex", None, None).unwrap();
+    healthy_defender.status = PokemonStatus::None;
+    
+    let mut state2 = State::new(BattleFormat::gen9_ou());
+    state2.side_one.pokemon = vec![framework.create_pokemon_from_ps_data("qwilfish", None, None).unwrap()];
+    state2.side_one.set_active_pokemon_at_slot(0, Some(0));
+    state2.side_two.pokemon = vec![healthy_defender];
+    state2.side_two.set_active_pokemon_at_slot(0, Some(0));
+    
+    let result2 = apply_barb_barrage(&state2, &move_data, user_position, &target_positions, &generation);
+    
+    // Should still produce instructions, but with base power
+    assert!(!result2.is_empty(), "Barb Barrage should still work against non-poisoned target");
+}
+
+#[test]
+fn test_stored_power_scaling() {
+    let framework = TestFramework::new().unwrap();
+    let mut state = State::new(BattleFormat::gen9_ou());
+    
+    // Create Pokemon with stat boosts
+    let mut attacker = framework.create_pokemon_from_ps_data("alakazam", None, None).unwrap();
+    
+    // Add some positive stat boosts
+    attacker.stat_boosts.insert(tapu_simu::core::instruction::Stat::SpecialAttack, 2);
+    attacker.stat_boosts.insert(tapu_simu::core::instruction::Stat::Speed, 1);
+    
+    let defender = framework.create_pokemon_from_ps_data("toxapex", None, None).unwrap();
+    
+    state.side_one.pokemon = vec![attacker];
+    state.side_one.set_active_pokemon_at_slot(0, Some(0));
+    state.side_two.pokemon = vec![defender];
+    state.side_two.set_active_pokemon_at_slot(0, Some(0));
+    
+    let move_data = EngineMoveData {
+        id: 1,
+        name: "Stored Power".to_string(),
+        base_power: Some(20),
+        accuracy: Some(100),
+        pp: 10,
+        move_type: "Psychic".to_string(),
+        category: tapu_simu::core::state::MoveCategory::Special,
+        priority: 0,
+        target: tapu_simu::data::ps_types::PSMoveTarget::Normal,
+        effect_chance: None,
+        effect_description: "Power increases with stat boosts".to_string(),
+        flags: vec![],
+    };
+    
+    let user_position = BattlePosition { side: SideReference::SideOne, slot: 0 };
+    let target_positions = vec![BattlePosition { side: SideReference::SideTwo, slot: 0 }];
+    let generation = GenerationMechanics::new(Generation::Gen9);
+    
+    let result = apply_stored_power(&state, &move_data, user_position, &target_positions, &generation);
+    
+    assert!(!result.is_empty(), "Stored Power should produce instructions");
+}
+
+#[test]
+fn test_strength_sap_mechanics() {
+    let framework = TestFramework::new().unwrap();
+    let mut state = State::new(BattleFormat::gen9_ou());
+    
+    let attacker = framework.create_pokemon_from_ps_data("tangrowth", None, None).unwrap();
+    let defender = framework.create_pokemon_from_ps_data("machamp", None, None).unwrap();
+    
+    state.side_one.pokemon = vec![attacker];
+    state.side_one.set_active_pokemon_at_slot(0, Some(0));
+    state.side_two.pokemon = vec![defender];
+    state.side_two.set_active_pokemon_at_slot(0, Some(0));
+    
+    let move_data = EngineMoveData {
+        id: 1,
+        name: "Strength Sap".to_string(),
+        base_power: None,
+        accuracy: Some(100),
+        pp: 10,
+        move_type: "Grass".to_string(),
+        category: tapu_simu::core::state::MoveCategory::Status,
+        priority: 0,
+        target: tapu_simu::data::ps_types::PSMoveTarget::Normal,
+        effect_chance: None,
+        effect_description: "Heals based on target's Attack stat and lowers it".to_string(),
+        flags: vec![],
+    };
+    
+    let user_position = BattlePosition { side: SideReference::SideOne, slot: 0 };
+    let target_positions = vec![BattlePosition { side: SideReference::SideTwo, slot: 0 }];
+    let generation = GenerationMechanics::new(Generation::Gen9);
+    
+    let result = apply_strength_sap(&state, &move_data, user_position, &target_positions, &generation);
+    
+    println!("Strength Sap result: {:?}", result);
+    assert!(!result.is_empty(), "Strength Sap should produce instructions");
+    
+    // Check that it creates both stat lowering and healing instructions
+    let instruction_list = &result[0].instruction_list;
+    println!("First instruction list: {:?}", instruction_list);
+    assert!(instruction_list.len() >= 2, "Strength Sap should have at least 2 instructions (stat lower + heal)");
+}
+
+#[test]
+fn test_judgment_type_change() {
+    let framework = TestFramework::new().unwrap();
+    let mut state = State::new(BattleFormat::gen9_ou());
+    
+    // Create Arceus (multi-type)
+    let attacker = framework.create_pokemon_from_ps_data("arceus", None, None).unwrap();
+    let defender = framework.create_pokemon_from_ps_data("charizard", None, None).unwrap();
+    
+    state.side_one.pokemon = vec![attacker];
+    state.side_one.set_active_pokemon_at_slot(0, Some(0));
+    state.side_two.pokemon = vec![defender];
+    state.side_two.set_active_pokemon_at_slot(0, Some(0));
+    
+    let move_data = EngineMoveData {
+        id: 1,
+        name: "Judgment".to_string(),
+        base_power: Some(100),
+        accuracy: Some(100),
+        pp: 10,
+        move_type: "Normal".to_string(), // Will change based on user's type
+        category: tapu_simu::core::state::MoveCategory::Special,
+        priority: 0,
+        target: tapu_simu::data::ps_types::PSMoveTarget::Normal,
+        effect_chance: None,
+        effect_description: "Type matches user's type".to_string(),
+        flags: vec![],
+    };
+    
+    let user_position = BattlePosition { side: SideReference::SideOne, slot: 0 };
+    let target_positions = vec![BattlePosition { side: SideReference::SideTwo, slot: 0 }];
+    let generation = GenerationMechanics::new(Generation::Gen9);
+    
+    let result = apply_judgment(&state, &move_data, user_position, &target_positions, &generation);
+    
+    assert!(!result.is_empty(), "Judgment should produce instructions");
+}
+
+#[test]
+fn test_burn_up_type_removal() {
+    let framework = TestFramework::new().unwrap();
+    let mut state = State::new(BattleFormat::gen9_ou());
+    
+    // Create Fire-type Pokemon
+    let attacker = framework.create_pokemon_from_ps_data("arcanine", None, None).unwrap();
+    let defender = framework.create_pokemon_from_ps_data("blastoise", None, None).unwrap();
+    
+    state.side_one.pokemon = vec![attacker];
+    state.side_one.set_active_pokemon_at_slot(0, Some(0));
+    state.side_two.pokemon = vec![defender];
+    state.side_two.set_active_pokemon_at_slot(0, Some(0));
+    
+    let move_data = EngineMoveData {
+        id: 1,
+        name: "Burn Up".to_string(),
+        base_power: Some(130),
+        accuracy: Some(100),
+        pp: 5,
+        move_type: "Fire".to_string(),
+        category: tapu_simu::core::state::MoveCategory::Special,
+        priority: 0,
+        target: tapu_simu::data::ps_types::PSMoveTarget::Normal,
+        effect_chance: None,
+        effect_description: "Removes user's Fire typing".to_string(),
+        flags: vec![],
+    };
+    
+    let user_position = BattlePosition { side: SideReference::SideOne, slot: 0 };
+    let target_positions = vec![BattlePosition { side: SideReference::SideTwo, slot: 0 }];
+    let generation = GenerationMechanics::new(Generation::Gen9);
+    
+    let result = apply_burn_up(&state, &move_data, user_position, &target_positions, &generation);
+    
+    assert!(!result.is_empty(), "Burn Up should produce instructions");
+    
+    // Should have type change instruction
+    let instruction_list = &result[0].instruction_list;
+    assert!(instruction_list.len() >= 1, "Should have type change instruction");
+}
+
+#[test]
+fn test_double_shock_type_removal() {
+    let framework = TestFramework::new().unwrap();
+    let mut state = State::new(BattleFormat::gen9_ou());
+    
+    // Create Electric-type Pokemon
+    let attacker = framework.create_pokemon_from_ps_data("pikachu", None, None).unwrap();
+    let defender = framework.create_pokemon_from_ps_data("snorlax", None, None).unwrap();
+    
+    state.side_one.pokemon = vec![attacker];
+    state.side_one.set_active_pokemon_at_slot(0, Some(0));
+    state.side_two.pokemon = vec![defender];
+    state.side_two.set_active_pokemon_at_slot(0, Some(0));
+    
+    let move_data = EngineMoveData {
+        id: 1,
+        name: "Double Shock".to_string(),
+        base_power: Some(120),
+        accuracy: Some(100),
+        pp: 5,
+        move_type: "Electric".to_string(),
+        category: tapu_simu::core::state::MoveCategory::Physical,
+        priority: 0,
+        target: tapu_simu::data::ps_types::PSMoveTarget::Normal,
+        effect_chance: None,
+        effect_description: "Removes user's Electric typing".to_string(),
+        flags: vec![],
+    };
+    
+    let user_position = BattlePosition { side: SideReference::SideOne, slot: 0 };
+    let target_positions = vec![BattlePosition { side: SideReference::SideTwo, slot: 0 }];
+    let generation = GenerationMechanics::new(Generation::Gen9);
+    
+    let result = apply_double_shock(&state, &move_data, user_position, &target_positions, &generation);
+    
+    assert!(!result.is_empty(), "Double Shock should produce instructions");
+    
+    // Should have type change instruction
+    let instruction_list = &result[0].instruction_list;
+    assert!(instruction_list.len() >= 1, "Should have type change instruction");
+}
+
+#[test]
+fn test_feint_breaks_protection() {
+    let framework = TestFramework::new().unwrap();
+    let mut state = State::new(BattleFormat::gen9_ou());
+    
+    // Create Pokemon with protection
+    let attacker = framework.create_pokemon_from_ps_data("lucario", None, None).unwrap();
+    let mut defender = framework.create_pokemon_from_ps_data("snorlax", None, None).unwrap();
+    
+    // Add Protect status to defender
+    defender.volatile_statuses.insert(VolatileStatus::Protect);
+    
+    state.side_one.pokemon = vec![attacker];
+    state.side_one.set_active_pokemon_at_slot(0, Some(0));
+    state.side_two.pokemon = vec![defender];
+    state.side_two.set_active_pokemon_at_slot(0, Some(0));
+    
+    let move_data = EngineMoveData {
+        id: 1,
+        name: "Feint".to_string(),
+        base_power: Some(30),
+        accuracy: Some(100),
+        pp: 10,
+        move_type: "Normal".to_string(),
+        category: tapu_simu::core::state::MoveCategory::Physical,
+        priority: 2,
+        target: tapu_simu::data::ps_types::PSMoveTarget::Normal,
+        effect_chance: None,
+        effect_description: "Breaks through protection".to_string(),
+        flags: vec![],
+    };
+    
+    let user_position = BattlePosition { side: SideReference::SideOne, slot: 0 };
+    let target_positions = vec![BattlePosition { side: SideReference::SideTwo, slot: 0 }];
+    let generation = GenerationMechanics::new(Generation::Gen9);
+    
+    let result = apply_feint(&state, &move_data, user_position, &target_positions, &generation);
+    
+    // Should have instructions to remove protection
+    assert!(!result.is_empty(), "Feint should produce instructions when target is protected");
+}

@@ -39,23 +39,6 @@ tower = { version = "0.4", features = ["full"] }
 tower-http = { version = "0.5", features = ["cors", "fs"] }
 uuid = { version = "1.0", features = ["v4", "serde"] }
 
-[features]
-# Generation features
-gen1 = []
-gen2 = []
-gen3 = []
-gen4 = []
-gen5 = []
-gen6 = []
-gen7 = []
-gen8 = []
-gen9 = []
-terastallization = ["gen9"]
-
-# Battle optimization features
-remove_low_chance_instructions = []
-
-# Default features (Gen 9 with Terastallization for modern Pokemon)
-default = ["gen9", "terastallization"]
+# No compile-time features - everything handled at runtime
 
 [workspace]

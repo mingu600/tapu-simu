@@ -120,8 +120,7 @@ pub fn print_engine_info() {
     println!("  - Format-aware battle mechanics");
     println!("  - Pokemon Showdown data integration");
 
-    #[cfg(feature = "terastallization")]
-    println!("  - Terastallization support");
+    println!("  - Terastallization support (Gen 9+)");
 
     println!();
 }

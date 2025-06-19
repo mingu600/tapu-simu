@@ -8,7 +8,8 @@ use crate::core::move_choice::MoveChoice;
 use crate::core::battle_format::{BattleFormat, BattlePosition};
 use crate::core::battle_format::SideReference;
 use crate::core::instruction::{StateInstructions, Instruction};
-use crate::core::state::{Pokemon, Move, MoveCategory, PokemonStats, Gender};
+use crate::core::state::{Pokemon, Move, MoveCategory, Gender};
+use crate::data::types::Stats;
 use crate::core::move_choice::{MoveIndex, PokemonIndex};
 use crate::data::ps_types::PSMoveTarget;
 use crate::generation::Generation;
@@ -33,9 +34,7 @@ pub struct UIPokemon {
     pub nature: Option<String>,
     pub ivs: Option<Vec<u8>>,
     pub evs: Option<Vec<u8>>,
-    #[cfg(feature = "terastallization")]
     pub tera_type: Option<String>,
-    #[cfg(feature = "terastallization")]
     pub is_terastallized: bool,
 }
 
@@ -103,7 +102,6 @@ pub struct UIMoveChoice {
     pub move_index: Option<usize>,
     pub target_positions: Vec<UIBattlePosition>,
     pub pokemon_index: Option<usize>,
-    #[cfg(feature = "terastallization")]
     pub tera_type: Option<String>,
 }
 
@@ -228,9 +226,7 @@ impl EngineBridge {
             nature: None, // Note: Engine Pokemon doesn't track nature currently
             ivs: None,    // Note: Engine Pokemon doesn't track IVs currently
             evs: None,    // Note: Engine Pokemon doesn't track EVs currently
-            #[cfg(feature = "terastallization")]
             tera_type: pokemon.tera_type.map(|t| format!("{:?}", t)),
-            #[cfg(feature = "terastallization")]
             is_terastallized: pokemon.is_terastallized,
         }
     }
@@ -265,16 +261,12 @@ impl EngineBridge {
 
                 let target_positions = target_positions?;
 
-                #[cfg(feature = "terastallization")]
                 if let Some(_tera_type) = &ui_choice.tera_type {
                     // For now, just use regular moves - can expand Tera support later
                     Ok(MoveChoice::new_move(move_index, target_positions))
                 } else {
                     Ok(MoveChoice::new_move(move_index, target_positions))
                 }
-
-                #[cfg(not(feature = "terastallization"))]
-                Ok(MoveChoice::new_move(move_index, target_positions))
             }
             "switch" => {
                 let pokemon_index = ui_choice.pokemon_index
@@ -519,9 +511,7 @@ impl EngineBridge {
             nature: Some("Hardy".to_string()),
             ivs: Some(vec![31, 31, 31, 31, 31, 31]),
             evs: Some(vec![0, 0, 0, 0, 0, 0]),
-            #[cfg(feature = "terastallization")]
             tera_type: None,
-            #[cfg(feature = "terastallization")]
             is_terastallized: false,
         }
     }
@@ -533,7 +523,8 @@ impl EngineBridge {
         pokemon.level = ui_pokemon.level;
         pokemon.hp = ui_pokemon.hp;
         pokemon.max_hp = ui_pokemon.max_hp;
-        pokemon.stats = PokemonStats {
+        pokemon.stats = Stats {
+            hp: ui_pokemon.hp,
             attack: ui_pokemon.stats.attack,
             defense: ui_pokemon.stats.defense,
             special_attack: ui_pokemon.stats.special_attack,
@@ -582,11 +573,9 @@ impl EngineBridge {
             }
         }
 
-        #[cfg(feature = "terastallization")]
-        {
-            pokemon.is_terastallized = ui_pokemon.is_terastallized;
-            // Note: tera_type conversion would need more work to match the enum
-        }
+        // Terastallization fields (Gen 9+ only)
+        pokemon.is_terastallized = ui_pokemon.is_terastallized;
+        // Note: tera_type conversion would need more work to match the enum
 
         pokemon
     }
@@ -672,7 +661,6 @@ impl EngineBridge {
                         move_index: Some(*move_index as usize),
                         target_positions: target_positions.iter().map(|p| self.internal_position_to_ui(p)).collect(),
                         pokemon_index: None,
-                        #[cfg(feature = "terastallization")]
                         tera_type: None,
                     },
                     false,
@@ -691,7 +679,6 @@ impl EngineBridge {
                         move_index: None,
                         target_positions: vec![], // Switches don't have targets
                         pokemon_index: Some(*pokemon_index as usize),
-                        #[cfg(feature = "terastallization")]
                         tera_type: None,
                     },
                     false,
@@ -705,13 +692,11 @@ impl EngineBridge {
                     move_index: None,
                     target_positions: vec![],
                     pokemon_index: None,
-                    #[cfg(feature = "terastallization")]
                     tera_type: None,
                 },
                 false,
                 None
             ),
-            #[cfg(feature = "terastallization")]
             MoveChoice::MoveTera { move_index, target_positions, tera_type } => {
                 let targets_str = if target_positions.len() > 1 {
                     format!(" → {} targets", target_positions.len())

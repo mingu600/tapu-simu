@@ -297,9 +297,7 @@ impl PokemonBuilder {
             nature: Some(nature.to_string()),
             ivs: Some(ivs.to_vec()),
             evs: Some(evs.to_vec()),
-            #[cfg(feature = "terastallization")]
             tera_type: tera_type.map(|t| t.to_string()),
-            #[cfg(feature = "terastallization")]
             is_terastallized: false,
         })
     }

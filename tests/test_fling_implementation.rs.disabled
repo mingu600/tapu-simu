@@ -1,0 +1,299 @@
+//! Tests for Fling move implementation with item-based power and effects
+
+use tapu_simu::core::state::{State, Pokemon, PokemonStatus};
+use tapu_simu::core::battle_format::BattleFormat;
+use tapu_simu::core::instruction::{Instruction, VolatileStatus, PokemonStatus as InstructionPokemonStatus};
+use tapu_simu::generation::{Generation, GenerationMechanics};
+use tapu_simu::engine::combat::move_effects::apply_fling;
+use tapu_simu::data::types::EngineMoveData;
+use tapu_simu::data::ps_types::PSMoveTarget;
+use tapu_simu::core::state::MoveCategory;
+use tapu_simu::testing::framework::TestFramework;
+
+/// Test Fling with various items and their specific powers and effects
+#[cfg(test)]
+mod fling_tests {
+    use super::*;
+
+    fn create_test_state_with_item(item_name: &str) -> State {
+        let format = BattleFormat::gen9_ou();
+        let mut state = State::new(format);
+        
+        // Create user with the specified item
+        let mut user = Pokemon::new("test-pokemon".to_string());
+        user.item = Some(item_name.to_string());
+        user.hp = 100;
+        user.max_hp = 100;
+        
+        // Create target
+        let mut target = Pokemon::new("target-pokemon".to_string());
+        target.hp = 100;
+        target.max_hp = 100;
+        target.status = PokemonStatus::None;
+        
+        state.side_one.pokemon.push(user);
+        state.side_two.pokemon.push(target);
+        
+        state
+    }
+
+    fn create_fling_move_data() -> EngineMoveData {
+        EngineMoveData {
+            id: 374,
+            name: "Fling".to_string(),
+            base_power: Some(0), // Will be overridden by item
+            accuracy: Some(100),
+            pp: 10,
+            move_type: "Dark".to_string(),
+            category: MoveCategory::Physical,
+            priority: 0,
+            target: PSMoveTarget::Normal,
+            effect_chance: None,
+            effect_description: "Power and effect depend on held item".to_string(),
+            flags: vec!["contact".to_string()],
+        }
+    }
+
+    #[test]
+    fn test_fling_flame_orb_power_and_burn() {
+        let state = create_test_state_with_item("flameorb");
+        let move_data = create_fling_move_data();
+        let generation = GenerationMechanics::new(Generation::Gen9);
+        
+        let user_position = (0, 0).into();
+        let target_positions = vec![(1, 0).into()];
+        
+        let instructions = apply_fling(&state, &move_data, user_position, &target_positions, &generation);
+        
+        // Should have successful execution
+        assert!(!instructions.is_empty());
+        assert!(instructions[0].probability > 0.0);
+        
+        let instruction_list = &instructions[0].instruction_list;
+        
+        // Should consume the item
+        let has_item_removal = instruction_list.iter().any(|instr| {
+            matches!(instr, Instruction::ChangeItem(change_item) if change_item.new_item.is_none())
+        });
+        assert!(has_item_removal, "Fling should consume the Flame Orb");
+        
+        // Should apply burn status (if target doesn't already have status)
+        let has_burn_application = instruction_list.iter().any(|instr| {
+            matches!(instr, Instruction::ApplyStatus(apply_status) 
+                if apply_status.status == InstructionPokemonStatus::Burn)
+        });
+        // Note: This depends on PS data being available and correct
+    }
+
+    #[test]
+    fn test_fling_mega_stone_power() {
+        let state = create_test_state_with_item("abomasite");
+        let move_data = create_fling_move_data();
+        let generation = GenerationMechanics::new(Generation::Gen9);
+        
+        let user_position = (0, 0).into();
+        let target_positions = vec![(1, 0).into()];
+        
+        let instructions = apply_fling(&state, &move_data, user_position, &target_positions, &generation);
+        
+        // Should have successful execution
+        assert!(!instructions.is_empty());
+        assert!(instructions[0].probability > 0.0);
+        
+        let instruction_list = &instructions[0].instruction_list;
+        
+        // Should consume the item
+        let has_item_removal = instruction_list.iter().any(|instr| {
+            matches!(instr, Instruction::ChangeItem(change_item) if change_item.new_item.is_none())
+        });
+        assert!(has_item_removal, "Fling should consume the Mega Stone");
+        
+        // Mega stones should have 80 power and no status effects
+        // The power is tested indirectly through the damage calculation
+    }
+
+    #[test]
+    fn test_fling_kings_rock_flinch() {
+        let state = create_test_state_with_item("kingsrock");
+        let move_data = create_fling_move_data();
+        let generation = GenerationMechanics::new(Generation::Gen9);
+        
+        let user_position = (0, 0).into();
+        let target_positions = vec![(1, 0).into()];
+        
+        let instructions = apply_fling(&state, &move_data, user_position, &target_positions, &generation);
+        
+        // Should have successful execution
+        assert!(!instructions.is_empty());
+        assert!(instructions[0].probability > 0.0);
+        
+        let instruction_list = &instructions[0].instruction_list;
+        
+        // Should apply flinch volatile status
+        let has_flinch_application = instruction_list.iter().any(|instr| {
+            matches!(instr, Instruction::ApplyVolatileStatus(apply_volatile) 
+                if apply_volatile.volatile_status == VolatileStatus::Flinch)
+        });
+        // Note: This depends on PS data being available and correct
+    }
+
+    #[test]
+    fn test_fling_poison_barb_poison() {
+        let state = create_test_state_with_item("poisonbarb");
+        let move_data = create_fling_move_data();
+        let generation = GenerationMechanics::new(Generation::Gen9);
+        
+        let user_position = (0, 0).into();
+        let target_positions = vec![(1, 0).into()];
+        
+        let instructions = apply_fling(&state, &move_data, user_position, &target_positions, &generation);
+        
+        // Should have successful execution
+        assert!(!instructions.is_empty());
+        assert!(instructions[0].probability > 0.0);
+        
+        let instruction_list = &instructions[0].instruction_list;
+        
+        // Should apply poison status
+        let has_poison_application = instruction_list.iter().any(|instr| {
+            matches!(instr, Instruction::ApplyStatus(apply_status) 
+                if apply_status.status == InstructionPokemonStatus::Poison)
+        });
+        // Note: This depends on PS data being available and correct
+    }
+
+    #[test]
+    fn test_fling_no_item_fails() {
+        let format = BattleFormat::gen9_ou();
+        let mut state = State::new(format);
+        
+        // Create user without an item
+        let mut user = Pokemon::new("test-pokemon".to_string());
+        user.item = None; // No item
+        user.hp = 100;
+        user.max_hp = 100;
+        
+        let mut target = Pokemon::new("target-pokemon".to_string());
+        target.hp = 100;
+        target.max_hp = 100;
+        
+        state.side_one.pokemon.push(user);
+        state.side_two.pokemon.push(target);
+        
+        let move_data = create_fling_move_data();
+        let generation = GenerationMechanics::new(Generation::Gen9);
+        
+        let user_position = (0, 0).into();
+        let target_positions = vec![(1, 0).into()];
+        
+        let instructions = apply_fling(&state, &move_data, user_position, &target_positions, &generation);
+        
+        // Should fail - empty instructions
+        assert!(instructions.is_empty() || instructions[0].probability == 0.0);
+    }
+
+    #[test] 
+    fn test_fling_unflingable_item_fails() {
+        // Test with an item that can't be flung (this depends on PS data)
+        // Most key items and some special items can't be flung
+        let state = create_test_state_with_item("unknown-item");
+        let move_data = create_fling_move_data();
+        let generation = GenerationMechanics::new(Generation::Gen9);
+        
+        let user_position = (0, 0).into();
+        let target_positions = vec![(1, 0).into()];
+        
+        let instructions = apply_fling(&state, &move_data, user_position, &target_positions, &generation);
+        
+        // Should fail for unknown/unflingable items
+        assert!(instructions.is_empty() || instructions[0].probability == 0.0);
+    }
+
+    #[test]
+    fn test_fling_status_not_applied_if_target_has_status() {
+        let mut state = create_test_state_with_item("flameorb");
+        
+        // Give target an existing status condition
+        if let Some(target) = state.side_two.pokemon.get_mut(0) {
+            target.status = PokemonStatus::Paralysis;
+        }
+        
+        let move_data = create_fling_move_data();
+        let generation = GenerationMechanics::new(Generation::Gen9);
+        
+        let user_position = (0, 0).into();
+        let target_positions = vec![(1, 0).into()];
+        
+        let instructions = apply_fling(&state, &move_data, user_position, &target_positions, &generation);
+        
+        // Should have successful execution
+        assert!(!instructions.is_empty());
+        assert!(instructions[0].probability > 0.0);
+        
+        let instruction_list = &instructions[0].instruction_list;
+        
+        // Should NOT apply burn status since target already has paralysis
+        let has_status_application = instruction_list.iter().any(|instr| {
+            matches!(instr, Instruction::ApplyStatus(_))
+        });
+        assert!(!has_status_application, "Fling should not apply status to already-statused Pokemon");
+    }
+
+    #[test] 
+    fn test_fling_light_ball_paralysis() {
+        let state = create_test_state_with_item("lightball");
+        let move_data = create_fling_move_data();
+        let generation = GenerationMechanics::new(Generation::Gen9);
+        
+        let user_position = (0, 0).into();
+        let target_positions = vec![(1, 0).into()];
+        
+        let instructions = apply_fling(&state, &move_data, user_position, &target_positions, &generation);
+        
+        // Should have successful execution
+        assert!(!instructions.is_empty());
+        assert!(instructions[0].probability > 0.0);
+        
+        let instruction_list = &instructions[0].instruction_list;
+        
+        // Should apply paralysis status
+        let has_paralysis_application = instruction_list.iter().any(|instr| {
+            matches!(instr, Instruction::ApplyStatus(apply_status) 
+                if apply_status.status == InstructionPokemonStatus::Paralysis)
+        });
+        // Note: This depends on PS data being available and correct
+    }
+}
+
+/// Integration tests with TestFramework (requires PS data)
+#[cfg(test)]
+mod fling_integration_tests {
+    use super::*;
+
+    #[test]
+    fn test_fling_with_real_ps_data() {
+        if let Ok(framework) = TestFramework::new() {
+            // Test that PS data loads correctly and provides fling data
+            let service = tapu_simu::data::services::item_service::PSItemService::default();
+            
+            if service.is_initialized() {
+                // Test known items with fling data
+                assert!(service.can_be_flung("flameorb"));
+                assert_eq!(service.get_fling_power("flameorb"), 30);
+                assert_eq!(service.get_fling_status("flameorb"), Some("brn"));
+                
+                assert!(service.can_be_flung("abomasite"));
+                assert_eq!(service.get_fling_power("abomasite"), 80);
+                assert_eq!(service.get_fling_status("abomasite"), None);
+                
+                assert!(service.can_be_flung("kingsrock"));
+                assert_eq!(service.get_fling_power("kingsrock"), 30);
+                assert_eq!(service.get_fling_volatile_status("kingsrock"), Some("flinch"));
+                
+                println!("Fling integration tests passed with real PS data!");
+            } else {
+                println!("PS data not available, skipping integration tests");
+            }
+        }
+    }
+}

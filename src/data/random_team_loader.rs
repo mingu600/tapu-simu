@@ -11,7 +11,7 @@ use rand::rngs::StdRng;
 use rand::SeedableRng;
 use crate::data::types::{Nature, Stats};
 use crate::core::battle_format::BattleFormat;
-use crate::core::state::{Pokemon, PokemonStats, Gender};
+use crate::core::state::{Pokemon, Gender};
 use crate::core::move_choice::PokemonType;
 
 /// Represents a Pokemon set from random battle data
@@ -341,7 +341,8 @@ impl RandomPokemonSet {
         
         pokemon.hp = hp as i16;
         pokemon.max_hp = hp as i16;
-        pokemon.stats = PokemonStats {
+        pokemon.stats = Stats {
+            hp: hp as i16,
             attack,
             defense,
             special_attack,
@@ -387,11 +388,9 @@ impl RandomPokemonSet {
             pokemon.moves.insert(move_index, move_data);
         }
         
-        // Set tera type if available
-        #[cfg(feature = "terastallization")]
-        {
-            pokemon.tera_type = self.get_tera_type();
-        }
+        // Set tera type if available (Gen 9+ only)
+        // Note: Could add generation check here if needed
+        pokemon.tera_type = self.get_tera_type();
         
         pokemon
     }

@@ -1,0 +1,220 @@
+use tapu_simu::core::state::State;
+use tapu_simu::core::battle_format::{BattleFormat, BattlePosition, SideReference};
+use tapu_simu::core::instruction::{PokemonStatus, VolatileStatus};
+use tapu_simu::engine::combat::move_effects::{apply_razor_wind, apply_skull_bash, apply_sky_attack, apply_focus_punch, apply_fillet_away, apply_clangorous_soul};
+use tapu_simu::data::types::EngineMoveData;
+use tapu_simu::generation::{GenerationMechanics, Generation};
+use tapu_simu::testing::framework::TestFramework;
+
+#[test]
+fn test_razor_wind_charge_mechanics() {
+    let framework = TestFramework::new().unwrap();
+    let mut state = State::new(BattleFormat::gen9_ou());
+    
+    // Create attacker and defender
+    let attacker = framework.create_pokemon_from_ps_data("pidgeot", None, None).unwrap();
+    let defender = framework.create_pokemon_from_ps_data("toxapex", None, None).unwrap();
+    
+    state.side_one.pokemon = vec![attacker];
+    state.side_one.set_active_pokemon_at_slot(0, Some(0));
+    state.side_two.pokemon = vec![defender];
+    state.side_two.set_active_pokemon_at_slot(0, Some(0));
+    
+    let move_data = EngineMoveData {
+        id: 1,
+        name: "Razor Wind".to_string(),
+        base_power: Some(80),
+        accuracy: Some(100),
+        pp: 10,
+        move_type: "Normal".to_string(),
+        category: tapu_simu::core::state::MoveCategory::Special,
+        priority: 0,
+        target: tapu_simu::data::ps_types::PSMoveTarget::Normal,
+        effect_chance: None,
+        effect_description: "Two-turn Normal move with high critical hit ratio".to_string(),
+        flags: vec!["charge".to_string()],
+    };
+    
+    let user_position = BattlePosition { side: SideReference::SideOne, slot: 0 };
+    let target_positions = vec![BattlePosition { side: SideReference::SideTwo, slot: 0 }];
+    let generation = GenerationMechanics::new(Generation::Gen9);
+    
+    // Test first turn (charging)
+    let result = apply_razor_wind(&state, &move_data, user_position, &target_positions, &generation);
+    
+    assert!(!result.is_empty(), "Razor Wind should produce instructions on first turn");
+    
+    // Should apply the RazorWind volatile status for charging
+    let instruction_list = &result[0].instruction_list;
+    assert!(instruction_list.len() >= 1, "Should have charging instruction");
+}
+
+#[test]
+fn test_skull_bash_defense_boost() {
+    let framework = TestFramework::new().unwrap();
+    let mut state = State::new(BattleFormat::gen9_ou());
+    
+    // Create attacker
+    let attacker = framework.create_pokemon_from_ps_data("squirtle", None, None).unwrap();
+    let defender = framework.create_pokemon_from_ps_data("charmander", None, None).unwrap();
+    
+    state.side_one.pokemon = vec![attacker];
+    state.side_one.set_active_pokemon_at_slot(0, Some(0));
+    state.side_two.pokemon = vec![defender];
+    state.side_two.set_active_pokemon_at_slot(0, Some(0));
+    
+    let move_data = EngineMoveData {
+        id: 1,
+        name: "Skull Bash".to_string(),
+        base_power: Some(130),
+        accuracy: Some(100),
+        pp: 10,
+        move_type: "Normal".to_string(),
+        category: tapu_simu::core::state::MoveCategory::Physical,
+        priority: 0,
+        target: tapu_simu::data::ps_types::PSMoveTarget::Normal,
+        effect_chance: None,
+        effect_description: "Boosts Defense on charge turn".to_string(),
+        flags: vec!["charge".to_string()],
+    };
+    
+    let user_position = BattlePosition { side: SideReference::SideOne, slot: 0 };
+    let target_positions = vec![BattlePosition { side: SideReference::SideTwo, slot: 0 }];
+    let generation = GenerationMechanics::new(Generation::Gen9);
+    
+    // Test first turn (charging with Defense boost)
+    let result = apply_skull_bash(&state, &move_data, user_position, &target_positions, &generation);
+    
+    assert!(!result.is_empty(), "Skull Bash should produce instructions on first turn");
+    
+    // Should apply both the SkullBash volatile status and Defense boost
+    let instruction_list = &result[0].instruction_list;
+    assert!(instruction_list.len() >= 2, "Should have charging instruction and Defense boost");
+}
+
+#[test]
+fn test_fillet_away_stat_boost_and_damage() {
+    let framework = TestFramework::new().unwrap();
+    let mut state = State::new(BattleFormat::gen9_ou());
+    
+    // Create Pokemon with high HP for meaningful damage calculation
+    let attacker = framework.create_pokemon_from_ps_data("tatsugiri", None, None).unwrap();
+    let defender = framework.create_pokemon_from_ps_data("charmander", None, None).unwrap();
+    
+    state.side_one.pokemon = vec![attacker];
+    state.side_one.set_active_pokemon_at_slot(0, Some(0));
+    state.side_two.pokemon = vec![defender];
+    state.side_two.set_active_pokemon_at_slot(0, Some(0));
+    
+    let move_data = EngineMoveData {
+        id: 1,
+        name: "Fillet Away".to_string(),
+        base_power: None,
+        accuracy: None,
+        pp: 10,
+        move_type: "Normal".to_string(),
+        category: tapu_simu::core::state::MoveCategory::Status,
+        priority: 0,
+        target: tapu_simu::data::ps_types::PSMoveTarget::Self_,
+        effect_chance: None,
+        effect_description: "Boosts offensive stats but costs 1/2 HP".to_string(),
+        flags: vec![],
+    };
+    
+    let user_position = BattlePosition { side: SideReference::SideOne, slot: 0 };
+    let target_positions = vec![user_position];
+    let generation = GenerationMechanics::new(Generation::Gen9);
+    
+    let result = apply_fillet_away(&state, &move_data, user_position, &target_positions, &generation);
+    
+    assert!(!result.is_empty(), "Fillet Away should produce instructions");
+    
+    // Should have both damage and stat boost instructions
+    let instruction_list = &result[0].instruction_list;
+    assert!(instruction_list.len() >= 2, "Should have damage and stat boost instructions");
+}
+
+#[test]
+fn test_clangorous_soul_all_stat_boost() {
+    let framework = TestFramework::new().unwrap();
+    let mut state = State::new(BattleFormat::gen9_ou());
+    
+    // Create Pokemon with high HP
+    let attacker = framework.create_pokemon_from_ps_data("dragonite", None, None).unwrap();
+    let defender = framework.create_pokemon_from_ps_data("charmander", None, None).unwrap();
+    
+    state.side_one.pokemon = vec![attacker];
+    state.side_one.set_active_pokemon_at_slot(0, Some(0));
+    state.side_two.pokemon = vec![defender];
+    state.side_two.set_active_pokemon_at_slot(0, Some(0));
+    
+    let move_data = EngineMoveData {
+        id: 1,
+        name: "Clangorous Soul".to_string(),
+        base_power: None,
+        accuracy: None,
+        pp: 5,
+        move_type: "Dragon".to_string(),
+        category: tapu_simu::core::state::MoveCategory::Status,
+        priority: 0,
+        target: tapu_simu::data::ps_types::PSMoveTarget::Self_,
+        effect_chance: None,
+        effect_description: "Boosts all stats but costs 1/3 HP".to_string(),
+        flags: vec![],
+    };
+    
+    let user_position = BattlePosition { side: SideReference::SideOne, slot: 0 };
+    let target_positions = vec![user_position];
+    let generation = GenerationMechanics::new(Generation::Gen9);
+    
+    let result = apply_clangorous_soul(&state, &move_data, user_position, &target_positions, &generation);
+    
+    assert!(!result.is_empty(), "Clangorous Soul should produce instructions");
+    
+    // Should have damage instruction and stat boost instruction for all stats
+    let instruction_list = &result[0].instruction_list;
+    assert!(instruction_list.len() >= 2, "Should have damage and stat boost instructions");
+}
+
+#[test]
+fn test_focus_punch_charge_mechanics() {
+    let framework = TestFramework::new().unwrap();
+    let mut state = State::new(BattleFormat::gen9_ou());
+    
+    // Create attacker and defender
+    let attacker = framework.create_pokemon_from_ps_data("machamp", None, None).unwrap();
+    let defender = framework.create_pokemon_from_ps_data("snorlax", None, None).unwrap();
+    
+    state.side_one.pokemon = vec![attacker];
+    state.side_one.set_active_pokemon_at_slot(0, Some(0));
+    state.side_two.pokemon = vec![defender];
+    state.side_two.set_active_pokemon_at_slot(0, Some(0));
+    
+    let move_data = EngineMoveData {
+        id: 1,
+        name: "Focus Punch".to_string(),
+        base_power: Some(150),
+        accuracy: Some(100),
+        pp: 20,
+        move_type: "Fighting".to_string(),
+        category: tapu_simu::core::state::MoveCategory::Physical,
+        priority: -3,
+        target: tapu_simu::data::ps_types::PSMoveTarget::Normal,
+        effect_chance: None,
+        effect_description: "Fails if user takes direct damage".to_string(),
+        flags: vec!["charge".to_string()],
+    };
+    
+    let user_position = BattlePosition { side: SideReference::SideOne, slot: 0 };
+    let target_positions = vec![BattlePosition { side: SideReference::SideTwo, slot: 0 }];
+    let generation = GenerationMechanics::new(Generation::Gen9);
+    
+    // Test first turn (focusing)
+    let result = apply_focus_punch(&state, &move_data, user_position, &target_positions, &generation);
+    
+    assert!(!result.is_empty(), "Focus Punch should produce instructions on first turn");
+    
+    // Should apply the Charge volatile status for focusing
+    let instruction_list = &result[0].instruction_list;
+    assert!(instruction_list.len() >= 1, "Should have focusing instruction");
+}

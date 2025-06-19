@@ -1,7 +1,9 @@
-use tapu_simu::battle_format::{BattleFormat, BattlePosition, SideReference};
-use tapu_simu::instruction::*;
-use tapu_simu::move_choice::MoveIndex;
-use tapu_simu::state::{State, Pokemon, Move, MoveCategory, PokemonStats};
+use tapu_simu::{BattleFormat, BattlePosition, SideReference};
+use tapu_simu::core::instruction::*;
+use tapu_simu::core::move_choice::MoveIndex;
+use tapu_simu::{State};
+use tapu_simu::core::state::{Pokemon, Move, MoveCategory};
+use tapu_simu::data::types::Stats;
 use std::collections::HashMap;
 
 /// Helper function to create a basic battle state for testing
@@ -12,7 +14,8 @@ fn create_test_state() -> State {
     let mut pokemon1 = Pokemon::new("Pikachu".to_string());
     pokemon1.hp = 100;
     pokemon1.max_hp = 100;
-    pokemon1.stats = PokemonStats {
+    pokemon1.stats = Stats {
+        hp: 100,
         attack: 120,
         defense: 80,
         special_attack: 100,
@@ -26,7 +29,8 @@ fn create_test_state() -> State {
     let mut pokemon2 = Pokemon::new("Charizard".to_string());
     pokemon2.hp = 110;  // Not at max HP so healing can work
     pokemon2.max_hp = 120;
-    pokemon2.stats = PokemonStats {
+    pokemon2.stats = Stats {
+        hp: 120,
         attack: 104,
         defense: 98,
         special_attack: 129,
@@ -125,13 +129,13 @@ mod undo_tests {
         // Get initial status
         let initial_status = state.get_pokemon_at_position(position).unwrap().status;
         let initial_duration = state.get_pokemon_at_position(position).unwrap().status_duration;
-        assert_eq!(initial_status, PokemonStatus::NONE);
+        assert_eq!(initial_status, PokemonStatus::None);
         assert_eq!(initial_duration, None);
         
         // Apply status
         let instruction = Instruction::ApplyStatus(ApplyStatusInstruction {
             target_position: position,
-            status: PokemonStatus::BURN,
+            status: PokemonStatus::Burn,
             previous_status: Some(initial_status),
             previous_status_duration: Some(initial_duration),
         });
@@ -140,7 +144,7 @@ mod undo_tests {
         
         // Verify status was applied
         let current_status = state.get_pokemon_at_position(position).unwrap().status;
-        assert_eq!(current_status, PokemonStatus::BURN);
+        assert_eq!(current_status, PokemonStatus::Burn);
         
         // Reverse the status
         state.reverse_instruction(&instruction);
@@ -206,11 +210,11 @@ mod undo_tests {
             }),
             Instruction::ApplyStatus(ApplyStatusInstruction { 
                 target_position: pos1, 
-                status: PokemonStatus::BURN,
+                status: PokemonStatus::Burn,
                 previous_status: Some(initial_status1),
                 previous_status_duration: Some(None),
             }),
-            Instruction::ChangeWeather(ChangeWeatherInstruction { weather: Weather::RAIN, duration: Some(5), previous_weather: Some(Weather::NONE), previous_duration: Some(None), }),
+            Instruction::ChangeWeather(ChangeWeatherInstruction { weather: Weather::Rain, duration: Some(5), previous_weather: Some(Weather::None), previous_duration: Some(None), }),
             Instruction::PositionHeal(PositionHealInstruction { 
                 target_position: pos2, 
                 heal_amount: 10,
@@ -225,8 +229,8 @@ mod undo_tests {
         
         // Verify all changes were applied
         assert_eq!(state.get_pokemon_at_position(pos1).unwrap().hp, initial_hp1 - 20);
-        assert_eq!(state.get_pokemon_at_position(pos1).unwrap().status, PokemonStatus::BURN);
-        assert_eq!(state.weather, Weather::RAIN);
+        assert_eq!(state.get_pokemon_at_position(pos1).unwrap().status, PokemonStatus::Burn);
+        assert_eq!(state.weather, Weather::Rain);
         assert_eq!(state.get_pokemon_at_position(pos2).unwrap().hp, initial_hp2 + 10);
         
         // Reverse all instructions (in reverse order)

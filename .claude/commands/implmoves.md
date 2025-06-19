@@ -1,0 +1,1 @@
+Work on implementing the unfinished move effects for the moves in @docs/MOVES_TO_IMPLEMENT.md. First study how we add move effects and also our instruction generation system. For each move, study its corresponding implementation in poke-engine. Our goal is to achieve 100% parity. Only consider a move finished if a dedicated test passes for it.:

@@ -106,9 +106,8 @@ impl DamageMaximizer {
                 // Get the active Pokemon at position 0
                 if let Some(active_pokemon) = side.get_active_pokemon_at_slot(0) {
                     if let Some(move_data) = active_pokemon.get_move(*move_index) {
-                        // Simple damage estimate based on base power
-                        // TODO: Integrate with move database for actual base power lookup
-                        100.0 // Placeholder - in real implementation would look up move power
+                        // Use actual base power from move data
+                        move_data.base_power as f32
                     } else {
                         0.0
                     }
@@ -116,7 +115,6 @@ impl DamageMaximizer {
                     0.0
                 }
             }
-            #[cfg(feature = "terastallization")]
             MoveChoice::MoveTera { move_index, .. } => {
                 // Same logic as regular move but potentially higher power due to Tera
                 let side = match side_ref {

@@ -1,8 +1,10 @@
-use tapu_simu::battle_format::{BattleFormat, BattlePosition, SideReference};
+use tapu_simu::{BattleFormat, BattlePosition, SideReference};
 use tapu_simu::generation::Generation;
-use tapu_simu::instruction::*;
-use tapu_simu::move_choice::MoveIndex;
-use tapu_simu::state::{State, Pokemon, Move, MoveCategory, PokemonStats};
+use tapu_simu::core::instruction::*;
+use tapu_simu::core::move_choice::MoveIndex;
+use tapu_simu::{State};
+use tapu_simu::core::state::{Pokemon, Move, MoveCategory};
+use tapu_simu::data::types::Stats;
 use std::collections::HashMap;
 
 /// Helper function to create a basic battle state for testing
@@ -13,7 +15,8 @@ fn create_test_state() -> State {
     let mut pokemon1 = Pokemon::new("Pikachu".to_string());
     pokemon1.hp = 100;
     pokemon1.max_hp = 100;
-    pokemon1.stats = PokemonStats {
+    pokemon1.stats = Stats {
+        hp: 100,
         attack: 120,
         defense: 80,
         special_attack: 100,
@@ -40,7 +43,8 @@ fn create_test_state() -> State {
     let mut pokemon2 = Pokemon::new("Charizard".to_string());
     pokemon2.hp = 120;
     pokemon2.max_hp = 120;
-    pokemon2.stats = PokemonStats {
+    pokemon2.stats = Stats {
+        hp: 120,
         attack: 104,
         defense: 98,
         special_attack: 129,
@@ -73,6 +77,7 @@ mod damage_and_heal_tests {
         let instruction = Instruction::PositionDamage(PositionDamageInstruction {
             target_position: position,
             damage_amount: 30,
+            previous_hp: Some(original_hp),
         });
         
         state.apply_instruction(&instruction);
@@ -91,6 +96,7 @@ mod damage_and_heal_tests {
         let damage_instruction = Instruction::PositionDamage(PositionDamageInstruction {
             target_position: position,
             damage_amount: 40,
+            previous_hp: Some(100),
         });
         state.apply_instruction(&damage_instruction);
         
@@ -101,6 +107,7 @@ mod damage_and_heal_tests {
         let heal_instruction = Instruction::PositionHeal(PositionHealInstruction {
             target_position: position,
             heal_amount: 20,
+            previous_hp: Some(60),
         });
         state.apply_instruction(&heal_instruction);
         
@@ -119,6 +126,7 @@ mod damage_and_heal_tests {
         
         let instruction = Instruction::MultiTargetDamage(MultiTargetDamageInstruction {
             target_damages: vec![(pos1, 25), (pos2, 35)],
+            previous_hps: vec![(pos1, original_hp1), (pos2, original_hp2)],
         });
         
         state.apply_instruction(&instruction);
@@ -144,13 +152,15 @@ mod status_tests {
         
         let instruction = Instruction::ApplyStatus(ApplyStatusInstruction {
             target_position: position,
-            status: PokemonStatus::BURN,
+            status: PokemonStatus::Burn,
+            previous_status: Some(PokemonStatus::None),
+            previous_status_duration: Some(None),
         });
         
         state.apply_instruction(&instruction);
         
         let pokemon = state.get_pokemon_at_position(position).unwrap();
-        assert_eq!(pokemon.status, PokemonStatus::BURN);
+        assert_eq!(pokemon.status, PokemonStatus::Burn);
     }
 
     #[test]
@@ -161,23 +171,27 @@ mod status_tests {
         // First apply a status
         let apply_instruction = Instruction::ApplyStatus(ApplyStatusInstruction {
             target_position: position,
-            status: PokemonStatus::PARALYZE,
+            status: PokemonStatus::Paralysis,
+            previous_status: Some(PokemonStatus::None),
+            previous_status_duration: Some(None),
         });
         state.apply_instruction(&apply_instruction);
         
         // Verify status was applied
         let pokemon = state.get_pokemon_at_position(position).unwrap();
-        assert_eq!(pokemon.status, PokemonStatus::PARALYZE);
+        assert_eq!(pokemon.status, PokemonStatus::Paralysis);
         
         // Now remove it
         let remove_instruction = Instruction::RemoveStatus(RemoveStatusInstruction {
             target_position: position,
+            previous_status: Some(PokemonStatus::Paralysis),
+            previous_status_duration: Some(Some(1)),
         });
         state.apply_instruction(&remove_instruction);
         
         // Verify status was removed
         let pokemon = state.get_pokemon_at_position(position).unwrap();
-        assert_eq!(pokemon.status, PokemonStatus::NONE);
+        assert_eq!(pokemon.status, PokemonStatus::None);
         assert_eq!(pokemon.status_duration, None);
     }
 
@@ -189,13 +203,15 @@ mod status_tests {
         // First apply sleep with duration
         let apply_instruction = Instruction::ApplyStatus(ApplyStatusInstruction {
             target_position: position,
-            status: PokemonStatus::SLEEP,
+            status: PokemonStatus::Sleep,
+            previous_status: Some(PokemonStatus::None),
+            previous_status_duration: Some(None),
         });
         state.apply_instruction(&apply_instruction);
         
         // Check initial duration
         let pokemon = state.get_pokemon_at_position(position).unwrap();
-        assert_eq!(pokemon.status, PokemonStatus::SLEEP);
+        assert_eq!(pokemon.status, PokemonStatus::Sleep);
         assert_eq!(pokemon.status_duration, Some(1));
         
         // Change duration
@@ -218,7 +234,7 @@ mod status_tests {
         
         // Verify status was removed when duration hit zero
         let pokemon = state.get_pokemon_at_position(position).unwrap();
-        assert_eq!(pokemon.status, PokemonStatus::NONE);
+        assert_eq!(pokemon.status, PokemonStatus::None);
         assert_eq!(pokemon.status_duration, None);
     }
 }
@@ -239,6 +255,7 @@ mod stat_boost_tests {
         let instruction = Instruction::BoostStats(BoostStatsInstruction {
             target_position: position,
             stat_boosts,
+            previous_boosts: Some(HashMap::new()),
         });
         
         state.apply_instruction(&instruction);
@@ -254,6 +271,7 @@ mod stat_boost_tests {
         let extreme_instruction = Instruction::BoostStats(BoostStatsInstruction {
             target_position: position,
             stat_boosts: extreme_boosts,
+            previous_boosts: Some(HashMap::new()),
         });
         
         state.apply_instruction(&extreme_instruction);
@@ -393,24 +411,24 @@ mod weather_and_terrain_tests {
     #[test]
     fn test_change_weather_instruction() {
         let mut state = create_test_state();
-        assert_eq!(state.weather, Weather::NONE);
+        assert_eq!(state.weather, Weather::None);
         assert_eq!(state.weather_turns_remaining, None);
         
-        let instruction = Instruction::ChangeWeather(ChangeWeatherInstruction { weather: Weather::RAIN, duration: Some(5), previous_weather: Some(Weather::NONE), previous_duration: Some(None), });
+        let instruction = Instruction::ChangeWeather(ChangeWeatherInstruction { weather: Weather::Rain, duration: Some(5), previous_weather: Some(Weather::None), previous_duration: Some(None), });
         
         state.apply_instruction(&instruction);
         
-        assert_eq!(state.weather, Weather::RAIN);
+        assert_eq!(state.weather, Weather::Rain);
         assert_eq!(state.weather_turns_remaining, Some(5));
     }
 
     #[test]
     fn test_change_terrain_instruction() {
         let mut state = create_test_state();
-        assert_eq!(state.terrain, Terrain::NONE);
+        assert_eq!(state.terrain, Terrain::None);
         assert_eq!(state.terrain_turns_remaining, None);
         
-        let instruction = Instruction::ChangeTerrain(ChangeTerrainInstruction { terrain: Terrain::ElectricTerrain, duration: Some(5), previous_terrain: Some(Terrain::NONE), previous_duration: Some(None), });
+        let instruction = Instruction::ChangeTerrain(ChangeTerrainInstruction { terrain: Terrain::ElectricTerrain, duration: Some(5), previous_terrain: Some(Terrain::None), previous_duration: Some(None), });
         
         state.apply_instruction(&instruction);
         
@@ -423,7 +441,7 @@ mod weather_and_terrain_tests {
         let mut state = create_test_state();
         
         // Set weather with duration
-        let instruction = Instruction::ChangeWeather(ChangeWeatherInstruction { weather: Weather::Sun, duration: Some(3), previous_weather: Some(Weather::NONE), previous_duration: Some(None), });
+        let instruction = Instruction::ChangeWeather(ChangeWeatherInstruction { weather: Weather::Sun, duration: Some(3), previous_weather: Some(Weather::None), previous_duration: Some(None), });
         state.apply_instruction(&instruction);
         
         // Decrement turns
@@ -438,7 +456,7 @@ mod weather_and_terrain_tests {
         state.apply_instruction(&decrement_instruction);
         
         // Weather should be cleared when turns reach zero
-        assert_eq!(state.weather, Weather::NONE);
+        assert_eq!(state.weather, Weather::None);
         assert_eq!(state.weather_turns_remaining, None);
     }
 
@@ -447,7 +465,7 @@ mod weather_and_terrain_tests {
         let mut state = create_test_state();
         
         // Set terrain with duration
-        let instruction = Instruction::ChangeTerrain(ChangeTerrainInstruction { terrain: Terrain::GrassyTerrain, duration: Some(2), previous_terrain: Some(Terrain::NONE), previous_duration: Some(None), });
+        let instruction = Instruction::ChangeTerrain(ChangeTerrainInstruction { terrain: Terrain::GrassyTerrain, duration: Some(2), previous_terrain: Some(Terrain::None), previous_duration: Some(None), });
         state.apply_instruction(&instruction);
         
         // Decrement turns
@@ -461,7 +479,7 @@ mod weather_and_terrain_tests {
         state.apply_instruction(&decrement_instruction);
         
         // Terrain should be cleared when turns reach zero
-        assert_eq!(state.terrain, Terrain::NONE);
+        assert_eq!(state.terrain, Terrain::None);
         assert_eq!(state.terrain_turns_remaining, None);
     }
 }

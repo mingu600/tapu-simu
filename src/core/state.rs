@@ -5,9 +5,55 @@
 
 use crate::core::battle_format::{BattleFormat, BattlePosition, SideReference};
 use crate::core::instruction::{PokemonStatus, VolatileStatus, Weather, Terrain, SideCondition};
+use crate::data::types::Stats;
+
+// Re-export MoveCategory so other modules can import it from state
+pub use crate::core::instruction::MoveCategory;
 use crate::core::move_choice::MoveIndex;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
+
+/// Tracks damage dealt to a side for counter moves
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DamageDealt {
+    /// Amount of damage dealt
+    pub damage: i16,
+    /// Category of the move that dealt damage
+    pub move_category: MoveCategory,
+    /// Whether the damage hit a substitute
+    pub hit_substitute: bool,
+}
+
+impl DamageDealt {
+    /// Create a new DamageDealt with default values
+    pub fn new() -> Self {
+        Self {
+            damage: 0,
+            move_category: MoveCategory::Physical,
+            hit_substitute: false,
+        }
+    }
+
+    /// Reset damage tracking (called at start of turn)
+    pub fn reset(&mut self) {
+        self.damage = 0;
+        self.move_category = MoveCategory::Physical;
+        self.hit_substitute = false;
+    }
+
+    /// Set damage information
+    pub fn set_damage(&mut self, damage: i16, move_category: MoveCategory, hit_substitute: bool) {
+        self.damage = damage;
+        self.move_category = move_category;
+        self.hit_substitute = hit_substitute;
+    }
+}
+
+impl Default for DamageDealt {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 /// The main battle state containing all information about the current battle
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -32,6 +78,10 @@ pub struct State {
     pub trick_room_active: bool,
     /// Trick Room duration (turns remaining)
     pub trick_room_turns_remaining: Option<u8>,
+    /// Whether Gravity is currently active
+    pub gravity_active: bool,
+    /// Gravity duration (turns remaining)
+    pub gravity_turns_remaining: Option<u8>,
 }
 
 impl State {
@@ -48,6 +98,8 @@ impl State {
             turn: 1,
             trick_room_active: false,
             trick_room_turns_remaining: None,
+            gravity_active: false,
+            gravity_turns_remaining: None,
         }
     }
 
@@ -108,25 +160,26 @@ impl State {
     }
 
     /// Serialize the battle state to a compact string format
-    /// Format: format/side1/side2/weather/terrain/turn/trick_room
+    /// Format: format/side1/side2/weather/terrain/turn/trick_room/gravity
     pub fn serialize(&self) -> String {
         format!(
-            "{}/{}/{}/{}/{}/{}/{}",
+            "{}/{}/{}/{}/{}/{}/{}/{}",
             self.format.serialize(),
             self.side_one.serialize(),
             self.side_two.serialize(),
             self.serialize_weather(),
             self.serialize_terrain(),
             self.turn,
-            self.serialize_trick_room()
+            self.serialize_trick_room(),
+            self.serialize_gravity()
         )
     }
 
     /// Deserialize a battle state from a string
     pub fn deserialize(serialized: &str) -> Result<Self, String> {
         let parts: Vec<&str> = serialized.split('/').collect();
-        if parts.len() < 7 {
-            return Err(format!("Invalid state format: expected 7 parts, got {}", parts.len()));
+        if parts.len() < 8 {
+            return Err(format!("Invalid state format: expected 8 parts, got {}", parts.len()));
         }
 
         let format = BattleFormat::deserialize(parts[0])?;
@@ -137,6 +190,7 @@ impl State {
         let turn = parts[5].parse::<u32>()
             .map_err(|_| format!("Invalid turn number: {}", parts[5]))?;
         let (trick_room_active, trick_room_turns_remaining) = Self::deserialize_trick_room(parts[6])?;
+        let (gravity_active, gravity_turns_remaining) = Self::deserialize_gravity(parts[7])?;
 
         Ok(Self {
             format,
@@ -149,6 +203,8 @@ impl State {
             turn,
             trick_room_active,
             trick_room_turns_remaining,
+            gravity_active,
+            gravity_turns_remaining,
         })
     }
 
@@ -231,6 +287,34 @@ impl State {
             Ok((true, Some(turns)))
         } else {
             Err(format!("Invalid trick room format: {}", trick_room_str))
+        }
+    }
+
+    /// Serialize gravity condition
+    fn serialize_gravity(&self) -> String {
+        if self.gravity_active {
+            match self.gravity_turns_remaining {
+                Some(turns) => format!("1:{}", turns),
+                None => "1".to_string(),
+            }
+        } else {
+            "0".to_string()
+        }
+    }
+
+    /// Deserialize gravity condition
+    fn deserialize_gravity(gravity_str: &str) -> Result<(bool, Option<u8>), String> {
+        if gravity_str == "0" {
+            Ok((false, None))
+        } else if gravity_str == "1" {
+            Ok((true, None))
+        } else if gravity_str.starts_with("1:") {
+            let turns_str = &gravity_str[2..];
+            let turns = turns_str.parse::<u8>()
+                .map_err(|_| format!("Invalid gravity turns: {}", turns_str))?;
+            Ok((true, Some(turns)))
+        } else {
+            Err(format!("Invalid gravity format: {}", gravity_str))
         }
     }
 
@@ -391,31 +475,33 @@ impl State {
             Instruction::SetLastUsedMove(instr) => {
                 self.set_last_used_move(instr.target_position, &instr.move_name, instr.move_id);
             }
-            Instruction::RestoreLastUsedMove(_instr) => {
-                // TODO: Implement restore last used move logic
+            Instruction::RestoreLastUsedMove(instr) => {
+                self.restore_last_used_move(instr.target_position, &instr.move_name);
             }
             
             // Pokemon Attribute Instructions
             Instruction::ChangeAbility(instr) => {
                 self.change_ability(instr.target_position, &instr.new_ability);
             }
-            Instruction::ToggleAbility(_instr) => {
-                // TODO: Implement toggle ability logic
+            Instruction::ToggleAbility(instr) => {
+                self.toggle_ability(instr.target_position, instr.enabled);
             }
             Instruction::ChangeItem(instr) => {
                 self.change_item(instr.target_position, instr.new_item.as_deref());
             }
-            Instruction::RemoveItem(_instr) => {
-                // TODO: Implement remove item logic
+            Instruction::RemoveItem(instr) => {
+                self.remove_item(instr.target_position);
             }
-            Instruction::GiveItem(_instr) => {
-                // TODO: Implement give item logic
+            Instruction::GiveItem(instr) => {
+                let _previous_item = self.give_item(instr.target_position, &instr.item);
+                // Note: The previous_item should ideally be stored in the instruction for proper undo
             }
-            Instruction::Faint(_instr) => {
-                // TODO: Implement faint logic
+            Instruction::Faint(instr) => {
+                let _previous_hp = self.faint_pokemon(instr.target_position);
+                // Note: The previous_hp should ideally match instr.previous_hp for validation
             }
-            Instruction::ToggleGravity(_instr) => {
-                // TODO: Implement toggle gravity logic
+            Instruction::ToggleGravity(instr) => {
+                self.toggle_gravity(instr.active, instr.duration);
             }
             Instruction::ChangeType(instr) => {
                 self.change_type(instr.target_position, &instr.new_types);
@@ -726,23 +812,41 @@ impl State {
             }
             
             // Missing instruction patterns (TODO: implement proper reversal logic)
-            Instruction::RestoreLastUsedMove(_instr) => {
-                // TODO: Implement reverse logic for RestoreLastUsedMove
+            Instruction::RestoreLastUsedMove(instr) => {
+                // Reverse of restoring a move is to disable it again
+                // Apply Disable status to reverse the restoration
+                if let Some(pokemon) = self.get_pokemon_at_position_mut(instr.target_position) {
+                    pokemon.volatile_statuses.insert(VolatileStatus::Disable);
+                }
             }
-            Instruction::ToggleAbility(_instr) => {
-                // TODO: Implement reverse logic for ToggleAbility
+            Instruction::ToggleAbility(instr) => {
+                // Reverse the toggle operation
+                self.toggle_ability(instr.target_position, !instr.enabled);
             }
-            Instruction::RemoveItem(_instr) => {
-                // TODO: Implement reverse logic for RemoveItem
+            Instruction::RemoveItem(instr) => {
+                // Restore the previous item if it existed
+                if let Some(ref previous_item) = instr.previous_item {
+                    let _restored_previous = self.give_item(instr.target_position, previous_item);
+                }
             }
-            Instruction::GiveItem(_instr) => {
-                // TODO: Implement reverse logic for GiveItem
+            Instruction::GiveItem(instr) => {
+                // Restore the previous item state
+                if let Some(ref previous_item) = instr.previous_item {
+                    let _restored_previous = self.give_item(instr.target_position, previous_item);
+                } else {
+                    // No previous item, so remove the current item
+                    self.remove_item(instr.target_position);
+                }
             }
-            Instruction::Faint(_instr) => {
-                // TODO: Implement reverse logic for Faint
+            Instruction::Faint(instr) => {
+                // Restore the previous HP
+                if let Some(pokemon) = self.get_pokemon_at_position_mut(instr.target_position) {
+                    pokemon.hp = instr.previous_hp;
+                }
             }
-            Instruction::ToggleGravity(_instr) => {
-                // TODO: Implement reverse logic for ToggleGravity
+            Instruction::ToggleGravity(instr) => {
+                // Reverse the gravity toggle
+                self.toggle_gravity(!instr.active, instr.duration);
             }
         }
     }
@@ -1052,10 +1156,65 @@ impl State {
         }
     }
 
+    /// Faint a Pokemon at the specified position
+    fn faint_pokemon(&mut self, position: BattlePosition) -> i16 {
+        if let Some(pokemon) = self.get_pokemon_at_position_mut(position) {
+            let previous_hp = pokemon.hp;
+            pokemon.hp = 0;
+            previous_hp
+        } else {
+            0
+        }
+    }
+
+    /// Toggle ability state at the specified position
+    fn toggle_ability(&mut self, position: BattlePosition, enabled: bool) {
+        if let Some(pokemon) = self.get_pokemon_at_position_mut(position) {
+            if enabled {
+                // Enable ability by removing GastroAcid volatile status
+                pokemon.volatile_statuses.remove(&VolatileStatus::GastroAcid);
+                pokemon.volatile_status_durations.remove(&VolatileStatus::GastroAcid);
+            } else {
+                // Disable ability by applying GastroAcid volatile status
+                pokemon.volatile_statuses.insert(VolatileStatus::GastroAcid);
+                // GastroAcid typically lasts until the Pokemon switches out (no duration)
+            }
+        }
+    }
+
+    /// Restore last used move (typically removes Disable status)
+    fn restore_last_used_move(&mut self, position: BattlePosition, _move_name: &str) {
+        if let Some(pokemon) = self.get_pokemon_at_position_mut(position) {
+            // Remove Disable volatile status to restore move usage
+            // In a full implementation, this would restore the specific move
+            // For now, we remove the general Disable status
+            pokemon.volatile_statuses.remove(&VolatileStatus::Disable);
+            pokemon.volatile_status_durations.remove(&VolatileStatus::Disable);
+        }
+    }
+
     /// Change item at the specified position
     fn change_item(&mut self, position: BattlePosition, new_item: Option<&str>) {
         if let Some(pokemon) = self.get_pokemon_at_position_mut(position) {
             pokemon.item = new_item.map(|item| item.to_string());
+        }
+    }
+
+    /// Remove item from Pokemon at the specified position
+    fn remove_item(&mut self, position: BattlePosition) {
+        if let Some(pokemon) = self.get_pokemon_at_position_mut(position) {
+            pokemon.item = None;
+        }
+    }
+
+    /// Give item to Pokemon at the specified position
+    fn give_item(&mut self, position: BattlePosition, item: &str) -> Option<String> {
+        if let Some(pokemon) = self.get_pokemon_at_position_mut(position) {
+            let previous_item = pokemon.item.clone();
+            pokemon.item = Some(item.to_string());
+            previous_item
+        } else {
+            None
         }
     }
 
@@ -1076,9 +1235,11 @@ impl State {
 
     /// Toggle terastallization at the specified position
     fn toggle_terastallized(&mut self, position: BattlePosition, tera_type: Option<&str>) {
-        if let Some(pokemon) = self.get_pokemon_at_position_mut(position) {
-            #[cfg(feature = "terastallization")]
-            {
+        // Only allow Terastallization in Gen 9+
+        let is_gen9_or_later = self.format.generation.number() >= 9;
+        
+        if is_gen9_or_later {
+            if let Some(pokemon) = self.get_pokemon_at_position_mut(position) {
                 pokemon.is_terastallized = !pokemon.is_terastallized;
                 if let Some(_ttype) = tera_type {
                     // Convert string to tera type - simplified
@@ -1104,6 +1265,24 @@ impl State {
             } else {
                 self.trick_room_active = false;
                 self.trick_room_turns_remaining = None;
+            }
+        }
+    }
+
+    /// Toggle gravity
+    fn toggle_gravity(&mut self, active: bool, duration: Option<u8>) {
+        self.gravity_active = active;
+        self.gravity_turns_remaining = duration;
+    }
+
+    /// Decrement gravity turns remaining
+    fn decrement_gravity_turns(&mut self) {
+        if let Some(turns) = self.gravity_turns_remaining {
+            if turns > 1 {
+                self.gravity_turns_remaining = Some(turns - 1);
+            } else {
+                self.gravity_active = false;
+                self.gravity_turns_remaining = None;
             }
         }
     }
@@ -1328,21 +1507,38 @@ impl State {
     // ========== Damage Tracking Implementation ==========
 
     /// Change damage dealt at the specified position
-    fn change_damage_dealt(&mut self, _position: BattlePosition, _damage_amount: i16) {
-        // This would require additional state tracking for damage analytics
-        // For now, this is a placeholder
+    fn change_damage_dealt(&mut self, position: BattlePosition, damage_amount: i16) {
+        let side = self.get_side_mut(position.side);
+        side.damage_dealt.damage = damage_amount;
     }
 
     /// Change damage dealt move category at the specified position
-    fn change_damage_dealt_move_category(&mut self, _position: BattlePosition, _move_category: crate::core::instruction::MoveCategory) {
-        // This would require additional state tracking for move category analytics
-        // For now, this is a placeholder
+    fn change_damage_dealt_move_category(&mut self, position: BattlePosition, move_category: crate::core::instruction::MoveCategory) {
+        let side = self.get_side_mut(position.side);
+        side.damage_dealt.move_category = move_category;
     }
 
     /// Toggle damage dealt hit substitute at the specified position
-    fn toggle_damage_dealt_hit_substitute(&mut self, _position: BattlePosition, _hit_substitute: bool) {
-        // This would require additional state tracking for substitute hit analytics
-        // For now, this is a placeholder
+    fn toggle_damage_dealt_hit_substitute(&mut self, position: BattlePosition, hit_substitute: bool) {
+        let side = self.get_side_mut(position.side);
+        side.damage_dealt.hit_substitute = hit_substitute;
+    }
+
+    /// Get damage dealt information for a side
+    pub fn get_damage_dealt(&self, side: SideReference) -> &DamageDealt {
+        &self.get_side(side).damage_dealt
+    }
+
+    /// Reset damage tracking for all sides (called at start of turn)
+    pub fn reset_damage_tracking(&mut self) {
+        self.side_one.damage_dealt.reset();
+        self.side_two.damage_dealt.reset();
+    }
+
+    /// Set damage tracking for a side
+    pub fn set_damage_tracking(&mut self, side: SideReference, damage: i16, move_category: MoveCategory, hit_substitute: bool) {
+        let battle_side = self.get_side_mut(side);
+        battle_side.damage_dealt.set_damage(damage, move_category, hit_substitute);
     }
 
     // ========== Multi-Target Implementation ==========
@@ -1792,8 +1988,9 @@ impl State {
     }
 
     /// Reverse damage dealt change
-    fn reverse_change_damage_dealt(&mut self, _position: BattlePosition, _damage_amount: i16) {
-        // Placeholder - damage tracking reversal would need previous damage value
+    fn reverse_change_damage_dealt(&mut self, position: BattlePosition, damage_amount: i16) {
+        let side = self.get_side_mut(position.side);
+        side.damage_dealt.damage = damage_amount; // Set to previous value
     }
 
     /// Reverse multi-target damage
@@ -1870,6 +2067,8 @@ pub struct BattleSide {
     pub wish_healing: HashMap<usize, (i16, u8)>,
     /// Future Sight attacks scheduled for specific slots (attacker_position, damage_amount, turns_remaining, move_name)
     pub future_sight_attacks: HashMap<usize, (BattlePosition, i16, u8, String)>,
+    /// Damage tracking for counter moves
+    pub damage_dealt: DamageDealt,
 }
 
 impl BattleSide {
@@ -1882,6 +2081,7 @@ impl BattleSide {
             side_volatile_statuses: HashSet::new(),
             wish_healing: HashMap::new(),
             future_sight_attacks: HashMap::new(),
+            damage_dealt: DamageDealt::new(),
         }
     }
 
@@ -1994,6 +2194,7 @@ impl BattleSide {
             side_volatile_statuses,
             wish_healing: HashMap::new(), // TODO: Add serialization if needed
             future_sight_attacks: HashMap::new(), // TODO: Add serialization if needed
+            damage_dealt: DamageDealt::new(),
         })
     }
 
@@ -2030,9 +2231,9 @@ impl BattleSide {
             .collect()
     }
 
-    /// Check if this side is defeated (no active Pokemon with HP > 0)
+    /// Check if this side is defeated (all Pokemon have 0 HP)
     pub fn is_defeated(&self) -> bool {
-        self.get_active_pokemon()
+        self.pokemon
             .iter()
             .all(|pokemon| pokemon.hp == 0)
     }
@@ -2119,7 +2320,7 @@ pub struct Pokemon {
     /// Maximum HP
     pub max_hp: i16,
     /// Base stats
-    pub stats: PokemonStats,
+    pub stats: Stats,
     /// Current stat boosts (-6 to +6)
     pub stat_boosts: HashMap<crate::core::instruction::Stat, i8>,
     /// Current status condition
@@ -2144,11 +2345,9 @@ pub struct Pokemon {
     pub level: u8,
     /// Gender
     pub gender: Gender,
-    /// Tera type (if Terastallized)
-    #[cfg(feature = "terastallization")]
+    /// Tera type (if Terastallized) - Gen 9+ only
     pub tera_type: Option<crate::core::move_choice::PokemonType>,
-    /// Whether this Pokemon is Terastallized
-    #[cfg(feature = "terastallization")]
+    /// Whether this Pokemon is Terastallized - Gen 9+ only
     pub is_terastallized: bool,
 }
 
@@ -2159,7 +2358,7 @@ impl Pokemon {
             species,
             hp: 100,
             max_hp: 100,
-            stats: PokemonStats::default(),
+            stats: Stats { hp: 100, attack: 100, defense: 100, special_attack: 100, special_defense: 100, speed: 100 },
             stat_boosts: HashMap::new(),
             status: PokemonStatus::None,
             status_duration: None,
@@ -2172,9 +2371,7 @@ impl Pokemon {
             types: vec!["Normal".to_string()],
             level: 50,
             gender: Gender::Unknown,
-            #[cfg(feature = "terastallization")]
             tera_type: None,
-            #[cfg(feature = "terastallization")]
             is_terastallized: false,
         }
     }
@@ -2248,7 +2445,8 @@ impl Pokemon {
         if stats_parts.len() != 5 {
             return Err(format!("Invalid stats format: {}", parts[3]));
         }
-        let stats = PokemonStats {
+        let stats = Stats {
+            hp: max_hp, // Use max_hp as the base HP stat for deserialization
             attack: stats_parts[0].parse().map_err(|_| "Invalid attack stat")?,
             defense: stats_parts[1].parse().map_err(|_| "Invalid defense stat")?,
             special_attack: stats_parts[2].parse().map_err(|_| "Invalid special attack stat")?,
@@ -2342,9 +2540,7 @@ impl Pokemon {
             types,
             level,
             gender,
-            #[cfg(feature = "terastallization")]
             tera_type: None, // TODO: Add serialization if needed
-            #[cfg(feature = "terastallization")]
             is_terastallized: false, // TODO: Add serialization if needed
         })
     }
@@ -2424,26 +2620,6 @@ impl Pokemon {
 }
 
 /// Pokemon base stats
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct PokemonStats {
-    pub attack: i16,
-    pub defense: i16,
-    pub special_attack: i16,
-    pub special_defense: i16,
-    pub speed: i16,
-}
-
-impl Default for PokemonStats {
-    fn default() -> Self {
-        Self {
-            attack: 100,
-            defense: 100,
-            special_attack: 100,
-            special_defense: 100,
-            speed: 100,
-        }
-    }
-}
 
 /// Pokemon gender
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -2621,198 +2797,7 @@ impl Move {
 }
 
 
-/// Move categories
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum MoveCategory {
-    Physical,
-    Special,
-    Status,
-}
 
-// Missing types from V1 needed for choices.rs compatibility
-use crate::define_enum_with_from_str;
-
-// V1 Pokemon volatile status enum
-define_enum_with_from_str! {
-    #[repr(u8)]
-    #[derive(PartialEq, Eq, Hash, Debug, Copy, Clone)]
-    PokemonVolatileStatus {
-        NONE,
-        AQUARING,
-        ATTRACT,
-        AUTOTOMIZE,
-        BANEFULBUNKER,
-        BIDE,
-        BOUNCE,
-        BURNINGBULWARK,
-        CHARGE,
-        CONFUSION,
-        CURSE,
-        DEFENSECURL,
-        DESTINYBOND,
-        DIG,
-        DISABLE,
-        DIVE,
-        ELECTRIFY,
-        ELECTROSHOT,
-        EMBARGO,
-        ENCORE,
-        ENDURE,
-        FLASHFIRE,
-        FLINCH,
-        FLY,
-        FOCUSENERGY,
-        FOLLOWME,
-        FORESIGHT,
-        FREEZESHOCK,
-        GASTROACID,
-        GEOMANCY,
-        GLAIVERUSH,
-        GRUDGE,
-        HEALBLOCK,
-        HELPINGHAND,
-        ICEBURN,
-        IMPRISON,
-        INGRAIN,
-        KINGSSHIELD,
-        LASERFOCUS,
-        LEECHSEED,
-        LIGHTSCREEN,
-        LOCKEDMOVE,
-        MAGICCOAT,
-        MAGNETRISE,
-        MAXGUARD,
-        METEORBEAM,
-        MINIMIZE,
-        MIRACLEEYE,
-        MUSTRECHARGE,
-        NIGHTMARE,
-        NORETREAT,
-        OCTOLOCK,
-        PARTIALLYTRAPPED,
-        PERISH4,
-        PERISH3,
-        PERISH2,
-        PERISH1,
-        PHANTOMFORCE,
-        POWDER,
-        POWERSHIFT,
-        POWERTRICK,
-        PROTECT,
-        PROTOSYNTHESISATK,
-        PROTOSYNTHESISDEF,
-        PROTOSYNTHESISSPA,
-        PROTOSYNTHESISSPD,
-        PROTOSYNTHESISSPE,
-        QUARKDRIVEATK,
-        QUARKDRIVEDEF,
-        QUARKDRIVESPA,
-        QUARKDRIVESPD,
-        QUARKDRIVESPE,
-        RAGE,
-        RAGEPOWDER,
-        RAZORWIND,
-        REFLECT,
-        ROOST,
-        SALTCURE,
-        SHADOWFORCE,
-        SKULLBASH,
-        SKYATTACK,
-        SKYDROP,
-        SILKTRAP,
-        SLOWSTART,
-        SMACKDOWN,
-        SNATCH,
-        SOLARBEAM,
-        SOLARBLADE,
-        SPARKLINGARIA,
-        SPIKYSHIELD,
-        SPOTLIGHT,
-        STOCKPILE,
-        SUBSTITUTE,
-        SYRUPBOMB,
-        TARSHOT,
-        TAUNT,
-        TELEKINESIS,
-        THROATCHOP,
-        TRUANT,
-        TORMENT,
-        TYPECHANGE,
-        UNBURDEN,
-        UPROAR,
-        YAWN,
-    },
-    default = NONE
-}
-
-// V1 Pokemon side condition enum
-#[derive(Debug, Eq, PartialEq, Hash, Copy, Clone)]
-pub enum PokemonSideCondition {
-    AuroraVeil,
-    CraftyShield,
-    HealingWish,
-    LightScreen,
-    LuckyChant,
-    LunarDance,
-    MatBlock,
-    Mist,
-    Protect,
-    QuickGuard,
-    Reflect,
-    Safeguard,
-    Spikes,
-    Stealthrock,
-    StickyWeb,
-    Tailwind,
-    ToxicCount,
-    ToxicSpikes,
-    WideGuard,
-}
-
-// V1 Pokemon move index enum
-#[derive(Debug, Copy, PartialEq, Clone, Eq, Hash)]
-pub enum PokemonMoveIndex {
-    M0,
-    M1,
-    M2,
-    M3,
-}
-
-// V1 Pokemon boostable stat enum
-#[derive(Debug, Copy, PartialEq, Clone, Eq, Hash)]
-pub enum PokemonBoostableStat {
-    Attack,
-    Defense,
-    SpecialAttack,
-    SpecialDefense,
-    Speed,
-    Accuracy,
-    Evasion,
-}
-
-// V1 Pokemon type enum  
-#[derive(Debug, Copy, PartialEq, Clone, Eq, Hash)]
-pub enum PokemonType {
-    NORMAL,
-    FIGHTING,
-    FLYING,
-    POISON,
-    GROUND,
-    ROCK,
-    BUG,
-    GHOST,
-    STEEL,
-    FIRE,
-    WATER,
-    GRASS,
-    ELECTRIC,
-    PSYCHIC,
-    ICE,
-    DRAGON,
-    DARK,
-    FAIRY,
-    TYPELESS,
-}
 
 #[cfg(test)]
 mod tests {

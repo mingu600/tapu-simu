@@ -4,10 +4,10 @@
 //! critical hits, type effectiveness, status moves, generation differences, and format-specific
 //! mechanics. All tests use the TestFramework with real Pokemon Showdown data.
 
-use tapu_simu::test_framework::TestFramework;
+use tapu_simu::TestFramework;
 use tapu_simu::{State, BattleFormat};
 use tapu_simu::generation::Generation;
-use tapu_simu::engine::type_effectiveness::{TypeChart, PokemonType};
+use tapu_simu::type_effectiveness::{TypeChart, PokemonType};
 
 // =============================================================================
 // BASIC DAMAGE CALCULATION TESTS
@@ -46,10 +46,10 @@ fn test_critical_hit_damage_increase() {
     let state = State::new(BattleFormat::gen9_ou());
     
     // Calculate normal damage using internal damage calc function directly
-    let normal_damage = tapu_simu::engine::damage_calc::calculate_damage(
+    let normal_damage = tapu_simu::damage_calc::calculate_damage(
         &state, &attacker, &defender, &move_data, false, 1.0
     );
-    let crit_damage = tapu_simu::engine::damage_calc::calculate_damage(
+    let crit_damage = tapu_simu::damage_calc::calculate_damage(
         &state, &attacker, &defender, &move_data, true, 1.0
     );
     
@@ -101,24 +101,24 @@ fn test_generation_specific_critical_multipliers() {
     let gen5_state = State::new(BattleFormat::new(
         "Gen 5 OU".to_string(),
         Generation::Gen5,
-        tapu_simu::battle_format::FormatType::Singles,
+        tapu_simu::core::battle_format::FormatType::Singles,
     ));
     
     // Gen 9 battle
     let gen9_state = State::new(BattleFormat::gen9_ou());
     
     // Calculate normal and critical damage for both generations
-    let gen5_normal = tapu_simu::engine::damage_calc::calculate_damage(
+    let gen5_normal = tapu_simu::damage_calc::calculate_damage(
         &gen5_state, &attacker, &defender, &move_data, false, 1.0
     );
-    let gen5_crit = tapu_simu::engine::damage_calc::calculate_damage(
+    let gen5_crit = tapu_simu::damage_calc::calculate_damage(
         &gen5_state, &attacker, &defender, &move_data, true, 1.0
     );
     
-    let gen9_normal = tapu_simu::engine::damage_calc::calculate_damage(
+    let gen9_normal = tapu_simu::damage_calc::calculate_damage(
         &gen9_state, &attacker, &defender, &move_data, false, 1.0
     );
-    let gen9_crit = tapu_simu::engine::damage_calc::calculate_damage(
+    let gen9_crit = tapu_simu::damage_calc::calculate_damage(
         &gen9_state, &attacker, &defender, &move_data, true, 1.0
     );
     
@@ -229,11 +229,11 @@ fn test_spread_move_damage_reduction() {
     let doubles_state = State::new(BattleFormat::new(
         "Gen 9 Doubles OU".to_string(),
         Generation::Gen9,
-        tapu_simu::battle_format::FormatType::Doubles,
+        tapu_simu::core::battle_format::FormatType::Doubles,
     ));
     
     // Simulate hitting multiple targets by using calculate_damage_with_targets directly
-    let doubles_damage = tapu_simu::engine::damage_calc::calculate_damage_with_targets(
+    let doubles_damage = tapu_simu::damage_calc::calculate_damage_with_targets(
         &doubles_state, &attacker, &defender, &spread_move, false, 1.0, 2
     );
     

@@ -1,0 +1,189 @@
+//! Tests for counter moves with damage tracking system
+
+use tapu_simu::core::state::{State, DamageDealt, MoveCategory};
+use tapu_simu::core::battle_format::{BattleFormat, BattlePosition, SideReference, FormatType};
+use tapu_simu::engine::combat::move_effects::{apply_counter, apply_mirror_coat, apply_comeuppance, apply_metal_burst};
+use tapu_simu::core::instruction::Instruction;
+use tapu_simu::generation::{Generation, GenerationMechanics};
+
+/// Helper function to create a basic state for testing
+fn create_test_state() -> State {
+    let format = BattleFormat::new("Test Singles".to_string(), Generation::Gen9, FormatType::Singles);
+    let mut state = State::new(format);
+    
+    // Set up damage tracking on side two (opponent dealt damage to side one)
+    state.side_two.damage_dealt = DamageDealt {
+        damage: 50,
+        move_category: MoveCategory::Physical,
+        hit_substitute: false,
+    };
+    
+    state
+}
+
+#[test]
+fn test_counter_returns_double_physical_damage() {
+    let state = create_test_state();
+    let user_position = BattlePosition { side: SideReference::SideOne, slot: 0 };
+    let target_positions = vec![BattlePosition { side: SideReference::SideTwo, slot: 0 }];
+    let generation = GenerationMechanics::new(Generation::Gen9);
+    
+    let instructions = apply_counter(&state, user_position, &target_positions, &generation);
+    
+    assert_eq!(instructions.len(), 1);
+    let state_instructions = &instructions[0];
+    assert_eq!(state_instructions.percentage, 100.0);
+    assert_eq!(state_instructions.instruction_list.len(), 1);
+    
+    if let Instruction::PositionDamage(damage_instruction) = &state_instructions.instruction_list[0] {
+        assert_eq!(damage_instruction.damage_amount, 100); // 2x the 50 damage taken
+        assert_eq!(damage_instruction.target_position, target_positions[0]);
+    } else {
+        panic!("Expected PositionDamage instruction");
+    }
+}
+
+#[test]
+fn test_counter_fails_against_special_damage() {
+    let mut state = create_test_state();
+    // Change damage to special
+    state.side_two.damage_dealt.move_category = MoveCategory::Special;
+    
+    let user_position = BattlePosition { side: SideReference::SideOne, slot: 0 };
+    let target_positions = vec![BattlePosition { side: SideReference::SideTwo, slot: 0 }];
+    let generation = GenerationMechanics::new(Generation::Gen9);
+    
+    let instructions = apply_counter(&state, user_position, &target_positions, &generation);
+    
+    assert_eq!(instructions.len(), 1);
+    assert_eq!(instructions[0].instruction_list.len(), 0); // Empty instructions (move fails)
+}
+
+#[test]
+fn test_mirror_coat_returns_double_special_damage() {
+    let mut state = create_test_state();
+    // Set damage to special
+    state.side_two.damage_dealt.move_category = MoveCategory::Special;
+    
+    let user_position = BattlePosition { side: SideReference::SideOne, slot: 0 };
+    let target_positions = vec![BattlePosition { side: SideReference::SideTwo, slot: 0 }];
+    let generation = GenerationMechanics::new(Generation::Gen9);
+    
+    let instructions = apply_mirror_coat(&state, user_position, &target_positions, &generation);
+    
+    assert_eq!(instructions.len(), 1);
+    let state_instructions = &instructions[0];
+    assert_eq!(state_instructions.percentage, 100.0);
+    assert_eq!(state_instructions.instruction_list.len(), 1);
+    
+    if let Instruction::PositionDamage(damage_instruction) = &state_instructions.instruction_list[0] {
+        assert_eq!(damage_instruction.damage_amount, 100); // 2x the 50 damage taken
+        assert_eq!(damage_instruction.target_position, target_positions[0]);
+    } else {
+        panic!("Expected PositionDamage instruction");
+    }
+}
+
+#[test]
+fn test_mirror_coat_fails_against_physical_damage() {
+    let state = create_test_state(); // Physical damage by default
+    
+    let user_position = BattlePosition { side: SideReference::SideOne, slot: 0 };
+    let target_positions = vec![BattlePosition { side: SideReference::SideTwo, slot: 0 }];
+    let generation = GenerationMechanics::new(Generation::Gen9);
+    
+    let instructions = apply_mirror_coat(&state, user_position, &target_positions, &generation);
+    
+    assert_eq!(instructions.len(), 1);
+    assert_eq!(instructions[0].instruction_list.len(), 0); // Empty instructions (move fails)
+}
+
+#[test]
+fn test_comeuppance_returns_1_5x_any_damage() {
+    let state = create_test_state();
+    let user_position = BattlePosition { side: SideReference::SideOne, slot: 0 };
+    let target_positions = vec![BattlePosition { side: SideReference::SideTwo, slot: 0 }];
+    let generation = GenerationMechanics::new(Generation::Gen9);
+    
+    let instructions = apply_comeuppance(&state, user_position, &target_positions, &generation);
+    
+    assert_eq!(instructions.len(), 1);
+    let state_instructions = &instructions[0];
+    assert_eq!(state_instructions.percentage, 100.0);
+    assert_eq!(state_instructions.instruction_list.len(), 1);
+    
+    if let Instruction::PositionDamage(damage_instruction) = &state_instructions.instruction_list[0] {
+        assert_eq!(damage_instruction.damage_amount, 75); // 1.5x the 50 damage taken
+        assert_eq!(damage_instruction.target_position, target_positions[0]);
+    } else {
+        panic!("Expected PositionDamage instruction");
+    }
+}
+
+#[test]
+fn test_metal_burst_returns_1_5x_any_damage() {
+    let state = create_test_state();
+    let user_position = BattlePosition { side: SideReference::SideOne, slot: 0 };
+    let target_positions = vec![BattlePosition { side: SideReference::SideTwo, slot: 0 }];
+    let generation = GenerationMechanics::new(Generation::Gen9);
+    
+    let instructions = apply_metal_burst(&state, user_position, &target_positions, &generation);
+    
+    assert_eq!(instructions.len(), 1);
+    let state_instructions = &instructions[0];
+    assert_eq!(state_instructions.percentage, 100.0);
+    assert_eq!(state_instructions.instruction_list.len(), 1);
+    
+    if let Instruction::PositionDamage(damage_instruction) = &state_instructions.instruction_list[0] {
+        assert_eq!(damage_instruction.damage_amount, 75); // 1.5x the 50 damage taken
+        assert_eq!(damage_instruction.target_position, target_positions[0]);
+    } else {
+        panic!("Expected PositionDamage instruction");
+    }
+}
+
+#[test]
+fn test_counter_moves_fail_with_no_damage() {
+    let mut state = create_test_state();
+    // Set no damage taken
+    state.side_two.damage_dealt.damage = 0;
+    
+    let user_position = BattlePosition { side: SideReference::SideOne, slot: 0 };
+    let target_positions = vec![BattlePosition { side: SideReference::SideTwo, slot: 0 }];
+    let generation = GenerationMechanics::new(Generation::Gen9);
+    
+    // Test all counter moves fail with no damage
+    let counter_instructions = apply_counter(&state, user_position, &target_positions, &generation);
+    let mirror_coat_instructions = apply_mirror_coat(&state, user_position, &target_positions, &generation);
+    let comeuppance_instructions = apply_comeuppance(&state, user_position, &target_positions, &generation);
+    let metal_burst_instructions = apply_metal_burst(&state, user_position, &target_positions, &generation);
+    
+    // All should return empty instructions
+    assert_eq!(counter_instructions[0].instruction_list.len(), 0);
+    assert_eq!(mirror_coat_instructions[0].instruction_list.len(), 0);
+    assert_eq!(comeuppance_instructions[0].instruction_list.len(), 0);
+    assert_eq!(metal_burst_instructions[0].instruction_list.len(), 0);
+}
+
+#[test]
+fn test_counter_moves_fail_when_hitting_substitute() {
+    let mut state = create_test_state();
+    // Set hit substitute to true
+    state.side_two.damage_dealt.hit_substitute = true;
+    
+    let user_position = BattlePosition { side: SideReference::SideOne, slot: 0 };
+    let target_positions = vec![BattlePosition { side: SideReference::SideTwo, slot: 0 }];
+    let generation = GenerationMechanics::new(Generation::Gen9);
+    
+    // Test all counter moves fail when hitting substitute
+    let counter_instructions = apply_counter(&state, user_position, &target_positions, &generation);
+    let mirror_coat_instructions = apply_mirror_coat(&state, user_position, &target_positions, &generation);
+    let comeuppance_instructions = apply_comeuppance(&state, user_position, &target_positions, &generation);
+    let metal_burst_instructions = apply_metal_burst(&state, user_position, &target_positions, &generation);
+    
+    // All should return empty instructions
+    assert_eq!(counter_instructions[0].instruction_list.len(), 0);
+    assert_eq!(mirror_coat_instructions[0].instruction_list.len(), 0);
+    assert_eq!(comeuppance_instructions[0].instruction_list.len(), 0);
+    assert_eq!(metal_burst_instructions[0].instruction_list.len(), 0);
+}
