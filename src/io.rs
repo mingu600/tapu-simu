@@ -47,6 +47,10 @@ pub enum Commands {
         /// Log file path for detailed battle output
         #[arg(short, long)]
         log_file: Option<String>,
+
+        /// Team index for consistent team selection (0-based)
+        #[arg(long)]
+        team_index: Option<usize>,
     },
 
     /// Validate battle format configuration

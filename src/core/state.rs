@@ -137,7 +137,31 @@ impl State {
         // Convert and add Pokemon to each side
         for pokemon_set in team_one {
             let pokemon = pokemon_set.to_battle_pokemon(&move_factory, &pokemon_factory);
+            
+            // DEBUG: Check if Annihilape stats are correct after to_battle_pokemon
+            if pokemon_set.species == "Annihilape" {
+                println!("DEBUG: Annihilape stats after to_battle_pokemon: attack={}, defense={}, special_attack={}, special_defense={}, speed={}", 
+                         pokemon.stats.attack, pokemon.stats.defense, pokemon.stats.special_attack, 
+                         pokemon.stats.special_defense, pokemon.stats.speed);
+            }
+            
+            // DEBUG: Check stats before adding to side
+            if pokemon.species == "Annihilape" || pokemon.species == "Gothitelle" {
+                println!("DEBUG: {} stats before add_pokemon: ATK:{} DEF:{} SPA:{} SPD:{} SPE:{}", 
+                         pokemon.species, pokemon.stats.attack, pokemon.stats.defense, 
+                         pokemon.stats.special_attack, pokemon.stats.special_defense, pokemon.stats.speed);
+            }
+            
             state.side_one.add_pokemon(pokemon);
+            
+            // DEBUG: Check stats after adding to side
+            if let Some(added_pokemon) = state.side_one.pokemon.last() {
+                if added_pokemon.species == "Annihilape" || added_pokemon.species == "Gothitelle" {
+                    println!("DEBUG: {} stats after add_pokemon: ATK:{} DEF:{} SPA:{} SPD:{} SPE:{}", 
+                             added_pokemon.species, added_pokemon.stats.attack, added_pokemon.stats.defense, 
+                             added_pokemon.stats.special_attack, added_pokemon.stats.special_defense, added_pokemon.stats.speed);
+                }
+            }
         }
         
         for pokemon_set in team_two {
@@ -145,11 +169,29 @@ impl State {
             state.side_two.add_pokemon(pokemon);
         }
         
+        // DEBUG: Check stats before setting active Pokemon
+        for (i, pokemon) in state.side_one.pokemon.iter().enumerate() {
+            if pokemon.species == "Annihilape" || pokemon.species == "Gothitelle" {
+                println!("DEBUG: {} stats before set_active (index {}): ATK:{} DEF:{} SPA:{} SPD:{} SPE:{}", 
+                         pokemon.species, i, pokemon.stats.attack, pokemon.stats.defense, 
+                         pokemon.stats.special_attack, pokemon.stats.special_defense, pokemon.stats.speed);
+            }
+        }
+
         // Set initial active Pokemon based on format
         let active_count = format.active_pokemon_count();
         for slot in 0..active_count {
             if slot < state.side_one.pokemon.len() {
                 state.side_one.set_active_pokemon_at_slot(slot, Some(slot));
+                
+                // DEBUG: Check stats after setting active
+                if let Some(active_pokemon) = state.side_one.get_active_pokemon_at_slot(slot) {
+                    if active_pokemon.species == "Annihilape" || active_pokemon.species == "Gothitelle" {
+                        println!("DEBUG: {} stats after set_active (slot {}): ATK:{} DEF:{} SPA:{} SPD:{} SPE:{}", 
+                                 active_pokemon.species, slot, active_pokemon.stats.attack, active_pokemon.stats.defense, 
+                                 active_pokemon.stats.special_attack, active_pokemon.stats.special_defense, active_pokemon.stats.speed);
+                    }
+                }
             }
             if slot < state.side_two.pokemon.len() {
                 state.side_two.set_active_pokemon_at_slot(slot, Some(slot));
@@ -400,8 +442,26 @@ impl State {
 
     /// Apply a vector of instructions to the battle state
     pub fn apply_instructions(&mut self, instructions: &[crate::core::instruction::Instruction]) {
+        // DEBUG: Check stats before applying instructions
+        for pokemon in &self.side_one.pokemon {
+            if pokemon.species == "Annihilape" || pokemon.species == "Gothitelle" {
+                println!("DEBUG: {} stats BEFORE instructions: ATK:{} DEF:{} SPA:{} SPD:{} SPE:{}", 
+                         pokemon.species, pokemon.stats.attack, pokemon.stats.defense, 
+                         pokemon.stats.special_attack, pokemon.stats.special_defense, pokemon.stats.speed);
+            }
+        }
+        
         for instruction in instructions {
             self.apply_instruction(instruction);
+        }
+        
+        // DEBUG: Check stats after applying instructions
+        for pokemon in &self.side_one.pokemon {
+            if pokemon.species == "Annihilape" || pokemon.species == "Gothitelle" {
+                println!("DEBUG: {} stats AFTER instructions: ATK:{} DEF:{} SPA:{} SPD:{} SPE:{}", 
+                         pokemon.species, pokemon.stats.attack, pokemon.stats.defense, 
+                         pokemon.stats.special_attack, pokemon.stats.special_defense, pokemon.stats.speed);
+            }
         }
     }
 
@@ -1240,10 +1300,39 @@ impl State {
         
         if is_gen9_or_later {
             if let Some(pokemon) = self.get_pokemon_at_position_mut(position) {
+                let was_terastallized = pokemon.is_terastallized;
                 pokemon.is_terastallized = !pokemon.is_terastallized;
-                if let Some(_ttype) = tera_type {
-                    // Convert string to tera type - simplified
-                    pokemon.tera_type = Some(crate::core::move_choice::PokemonType::Normal);
+                
+                if let Some(ttype) = tera_type {
+                    // Convert string to tera type
+                    let tera_type_enum = match ttype {
+                        "Normal" => Some(crate::core::move_choice::PokemonType::Normal),
+                        "Fire" => Some(crate::core::move_choice::PokemonType::Fire),
+                        "Water" => Some(crate::core::move_choice::PokemonType::Water),
+                        "Electric" => Some(crate::core::move_choice::PokemonType::Electric),
+                        "Grass" => Some(crate::core::move_choice::PokemonType::Grass),
+                        "Ice" => Some(crate::core::move_choice::PokemonType::Ice),
+                        "Fighting" => Some(crate::core::move_choice::PokemonType::Fighting),
+                        "Poison" => Some(crate::core::move_choice::PokemonType::Poison),
+                        "Ground" => Some(crate::core::move_choice::PokemonType::Ground),
+                        "Flying" => Some(crate::core::move_choice::PokemonType::Flying),
+                        "Psychic" => Some(crate::core::move_choice::PokemonType::Psychic),
+                        "Bug" => Some(crate::core::move_choice::PokemonType::Bug),
+                        "Rock" => Some(crate::core::move_choice::PokemonType::Rock),
+                        "Ghost" => Some(crate::core::move_choice::PokemonType::Ghost),
+                        "Dragon" => Some(crate::core::move_choice::PokemonType::Dragon),
+                        "Dark" => Some(crate::core::move_choice::PokemonType::Dark),
+                        "Steel" => Some(crate::core::move_choice::PokemonType::Steel),
+                        "Fairy" => Some(crate::core::move_choice::PokemonType::Fairy),
+                        _ => None,
+                    };
+                    pokemon.tera_type = tera_type_enum;
+                }
+                
+                // Mark tera as used for the side when terastallizing (not when un-terastallizing)
+                if !was_terastallized && pokemon.is_terastallized {
+                    let side = self.get_side_mut(position.side);
+                    side.tera_used = true;
                 }
             }
         }
@@ -2069,6 +2158,8 @@ pub struct BattleSide {
     pub future_sight_attacks: HashMap<usize, (BattlePosition, i16, u8, String)>,
     /// Damage tracking for counter moves
     pub damage_dealt: DamageDealt,
+    /// Whether Terastallization has been used this battle (Gen 9+ only)
+    pub tera_used: bool,
 }
 
 impl BattleSide {
@@ -2082,6 +2173,7 @@ impl BattleSide {
             wish_healing: HashMap::new(),
             future_sight_attacks: HashMap::new(),
             damage_dealt: DamageDealt::new(),
+            tera_used: false,
         }
     }
 
@@ -2195,6 +2287,7 @@ impl BattleSide {
             wish_healing: HashMap::new(), // TODO: Add serialization if needed
             future_sight_attacks: HashMap::new(), // TODO: Add serialization if needed
             damage_dealt: DamageDealt::new(),
+            tera_used: false,
         })
     }
 
@@ -2377,7 +2470,7 @@ impl Pokemon {
     }
 
     /// Serialize the Pokemon to a compact string format
-    /// Format: species,hp,max_hp,stats,stat_boosts,status,status_duration,volatile_statuses,ability,item,types,level,gender
+    /// Format: species,hp,max_hp,stats,stat_boosts,status,status_duration,volatile_statuses,ability,item,types,level,gender,moves,tera_type,is_terastallized
     pub fn serialize(&self) -> String {
         let mut parts = Vec::new();
         
@@ -2423,6 +2516,10 @@ impl Pokemon {
             .collect::<Vec<_>>()
             .join("~");
         parts.push(moves_data);
+        
+        // Tera information (Gen 9+ only)
+        parts.push(self.tera_type.map_or("x".to_string(), |t| format!("{:?}", t)));
+        parts.push(if self.is_terastallized { "1" } else { "0" }.to_string());
         
         parts.join(",")
     }
@@ -2523,6 +2620,39 @@ impl Pokemon {
             }
         }
         
+        // Parse tera information (Gen 9+ only)
+        let tera_type = if parts.len() > 14 && parts[14] != "x" {
+            match parts[14] {
+                "Normal" => Some(crate::core::move_choice::PokemonType::Normal),
+                "Fire" => Some(crate::core::move_choice::PokemonType::Fire),
+                "Water" => Some(crate::core::move_choice::PokemonType::Water),
+                "Electric" => Some(crate::core::move_choice::PokemonType::Electric),
+                "Grass" => Some(crate::core::move_choice::PokemonType::Grass),
+                "Ice" => Some(crate::core::move_choice::PokemonType::Ice),
+                "Fighting" => Some(crate::core::move_choice::PokemonType::Fighting),
+                "Poison" => Some(crate::core::move_choice::PokemonType::Poison),
+                "Ground" => Some(crate::core::move_choice::PokemonType::Ground),
+                "Flying" => Some(crate::core::move_choice::PokemonType::Flying),
+                "Psychic" => Some(crate::core::move_choice::PokemonType::Psychic),
+                "Bug" => Some(crate::core::move_choice::PokemonType::Bug),
+                "Rock" => Some(crate::core::move_choice::PokemonType::Rock),
+                "Ghost" => Some(crate::core::move_choice::PokemonType::Ghost),
+                "Dragon" => Some(crate::core::move_choice::PokemonType::Dragon),
+                "Dark" => Some(crate::core::move_choice::PokemonType::Dark),
+                "Steel" => Some(crate::core::move_choice::PokemonType::Steel),
+                "Fairy" => Some(crate::core::move_choice::PokemonType::Fairy),
+                _ => None,
+            }
+        } else {
+            None
+        };
+        
+        let is_terastallized = if parts.len() > 15 {
+            parts[15] == "1"
+        } else {
+            false
+        };
+        
         Ok(Self {
             species,
             hp,
@@ -2540,8 +2670,8 @@ impl Pokemon {
             types,
             level,
             gender,
-            tera_type: None, // TODO: Add serialization if needed
-            is_terastallized: false, // TODO: Add serialization if needed
+            tera_type,
+            is_terastallized,
         })
     }
 

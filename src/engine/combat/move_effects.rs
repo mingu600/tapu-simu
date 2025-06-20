@@ -244,7 +244,8 @@ pub fn apply_move_effects(
         "doubleslap" | "double slap" | "cometpunch" | "comet punch" | "furyattack" | "fury attack" |
         "pinmissile" | "pin missile" | "barrage" | "spikecannon" | "spike cannon" | "bonemerang" |
         "bulletseed" | "bullet seed" | "icicleshard" | "icicle shard" | "rockblast" | "rock blast" |
-        "tailslap" | "tail slap" | "beatup" | "beat up" | "armthrust" | "arm thrust" => {
+        "tailslap" | "tail slap" | "beatup" | "beat up" | "armthrust" | "arm thrust" |
+        "tripleaxel" | "triple axel" | "triplekick" | "triple kick" => {
             return apply_multi_hit_move(state, move_data, user_position, target_positions, generation);
         }
         
@@ -1528,6 +1529,10 @@ pub fn apply_multi_hit_move(
             // These moves always hit exactly 2 times
             vec![(2, 100.0)]
         }
+        "tripleaxel" | "triple axel" | "triplekick" | "triple kick" => {
+            // These moves always hit exactly 3 times
+            vec![(3, 100.0)]
+        }
         "beatup" | "beat up" => {
             // Beat Up hits once per conscious party member
             // For now, assume standard multi-hit
@@ -1626,12 +1631,38 @@ fn calculate_multi_hit_damage(
     }
 
     // Calculate base damage for each hit
-    // Each hit does full damage (unlike some games where later hits do less)
+    // Handle special cases for moves with increasing power per hit
+    let effective_power = match move_data.name.to_lowercase().as_str() {
+        "tripleaxel" | "triple axel" => {
+            // Triple Axel: 20/40/60 base power for hits 1/2/3
+            match hit_number {
+                1 => 20,
+                2 => 40,
+                3 => 60,
+                _ => move_data.base_power.unwrap_or(20) as i16,
+            }
+        }
+        "triplekick" | "triple kick" => {
+            // Triple Kick: 10/20/30 base power for hits 1/2/3
+            match hit_number {
+                1 => 10,
+                2 => 20,
+                3 => 30,
+                _ => move_data.base_power.unwrap_or(10) as i16,
+            }
+        }
+        _ => move_data.base_power.unwrap_or(0) as i16,
+    };
+
+    // Create a modified move data with the correct power for this hit
+    let mut modified_move_data = move_data.clone();
+    modified_move_data.base_power = Some(effective_power);
+
     let base_damage = super::damage_calc::calculate_damage(
         state,
         attacker,
         defender,
-        move_data,
+        &modified_move_data,
         false, // Not a critical hit for base calculation
         1.0,   // Full damage roll
     );

@@ -257,20 +257,72 @@ impl BattleEnvironment {
                 self.player_one.name(),
                 self.player_two.name()
             );
+            let showdown_export = self.format_showdown_export(&state);
+            let team_stats = self.format_team_stats(&state);
 
             if let Some(ref mut file) = log_file {
                 writeln!(file, "{}", start_msg).unwrap();
+                writeln!(file, "{}", showdown_export).unwrap();
+                writeln!(file, "{}", team_stats).unwrap();
                 file.flush().unwrap();
             } else {
                 println!("{}", start_msg);
+                println!("{}", showdown_export);
+                println!("{}", team_stats);
+            }
+        }
+
+        // DEBUG: Check stats before initial instructions
+        if self.verbose {
+            for (i, pokemon) in state.side_one.pokemon.iter().enumerate() {
+                if pokemon.species == "Gothitelle" {
+                    if let Some(ref mut file) = log_file {
+                        writeln!(file, "DEBUG: {} stats BEFORE initial instructions: ATK:{} DEF:{} SPA:{} SPD:{} SPE:{}", 
+                                pokemon.species, pokemon.stats.attack, pokemon.stats.defense, 
+                                pokemon.stats.special_attack, pokemon.stats.special_defense, pokemon.stats.speed).unwrap();
+                    }
+                    println!("DEBUG: {} stats BEFORE initial instructions: ATK:{} DEF:{} SPA:{} SPD:{} SPE:{}", 
+                            pokemon.species, pokemon.stats.attack, pokemon.stats.defense, 
+                            pokemon.stats.special_attack, pokemon.stats.special_defense, pokemon.stats.speed);
+                }
             }
         }
 
         // Generate and apply initial switch-in instructions
         let initial_instructions = Self::generate_initial_instructions(&mut state);
         if !initial_instructions.is_empty() {
+            if self.verbose {
+                println!("DEBUG: Generated {} initial instruction sequences", initial_instructions.len());
+                for (i, sequence) in initial_instructions.iter().enumerate() {
+                    println!("  Sequence {}: {} instructions", i, sequence.instruction_list.len());
+                    for (j, instruction) in sequence.instruction_list.iter().enumerate() {
+                        println!("    {}: {:?}", j, instruction);
+                    }
+                }
+            }
             let chosen_index = self.sample_instruction_index(&initial_instructions);
+            if self.verbose {
+                println!("DEBUG: Applying initial instruction sequence {}", chosen_index);
+            }
             state.apply_instructions(&initial_instructions[chosen_index].instruction_list);
+        } else if self.verbose {
+            println!("DEBUG: No initial instructions generated");
+        }
+        
+        // DEBUG: Check stats after initial instructions
+        if self.verbose {
+            for (i, pokemon) in state.side_one.pokemon.iter().enumerate() {
+                if pokemon.species == "Gothitelle" {
+                    if let Some(ref mut file) = log_file {
+                        writeln!(file, "DEBUG: {} stats AFTER initial instructions: ATK:{} DEF:{} SPA:{} SPD:{} SPE:{}", 
+                                pokemon.species, pokemon.stats.attack, pokemon.stats.defense, 
+                                pokemon.stats.special_attack, pokemon.stats.special_defense, pokemon.stats.speed).unwrap();
+                    }
+                    println!("DEBUG: {} stats AFTER initial instructions: ATK:{} DEF:{} SPA:{} SPD:{} SPE:{}", 
+                            pokemon.species, pokemon.stats.attack, pokemon.stats.defense, 
+                            pokemon.stats.special_attack, pokemon.stats.special_defense, pokemon.stats.speed);
+                }
+            }
         }
 
         // Main battle loop - exact parity with poke-engine
@@ -360,7 +412,7 @@ impl BattleEnvironment {
                 if let Some(ref mut file) = log_file {
                     write!(file, "{}", instructions_msg).unwrap();
                     for (i, instruction_set) in instructions.iter().enumerate() {
-                        writeln!(file, "  Sequence {}: {} instructions", i, instruction_set.instruction_list.len()).unwrap();
+                        writeln!(file, "  Sequence {} ({:.1}%): {} instructions", i, instruction_set.percentage, instruction_set.instruction_list.len()).unwrap();
                         for (j, instruction) in instruction_set.instruction_list.iter().enumerate() {
                             writeln!(file, "    {}: {:?}", j, instruction).unwrap();
                         }
@@ -370,7 +422,7 @@ impl BattleEnvironment {
                 } else {
                     print!("{}", instructions_msg);
                     for (i, instruction_set) in instructions.iter().enumerate() {
-                        println!("  Sequence {}: {} instructions", i, instruction_set.instruction_list.len());
+                        println!("  Sequence {} ({:.1}%): {} instructions", i, instruction_set.percentage, instruction_set.instruction_list.len());
                         for (j, instruction) in instruction_set.instruction_list.iter().enumerate() {
                             println!("    {}: {:?}", j, instruction);
                         }
@@ -462,6 +514,246 @@ impl BattleEnvironment {
         }
 
         state_instructions.len() - 1
+    }
+
+    /// Format full team stats for battle logging
+    fn format_team_stats(&self, state: &State) -> String {
+        let mut output = String::new();
+        
+        output.push_str("\n=== Full Team Stats ===\n");
+        
+        // Side One stats
+        output.push_str(&format!("Player 1 ({})\n", self.player_one.name()));
+        for (i, pokemon) in state.side_one.pokemon.iter().enumerate() {
+            output.push_str(&format!("  Pokemon {}: {}\n", i + 1, self.format_pokemon_full_stats(pokemon)));
+        }
+        
+        output.push_str("\n");
+        
+        // Side Two stats
+        output.push_str(&format!("Player 2 ({})\n", self.player_two.name()));
+        for (i, pokemon) in state.side_two.pokemon.iter().enumerate() {
+            output.push_str(&format!("  Pokemon {}: {}\n", i + 1, self.format_pokemon_full_stats(pokemon)));
+        }
+        
+        output.push_str("========================\n");
+        output
+    }
+
+    /// Format individual Pokemon's full stats
+    fn format_pokemon_full_stats(&self, pokemon: &crate::core::state::Pokemon) -> String {
+        format!(
+            "{} (Lv. {}) - HP: {}/{} | ATK: {} | DEF: {} | SPA: {} | SPD: {} | SPE: {} | Ability: {} | Item: {} | Type(s): {}",
+            pokemon.species,
+            pokemon.level,
+            pokemon.hp,
+            pokemon.max_hp,
+            pokemon.stats.attack,
+            pokemon.stats.defense,
+            pokemon.stats.special_attack,
+            pokemon.stats.special_defense,
+            pokemon.stats.speed,
+            pokemon.ability,
+            pokemon.item.as_ref().unwrap_or(&"None".to_string()),
+            pokemon.types.join("/")
+        )
+    }
+
+    /// Generate Showdown paste export for both teams
+    fn format_showdown_export(&self, state: &State) -> String {
+        let mut output = String::new();
+        
+        output.push_str("\n=== Showdown Team Export ===\n");
+        
+        // Side One export
+        output.push_str(&format!("Player 1 ({})\n", self.player_one.name()));
+        for pokemon in &state.side_one.pokemon {
+            output.push_str(&self.format_pokemon_showdown_paste(pokemon));
+            output.push_str("\n");
+        }
+        
+        output.push_str("\n");
+        
+        // Side Two export
+        output.push_str(&format!("Player 2 ({})\n", self.player_two.name()));
+        for pokemon in &state.side_two.pokemon {
+            output.push_str(&self.format_pokemon_showdown_paste(pokemon));
+            output.push_str("\n");
+        }
+        
+        output.push_str("=============================\n");
+        output
+    }
+
+    /// Format individual Pokemon as Showdown paste format
+    fn format_pokemon_showdown_paste(&self, pokemon: &crate::core::state::Pokemon) -> String {
+        let mut paste = String::new();
+        
+        // Species line with item and gender
+        let gender_str = match pokemon.gender {
+            crate::core::state::Gender::Male => " (M)",
+            crate::core::state::Gender::Female => " (F)",
+            crate::core::state::Gender::Unknown => "",
+        };
+        
+        if let Some(ref item) = pokemon.item {
+            paste.push_str(&format!("{}{} @ {}\n", pokemon.species, gender_str, item));
+        } else {
+            paste.push_str(&format!("{}{}\n", pokemon.species, gender_str));
+        }
+        
+        // Ability
+        paste.push_str(&format!("Ability: {}\n", pokemon.ability));
+        
+        // Level (only if not 50/100)
+        if pokemon.level != 50 && pokemon.level != 100 {
+            paste.push_str(&format!("Level: {}\n", pokemon.level));
+        }
+        
+        // Tera Type (Gen 9+)
+        if let Some(ref tera_type) = pokemon.tera_type {
+            paste.push_str(&format!("Tera Type: {:?}\n", tera_type));
+        }
+        
+        // Determine IVs and EVs based on moveset
+        let (ivs, evs) = self.determine_ivs_evs_for_pokemon(pokemon);
+        
+        // EVs (only show if not all zero - Random Battles always have EVs)
+        if !evs.is_all_zero() {
+            paste.push_str(&format!("EVs: {}\n", evs.format_showdown()));
+        }
+        
+        // Nature (neutral for Random Battle)
+        paste.push_str("Nature: Hardy\n");
+        
+        // IVs (only show if not all 31)
+        if !ivs.is_all_31() {
+            paste.push_str(&format!("IVs: {}\n", ivs.format_showdown()));
+        }
+        
+        // Moves
+        let mut move_names: Vec<String> = pokemon.moves.values().map(|m| m.name.clone()).collect();
+        move_names.sort(); // Sort for consistent output
+        for move_name in move_names {
+            paste.push_str(&format!("- {}\n", move_name));
+        }
+        
+        paste
+    }
+
+    /// Determine IVs and EVs based on Pokemon's moveset following Smogon Random Battle rules
+    fn determine_ivs_evs_for_pokemon(&self, pokemon: &crate::core::state::Pokemon) -> (PokemonIVs, PokemonEVs) {
+        // Check if Pokemon has any physical moves
+        let has_physical_moves = pokemon.moves.values()
+            .any(|m| matches!(m.category, crate::core::instruction::MoveCategory::Physical));
+        
+        // Check if Pokemon has Trick Room or Gyro Ball
+        let has_speed_dependent_moves = pokemon.moves.values()
+            .any(|m| {
+                let name_lower = m.name.to_lowercase();
+                name_lower == "trick room" || name_lower == "gyro ball"
+            });
+        
+        let mut ivs = PokemonIVs::default(); // 31 in all stats
+        let mut evs = PokemonEVs::default(); // 85 in all stats
+        
+        // No physical attacks: Attack IV/EV = 0
+        if !has_physical_moves {
+            ivs.attack = 0;
+            evs.attack = 0;
+        }
+        
+        // Has Trick Room or Gyro Ball: Speed IV/EV = 0
+        if has_speed_dependent_moves {
+            ivs.speed = 0;
+            evs.speed = 0;
+        }
+        
+        (ivs, evs)
+    }
+}
+
+/// Pokemon IVs for Showdown export
+#[derive(Debug, Clone)]
+struct PokemonIVs {
+    hp: u8,
+    attack: u8,
+    defense: u8,
+    special_attack: u8,
+    special_defense: u8,
+    speed: u8,
+}
+
+impl Default for PokemonIVs {
+    fn default() -> Self {
+        Self {
+            hp: 31,
+            attack: 31,
+            defense: 31,
+            special_attack: 31,
+            special_defense: 31,
+            speed: 31,
+        }
+    }
+}
+
+impl PokemonIVs {
+    fn is_all_31(&self) -> bool {
+        self.hp == 31 && self.attack == 31 && self.defense == 31 && 
+        self.special_attack == 31 && self.special_defense == 31 && self.speed == 31
+    }
+    
+    fn format_showdown(&self) -> String {
+        let mut parts = Vec::new();
+        if self.hp != 31 { parts.push(format!("{} HP", self.hp)); }
+        if self.attack != 31 { parts.push(format!("{} Atk", self.attack)); }
+        if self.defense != 31 { parts.push(format!("{} Def", self.defense)); }
+        if self.special_attack != 31 { parts.push(format!("{} SpA", self.special_attack)); }
+        if self.special_defense != 31 { parts.push(format!("{} SpD", self.special_defense)); }
+        if self.speed != 31 { parts.push(format!("{} Spe", self.speed)); }
+        parts.join(" / ")
+    }
+}
+
+/// Pokemon EVs for Showdown export
+#[derive(Debug, Clone)]
+struct PokemonEVs {
+    hp: u8,
+    attack: u8,
+    defense: u8,
+    special_attack: u8,
+    special_defense: u8,
+    speed: u8,
+}
+
+impl Default for PokemonEVs {
+    fn default() -> Self {
+        Self {
+            hp: 85,
+            attack: 85,
+            defense: 85,
+            special_attack: 85,
+            special_defense: 85,
+            speed: 85,
+        }
+    }
+}
+
+impl PokemonEVs {
+    fn is_all_zero(&self) -> bool {
+        self.hp == 0 && self.attack == 0 && self.defense == 0 && 
+        self.special_attack == 0 && self.special_defense == 0 && self.speed == 0
+    }
+    
+    fn format_showdown(&self) -> String {
+        let mut parts = Vec::new();
+        if self.hp > 0 { parts.push(format!("{} HP", self.hp)); }
+        if self.attack > 0 { parts.push(format!("{} Atk", self.attack)); }
+        if self.defense > 0 { parts.push(format!("{} Def", self.defense)); }
+        if self.special_attack > 0 { parts.push(format!("{} SpA", self.special_attack)); }
+        if self.special_defense > 0 { parts.push(format!("{} SpD", self.special_defense)); }
+        if self.speed > 0 { parts.push(format!("{} Spe", self.speed)); }
+        parts.join(" / ")
     }
 }
 

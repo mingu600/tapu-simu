@@ -139,6 +139,12 @@ impl FormatInstructionGenerator {
         // Process before-move abilities (like Protean/Libero)
         let mut all_instructions = process_before_move_abilities(state, user_position, move_data, &generation_mechanics);
 
+        // Handle Terastallization if this is a Tera move
+        if let Some(tera_type) = move_choice.tera_type() {
+            let tera_instructions = self.generate_terastallization_instructions(state, user_position, tera_type);
+            all_instructions.extend(tera_instructions);
+        }
+
         // Generate instructions based on move type and targets
         let move_instructions = if move_data.is_damaging() {
             self.generate_damage_instructions(state, move_data, user_position, &targets, &generation_mechanics)
@@ -300,7 +306,8 @@ impl FormatInstructionGenerator {
         // Add critical hit branching for damaging moves
         self.add_critical_hit_branching(&mut instructions, state, move_data, user_position, targets, damage_multiplier);
         
-        instructions
+        // Apply accuracy to all instructions
+        self.apply_accuracy_to_instructions(instructions, state, move_data, user_position, targets, generation)
     }
 
     /// Generate status move instructions
@@ -330,7 +337,10 @@ impl FormatInstructionGenerator {
         // Use the comprehensive move effects system with generation awareness
         let generation_mechanics = self.format.generation.get_mechanics();
         let context = move_effects::MoveContext::new();
-        move_effects::apply_move_effects(state, &engine_move_data, user_position, targets, &generation_mechanics, &context)
+        let instructions = move_effects::apply_move_effects(state, &engine_move_data, user_position, targets, &generation_mechanics, &context);
+        
+        // Apply accuracy to status moves as well
+        self.apply_accuracy_to_instructions(instructions, state, move_data, user_position, targets, &generation_mechanics)
     }
     
     /// Add recoil and drain effects to instruction list
@@ -372,6 +382,134 @@ impl FormatInstructionGenerator {
         }
     }
 
+    /// Generate Terastallization instructions 
+    fn generate_terastallization_instructions(
+        &self,
+        state: &State,
+        user_position: BattlePosition,
+        tera_type: crate::core::move_choice::PokemonType,
+    ) -> Vec<StateInstructions> {
+        use crate::core::instruction::{Instruction, StateInstructions, ToggleTerastallizedInstruction, ChangeTypeInstruction};
+        
+        // Convert PokemonType to string
+        let tera_type_string = format!("{:?}", tera_type);
+        
+        // Get current Pokemon to check types
+        let current_types = if let Some(pokemon) = state.get_pokemon_at_position(user_position) {
+            pokemon.types.clone()
+        } else {
+            vec!["Normal".to_string()]
+        };
+        
+        vec![StateInstructions::new(100.0, vec![
+            // Mark as Terastallized
+            Instruction::ToggleTerastallized(ToggleTerastallizedInstruction {
+                target_position: user_position,
+                tera_type: Some(tera_type_string.clone()),
+            }),
+            // Change types to pure Tera type
+            Instruction::ChangeType(ChangeTypeInstruction {
+                target_position: user_position,
+                new_types: vec![tera_type_string],
+                previous_types: Some(current_types),
+            }),
+        ])]
+    }
+
+    /// Check move accuracy and return hit/miss probabilities
+    fn check_move_accuracy(
+        &self,
+        state: &State,
+        move_data: &Move,
+        user_position: BattlePosition,
+        targets: &[BattlePosition],
+        generation: &GenerationMechanics,
+    ) -> AccuracyResult {
+        if targets.is_empty() {
+            return AccuracyResult { hit_chance: 100.0, miss_chance: 0.0 };
+        }
+
+        let user = state.get_pokemon_at_position(user_position);
+        let target = state.get_pokemon_at_position(targets[0]);
+        
+        if let (Some(attacker), Some(defender)) = (user, target) {
+            // Convert Move to EngineMoveData for accuracy calculation
+            let engine_move_data = crate::data::types::EngineMoveData {
+                id: 1,
+                name: move_data.name.clone(),
+                base_power: Some(move_data.base_power as i16),
+                accuracy: Some(move_data.accuracy as i16),
+                pp: move_data.pp as i16,
+                move_type: move_data.move_type.clone(),
+                category: move_data.category,
+                priority: move_data.priority,
+                target: move_data.target,
+                effect_chance: None,
+                effect_description: String::new(),
+                flags: Vec::new(),
+            };
+
+            let accuracy = crate::engine::combat::move_effects::calculate_accuracy_with_context(
+                &engine_move_data,
+                attacker,
+                defender,
+                Some(&state.weather),
+                Some(generation),
+            );
+            
+            let hit_chance = (accuracy * 100.0).min(100.0);
+            let miss_chance = (100.0 - hit_chance).max(0.0);
+            
+            AccuracyResult { hit_chance, miss_chance }
+        } else {
+            AccuracyResult { hit_chance: 100.0, miss_chance: 0.0 }
+        }
+    }
+
+    /// Apply accuracy checks to instruction sequences
+    fn apply_accuracy_to_instructions(
+        &self,
+        instructions: Vec<StateInstructions>,
+        state: &State,
+        move_data: &Move,
+        user_position: BattlePosition,
+        targets: &[BattlePosition],
+        generation: &GenerationMechanics,
+    ) -> Vec<StateInstructions> {
+        let accuracy_result = self.check_move_accuracy(state, move_data, user_position, targets, generation);
+        
+        // If 100% accuracy, return original instructions
+        if accuracy_result.miss_chance == 0.0 {
+            return instructions;
+        }
+        
+        let mut result = Vec::new();
+        
+        // Add miss sequence if there's a chance to miss
+        if accuracy_result.miss_chance > 0.0 {
+            result.push(StateInstructions::new(accuracy_result.miss_chance, vec![]));
+        }
+        
+        // Scale hit sequences by hit chance
+        if accuracy_result.hit_chance > 0.0 {
+            for instruction in instructions {
+                let hit_probability = instruction.percentage * accuracy_result.hit_chance / 100.0;
+                result.push(StateInstructions::new(hit_probability, instruction.instruction_list));
+            }
+        }
+        
+        result
+    }
+}
+
+/// Result of accuracy calculation
+#[derive(Debug, Clone)]
+struct AccuracyResult {
+    hit_chance: f32,
+    miss_chance: f32,
+}
+
+impl FormatInstructionGenerator {
     /// Calculate base damage for a move against a target
     fn calculate_base_damage(
         &self,

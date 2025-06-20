@@ -13,16 +13,6 @@ Tapu Simu is a comprehensive battle engine featuring format-aware mechanics, pos
 
 ⚠️ **Note**: This project is under active development and not yet ready for production use.
 
-## ✨ Key Features
-
-- **🎯 Multi-Format Support**: Native Singles, Doubles, and VGC format support
-- **📍 Position-Based Targeting**: Explicit position targeting for all moves and effects
-- **🔄 Format-Aware Architecture**: Battle logic automatically adapts to the active format
-- **📊 Comprehensive Instruction System**: 40+ instruction types covering all battle mechanics
-- **↩️ Full Undo Support**: Complete battle state reversibility for AI and analysis
-- **⚡ Pokemon Showdown Integration**: Direct data integration with PS format
-- **🧪 Extensive Testing**: Comprehensive test suite with dedicated testing framework
-- **🌐 Web Interface**: Built-in UI server for battle visualization and interaction
 
 ## 🏗️ Architecture
 
@@ -89,9 +79,10 @@ cargo run --bin tapu-simu -- battle \
 cargo run --bin tapu-simu -- battle \
   --player-one first \
   --player-two random \
-  --max-turns 50 \
+  --max-turns 1 \
   --verbose \
-  --log-file battle.log
+  --log-file battle.log \
+  --team-index 3
 
 # Test different battle formats
 cargo run --bin tapu-simu -- battle --format vgc --runs 10
@@ -198,55 +189,9 @@ cargo test --test test_core_battle_mechanics
 cargo test --test test_instruction_generation_integration
 ```
 
-### Test Categories
-
-- **Unit Tests**: Core component testing
-- **Integration Tests**: Cross-module functionality
-- **Battle Mechanics Tests**: Game-accurate battle scenarios
-- **Instruction System Tests**: Instruction generation and application
-- **End-of-Turn Tests**: Complex turn resolution scenarios
-
 ## ⚙️ Configuration
 
-### Features
 
-Tapu Simu supports generation-specific features and optimizations:
-
-```toml
-[features]
-# Generation support
-gen1 = []
-gen2 = []
-gen3 = []
-gen4 = []
-gen5 = []
-gen6 = []
-gen7 = []
-gen8 = []
-gen9 = []
-
-# Generation-specific mechanics
-terastallization = ["gen9"]
-
-# Performance optimizations
-remove_low_chance_instructions = []
-
-# Default features (Gen 9 with Terastallization)
-default = ["gen9", "terastallization"]
-```
-
-### Custom Builds
-
-```bash
-# Build for specific generation
-cargo build --no-default-features --features gen4
-
-# Build with optimizations
-cargo build --features remove_low_chance_instructions
-
-# Build for competitive formats
-cargo build --features gen9,terastallization
-```
 
 ## 📊 Battle Mechanics
 
@@ -350,56 +295,6 @@ npm install
 npm run extract
 ```
 
-## 🎮 Battle Formats
-
-Currently supported formats:
-
-- **Singles**: Standard 1v1 battles
-- **Doubles**: 2v2 battles with format-specific mechanics
-- **VGC**: Official Video Game Championship format
-- **Custom**: Extensible format system for custom rulesets
-
-## 🔄 Development Status
-
-### Implemented Systems ✅
-
-- Core battle state management
-- Position-based targeting system
-- Instruction generation and application
-- Multi-format architecture
-- Pokemon Showdown data integration
-- Comprehensive undo system
-- **Complete battle environment and game loop**
-- **AI player system (Random, FirstMove, DamageMaximizer)**
-- **Full CLI battle interface with statistics**
-- **Parallel battle execution**
-- Web UI interface
-- Testing framework
-
-### In Progress 🟡
-
-- Move effect implementations (~38% complete)
-- Advanced battle mechanics (items, abilities)
-- Generation-specific mechanics
-- AI player implementations
-
-### Planned Features 📋
-
-- Team builder integration
-- Battle replays and analysis
-- Advanced AI algorithms
-- Tournament management system
-- Plugin system for custom mechanics
-
-## 🤝 Contributing
-
-Tapu Simu follows strict development principles:
-
-1. **Format-First Design**: All features must support multiple formats
-2. **Position-Based Targeting**: No implicit targeting assumptions
-3. **KISS Principle**: Keep implementations simple and maintainable
-4. **Test-Driven Development**: All features require comprehensive tests
-
 See `CLAUDE.md` for detailed development guidelines.
 
 ## 📁 Project Structure
@@ -415,30 +310,9 @@ tapu-simu/
 └── examples/               # Usage examples
 ```
 
-## 📋 Dependencies
-
-### Core Dependencies
-
-- **clap**: Command-line interface
-- **serde**: Data serialization
-- **tokio**: Async runtime for web server
-- **axum**: Web framework for UI server
-- **rayon**: Parallel processing
-
-### Development Dependencies
-
-- **colored**: Terminal output formatting
-- **uuid**: Unique identifiers for battle states
-
 ## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- **Pokemon Showdown**: Data format and battle mechanics reference
-- **Original poke-engine**: Foundation and inspiration for battle mechanics
-- **Rust Community**: Excellent tooling and ecosystem support
 
 ---
 
