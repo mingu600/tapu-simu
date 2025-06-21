@@ -4,14 +4,15 @@
 //! using actual Pokemon Showdown data and testing the damage calculation
 //! pipeline with real Pokemon data.
 
-use crate::core::state::{Pokemon, State, MoveCategory, Move};
+use crate::core::battle_state::{Pokemon, MoveCategory, Move, BattleState};
 use crate::core::battle_format::{BattleFormat, BattlePosition, SideReference, FormatType};
-use crate::data::loader::PSDataRepository;
+use crate::data::loader::DataRepository;
 use crate::engine::combat::damage_calc::calculate_damage;
 use crate::engine::turn::instruction_generator::GenerationXInstructionGenerator;
 use crate::data::types::EngineMoveData;
 use crate::core::move_choice::{MoveChoice, MoveIndex};
-use crate::core::instruction::{Instruction, StateInstructions, PokemonStatus, Stat};
+use crate::core::instruction::{PokemonStatus, Stat};
+use crate::core::instructions::{BattleInstruction, BattleInstructions, PokemonInstruction, StatusInstruction, StatsInstruction};
 use crate::generation::Generation;
 
 /// Normalize names to match PS conventions (lowercase, no spaces/hyphens)
@@ -26,13 +27,13 @@ pub fn normalize_name(name: &str) -> String {
 
 /// Test framework for damage calculation with real PS data
 pub struct TestFramework {
-    pub ps_data: PSDataRepository,
+    pub ps_data: DataRepository,
 }
 
 impl TestFramework {
     /// Create a new test framework with PS data
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
-        let ps_data = PSDataRepository::load_from_directory("data/ps-extracted")?;
+        let ps_data = DataRepository::load_from_directory("data/ps-extracted")?;
         
         Ok(Self {
             ps_data,
@@ -112,25 +113,25 @@ impl TestFramework {
             _ => MoveCategory::Physical, // Default fallback
         };
 
-        // Convert target string to PSMoveTarget enum
-        use crate::data::ps_types::PSMoveTarget;
+        // Convert target string to MoveTarget enum
+        use crate::data::showdown_types::MoveTarget;
         let target = match ps_move.target.as_str() {
-            "normal" => PSMoveTarget::Normal,
-            "self" => PSMoveTarget::Self_,
-            "adjacentAlly" => PSMoveTarget::AdjacentAlly,
-            "adjacentAllyOrSelf" => PSMoveTarget::AdjacentAllyOrSelf,
-            "adjacentFoe" => PSMoveTarget::AdjacentFoe,
-            "allAdjacentFoes" => PSMoveTarget::AllAdjacentFoes,
-            "allAdjacent" => PSMoveTarget::AllAdjacent,
-            "all" => PSMoveTarget::All,
-            "allyTeam" => PSMoveTarget::AllyTeam,
-            "allySide" => PSMoveTarget::AllySide,
-            "foeSide" => PSMoveTarget::FoeSide,
-            "any" => PSMoveTarget::Any,
-            "randomNormal" => PSMoveTarget::RandomNormal,
-            "scripted" => PSMoveTarget::Scripted,
-            "allies" => PSMoveTarget::Allies,
-            _ => PSMoveTarget::Normal, // Default fallback
+            "normal" => MoveTarget::Normal,
+            "self" => MoveTarget::Self_,
+            "adjacentAlly" => MoveTarget::AdjacentAlly,
+            "adjacentAllyOrSelf" => MoveTarget::AdjacentAllyOrSelf,
+            "adjacentFoe" => MoveTarget::AdjacentFoe,
+            "allAdjacentFoes" => MoveTarget::AllAdjacentFoes,
+            "allAdjacent" => MoveTarget::AllAdjacent,
+            "all" => MoveTarget::All,
+            "allyTeam" => MoveTarget::AllyTeam,
+            "allySide" => MoveTarget::AllySide,
+            "foeSide" => MoveTarget::FoeSide,
+            "any" => MoveTarget::Any,
+            "randomNormal" => MoveTarget::RandomNormal,
+            "scripted" => MoveTarget::Scripted,
+            "allies" => MoveTarget::Allies,
+            _ => MoveTarget::Normal, // Default fallback
         };
 
         // Convert PS flags to vector of flag names
@@ -167,7 +168,7 @@ impl TestFramework {
         attacker: &Pokemon,
         defender: &Pokemon,
         move_data: &EngineMoveData,
-        state: &State,
+        state: &BattleState,
     ) -> i16 {
         calculate_damage(state, attacker, defender, move_data, false, 1.0)
     }
@@ -183,7 +184,7 @@ impl TestFramework {
         let attacker = self.create_pokemon_from_ps_data(attacker_species, None, Some(50))?;
         let defender = self.create_pokemon_from_ps_data(defender_species, Some(defender_ability), Some(50))?;
         let move_data = self.create_move_from_ps_data(move_name)?;
-        let state = State::new(BattleFormat::gen9_ou());
+        let state = BattleState::new(BattleFormat::gen9_ou());
 
         let damage = self.test_damage_calculation(&attacker, &defender, &move_data, &state);
         Ok(damage == 0)
@@ -201,7 +202,7 @@ impl TestFramework {
         let defender_normal = self.create_pokemon_from_ps_data(defender_species, None, Some(50))?;
         let attacker = self.create_pokemon_from_ps_data(attacker_species, None, Some(50))?;
         let move_data = self.create_move_from_ps_data(move_name)?;
-        let state = State::new(BattleFormat::gen9_ou());
+        let state = BattleState::new(BattleFormat::gen9_ou());
 
         let normal_damage = self.test_damage_calculation(&attacker, &defender_normal, &move_data, &state);
         
@@ -230,12 +231,12 @@ impl TestFramework {
         let move_data = self.create_move_from_ps_data(move_name)?;
 
         // Test with weather but no negation ability
-        let mut state_with_weather = State::new(BattleFormat::gen9_ou());
+        let mut state_with_weather = BattleState::new(BattleFormat::gen9_ou());
         state_with_weather.weather = weather;
         let weather_damage = self.test_damage_calculation(&attacker, &defender, &move_data, &state_with_weather);
 
         // Test with weather negation ability on field
-        let mut state_with_negation = State::new(BattleFormat::gen9_ou());
+        let mut state_with_negation = BattleState::new(BattleFormat::gen9_ou());
         state_with_negation.weather = weather;
         let negator = self.create_pokemon_from_ps_data(defender_species, Some(weather_negation_ability), Some(50))?;
         state_with_negation.side_two.pokemon.push(negator);
@@ -264,11 +265,11 @@ impl TestFramework {
         let move_data = self.create_move_from_ps_data(move_name)?;
 
         // Test without weather
-        let state_no_weather = State::new(BattleFormat::gen9_ou());
+        let state_no_weather = BattleState::new(BattleFormat::gen9_ou());
         let normal_damage = self.test_damage_calculation(&attacker, &defender, &move_data, &state_no_weather);
 
         // Test with weather
-        let mut state_with_weather = State::new(BattleFormat::gen9_ou());
+        let mut state_with_weather = BattleState::new(BattleFormat::gen9_ou());
         state_with_weather.weather = weather;
         let weather_damage = self.test_damage_calculation(&attacker, &defender, &move_data, &state_with_weather);
 
@@ -292,11 +293,11 @@ impl TestFramework {
         let move_data = self.create_move_from_ps_data(move_name)?;
 
         // Test without terrain
-        let state_no_terrain = State::new(BattleFormat::gen9_ou());
+        let state_no_terrain = BattleState::new(BattleFormat::gen9_ou());
         let normal_damage = self.test_damage_calculation(&attacker, &defender, &move_data, &state_no_terrain);
 
         // Test with terrain
-        let mut state_with_terrain = State::new(BattleFormat::gen9_ou());
+        let mut state_with_terrain = BattleState::new(BattleFormat::gen9_ou());
         state_with_terrain.terrain = terrain;
         let terrain_damage = self.test_damage_calculation(&attacker, &defender, &move_data, &state_with_terrain);
 
@@ -320,7 +321,7 @@ impl TestFramework {
         let defender = self.create_pokemon_from_ps_data("charizard", None, Some(50))?;
         let move_data = self.create_move_from_ps_data(move_name)?;
 
-        let mut state = State::new(BattleFormat::gen9_ou());
+        let mut state = BattleState::new(BattleFormat::gen9_ou());
         state.terrain = terrain;
 
         let grounded_damage = self.test_damage_calculation(&grounded_attacker, &defender, &move_data, &state);
@@ -343,13 +344,13 @@ impl TestFramework {
         let move_data = self.create_move_from_ps_data(move_name)?;
 
         // Test without screen
-        let mut state_no_screen = State::new(BattleFormat::gen9_ou());
+        let mut state_no_screen = BattleState::new(BattleFormat::gen9_ou());
         state_no_screen.side_one.pokemon.push(attacker.clone());
         state_no_screen.side_two.pokemon.push(defender.clone());
         let normal_damage = calculate_damage(&state_no_screen, &state_no_screen.side_one.pokemon[0], &state_no_screen.side_two.pokemon[0], &move_data, false, 1.0);
 
         // Test with screen
-        let mut state_with_screen = State::new(BattleFormat::gen9_ou());
+        let mut state_with_screen = BattleState::new(BattleFormat::gen9_ou());
         state_with_screen.side_one.pokemon.push(attacker);
         state_with_screen.side_two.pokemon.push(defender);
         state_with_screen.side_two.side_conditions.insert(screen, 5);
@@ -376,14 +377,14 @@ impl TestFramework {
         let move_data = self.create_move_from_ps_data(move_name)?;
 
         // Test normal attacker with screen
-        let mut state_normal = State::new(BattleFormat::gen9_ou());
+        let mut state_normal = BattleState::new(BattleFormat::gen9_ou());
         state_normal.side_one.pokemon.push(normal_attacker);
         state_normal.side_two.pokemon.push(defender.clone());
         state_normal.side_two.side_conditions.insert(screen, 5);
         let normal_damage = calculate_damage(&state_normal, &state_normal.side_one.pokemon[0], &state_normal.side_two.pokemon[0], &move_data, false, 1.0);
 
         // Test Infiltrator attacker with screen
-        let mut state_infiltrator = State::new(BattleFormat::gen9_ou());
+        let mut state_infiltrator = BattleState::new(BattleFormat::gen9_ou());
         state_infiltrator.side_one.pokemon.push(infiltrator_attacker);
         state_infiltrator.side_two.pokemon.push(defender);
         state_infiltrator.side_two.side_conditions.insert(screen, 5);
@@ -409,25 +410,25 @@ impl TestFramework {
             _ => MoveCategory::Physical, // Default fallback
         };
 
-        // Convert target string to PSMoveTarget enum
-        use crate::data::ps_types::PSMoveTarget;
+        // Convert target string to MoveTarget enum
+        use crate::data::showdown_types::MoveTarget;
         let target = match ps_move.target.as_str() {
-            "normal" => PSMoveTarget::Normal,
-            "self" => PSMoveTarget::Self_,
-            "adjacentAlly" => PSMoveTarget::AdjacentAlly,
-            "adjacentAllyOrSelf" => PSMoveTarget::AdjacentAllyOrSelf,
-            "adjacentFoe" => PSMoveTarget::AdjacentFoe,
-            "allAdjacentFoes" => PSMoveTarget::AllAdjacentFoes,
-            "allAdjacent" => PSMoveTarget::AllAdjacent,
-            "all" => PSMoveTarget::All,
-            "allyTeam" => PSMoveTarget::AllyTeam,
-            "allySide" => PSMoveTarget::AllySide,
-            "foeSide" => PSMoveTarget::FoeSide,
-            "any" => PSMoveTarget::Any,
-            "randomNormal" => PSMoveTarget::RandomNormal,
-            "scripted" => PSMoveTarget::Scripted,
-            "allies" => PSMoveTarget::Allies,
-            _ => PSMoveTarget::Normal, // Default fallback
+            "normal" => MoveTarget::Normal,
+            "self" => MoveTarget::Self_,
+            "adjacentAlly" => MoveTarget::AdjacentAlly,
+            "adjacentAllyOrSelf" => MoveTarget::AdjacentAllyOrSelf,
+            "adjacentFoe" => MoveTarget::AdjacentFoe,
+            "allAdjacentFoes" => MoveTarget::AllAdjacentFoes,
+            "allAdjacent" => MoveTarget::AllAdjacent,
+            "all" => MoveTarget::All,
+            "allyTeam" => MoveTarget::AllyTeam,
+            "allySide" => MoveTarget::AllySide,
+            "foeSide" => MoveTarget::FoeSide,
+            "any" => MoveTarget::Any,
+            "randomNormal" => MoveTarget::RandomNormal,
+            "scripted" => MoveTarget::Scripted,
+            "allies" => MoveTarget::Allies,
+            _ => MoveTarget::Normal, // Default fallback
         };
 
         Ok(Move::new_with_details(
@@ -436,6 +437,7 @@ impl TestFramework {
             ps_move.accuracy as u8,
             ps_move.move_type.clone(),
             ps_move.pp as u8,
+            ps_move.pp as u8, // max_pp should be the same as pp initially
             target,
             category,
             ps_move.priority,
@@ -449,9 +451,9 @@ impl TestFramework {
         attacker_moves: &[&str],
         defender_species: &str,
         format: Option<BattleFormat>,
-    ) -> Result<(State, Vec<MoveIndex>), Box<dyn std::error::Error>> {
+    ) -> Result<(BattleState, Vec<MoveIndex>), Box<dyn std::error::Error>> {
         let battle_format = format.unwrap_or_else(|| BattleFormat::new("Singles".to_string(), Generation::Gen9, FormatType::Singles));
-        let mut state = State::new(battle_format);
+        let mut state = BattleState::new(battle_format);
 
         // Create attacker
         let mut attacker = self.create_pokemon_from_ps_data(attacker_species, None, Some(50))?;
@@ -488,24 +490,63 @@ impl TestFramework {
     /// Test instruction generation for a move choice
     pub fn test_instruction_generation(
         &self,
-        state: &mut State,
+        state: &mut BattleState,
         move_choice: MoveChoice,
         format: Option<BattleFormat>,
-    ) -> Vec<StateInstructions> {
+    ) -> Vec<BattleInstructions> {
         let battle_format = format.unwrap_or_else(|| state.format.clone());
         let generator = GenerationXInstructionGenerator::new(battle_format);
         
         generator.generate_instructions(state, &move_choice, &MoveChoice::None)
     }
 
+    /// Test modern instruction generation for a move choice
+    pub fn test_modern_instruction_generation(
+        &self,
+        state: &mut BattleState,
+        move_choice: MoveChoice,
+        format: Option<BattleFormat>,
+    ) -> Vec<BattleInstructions> {
+        let mut legacy_state = state.clone();
+        let legacy_instructions = self.test_instruction_generation(&mut legacy_state, move_choice, format);
+        
+        // Convert legacy instructions to modern instructions
+        legacy_instructions.into_iter().map(|legacy| {
+            let modern_instructions: Vec<BattleInstruction> = legacy.instruction_list
+                .into_iter()
+                .map(|instr| instr.into())
+                .collect();
+            
+            BattleInstructions::new(legacy.percentage, modern_instructions)
+        }).collect()
+    }
+
     /// Test that a move generates damage instructions
     pub fn verify_damage_instructions(
         &self,
-        instructions: &[StateInstructions],
+        instructions: &[BattleInstructions],
     ) -> bool {
         instructions.iter().any(|instr| {
             instr.instruction_list.iter().any(|i| {
-                matches!(i, Instruction::PositionDamage(_) | Instruction::MultiTargetDamage(_))
+                matches!(i, 
+                    BattleInstruction::Pokemon(PokemonInstruction::Damage { .. }) |
+                    BattleInstruction::Pokemon(PokemonInstruction::MultiTargetDamage { .. })
+                )
+            })
+        })
+    }
+
+    /// Test that a move generates damage instructions (modern version)
+    pub fn verify_modern_damage_instructions(
+        &self,
+        instructions: &[BattleInstructions],
+    ) -> bool {
+        instructions.iter().any(|instr| {
+            instr.instruction_list.iter().any(|i| {
+                matches!(i, BattleInstruction::Pokemon(
+                    PokemonInstruction::Damage { .. } | 
+                    PokemonInstruction::MultiTargetDamage { .. }
+                ))
             })
         })
     }
@@ -513,13 +554,13 @@ impl TestFramework {
     /// Test that a move generates status instructions
     pub fn verify_status_instructions(
         &self,
-        instructions: &[StateInstructions],
+        instructions: &[BattleInstructions],
         expected_status: PokemonStatus,
     ) -> bool {
         instructions.iter().any(|instr| {
             instr.instruction_list.iter().any(|i| {
-                matches!(i, Instruction::ApplyStatus(status_instr) 
-                    if status_instr.status == expected_status)
+                matches!(i, BattleInstruction::Status(StatusInstruction::Apply { status, .. }) 
+                    if *status == expected_status)
             })
         })
     }
@@ -527,14 +568,14 @@ impl TestFramework {
     /// Test that a move generates stat boost instructions
     pub fn verify_stat_boost_instructions(
         &self,
-        instructions: &[StateInstructions],
+        instructions: &[BattleInstructions],
         expected_stat: Stat,
         expected_boost: i8,
     ) -> bool {
         instructions.iter().any(|instr| {
             instr.instruction_list.iter().any(|i| {
-                matches!(i, Instruction::BoostStats(boost_instr) 
-                    if boost_instr.stat_boosts.get(&expected_stat) == Some(&expected_boost))
+                matches!(i, BattleInstruction::Stats(StatsInstruction::BoostStats { stat_changes, .. }) 
+                    if stat_changes.get(&expected_stat) == Some(&expected_boost))
             })
         })
     }
@@ -542,7 +583,7 @@ impl TestFramework {
     /// Test critical hit branching - verifies we have multiple instruction sets with different damage
     pub fn verify_critical_hit_branching(
         &self,
-        instructions: &[StateInstructions],
+        instructions: &[BattleInstructions],
     ) -> bool {
         if instructions.len() < 2 {
             return false;
@@ -552,8 +593,8 @@ impl TestFramework {
         let mut damage_amounts = Vec::new();
         for instr_set in instructions {
             for instr in &instr_set.instruction_list {
-                if let Instruction::PositionDamage(damage_instr) = instr {
-                    damage_amounts.push(damage_instr.damage_amount);
+                if let BattleInstruction::Pokemon(PokemonInstruction::Damage { amount, .. }) = instr {
+                    damage_amounts.push(*amount);
                 }
             }
         }
@@ -569,7 +610,7 @@ impl TestFramework {
     /// Test probability distribution - verifies all probabilities sum to 100%
     pub fn verify_probability_distribution(
         &self,
-        instructions: &[StateInstructions],
+        instructions: &[BattleInstructions],
     ) -> bool {
         let total_percentage: f32 = instructions.iter().map(|i| i.percentage).sum();
         (total_percentage - 100.0).abs() < 0.001
@@ -601,7 +642,8 @@ impl TestFramework {
             vec![BattlePosition::new(SideReference::SideTwo, 0)],
         );
 
-        let instructions = self.test_instruction_generation(&mut state, move_choice, None);
+        let mut legacy_state = state.clone();
+        let instructions = self.test_instruction_generation(&mut legacy_state, move_choice, None);
         
         // If immune, should NOT have the expected status instruction
         Ok(!self.verify_status_instructions(&instructions, expected_status))
@@ -632,7 +674,8 @@ impl TestFramework {
             vec![BattlePosition::new(SideReference::SideTwo, 0)],
         );
 
-        let instructions = self.test_instruction_generation(&mut state, move_choice, None);
+        let mut legacy_state = state.clone();
+        let instructions = self.test_instruction_generation(&mut legacy_state, move_choice, None);
         
         // If immune, should NOT have damage instructions
         Ok(!self.verify_damage_instructions(&instructions))
@@ -663,12 +706,13 @@ impl TestFramework {
             vec![BattlePosition::new(SideReference::SideTwo, 0)],
         );
 
-        let instructions = self.test_instruction_generation(&mut state, move_choice, None);
+        let mut legacy_state = state.clone();
+        let instructions = self.test_instruction_generation(&mut legacy_state, move_choice, None);
         
         // Check if there are any status application instructions
         let has_status_chance = instructions.iter().any(|instruction_set| {
             instruction_set.instruction_list.iter().any(|instruction| {
-                matches!(instruction, Instruction::ApplyStatus(_))
+                matches!(instruction, BattleInstruction::Status(StatusInstruction::Apply { .. }))
             })
         });
 

@@ -12,16 +12,15 @@
 //! - Status effect mechanics (e.g., burn reducing physical attack)
 //! - Accuracy and effect chances that varied by generation
 
-use crate::core::state::{State, Pokemon, MoveCategory};
-use crate::core::instruction::{
-    Instruction, StateInstructions, ApplyStatusInstruction, ApplyVolatileStatusInstruction,
-    BoostStatsInstruction, PositionHealInstruction, PositionDamageInstruction,
-    PokemonStatus, VolatileStatus, Stat, ChangeWeatherInstruction, Weather,
-    ApplySideConditionInstruction, SideCondition, ChangeItemInstruction,
-    RemoveSideConditionInstruction, RemoveVolatileStatusInstruction, ChangeTypeInstruction,
-    FaintInstruction, ChangeTerrainInstruction, Terrain, SetFutureSightInstruction
+use crate::core::battle_state::{Pokemon, MoveCategory};
+use crate::core::battle_state::BattleState;
+use crate::core::instruction::{PokemonStatus, VolatileStatus, Stat, Weather, SideCondition, Terrain};
+use crate::core::instructions::{
+    BattleInstruction, BattleInstructions, StatusInstruction, PokemonInstruction,
+    FieldInstruction, StatsInstruction,
 };
 use crate::data::types::EngineMoveData;
+use crate::data::ps::repository::Repository;
 use crate::core::battle_format::{BattlePosition, SideReference};
 use crate::generation::GenerationMechanics;
 use crate::engine::combat::type_effectiveness::{TypeChart, PokemonType};
@@ -29,12 +28,12 @@ use std::collections::HashMap;
 
 /// Helper function for moves that don't need context
 pub fn apply_move_effects_simple(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let context = MoveContext::new();
     apply_move_effects(state, move_data, user_position, target_positions, generation, &context)
 }
@@ -125,13 +124,13 @@ impl<'a> MoveContext<'a> {
 /// * `generation` - Generation mechanics for generation-specific behavior
 /// * `context` - Additional context for conditional moves
 pub fn apply_move_effects(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
     context: &MoveContext,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let move_name = move_data.name.to_lowercase();
     
     // Handle moves by name first, then by category
@@ -419,11 +418,11 @@ pub fn apply_move_effects(
 /// Apply Thunder Wave - paralyzes the target
 /// Generation-aware: Electric types become immune to paralysis in Gen 6+
 pub fn apply_thunder_wave(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     for &target_position in target_positions {
@@ -432,26 +431,27 @@ pub fn apply_thunder_wave(
             if target.status == PokemonStatus::None {
                 // Check for Electric immunity (Ground types in early gens)
                 if !is_immune_to_paralysis(target, generation) {
-                    let instruction = Instruction::ApplyStatus(ApplyStatusInstruction {
-                        target_position,
+                    let instruction = BattleInstruction::Status(StatusInstruction::Apply {
+                        target: target_position,
                         status: PokemonStatus::Paralysis,
+                        duration: Some(1), // Default paralysis duration
                         previous_status: Some(target.status),
-                        previous_status_duration: Some(target.status_duration),
+                        previous_duration: target.status_duration,
                     });
-                    instructions.push(StateInstructions::new(100.0, vec![instruction]));
+                    instructions.push(BattleInstructions::new(100.0, vec![instruction]));
                 } else {
                     // Move has no effect
-                    instructions.push(StateInstructions::empty());
+                    instructions.push(BattleInstructions::new(100.0, vec![]));
                 }
             } else {
                 // Already has a status condition
-                instructions.push(StateInstructions::empty());
+                instructions.push(BattleInstructions::new(100.0, vec![]));
             }
         }
     }
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -460,11 +460,11 @@ pub fn apply_thunder_wave(
 /// Apply Sleep Powder - puts target to sleep
 /// Generation-aware: Grass types become immune to powder moves in Gen 6+
 pub fn apply_sleep_powder(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     for &target_position in target_positions {
@@ -472,24 +472,25 @@ pub fn apply_sleep_powder(
             if target.status == PokemonStatus::None {
                 // Check for Grass immunity or Overcoat/Safety Goggles
                 if !is_immune_to_powder(target, generation) {
-                    let instruction = Instruction::ApplyStatus(ApplyStatusInstruction {
-                        target_position,
+                    let instruction = BattleInstruction::Status(StatusInstruction::Apply {
+                        target: target_position,
                         status: PokemonStatus::Sleep,
+                        duration: Some(1), // Default sleep duration
                         previous_status: Some(target.status),
-                        previous_status_duration: Some(target.status_duration),
+                        previous_duration: target.status_duration,
                     });
-                    instructions.push(StateInstructions::new(100.0, vec![instruction]));
+                    instructions.push(BattleInstructions::new(100.0, vec![instruction]));
                 } else {
-                    instructions.push(StateInstructions::empty());
+                    instructions.push(BattleInstructions::new(100.0, vec![]));
                 }
             } else {
-                instructions.push(StateInstructions::empty());
+                instructions.push(BattleInstructions::new(100.0, vec![]));
             }
         }
     }
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -498,11 +499,11 @@ pub fn apply_sleep_powder(
 /// Apply Toxic - badly poisons the target
 /// Generation-aware: Steel types become immune to poison in Gen 2+
 pub fn apply_toxic(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     for &target_position in target_positions {
@@ -510,24 +511,25 @@ pub fn apply_toxic(
             if target.status == PokemonStatus::None {
                 // Check for Poison/Steel immunity
                 if !is_immune_to_poison(target, generation) {
-                    let instruction = Instruction::ApplyStatus(ApplyStatusInstruction {
-                        target_position,
+                    let instruction = BattleInstruction::Status(StatusInstruction::Apply {
+                        target: target_position,
                         status: PokemonStatus::Toxic,
+                        duration: None,
                         previous_status: Some(target.status),
-                        previous_status_duration: Some(target.status_duration),
+                        previous_duration: target.status_duration,
                     });
-                    instructions.push(StateInstructions::new(100.0, vec![instruction]));
+                    instructions.push(BattleInstructions::new(100.0, vec![instruction]));
                 } else {
-                    instructions.push(StateInstructions::empty());
+                    instructions.push(BattleInstructions::new(100.0, vec![]));
                 }
             } else {
-                instructions.push(StateInstructions::empty());
+                instructions.push(BattleInstructions::new(100.0, vec![]));
             }
         }
     }
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -536,11 +538,11 @@ pub fn apply_toxic(
 /// Apply Will-O-Wisp - burns the target
 /// Generation-aware: Fire types are always immune to burn
 pub fn apply_will_o_wisp(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     for &target_position in target_positions {
@@ -548,24 +550,25 @@ pub fn apply_will_o_wisp(
             if target.status == PokemonStatus::None {
                 // Check for Fire immunity
                 if !is_immune_to_burn(target, generation) {
-                    let instruction = Instruction::ApplyStatus(ApplyStatusInstruction {
-                        target_position,
+                    let instruction = BattleInstruction::Status(StatusInstruction::Apply {
+                        target: target_position,
                         status: PokemonStatus::Burn,
+                        duration: None,
                         previous_status: Some(target.status),
-                        previous_status_duration: Some(target.status_duration),
+                        previous_duration: target.status_duration,
                     });
-                    instructions.push(StateInstructions::new(100.0, vec![instruction]));
+                    instructions.push(BattleInstructions::new(100.0, vec![instruction]));
                 } else {
-                    instructions.push(StateInstructions::empty());
+                    instructions.push(BattleInstructions::new(100.0, vec![]));
                 }
             } else {
-                instructions.push(StateInstructions::empty());
+                instructions.push(BattleInstructions::new(100.0, vec![]));
             }
         }
     }
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -574,35 +577,36 @@ pub fn apply_will_o_wisp(
 /// Apply Stun Spore - paralyzes the target
 /// Generation-aware: Grass types immune to powder moves in Gen 6+, Electric types immune to paralysis in Gen 6+
 pub fn apply_stun_spore(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     for &target_position in target_positions {
         if let Some(target) = state.get_pokemon_at_position(target_position) {
             if target.status == PokemonStatus::None {
                 if !is_immune_to_powder(target, generation) && !is_immune_to_paralysis(target, generation) {
-                    let instruction = Instruction::ApplyStatus(ApplyStatusInstruction {
-                        target_position,
+                    let instruction = BattleInstruction::Status(StatusInstruction::Apply {
+                        target: target_position,
                         status: PokemonStatus::Paralysis,
+                        duration: Some(1), // Default paralysis duration
                         previous_status: Some(target.status),
-                        previous_status_duration: Some(target.status_duration),
+                        previous_duration: target.status_duration,
                     });
-                    instructions.push(StateInstructions::new(100.0, vec![instruction]));
+                    instructions.push(BattleInstructions::new(100.0, vec![instruction]));
                 } else {
-                    instructions.push(StateInstructions::empty());
+                    instructions.push(BattleInstructions::new(100.0, vec![]));
                 }
             } else {
-                instructions.push(StateInstructions::empty());
+                instructions.push(BattleInstructions::new(100.0, vec![]));
             }
         }
     }
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -611,35 +615,36 @@ pub fn apply_stun_spore(
 /// Apply Poison Powder - poisons the target
 /// Generation-aware: Grass types immune to powder moves in Gen 6+, Poison/Steel types immune to poison
 pub fn apply_poison_powder(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     for &target_position in target_positions {
         if let Some(target) = state.get_pokemon_at_position(target_position) {
             if target.status == PokemonStatus::None {
                 if !is_immune_to_powder(target, generation) && !is_immune_to_poison(target, generation) {
-                    let instruction = Instruction::ApplyStatus(ApplyStatusInstruction {
-                        target_position,
+                    let instruction = BattleInstruction::Status(StatusInstruction::Apply {
+                        target: target_position,
                         status: PokemonStatus::Poison,
+                        duration: None,
                         previous_status: Some(target.status),
-                        previous_status_duration: Some(target.status_duration),
+                        previous_duration: target.status_duration,
                     });
-                    instructions.push(StateInstructions::new(100.0, vec![instruction]));
+                    instructions.push(BattleInstructions::new(100.0, vec![instruction]));
                 } else {
-                    instructions.push(StateInstructions::empty());
+                    instructions.push(BattleInstructions::new(100.0, vec![]));
                 }
             } else {
-                instructions.push(StateInstructions::empty());
+                instructions.push(BattleInstructions::new(100.0, vec![]));
             }
         }
     }
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -651,11 +656,11 @@ pub fn apply_poison_powder(
 
 /// Apply Swords Dance - raises Attack by 2 stages
 pub fn apply_swords_dance(
-    _state: &State,
+    _state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let target_position = if target_positions.is_empty() {
         user_position // Self-targeting move
     } else {
@@ -665,22 +670,22 @@ pub fn apply_swords_dance(
     let mut stat_boosts = HashMap::new();
     stat_boosts.insert(Stat::Attack, 2);
     
-    let instruction = Instruction::BoostStats(BoostStatsInstruction {
-                target_position,
-                stat_boosts,
-                previous_boosts: Some(HashMap::new()),
+    let instruction = BattleInstruction::Stats(StatsInstruction::BoostStats {
+                target: target_position,
+                stat_changes: stat_boosts,
+                previous_boosts: HashMap::new(),
             });
     
-    vec![StateInstructions::new(100.0, vec![instruction])]
+    vec![BattleInstructions::new(100.0, vec![instruction])]
 }
 
 /// Apply Dragon Dance - raises Attack and Speed by 1 stage each
 pub fn apply_dragon_dance(
-    _state: &State,
+    _state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let target_position = if target_positions.is_empty() {
         user_position
     } else {
@@ -691,22 +696,22 @@ pub fn apply_dragon_dance(
     stat_boosts.insert(Stat::Attack, 1);
     stat_boosts.insert(Stat::Speed, 1);
     
-    let instruction = Instruction::BoostStats(BoostStatsInstruction {
-                target_position,
-                stat_boosts,
-                previous_boosts: Some(HashMap::new()),
+    let instruction = BattleInstruction::Stats(StatsInstruction::BoostStats {
+                target: target_position,
+                stat_changes: stat_boosts,
+                previous_boosts: HashMap::new(),
             });
     
-    vec![StateInstructions::new(100.0, vec![instruction])]
+    vec![BattleInstructions::new(100.0, vec![instruction])]
 }
 
 /// Apply Nasty Plot - raises Special Attack by 2 stages
 pub fn apply_nasty_plot(
-    _state: &State,
+    _state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let target_position = if target_positions.is_empty() {
         user_position
     } else {
@@ -716,22 +721,22 @@ pub fn apply_nasty_plot(
     let mut stat_boosts = HashMap::new();
     stat_boosts.insert(Stat::SpecialAttack, 2);
     
-    let instruction = Instruction::BoostStats(BoostStatsInstruction {
-                target_position,
-                stat_boosts,
-                previous_boosts: Some(HashMap::new()),
+    let instruction = BattleInstruction::Stats(StatsInstruction::BoostStats {
+                target: target_position,
+                stat_changes: stat_boosts,
+                previous_boosts: HashMap::new(),
             });
     
-    vec![StateInstructions::new(100.0, vec![instruction])]
+    vec![BattleInstructions::new(100.0, vec![instruction])]
 }
 
 /// Apply Agility - raises Speed by 2 stages
 pub fn apply_agility(
-    _state: &State,
+    _state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let target_position = if target_positions.is_empty() {
         user_position
     } else {
@@ -741,39 +746,39 @@ pub fn apply_agility(
     let mut stat_boosts = HashMap::new();
     stat_boosts.insert(Stat::Speed, 2);
     
-    let instruction = Instruction::BoostStats(BoostStatsInstruction {
-                target_position,
-                stat_boosts,
-                previous_boosts: Some(HashMap::new()),
+    let instruction = BattleInstruction::Stats(StatsInstruction::BoostStats {
+                target: target_position,
+                stat_changes: stat_boosts,
+                previous_boosts: HashMap::new(),
             });
     
-    vec![StateInstructions::new(100.0, vec![instruction])]
+    vec![BattleInstructions::new(100.0, vec![instruction])]
 }
 
 /// Apply Growl - lowers target's Attack by 1 stage
 pub fn apply_growl(
-    _state: &State,
+    _state: &BattleState,
     _user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     for &target_position in target_positions {
         let mut stat_boosts = HashMap::new();
         stat_boosts.insert(Stat::Attack, -1);
         
-        let instruction = Instruction::BoostStats(BoostStatsInstruction {
-                target_position,
-                stat_boosts,
-                previous_boosts: Some(HashMap::new()),
+        let instruction = BattleInstruction::Stats(StatsInstruction::BoostStats {
+                target: target_position,
+                stat_changes: stat_boosts,
+                previous_boosts: HashMap::new(),
             });
         
-        instructions.push(StateInstructions::new(100.0, vec![instruction]));
+        instructions.push(BattleInstructions::new(100.0, vec![instruction]));
     }
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -781,28 +786,28 @@ pub fn apply_growl(
 
 /// Apply Leer - lowers target's Defense by 1 stage
 pub fn apply_leer(
-    _state: &State,
+    _state: &BattleState,
     _user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     for &target_position in target_positions {
         let mut stat_boosts = HashMap::new();
         stat_boosts.insert(Stat::Defense, -1);
         
-        let instruction = Instruction::BoostStats(BoostStatsInstruction {
-                target_position,
-                stat_boosts,
-                previous_boosts: Some(HashMap::new()),
+        let instruction = BattleInstruction::Stats(StatsInstruction::BoostStats {
+                target: target_position,
+                stat_changes: stat_boosts,
+                previous_boosts: HashMap::new(),
             });
         
-        instructions.push(StateInstructions::new(100.0, vec![instruction]));
+        instructions.push(BattleInstructions::new(100.0, vec![instruction]));
     }
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -810,22 +815,22 @@ pub fn apply_leer(
 
 /// Apply Tail Whip - lowers target's Defense by 1 stage
 pub fn apply_tail_whip(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     apply_leer(state, user_position, target_positions, generation) // Same effect as Leer
 }
 
 /// Apply String Shot - lowers target's Speed by 2 stages
 /// Generation-aware: Effect may change in earlier generations
 pub fn apply_string_shot(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // In Gen 1, String Shot only lowered Speed by 1 stage
     let speed_reduction = if generation.generation.number() == 1 { -1 } else { -2 };
     let mut instructions = Vec::new();
@@ -834,17 +839,17 @@ pub fn apply_string_shot(
         let mut stat_boosts = HashMap::new();
         stat_boosts.insert(Stat::Speed, speed_reduction);
         
-        let instruction = Instruction::BoostStats(BoostStatsInstruction {
-                target_position,
-                stat_boosts,
-                previous_boosts: Some(HashMap::new()),
+        let instruction = BattleInstruction::Stats(StatsInstruction::BoostStats {
+                target: target_position,
+                stat_changes: stat_boosts,
+                previous_boosts: HashMap::new(),
             });
         
-        instructions.push(StateInstructions::new(100.0, vec![instruction]));
+        instructions.push(BattleInstructions::new(100.0, vec![instruction]));
     }
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -1066,11 +1071,11 @@ fn apply_item_accuracy_modifiers(
 
 /// Apply Recover - restores 50% of max HP
 pub fn apply_recover(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let target_position = if target_positions.is_empty() {
         user_position
     } else {
@@ -1079,35 +1084,35 @@ pub fn apply_recover(
     
     if let Some(pokemon) = state.get_pokemon_at_position(target_position) {
         let heal_amount = pokemon.max_hp / 2;
-        let instruction = Instruction::PositionHeal(PositionHealInstruction {
-                target_position,
-                heal_amount,
+        let instruction = BattleInstruction::Pokemon(PokemonInstruction::Heal {
+                target: target_position,
+                amount: heal_amount,
                 previous_hp: Some(0), // This should be set to actual previous HP
             });
-        vec![StateInstructions::new(100.0, vec![instruction])]
+        vec![BattleInstructions::new(100.0, vec![instruction])]
     } else {
-        vec![StateInstructions::empty()]
+        vec![BattleInstructions::new(100.0, vec![])]
     }
 }
 
 /// Apply Roost - restores 50% of max HP
 pub fn apply_roost(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     apply_recover(state, user_position, target_positions, generation)
 }
 
 /// Apply Moonlight - restores HP based on weather
 /// Generation-aware: Weather effects and amounts may vary by generation
 pub fn apply_moonlight(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let target_position = if target_positions.is_empty() {
         user_position
     } else {
@@ -1126,64 +1131,64 @@ pub fn apply_moonlight(
             _ => pokemon.max_hp / 2, // 50% in clear weather
         };
         
-        let instruction = Instruction::PositionHeal(PositionHealInstruction {
-                target_position,
-                heal_amount,
+        let instruction = BattleInstruction::Pokemon(PokemonInstruction::Heal {
+                target: target_position,
+                amount: heal_amount,
                 previous_hp: Some(0), // This should be set to actual previous HP
             });
-        vec![StateInstructions::new(100.0, vec![instruction])]
+        vec![BattleInstructions::new(100.0, vec![instruction])]
     } else {
-        vec![StateInstructions::empty()]
+        vec![BattleInstructions::new(100.0, vec![])]
     }
 }
 
 /// Apply Synthesis - restores HP based on weather (same as Moonlight)
 pub fn apply_synthesis(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     apply_moonlight(state, user_position, target_positions, generation)
 }
 
 /// Apply Morning Sun - restores HP based on weather (same as Moonlight)
 pub fn apply_morning_sun(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     apply_moonlight(state, user_position, target_positions, generation)
 }
 
 /// Apply Soft-Boiled - restores 50% of max HP
 pub fn apply_soft_boiled(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     apply_recover(state, user_position, target_positions, generation)
 }
 
 /// Apply Milk Drink - restores 50% of max HP
 pub fn apply_milk_drink(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     apply_recover(state, user_position, target_positions, generation)
 }
 
 /// Apply Slack Off - restores 50% of max HP
 pub fn apply_slack_off(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     apply_recover(state, user_position, target_positions, generation)
 }
 
@@ -1193,81 +1198,81 @@ pub fn apply_slack_off(
 
 /// Apply Double-Edge - deals recoil damage (33% of damage dealt)
 pub fn apply_double_edge(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     apply_recoil_move(state, user_position, target_positions, generation, 33)
 }
 
 /// Apply Take Down - deals recoil damage (25% of damage dealt)
 pub fn apply_take_down(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     apply_recoil_move(state, user_position, target_positions, generation, 25)
 }
 
 /// Apply Submission - deals recoil damage (25% of damage dealt)
 pub fn apply_submission(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     apply_recoil_move(state, user_position, target_positions, generation, 25)
 }
 
 /// Apply Volt Tackle - deals recoil damage (33% of damage dealt)
 pub fn apply_volt_tackle(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     apply_recoil_move(state, user_position, target_positions, generation, 33)
 }
 
 /// Apply Flare Blitz - deals recoil damage (33% of damage dealt)
 pub fn apply_flare_blitz(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     apply_recoil_move(state, user_position, target_positions, generation, 33)
 }
 
 /// Apply Brave Bird - deals recoil damage (33% of damage dealt)
 pub fn apply_brave_bird(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     apply_recoil_move(state, user_position, target_positions, generation, 33)
 }
 
 /// Apply Wild Charge - deals recoil damage (25% of damage dealt)
 pub fn apply_wild_charge(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     apply_recoil_move(state, user_position, target_positions, generation, 25)
 }
 
 /// Apply Head Smash - deals recoil damage (50% of damage dealt)
 pub fn apply_head_smash(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     apply_recoil_move(state, user_position, target_positions, generation, 50)
 }
 
@@ -1277,61 +1282,61 @@ pub fn apply_head_smash(
 
 /// Apply Giga Drain - restores 50% of damage dealt
 pub fn apply_giga_drain(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     apply_drain_move(state, user_position, target_positions, generation, 50)
 }
 
 /// Apply Mega Drain - restores 50% of damage dealt
 pub fn apply_mega_drain(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     apply_drain_move(state, user_position, target_positions, generation, 50)
 }
 
 /// Apply Absorb - restores 50% of damage dealt
 pub fn apply_absorb(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     apply_drain_move(state, user_position, target_positions, generation, 50)
 }
 
 /// Apply Drain Punch - restores 50% of damage dealt
 pub fn apply_drain_punch(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     apply_drain_move(state, user_position, target_positions, generation, 50)
 }
 
 /// Apply Leech Life - restores 50% of damage dealt
 pub fn apply_leech_life(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     apply_drain_move(state, user_position, target_positions, generation, 50)
 }
 
 /// Apply Dream Eater - restores 50% of damage dealt (only works on sleeping targets)
 pub fn apply_dream_eater(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Dream Eater only works on sleeping Pokemon
     let mut instructions = Vec::new();
     
@@ -1339,16 +1344,16 @@ pub fn apply_dream_eater(
         if let Some(target) = state.get_pokemon_at_position(target_position) {
             if target.status == PokemonStatus::Sleep {
                 // Move can hit - drain effect will be applied after damage
-                instructions.push(StateInstructions::empty());
+                instructions.push(BattleInstructions::new(100.0, vec![]));
             } else {
                 // Move fails on non-sleeping targets
-                instructions.push(StateInstructions::empty());
+                instructions.push(BattleInstructions::new(100.0, vec![]));
             }
         }
     }
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -1360,56 +1365,60 @@ pub fn apply_dream_eater(
 
 /// Apply Protect - protects user from most moves this turn
 pub fn apply_protect(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let target_position = if target_positions.is_empty() {
         user_position
     } else {
         target_positions[0]
     };
     
-    let instruction = Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-        target_position,
-        volatile_status: VolatileStatus::Protect,
+    let instruction = BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+        target: target_position,
+        status: VolatileStatus::Protect,
         duration: Some(1), // Lasts for the rest of the turn
+        previous_had_status: false,
+        previous_duration: None,
     });
     
-    vec![StateInstructions::new(100.0, vec![instruction])]
+    vec![BattleInstructions::new(100.0, vec![instruction])]
 }
 
 /// Apply Detect - same as Protect
 pub fn apply_detect(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     apply_protect(state, user_position, target_positions, generation)
 }
 
 /// Apply Endure - survives any attack with at least 1 HP
 pub fn apply_endure(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let target_position = if target_positions.is_empty() {
         user_position
     } else {
         target_positions[0]
     };
     
-    let instruction = Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-        target_position,
-        volatile_status: VolatileStatus::Endure,
+    let instruction = BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+        target: target_position,
+        status: VolatileStatus::Endure,
         duration: Some(1),
+        previous_had_status: false,
+        previous_duration: None,
     });
     
-    vec![StateInstructions::new(100.0, vec![instruction])]
+    vec![BattleInstructions::new(100.0, vec![instruction])]
 }
 
 // =============================================================================
@@ -1418,11 +1427,11 @@ pub fn apply_endure(
 
 /// Apply Substitute - creates a substitute that absorbs damage
 pub fn apply_substitute(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let target_position = if target_positions.is_empty() {
         user_position
     } else {
@@ -1436,26 +1445,28 @@ pub fn apply_substitute(
             let mut instructions = Vec::new();
             
             // Damage user for 25% of max HP
-            instructions.push(Instruction::PositionDamage(PositionDamageInstruction {
-                target_position,
-                damage_amount: cost,
+            instructions.push(BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                target: target_position,
+                amount: cost,
                 previous_hp: Some(0), // This should be set to actual previous HP
             }));
             
             // Apply substitute volatile status
-            instructions.push(Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-                target_position,
-                volatile_status: VolatileStatus::Substitute,
+            instructions.push(BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                target: target_position,
+                status: VolatileStatus::Substitute,
                 duration: None, // Lasts until broken
+                previous_had_status: false,
+                previous_duration: None,
             }));
             
-            vec![StateInstructions::new(100.0, instructions)]
+            vec![BattleInstructions::new(100.0, instructions)]
         } else {
             // Not enough HP - move fails
-            vec![StateInstructions::empty()]
+            vec![BattleInstructions::new(100.0, vec![])]
         }
     } else {
-        vec![StateInstructions::empty()]
+        vec![BattleInstructions::new(100.0, vec![])]
     }
 }
 
@@ -1465,12 +1476,12 @@ pub fn apply_substitute(
 
 /// Apply generic move effects based on move data
 pub fn apply_generic_effects(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // For moves without specific implementations, check for secondary effects
     if let Some(effect_chance) = move_data.effect_chance {
         if effect_chance > 0 {
@@ -1486,7 +1497,7 @@ pub fn apply_generic_effects(
     }
     
     // Return empty instructions for moves with no secondary effects
-    vec![StateInstructions::empty()]
+    vec![BattleInstructions::new(100.0, vec![])]
 }
 
 // =============================================================================
@@ -1496,12 +1507,12 @@ pub fn apply_generic_effects(
 /// Apply multi-hit move effects with proper probability branching
 /// Multi-hit moves like Bullet Seed, Rock Blast, etc. hit 2-5 times with specific probabilities
 pub fn apply_multi_hit_move(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     // Standard multi-hit probability distribution (2-5 hits)
@@ -1523,22 +1534,47 @@ pub fn apply_multi_hit_move(
         ]
     };
     
+    // Check for effects that modify hit count (Loaded Dice, Skill Link)
+    let user_pokemon = state.get_pokemon_at_position(user_position);
+    let force_max_hits = user_pokemon.map_or(false, |pokemon| {
+        // Check for Loaded Dice item
+        if let Some(ref item) = pokemon.item {
+            if item.to_lowercase() == "loaded dice" || item.to_lowercase() == "loadeddice" {
+                return true;
+            }
+        }
+        
+        // Check for Skill Link ability
+        if pokemon.ability.to_lowercase() == "skill link" || pokemon.ability.to_lowercase() == "skilllink" {
+            return true;
+        }
+        
+        false
+    });
+    
     // Handle special cases for specific moves
     let hit_distribution = match move_data.name.to_lowercase().as_str() {
         "doubleslap" | "double slap" | "bonemerang" => {
-            // These moves always hit exactly 2 times
+            // These moves always hit exactly 2 times (not affected by Loaded Dice/Skill Link)
             vec![(2, 100.0)]
         }
         "tripleaxel" | "triple axel" | "triplekick" | "triple kick" => {
-            // These moves always hit exactly 3 times
+            // These moves always hit exactly 3 times (not affected by Loaded Dice/Skill Link)
             vec![(3, 100.0)]
         }
         "beatup" | "beat up" => {
-            // Beat Up hits once per conscious party member
+            // Beat Up hits once per conscious party member (not affected by Loaded Dice/Skill Link)
             // For now, assume standard multi-hit
             hit_probabilities
         }
-        _ => hit_probabilities,
+        _ => {
+            if force_max_hits {
+                // Loaded Dice or Skill Link: always hit maximum (5 times)
+                vec![(5, 100.0)]
+            } else {
+                hit_probabilities
+            }
+        }
     };
     
     // Generate instructions for each possible hit count
@@ -1553,12 +1589,12 @@ pub fn apply_multi_hit_move(
                 generation
             );
             
-            instructions.push(StateInstructions::new(probability, hit_instructions));
+            instructions.push(BattleInstructions::new(probability, hit_instructions));
         }
     }
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -1566,13 +1602,13 @@ pub fn apply_multi_hit_move(
 
 /// Generate the actual damage instructions for a multi-hit move
 fn generate_multi_hit_instructions(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     hit_count: i32,
     generation: &GenerationMechanics,
-) -> Vec<Instruction> {
+) -> Vec<BattleInstruction> {
     let mut instructions = Vec::new();
     
     // For each hit, calculate damage
@@ -1589,9 +1625,9 @@ fn generate_multi_hit_instructions(
             );
             
             if damage > 0 {
-                instructions.push(Instruction::PositionDamage(PositionDamageInstruction {
-                target_position,
-                damage_amount: damage,
+                instructions.push(BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                target: target_position,
+                amount: damage,
                 previous_hp: Some(0), // This should be set to actual previous HP
             }));
             }
@@ -1603,7 +1639,7 @@ fn generate_multi_hit_instructions(
 
 /// Calculate damage for a single hit of a multi-hit move
 fn calculate_multi_hit_damage(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_position: BattlePosition,
@@ -1671,7 +1707,7 @@ fn calculate_multi_hit_damage(
 }
 
 /// Check if a Pokemon is immune to a move type (e.g., Ghost immune to Normal/Fighting)
-fn is_immune_to_move_type(move_type: &str, defender: &crate::core::state::Pokemon) -> bool {
+fn is_immune_to_move_type(move_type: &str, defender: &crate::core::battle_state::Pokemon) -> bool {
     use super::type_effectiveness::{PokemonType, TypeChart};
 
     // Use a basic type chart for now - in full implementation this would use generation-specific charts
@@ -1697,10 +1733,10 @@ fn is_immune_to_move_type(move_type: &str, defender: &crate::core::state::Pokemo
 }
 
 /// Check if a Pokemon is immune due to ability (e.g., Levitate vs Ground)
-fn is_immune_due_to_ability(move_data: &EngineMoveData, defender: &crate::core::state::Pokemon) -> bool {
+fn is_immune_due_to_ability(move_data: &EngineMoveData, defender: &crate::core::battle_state::Pokemon) -> bool {
     use crate::engine::mechanics::abilities::get_ability_by_name;
     
-    if let Some(ability) = get_ability_by_name(&defender.ability) {
+    if let Some(ability) = get_ability_by_name(defender.ability.as_str()) {
         ability.provides_immunity(&move_data.move_type)
     } else {
         false
@@ -1715,13 +1751,13 @@ fn is_immune_due_to_ability(move_data: &EngineMoveData, defender: &crate::core::
 /// This creates branching instructions based on the effect chance
 /// Following poke-engine's pattern of probability-based instruction branching
 pub fn apply_probability_based_secondary_effects(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
     effect_chance: i16,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     // Calculate probabilities
@@ -1730,7 +1766,7 @@ pub fn apply_probability_based_secondary_effects(
     
     // Create no-effect branch (most common case)
     if no_effect_probability > 0.0 {
-        instructions.push(StateInstructions::new(no_effect_probability, vec![]));
+        instructions.push(BattleInstructions::new(no_effect_probability, vec![]));
     }
     
     // Create effect branch
@@ -1742,12 +1778,12 @@ pub fn apply_probability_based_secondary_effects(
             target_positions, 
             generation
         ) {
-            instructions.push(StateInstructions::new(effect_probability, effect_instructions));
+            instructions.push(BattleInstructions::new(effect_probability, effect_instructions));
         }
     }
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -1756,12 +1792,12 @@ pub fn apply_probability_based_secondary_effects(
 /// Determine what secondary effect a move should have based on its properties
 /// This function maps move types and names to their appropriate secondary effects
 pub fn determine_secondary_effect_from_move(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Option<Vec<Instruction>> {
+) -> Option<Vec<BattleInstruction>> {
     let move_name = move_data.name.to_lowercase();
     let move_type = move_data.move_type.to_lowercase();
     
@@ -1816,16 +1852,17 @@ pub fn determine_secondary_effect_from_move(
 }
 
 /// Create burn status instructions for targets
-fn create_burn_instructions(state: &State, target_positions: &[BattlePosition]) -> Vec<Instruction> {
+fn create_burn_instructions(state: &BattleState, target_positions: &[BattlePosition]) -> Vec<BattleInstruction> {
     target_positions
         .iter()
         .map(|&position| {
             let target = state.get_pokemon_at_position(position);
-            Instruction::ApplyStatus(ApplyStatusInstruction {
-                target_position: position,
+            BattleInstruction::Status(StatusInstruction::Apply {
+                target: position,
                 status: PokemonStatus::Burn,
+                duration: None,
                 previous_status: target.map(|p| p.status),
-                previous_status_duration: target.map(|p| p.status_duration),
+                previous_duration: target.and_then(|p| p.status_duration),
             })
         })
         .collect()
@@ -1833,20 +1870,21 @@ fn create_burn_instructions(state: &State, target_positions: &[BattlePosition]) 
 
 /// Create paralysis status instructions for targets
 fn create_paralysis_instructions(
-    state: &State,
+    state: &BattleState,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<Instruction> {
+) -> Vec<BattleInstruction> {
     target_positions
         .iter()
         .filter_map(|&position| {
             if let Some(target) = state.get_pokemon_at_position(position) {
                 if target.status == PokemonStatus::None && !is_immune_to_paralysis(target, generation) {
-                    Some(Instruction::ApplyStatus(ApplyStatusInstruction {
-                        target_position: position,
+                    Some(BattleInstruction::Status(StatusInstruction::Apply {
+                        target: position,
                         status: PokemonStatus::Paralysis,
+                        duration: None,
                         previous_status: Some(target.status),
-                        previous_status_duration: Some(target.status_duration),
+                        previous_duration: target.status_duration,
                     }))
                 } else {
                     None
@@ -1859,16 +1897,17 @@ fn create_paralysis_instructions(
 }
 
 /// Create freeze status instructions for targets
-fn create_freeze_instructions(state: &State, target_positions: &[BattlePosition]) -> Vec<Instruction> {
+fn create_freeze_instructions(state: &BattleState, target_positions: &[BattlePosition]) -> Vec<BattleInstruction> {
     target_positions
         .iter()
         .map(|&position| {
             let target = state.get_pokemon_at_position(position);
-            Instruction::ApplyStatus(ApplyStatusInstruction {
-                target_position: position,
+            BattleInstruction::Status(StatusInstruction::Apply {
+                target: position,
                 status: PokemonStatus::Freeze,
+                duration: None,
                 previous_status: target.map(|p| p.status),
-                previous_status_duration: target.map(|p| p.status_duration),
+                previous_duration: target.and_then(|p| p.status_duration),
             })
         })
         .collect()
@@ -1876,20 +1915,21 @@ fn create_freeze_instructions(state: &State, target_positions: &[BattlePosition]
 
 /// Create poison status instructions for targets
 fn create_poison_instructions(
-    state: &State,
+    state: &BattleState,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<Instruction> {
+) -> Vec<BattleInstruction> {
     target_positions
         .iter()
         .filter_map(|&position| {
             if let Some(target) = state.get_pokemon_at_position(position) {
                 if target.status == PokemonStatus::None && !is_immune_to_poison(target, generation) {
-                    Some(Instruction::ApplyStatus(ApplyStatusInstruction {
-                        target_position: position,
+                    Some(BattleInstruction::Status(StatusInstruction::Apply {
+                        target: position,
                         status: PokemonStatus::Poison,
+                        duration: None,
                         previous_status: Some(target.status),
-                        previous_status_duration: Some(target.status_duration),
+                        previous_duration: target.status_duration,
                     }))
                 } else {
                     None
@@ -1902,31 +1942,33 @@ fn create_poison_instructions(
 }
 
 /// Create flinch volatile status instructions for targets
-fn create_flinch_instructions(target_positions: &[BattlePosition]) -> Vec<Instruction> {
+fn create_flinch_instructions(target_positions: &[BattlePosition]) -> Vec<BattleInstruction> {
     target_positions
         .iter()
         .map(|&position| {
-            Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-                target_position: position,
-                volatile_status: VolatileStatus::Flinch,
+            BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                target: position,
+                status: VolatileStatus::Flinch,
                 duration: Some(1), // Flinch only lasts for the current turn
+                previous_had_status: false,
+                previous_duration: None,
             })
         })
         .collect()
 }
 
 /// Create defense lowering instructions for targets
-fn create_defense_lowering_instructions(target_positions: &[BattlePosition]) -> Vec<Instruction> {
+fn create_defense_lowering_instructions(target_positions: &[BattlePosition]) -> Vec<BattleInstruction> {
     target_positions
         .iter()
         .map(|&position| {
             let mut stat_boosts = HashMap::new();
             stat_boosts.insert(Stat::Defense, -1);
             
-            Instruction::BoostStats(BoostStatsInstruction {
-                target_position: position,
-                stat_boosts,
-                previous_boosts: Some(HashMap::new()),
+            BattleInstruction::Stats(StatsInstruction::BoostStats {
+                target: position,
+                stat_changes: stat_boosts,
+                previous_boosts: HashMap::new(),
             })
         })
         .collect()
@@ -1939,29 +1981,29 @@ fn create_defense_lowering_instructions(target_positions: &[BattlePosition]) -> 
 /// Apply recoil move effects - now handled automatically by instruction generator
 /// This function is kept for compatibility but recoil is now handled via PS data
 pub fn apply_recoil_move(
-    _state: &State,
+    _state: &BattleState,
     _user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
     _recoil_percentage: i16,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Recoil is now handled automatically in the instruction generator
     // based on PS move data, so we just return empty instructions
-    vec![StateInstructions::empty()]
+    vec![BattleInstructions::new(100.0, vec![])]
 }
 
 /// Apply drain move effects - now handled automatically by instruction generator
 /// This function is kept for compatibility but drain is now handled via PS data
 pub fn apply_drain_move(
-    _state: &State,
+    _state: &BattleState,
     _user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
     _drain_percentage: i16,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Drain is now handled automatically in the instruction generator
     // based on PS move data, so we just return empty instructions
-    vec![StateInstructions::empty()]
+    vec![BattleInstructions::new(100.0, vec![])]
 }
 
 /// Create a damage-based effect instruction for moves like recoil and drain
@@ -1998,10 +2040,10 @@ pub struct DamageBasedEffect {
 /// This function would be called by the damage calculation system
 /// after determining the actual damage amount
 pub fn apply_damage_based_secondary_effects(
-    state: &State,
+    state: &BattleState,
     damage_dealt: i16,
     effects: &[DamageBasedEffect],
-    instructions: &mut Vec<Instruction>,
+    instructions: &mut Vec<BattleInstruction>,
 ) {
     for effect in effects {
         match effect.effect_type {
@@ -2009,9 +2051,9 @@ pub fn apply_damage_based_secondary_effects(
                 let recoil_amount = (damage_dealt * effect.percentage) / 100;
                 if recoil_amount > 0 {
                     let previous_hp = state.get_pokemon_at_position(effect.user_position).map(|p| p.hp).unwrap_or(0);
-                    instructions.push(Instruction::PositionDamage(PositionDamageInstruction {
-                        target_position: effect.user_position,
-                        damage_amount: recoil_amount,
+                    instructions.push(BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                        target: effect.user_position,
+                        amount: recoil_amount,
                         previous_hp: Some(previous_hp),
                     }));
                 }
@@ -2020,9 +2062,9 @@ pub fn apply_damage_based_secondary_effects(
                 let heal_amount = (damage_dealt * effect.percentage) / 100;
                 if heal_amount > 0 {
                     let previous_hp = state.get_pokemon_at_position(effect.user_position).map(|p| p.hp).unwrap_or(0);
-                    instructions.push(Instruction::PositionHeal(PositionHealInstruction {
-                        target_position: effect.user_position,
-                        heal_amount,
+                    instructions.push(BattleInstruction::Pokemon(PokemonInstruction::Heal {
+                        target: effect.user_position,
+                        amount: heal_amount,
                         previous_hp: Some(previous_hp),
                     }));
                 }
@@ -2102,32 +2144,33 @@ fn is_immune_to_burn(pokemon: &Pokemon, _generation: &GenerationMechanics) -> bo
 /// Apply Glare - inflicts paralysis
 /// Generation-aware: Not affected by Electric immunity like Thunder Wave
 pub fn apply_glare(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     for &target_position in target_positions {
         if let Some(target) = state.get_pokemon_at_position(target_position) {
             if target.status == PokemonStatus::None {
                 // Glare can paralyze Electric types (unlike Thunder Wave in Gen 6+)
-                let instruction = Instruction::ApplyStatus(ApplyStatusInstruction {
-                    target_position,
+                let instruction = BattleInstruction::Status(StatusInstruction::Apply {
+                    target: target_position,
                     status: PokemonStatus::Paralysis,
+                    duration: None,
                     previous_status: Some(target.status),
-                    previous_status_duration: Some(target.status_duration),
+                    previous_duration: target.status_duration,
                 });
-                instructions.push(StateInstructions::new(100.0, vec![instruction]));
+                instructions.push(BattleInstructions::new(100.0, vec![instruction]));
             } else {
-                instructions.push(StateInstructions::empty());
+                instructions.push(BattleInstructions::new(100.0, vec![]));
             }
         }
     }
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -2136,35 +2179,36 @@ pub fn apply_glare(
 /// Apply Spore - 100% sleep move
 /// Generation-aware: Grass types immune to powder moves in Gen 6+
 pub fn apply_spore(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     for &target_position in target_positions {
         if let Some(target) = state.get_pokemon_at_position(target_position) {
             if target.status == PokemonStatus::None {
                 if !is_immune_to_powder(target, generation) {
-                    let instruction = Instruction::ApplyStatus(ApplyStatusInstruction {
-                        target_position,
+                    let instruction = BattleInstruction::Status(StatusInstruction::Apply {
+                        target: target_position,
                         status: PokemonStatus::Sleep,
+                        duration: Some(1), // Default sleep duration
                         previous_status: Some(target.status),
-                        previous_status_duration: Some(target.status_duration),
+                        previous_duration: target.status_duration,
                     });
-                    instructions.push(StateInstructions::new(100.0, vec![instruction]));
+                    instructions.push(BattleInstructions::new(100.0, vec![instruction]));
                 } else {
-                    instructions.push(StateInstructions::empty());
+                    instructions.push(BattleInstructions::new(100.0, vec![]));
                 }
             } else {
-                instructions.push(StateInstructions::empty());
+                instructions.push(BattleInstructions::new(100.0, vec![]));
             }
         }
     }
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -2173,12 +2217,12 @@ pub fn apply_spore(
 /// Apply Acid - deals damage with chance to lower Defense
 /// Generation-aware: 33.2% chance in Gen 1, 10% in later generations
 pub fn apply_acid(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Acid deals damage AND has a secondary effect
     let effect_chance = if generation.generation.number() == 1 { 33 } else { 10 };
     
@@ -2194,28 +2238,28 @@ pub fn apply_acid(
 
 /// Apply Charm - lowers target's Attack by 2 stages
 pub fn apply_charm(
-    _state: &State,
+    _state: &BattleState,
     _user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     for &target_position in target_positions {
         let mut stat_boosts = HashMap::new();
         stat_boosts.insert(Stat::Attack, -2);
         
-        let instruction = Instruction::BoostStats(BoostStatsInstruction {
-            target_position,
-            stat_boosts,
-            previous_boosts: Some(HashMap::new()),
+        let instruction = BattleInstruction::Stats(StatsInstruction::BoostStats {
+            target: target_position,
+            stat_changes: stat_boosts,
+            previous_boosts: HashMap::new(),
         });
         
-        instructions.push(StateInstructions::new(100.0, vec![instruction]));
+        instructions.push(BattleInstructions::new(100.0, vec![instruction]));
     }
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -2224,11 +2268,11 @@ pub fn apply_charm(
 /// Apply Growth - raises Attack and Special Attack
 /// Generation-aware: Enhanced in sun weather
 pub fn apply_growth(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let target_position = if target_positions.is_empty() {
         user_position
     } else {
@@ -2246,44 +2290,46 @@ pub fn apply_growth(
     stat_boosts.insert(Stat::Attack, boost_amount);
     stat_boosts.insert(Stat::SpecialAttack, boost_amount);
     
-    let instruction = Instruction::BoostStats(BoostStatsInstruction {
-        target_position,
-        stat_boosts,
-        previous_boosts: Some(HashMap::new()),
+    let instruction = BattleInstruction::Stats(StatsInstruction::BoostStats {
+        target: target_position,
+        stat_changes: stat_boosts,
+        previous_boosts: HashMap::new(),
     });
     
-    vec![StateInstructions::new(100.0, vec![instruction])]
+    vec![BattleInstructions::new(100.0, vec![instruction])]
 }
 
 /// Apply Aqua Ring - provides gradual HP recovery
 pub fn apply_aqua_ring(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let target_position = if target_positions.is_empty() {
         user_position
     } else {
         target_positions[0]
     };
     
-    let instruction = Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-        target_position,
-        volatile_status: VolatileStatus::AquaRing,
+    let instruction = BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+        target: target_position,
+        status: VolatileStatus::AquaRing,
         duration: None, // Lasts until Pokemon switches out
+        previous_had_status: false,
+        previous_duration: None,
     });
     
-    vec![StateInstructions::new(100.0, vec![instruction])]
+    vec![BattleInstructions::new(100.0, vec![instruction])]
 }
 
 /// Apply Shore Up - healing move enhanced in sand weather
 pub fn apply_shore_up(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let target_position = if target_positions.is_empty() {
         user_position
     } else {
@@ -2298,81 +2344,84 @@ pub fn apply_shore_up(
             _ => pokemon.max_hp / 2, // 50% normally
         };
         
-        let instruction = Instruction::PositionHeal(PositionHealInstruction {
-            target_position,
-            heal_amount,
+        let instruction = BattleInstruction::Pokemon(PokemonInstruction::Heal {
+            target: target_position,
+            amount: heal_amount,
             previous_hp: Some(0),
         });
-        vec![StateInstructions::new(100.0, vec![instruction])]
+        vec![BattleInstructions::new(100.0, vec![instruction])]
     } else {
-        vec![StateInstructions::empty()]
+        vec![BattleInstructions::new(100.0, vec![])]
     }
 }
 
 /// Apply Aromatherapy - clears status conditions for entire team
 pub fn apply_aromatherapy(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     let user_side = user_position.side;
     
     // Clear status from all Pokemon on user's team
-    let side = state.get_side(user_side);
+    let side = state.get_side_by_ref(user_side);
     for (slot, pokemon) in side.pokemon.iter().enumerate() {
         if pokemon.status != PokemonStatus::None {
             let position = BattlePosition::new(user_side, slot);
-            instructions.push(Instruction::ApplyStatus(ApplyStatusInstruction {
-                target_position: position,
+            instructions.push(BattleInstruction::Status(StatusInstruction::Apply {
+                target: position,
                 status: PokemonStatus::None,
+                duration: None,
                 previous_status: Some(pokemon.status),
-                previous_status_duration: Some(pokemon.status_duration),
+                previous_duration: pokemon.status_duration,
             }));
         }
     }
     
-    vec![StateInstructions::new(100.0, instructions)]
+    vec![BattleInstructions::new(100.0, instructions)]
 }
 
 /// Apply Heal Bell - same as Aromatherapy
 pub fn apply_heal_bell(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     apply_aromatherapy(state, user_position, target_positions, generation)
 }
 
 /// Apply Attract - causes infatuation
 pub fn apply_attract(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     for &target_position in target_positions {
         if let Some(target) = state.get_pokemon_at_position(target_position) {
             // Check if target is already attracted or has immunity (like Oblivious)
             if !target.volatile_statuses.contains(&VolatileStatus::Attract) {
-                let instruction = Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-                    target_position,
-                    volatile_status: VolatileStatus::Attract,
+                let instruction = BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                    target: target_position,
+                    status: VolatileStatus::Attract,
                     duration: None, // Lasts until Pokemon switches out
+                    previous_had_status: false,
+                    previous_duration: None,
                 });
-                instructions.push(StateInstructions::new(100.0, vec![instruction]));
+                instructions.push(BattleInstructions::new(100.0, vec![instruction]));
             } else {
-                instructions.push(StateInstructions::empty());
+                instructions.push(BattleInstructions::new(100.0, vec![]));
             }
         }
     }
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -2380,24 +2429,26 @@ pub fn apply_attract(
 
 /// Apply Confuse Ray - causes confusion
 pub fn apply_confuse_ray(
-    _state: &State,
+    _state: &BattleState,
     _user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     for &target_position in target_positions {
-        let instruction = Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-            target_position,
-            volatile_status: VolatileStatus::Confusion,
+        let instruction = BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+            target: target_position,
+            status: VolatileStatus::Confusion,
             duration: Some(4), // Lasts 2-5 turns in most generations
+            previous_had_status: false,
+            previous_duration: None,
         });
-        instructions.push(StateInstructions::new(100.0, vec![instruction]));
+        instructions.push(BattleInstructions::new(100.0, vec![instruction]));
     }
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -2405,11 +2456,11 @@ pub fn apply_confuse_ray(
 
 /// Apply Haze - resets all stat changes for all Pokemon
 pub fn apply_haze(
-    state: &State,
+    state: &BattleState,
     _user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     // Reset stat boosts for all active Pokemon
@@ -2418,10 +2469,10 @@ pub fn apply_haze(
             let position = BattlePosition::new(side_ref, slot);
             if let Some(pokemon) = state.get_pokemon_at_position(position) {
                 if !pokemon.stat_boosts.is_empty() {
-                    let instruction = Instruction::BoostStats(BoostStatsInstruction {
-                        target_position: position,
-                        stat_boosts: HashMap::new(), // Reset all to 0
-                        previous_boosts: Some(pokemon.stat_boosts.clone()),
+                    let instruction = BattleInstruction::Stats(StatsInstruction::BoostStats {
+                        target: position,
+                        stat_changes: HashMap::new(), // Reset all to 0
+                        previous_boosts: HashMap::new(),
                     });
                     instructions.push(instruction);
                 }
@@ -2429,29 +2480,29 @@ pub fn apply_haze(
         }
     }
     
-    vec![StateInstructions::new(100.0, instructions)]
+    vec![BattleInstructions::new(100.0, instructions)]
 }
 
 /// Apply Clear Smog - removes all stat changes from target
 pub fn apply_clear_smog(
-    _state: &State,
+    _state: &BattleState,
     _user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     for &target_position in target_positions {
-        let instruction = Instruction::BoostStats(BoostStatsInstruction {
-            target_position,
-            stat_boosts: HashMap::new(), // Reset all to 0
-            previous_boosts: Some(HashMap::new()),
+        let instruction = BattleInstruction::Stats(StatsInstruction::BoostStats {
+            target: target_position,
+            stat_changes: HashMap::new(), // Reset all to 0
+            previous_boosts: HashMap::new(),
         });
-        instructions.push(StateInstructions::new(100.0, vec![instruction]));
+        instructions.push(BattleInstructions::new(100.0, vec![instruction]));
     }
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -2459,142 +2510,150 @@ pub fn apply_clear_smog(
 
 /// Apply Sunny Day - sets sun weather
 pub fn apply_sunny_day(
-    _state: &State,
+    _state: &BattleState,
     _user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
-    let instruction = Instruction::ChangeWeather(ChangeWeatherInstruction {
-        weather: crate::core::instruction::Weather::Sun,
-        duration: Some(5), // 5 turns in most generations
-        previous_weather: None,
-        previous_duration: None,
+) -> Vec<BattleInstructions> {
+    let instruction = BattleInstruction::Field(FieldInstruction::Weather {
+        new_weather: crate::core::instruction::Weather::Sun,
+        previous_weather: crate::core::instruction::Weather::None,
+        turns: Some(5), // 5 turns in most generations
+        previous_turns: None,
+        source: None,
     });
     
-    vec![StateInstructions::new(100.0, vec![instruction])]
+    vec![BattleInstructions::new(100.0, vec![instruction])]
 }
 
 /// Apply Rain Dance - sets rain weather
 pub fn apply_rain_dance(
-    _state: &State,
+    _state: &BattleState,
     _user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
-    let instruction = Instruction::ChangeWeather(ChangeWeatherInstruction {
-        weather: crate::core::instruction::Weather::Rain,
-        duration: Some(5),
-        previous_weather: None,
-        previous_duration: None,
+) -> Vec<BattleInstructions> {
+    let instruction = BattleInstruction::Field(FieldInstruction::Weather {
+        new_weather: crate::core::instruction::Weather::Rain,
+        previous_weather: crate::core::instruction::Weather::None,
+        turns: Some(5),
+        previous_turns: None,
+        source: None,
     });
     
-    vec![StateInstructions::new(100.0, vec![instruction])]
+    vec![BattleInstructions::new(100.0, vec![instruction])]
 }
 
 /// Apply Sandstorm - sets sand weather
 pub fn apply_sandstorm(
-    _state: &State,
+    _state: &BattleState,
     _user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
-    let instruction = Instruction::ChangeWeather(ChangeWeatherInstruction {
-        weather: crate::core::instruction::Weather::Sand,
-        duration: Some(5),
-        previous_weather: None,
-        previous_duration: None,
+) -> Vec<BattleInstructions> {
+    let instruction = BattleInstruction::Field(FieldInstruction::Weather {
+        new_weather: crate::core::instruction::Weather::Sand,
+        previous_weather: crate::core::instruction::Weather::None,
+        turns: Some(5),
+        previous_turns: None,
+        source: None,
     });
     
-    vec![StateInstructions::new(100.0, vec![instruction])]
+    vec![BattleInstructions::new(100.0, vec![instruction])]
 }
 
 /// Apply Hail - sets hail weather
 pub fn apply_hail(
-    _state: &State,
+    _state: &BattleState,
     _user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
-    let instruction = Instruction::ChangeWeather(ChangeWeatherInstruction {
-        weather: crate::core::instruction::Weather::Hail,
-        duration: Some(5),
-        previous_weather: None,
-        previous_duration: None,
+) -> Vec<BattleInstructions> {
+    let instruction = BattleInstruction::Field(FieldInstruction::Weather {
+        new_weather: crate::core::instruction::Weather::Hail,
+        previous_weather: crate::core::instruction::Weather::None,
+        turns: Some(5),
+        previous_turns: None,
+        source: None,
     });
     
-    vec![StateInstructions::new(100.0, vec![instruction])]
+    vec![BattleInstructions::new(100.0, vec![instruction])]
 }
 
 /// Apply Snowscape - sets snow weather (Gen 9+ replacement for Hail)
 pub fn apply_snowscape(
-    _state: &State,
+    _state: &BattleState,
     _user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
-    let instruction = Instruction::ChangeWeather(ChangeWeatherInstruction {
-        weather: crate::core::instruction::Weather::Snow,
-        duration: Some(5),
-        previous_weather: None,
-        previous_duration: None,
+) -> Vec<BattleInstructions> {
+    let instruction = BattleInstruction::Field(FieldInstruction::Weather {
+        new_weather: crate::core::instruction::Weather::Snow,
+        previous_weather: crate::core::instruction::Weather::None,
+        turns: Some(5),
+        previous_turns: None,
+        source: None,
     });
     
-    vec![StateInstructions::new(100.0, vec![instruction])]
+    vec![BattleInstructions::new(100.0, vec![instruction])]
 }
 
 /// Apply Light Screen - reduces Special damage taken
 pub fn apply_light_screen(
-    _state: &State,
+    _state: &BattleState,
     user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
-    let instruction = Instruction::ApplySideCondition(ApplySideConditionInstruction {
+) -> Vec<BattleInstructions> {
+    let instruction = BattleInstruction::Field(FieldInstruction::ApplySideCondition {
         side: user_position.side,
         condition: SideCondition::LightScreen,
-        duration: Some(5), // 5 turns in most generations
+        duration: 5, // 5 turns in most generations
+        previous_duration: None,
     });
     
-    vec![StateInstructions::new(100.0, vec![instruction])]
+    vec![BattleInstructions::new(100.0, vec![instruction])]
 }
 
 /// Apply Reflect - reduces Physical damage taken
 pub fn apply_reflect_move(
-    _state: &State,
+    _state: &BattleState,
     user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
-    let instruction = Instruction::ApplySideCondition(ApplySideConditionInstruction {
+) -> Vec<BattleInstructions> {
+    let instruction = BattleInstruction::Field(FieldInstruction::ApplySideCondition {
         side: user_position.side,
         condition: SideCondition::Reflect,
-        duration: Some(5),
+        duration: 5,
+        previous_duration: None,
     });
     
-    vec![StateInstructions::new(100.0, vec![instruction])]
+    vec![BattleInstructions::new(100.0, vec![instruction])]
 }
 
 /// Apply Aurora Veil - combines Light Screen and Reflect effects (only in hail/snow)
 pub fn apply_aurora_veil(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Aurora Veil only works in hail or snow weather
     match state.weather {
         crate::core::instruction::Weather::Hail | crate::core::instruction::Weather::Snow => {
-            let instruction = Instruction::ApplySideCondition(ApplySideConditionInstruction {
+            let instruction = BattleInstruction::Field(FieldInstruction::ApplySideCondition {
                 side: user_position.side,
                 condition: SideCondition::AuroraVeil,
-                duration: Some(5),
+                duration: 5,
+                previous_duration: None,
             });
             
-            vec![StateInstructions::new(100.0, vec![instruction])]
+            vec![BattleInstructions::new(100.0, vec![instruction])]
         }
         _ => {
             // Move fails without hail/snow
-            vec![StateInstructions::empty()]
+            vec![BattleInstructions::new(100.0, vec![])]
         }
     }
 }
@@ -2605,87 +2664,91 @@ pub fn apply_aurora_veil(
 
 /// Apply Spikes - sets entry hazard that damages grounded Pokemon
 pub fn apply_spikes(
-    _state: &State,
+    _state: &BattleState,
     user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Target the opposing side
     let target_side = match user_position.side {
         crate::core::battle_format::SideReference::SideOne => crate::core::battle_format::SideReference::SideTwo,
         crate::core::battle_format::SideReference::SideTwo => crate::core::battle_format::SideReference::SideOne,
     };
     
-    let instruction = Instruction::ApplySideCondition(ApplySideConditionInstruction {
+    let instruction = BattleInstruction::Field(FieldInstruction::ApplySideCondition {
         side: target_side,
         condition: SideCondition::Spikes,
-        duration: None, // Spikes last until removed
+        duration: 0, // Permanent until removed
+        previous_duration: None,
     });
     
-    vec![StateInstructions::new(100.0, vec![instruction])]
+    vec![BattleInstructions::new(100.0, vec![instruction])]
 }
 
 /// Apply Stealth Rock - sets entry hazard based on type effectiveness  
 pub fn apply_stealth_rock(
-    _state: &State,
+    _state: &BattleState,
     user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let target_side = match user_position.side {
         crate::core::battle_format::SideReference::SideOne => crate::core::battle_format::SideReference::SideTwo,
         crate::core::battle_format::SideReference::SideTwo => crate::core::battle_format::SideReference::SideOne,
     };
     
-    let instruction = Instruction::ApplySideCondition(ApplySideConditionInstruction {
+    let instruction = BattleInstruction::Field(FieldInstruction::ApplySideCondition {
         side: target_side,
         condition: SideCondition::StealthRock,
-        duration: None,
+        duration: 0,
+        previous_duration: None,
     });
     
-    vec![StateInstructions::new(100.0, vec![instruction])]
+    vec![BattleInstructions::new(100.0, vec![instruction])]
 }
 
 /// Apply Toxic Spikes - sets entry hazard that poisons
 pub fn apply_toxic_spikes(
-    _state: &State,
+    _state: &BattleState,
     user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let target_side = match user_position.side {
         crate::core::battle_format::SideReference::SideOne => crate::core::battle_format::SideReference::SideTwo,
         crate::core::battle_format::SideReference::SideTwo => crate::core::battle_format::SideReference::SideOne,
     };
     
-    let instruction = Instruction::ApplySideCondition(ApplySideConditionInstruction {
+    let instruction = BattleInstruction::Field(FieldInstruction::ApplySideCondition {
         side: target_side,
         condition: SideCondition::ToxicSpikes,
-        duration: None,
+        duration: 0,
+        previous_duration: None,
     });
     
-    vec![StateInstructions::new(100.0, vec![instruction])]
+    vec![BattleInstructions::new(100.0, vec![instruction])]
 }
 
 /// Apply Sticky Web - sets entry hazard that lowers Speed
 pub fn apply_sticky_web(
-    _state: &State,
+    _state: &BattleState,
     user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let target_side = match user_position.side {
         crate::core::battle_format::SideReference::SideOne => crate::core::battle_format::SideReference::SideTwo,
         crate::core::battle_format::SideReference::SideTwo => crate::core::battle_format::SideReference::SideOne,
     };
     
-    let instruction = Instruction::ApplySideCondition(ApplySideConditionInstruction {
+    let instruction = BattleInstruction::Field(FieldInstruction::ApplySideCondition {
         side: target_side,
         condition: SideCondition::StickyWeb,
-        duration: None,
+        duration: 0,
+        previous_duration: None,
     });
     
-    vec![StateInstructions::new(100.0, vec![instruction])]
+    vec![BattleInstructions::new(100.0, vec![instruction])]
 }
 
 // =============================================================================
@@ -2694,44 +2757,46 @@ pub fn apply_sticky_web(
 
 /// Apply Rapid Spin - removes hazards from user's side
 pub fn apply_rapid_spin(
-    _state: &State,
+    _state: &BattleState,
     user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     // Remove hazards from user's side
     for condition in [SideCondition::Spikes, SideCondition::StealthRock, SideCondition::ToxicSpikes, SideCondition::StickyWeb] {
-        instructions.push(Instruction::RemoveSideCondition(crate::core::instruction::RemoveSideConditionInstruction {
+        instructions.push(BattleInstruction::Field(FieldInstruction::RemoveSideCondition {
             side: user_position.side,
             condition,
+            previous_duration: 0, // Default assumption
         }));
     }
     
-    vec![StateInstructions::new(100.0, instructions)]
+    vec![BattleInstructions::new(100.0, instructions)]
 }
 
 /// Apply Defog - removes hazards from both sides
 pub fn apply_defog(
-    _state: &State,
+    _state: &BattleState,
     _user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     // Remove hazards from both sides
     for side in [crate::core::battle_format::SideReference::SideOne, crate::core::battle_format::SideReference::SideTwo] {
         for condition in [SideCondition::Spikes, SideCondition::StealthRock, SideCondition::ToxicSpikes, SideCondition::StickyWeb] {
-            instructions.push(Instruction::RemoveSideCondition(crate::core::instruction::RemoveSideConditionInstruction {
+            instructions.push(BattleInstruction::Field(FieldInstruction::RemoveSideCondition {
                 side,
                 condition,
+                previous_duration: 0, // Default assumption
             }));
         }
     }
     
-    vec![StateInstructions::new(100.0, instructions)]
+    vec![BattleInstructions::new(100.0, instructions)]
 }
 
 // =============================================================================
@@ -2740,27 +2805,30 @@ pub fn apply_defog(
 
 /// Apply Baton Pass - passes stat changes to next Pokemon
 pub fn apply_baton_pass(
-    _state: &State,
+    _state: &BattleState,
     user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
-    // Set baton passing flag
-    let instruction = Instruction::ToggleBatonPassing(crate::core::instruction::ToggleBatonPassingInstruction {
-        target_position: user_position,
-        active: true,
-    });
+) -> Vec<BattleInstructions> {
+    use crate::core::instructions::{BattleInstruction, FieldInstruction};
     
-    vec![StateInstructions::new(100.0, vec![instruction])]
+    // Baton Pass enables stat boost passing when switching
+    vec![BattleInstructions::new(100.0, vec![
+        BattleInstruction::Field(FieldInstruction::ToggleBatonPassing {
+            side: user_position.side,
+            active: true,
+            previous_state: false, // Assume it was false before
+        })
+    ])]
 }
 
 /// Apply Belly Drum - maximizes Attack at cost of 50% HP
 pub fn apply_belly_drum(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let target_position = if target_positions.is_empty() {
         user_position
     } else {
@@ -2773,9 +2841,9 @@ pub fn apply_belly_drum(
             let mut instructions = Vec::new();
             
             // Damage user for 50% of max HP
-            instructions.push(Instruction::PositionDamage(PositionDamageInstruction {
-                target_position,
-                damage_amount: cost,
+            instructions.push(BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                target: target_position,
+                amount: cost,
                 previous_hp: Some(pokemon.hp),
             }));
             
@@ -2783,29 +2851,29 @@ pub fn apply_belly_drum(
             let mut stat_boosts = HashMap::new();
             stat_boosts.insert(Stat::Attack, 6);
             
-            instructions.push(Instruction::BoostStats(BoostStatsInstruction {
-                target_position,
-                stat_boosts,
-                previous_boosts: Some(pokemon.stat_boosts.clone()),
+            instructions.push(BattleInstruction::Stats(StatsInstruction::BoostStats {
+                target: target_position,
+                stat_changes: stat_boosts,
+                previous_boosts: HashMap::new(),
             }));
             
-            vec![StateInstructions::new(100.0, instructions)]
+            vec![BattleInstructions::new(100.0, instructions)]
         } else {
             // Not enough HP - move fails
-            vec![StateInstructions::empty()]
+            vec![BattleInstructions::new(100.0, vec![])]
         }
     } else {
-        vec![StateInstructions::empty()]
+        vec![BattleInstructions::new(100.0, vec![])]
     }
 }
 
 /// Apply Curse - different effects for Ghost vs non-Ghost types
 pub fn apply_curse(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     if let Some(user) = state.get_pokemon_at_position(user_position) {
         if user.types.iter().any(|t| t.to_lowercase() == "ghost") {
             // Ghost type: Curses target, user loses 50% HP
@@ -2814,22 +2882,24 @@ pub fn apply_curse(
                 
                 // Damage user for 50% HP
                 let damage = user.max_hp / 2;
-                instructions.push(Instruction::PositionDamage(PositionDamageInstruction {
-                    target_position: user_position,
-                    damage_amount: damage,
+                instructions.push(BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                    target: user_position,
+                    amount: damage,
                     previous_hp: Some(user.hp),
                 }));
                 
                 // Apply curse to target
-                instructions.push(Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-                    target_position,
-                    volatile_status: VolatileStatus::Curse,
+                instructions.push(BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                    target: target_position,
+                    status: VolatileStatus::Curse,
                     duration: None, // Lasts until target switches
+                    previous_had_status: false,
+                    previous_duration: None,
                 }));
                 
-                vec![StateInstructions::new(100.0, instructions)]
+                vec![BattleInstructions::new(100.0, instructions)]
             } else {
-                vec![StateInstructions::empty()]
+                vec![BattleInstructions::new(100.0, vec![])]
             }
         } else {
             // Non-Ghost type: Raises Attack and Defense, lowers Speed
@@ -2844,55 +2914,59 @@ pub fn apply_curse(
             stat_boosts.insert(Stat::Defense, 1);
             stat_boosts.insert(Stat::Speed, -1);
             
-            let instruction = Instruction::BoostStats(BoostStatsInstruction {
-                target_position,
-                stat_boosts,
-                previous_boosts: Some(HashMap::new()),
+            let instruction = BattleInstruction::Stats(StatsInstruction::BoostStats {
+                target: target_position,
+                stat_changes: stat_boosts,
+                previous_boosts: HashMap::new(),
             });
             
-            vec![StateInstructions::new(100.0, vec![instruction])]
+            vec![BattleInstructions::new(100.0, vec![instruction])]
         }
     } else {
-        vec![StateInstructions::empty()]
+        vec![BattleInstructions::new(100.0, vec![])]
     }
 }
 
 /// Apply Destiny Bond - if user faints, opponent also faints
 pub fn apply_destiny_bond(
-    _state: &State,
+    _state: &BattleState,
     user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
-    let instruction = Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-        target_position: user_position,
-        volatile_status: VolatileStatus::DestinyBond,
+) -> Vec<BattleInstructions> {
+    let instruction = BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+        target: user_position,
+        status: VolatileStatus::DestinyBond,
         duration: Some(1), // Lasts until end of turn
+        previous_had_status: false,
+        previous_duration: None,
     });
     
-    vec![StateInstructions::new(100.0, vec![instruction])]
+    vec![BattleInstructions::new(100.0, vec![instruction])]
 }
 
 /// Apply Encore - forces opponent to repeat last move
 pub fn apply_encore(
-    _state: &State,
+    _state: &BattleState,
     _user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     for &target_position in target_positions {
-        let instruction = Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-            target_position,
-            volatile_status: VolatileStatus::Encore,
+        let instruction = BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+            target: target_position,
+            status: VolatileStatus::Encore,
             duration: Some(3), // Lasts 3 turns
+            previous_had_status: false,
+            previous_duration: None,
         });
-        instructions.push(StateInstructions::new(100.0, vec![instruction]));
+        instructions.push(BattleInstructions::new(100.0, vec![instruction]));
     }
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -2900,24 +2974,26 @@ pub fn apply_encore(
 
 /// Apply Leech Seed - drains HP every turn
 pub fn apply_leech_seed(
-    _state: &State,
+    _state: &BattleState,
     _user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     for &target_position in target_positions {
-        let instruction = Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-            target_position,
-            volatile_status: VolatileStatus::LeechSeed,
+        let instruction = BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+            target: target_position,
+            status: VolatileStatus::LeechSeed,
             duration: None, // Lasts until Pokemon switches
+            previous_had_status: false,
+            previous_duration: None,
         });
-        instructions.push(StateInstructions::new(100.0, vec![instruction]));
+        instructions.push(BattleInstructions::new(100.0, vec![instruction]));
     }
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -2925,11 +3001,11 @@ pub fn apply_leech_seed(
 
 /// Apply Rest - fully heals and puts user to sleep
 pub fn apply_rest(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let target_position = if target_positions.is_empty() {
         user_position
     } else {
@@ -2942,82 +3018,87 @@ pub fn apply_rest(
         // Heal to full HP
         let heal_amount = pokemon.max_hp - pokemon.hp;
         if heal_amount > 0 {
-            instructions.push(Instruction::PositionHeal(PositionHealInstruction {
-                target_position,
-                heal_amount,
+            instructions.push(BattleInstruction::Pokemon(PokemonInstruction::Heal {
+                target: target_position,
+                amount: heal_amount,
                 previous_hp: Some(pokemon.hp),
             }));
         }
         
         // Clear any existing status
         if pokemon.status != PokemonStatus::None {
-            instructions.push(Instruction::ApplyStatus(ApplyStatusInstruction {
-                target_position,
+            instructions.push(BattleInstruction::Status(StatusInstruction::Apply {
+                target: target_position,
                 status: PokemonStatus::None,
+                duration: None,
                 previous_status: Some(pokemon.status),
-                previous_status_duration: Some(pokemon.status_duration),
+                previous_duration: pokemon.status_duration,
             }));
         }
         
         // Put to sleep for 2 turns
-        instructions.push(Instruction::ApplyStatus(ApplyStatusInstruction {
-            target_position,
+        instructions.push(BattleInstruction::Status(StatusInstruction::Apply {
+            target: target_position,
             status: PokemonStatus::Sleep,
+            duration: Some(2),
             previous_status: Some(PokemonStatus::None),
-            previous_status_duration: Some(None),
+            previous_duration: None,
         }));
         
-        instructions.push(Instruction::SetRestTurns(crate::core::instruction::SetRestTurnsInstruction {
-            target_position,
+        instructions.push(BattleInstruction::Status(StatusInstruction::SetRestTurns {
+            target: target_position,
             turns: 2,
+            previous_turns: None,
         }));
         
-        vec![StateInstructions::new(100.0, instructions)]
+        vec![BattleInstructions::new(100.0, instructions)]
     } else {
-        vec![StateInstructions::empty()]
+        vec![BattleInstructions::new(100.0, vec![])]
     }
 }
 
 /// Apply Sleep Talk - uses random move while asleep
 pub fn apply_sleep_talk(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     if let Some(pokemon) = state.get_pokemon_at_position(user_position) {
         if pokemon.status == PokemonStatus::Sleep {
             // Move succeeds - actual move selection handled by turn system
-            vec![StateInstructions::empty()]
+            vec![BattleInstructions::new(100.0, vec![])]
         } else {
             // Move fails if not asleep
-            vec![StateInstructions::empty()]
+            vec![BattleInstructions::new(100.0, vec![])]
         }
     } else {
-        vec![StateInstructions::empty()]
+        vec![BattleInstructions::new(100.0, vec![])]
     }
 }
 
 /// Apply Taunt - prevents status moves
 pub fn apply_taunt(
-    _state: &State,
+    _state: &BattleState,
     _user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     for &target_position in target_positions {
-        let instruction = Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-            target_position,
-            volatile_status: VolatileStatus::Taunt,
+        let instruction = BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+            target: target_position,
+            status: VolatileStatus::Taunt,
             duration: Some(3), // Lasts 3 turns
+            previous_had_status: false,
+            previous_duration: None,
         });
-        instructions.push(StateInstructions::new(100.0, vec![instruction]));
+        instructions.push(BattleInstructions::new(100.0, vec![instruction]));
     }
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -3025,40 +3106,47 @@ pub fn apply_taunt(
 
 /// Apply Whirlwind - forces opponent to switch
 pub fn apply_whirlwind(
-    _state: &State,
+    _state: &BattleState,
     user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Force switch for opposing side
-    let force_switch_instruction = match user_position.side {
-        crate::core::battle_format::SideReference::SideOne => Instruction::ToggleSideTwoForceSwitch,
-        crate::core::battle_format::SideReference::SideTwo => Instruction::ToggleSideOneForceSwitch,
+    let opposing_side = match user_position.side {
+        crate::core::battle_format::SideReference::SideOne => crate::core::battle_format::SideReference::SideTwo,
+        crate::core::battle_format::SideReference::SideTwo => crate::core::battle_format::SideReference::SideOne,
     };
+    let force_switch_instruction = BattleInstruction::Field(FieldInstruction::ToggleForceSwitch {
+        side: opposing_side,
+        active: true,
+        previous_state: false,
+    });
     
-    vec![StateInstructions::new(100.0, vec![force_switch_instruction])]
+    vec![BattleInstructions::new(100.0, vec![force_switch_instruction])]
 }
 
 /// Apply Yawn - causes sleep next turn
 pub fn apply_yawn(
-    _state: &State,
+    _state: &BattleState,
     _user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     for &target_position in target_positions {
-        let instruction = Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-            target_position,
-            volatile_status: VolatileStatus::Yawn,
+        let instruction = BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+            target: target_position,
+            status: VolatileStatus::Yawn,
             duration: Some(2), // Sleep occurs after 1 turn
+            previous_had_status: false,
+            previous_duration: None,
         });
-        instructions.push(StateInstructions::new(100.0, vec![instruction]));
+        instructions.push(BattleInstructions::new(100.0, vec![instruction]));
     }
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -3070,38 +3158,38 @@ pub fn apply_yawn(
 
 /// Apply Splash - does nothing
 pub fn apply_splash(
-    _state: &State,
+    _state: &BattleState,
     _user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Splash does nothing - return empty instructions
-    vec![StateInstructions::empty()]
+    vec![BattleInstructions::new(100.0, vec![])]
 }
 
 /// Apply Kinesis - lowers accuracy by 1 stage
 pub fn apply_kinesis(
-    _state: &State,
+    _state: &BattleState,
     _user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     for &target_position in target_positions {
         let mut stat_boosts = HashMap::new();
         stat_boosts.insert(Stat::Accuracy, -1);
         
-        let instruction = Instruction::BoostStats(BoostStatsInstruction {
-            target_position,
-            stat_boosts,
-            previous_boosts: Some(HashMap::new()),
+        let instruction = BattleInstruction::Stats(StatsInstruction::BoostStats {
+            target: target_position,
+            stat_changes: stat_boosts,
+            previous_boosts: HashMap::new(),
         });
-        instructions.push(StateInstructions::new(100.0, vec![instruction]));
+        instructions.push(BattleInstructions::new(100.0, vec![instruction]));
     }
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -3110,130 +3198,142 @@ pub fn apply_kinesis(
 /// Apply Quick Attack - priority +1 physical move
 /// Note: Priority is handled by the PS move data, this just handles any special effects
 pub fn apply_quick_attack(
-    _state: &State,
+    _state: &BattleState,
     _move_data: &EngineMoveData,
     _user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Quick Attack is just a priority move with no special effects
     // Priority is handled by the instruction generator
-    vec![StateInstructions::empty()]
+    vec![BattleInstructions::new(100.0, vec![])]
 }
 
 /// Apply Tailwind - doubles speed for side for 4 turns
 pub fn apply_tailwind(
-    _state: &State,
+    _state: &BattleState,
     user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let side = user_position.side;
-    let instruction = Instruction::ApplySideCondition(ApplySideConditionInstruction {
+    let instruction = BattleInstruction::Field(FieldInstruction::ApplySideCondition {
         side,
-        condition: SideCondition::TailWind,
-        duration: Some(4),
+        condition: SideCondition::Tailwind,
+        duration: 4,
+        previous_duration: None,
     });
     
-    vec![StateInstructions::new(100.0, vec![instruction])]
+    vec![BattleInstructions::new(100.0, vec![instruction])]
 }
 
 /// Apply Trick Room - reverses speed priority for 5 turns
 pub fn apply_trick_room(
-    _state: &State,
+    _state: &BattleState,
     _user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Toggle trick room state - if active, turn off; if inactive, turn on for 5 turns
-    let instruction = Instruction::ToggleTrickRoom(crate::core::instruction::ToggleTrickRoomInstruction {
+    let instruction = BattleInstruction::Field(FieldInstruction::TrickRoom {
         active: true, // Will be properly handled by state application
-        duration: Some(5),
+        turns: Some(5),
+        source: None,
+        previous_active: false,
+        previous_turns: None,
     });
     
-    vec![StateInstructions::new(100.0, vec![instruction])]
+    vec![BattleInstructions::new(100.0, vec![instruction])]
 }
 
 /// Apply Refresh - cures user's status condition
 pub fn apply_refresh(
-    _state: &State,
+    _state: &BattleState,
     user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
-    let instruction = Instruction::RemoveStatus(crate::core::instruction::RemoveStatusInstruction {
-        target_position: user_position,
-        previous_status: None, // Will be filled by state application
-        previous_status_duration: None,
+) -> Vec<BattleInstructions> {
+    let instruction = BattleInstruction::Status(StatusInstruction::Remove {
+        target: user_position,
+        status: crate::core::instruction::PokemonStatus::None, // Remove any status
+        previous_duration: None,
     });
     
-    vec![StateInstructions::new(100.0, vec![instruction])]
+    vec![BattleInstructions::new(100.0, vec![instruction])]
 }
 
 /// Apply Wish - heals target position after 2 turns
 pub fn apply_wish(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     if let Some(user) = state.get_pokemon_at_position(user_position) {
         let heal_amount = user.max_hp / 2; // Heals 50% of user's max HP
-        let instruction = Instruction::SetWish(crate::core::instruction::SetWishInstruction {
-            target_position: user_position,
+        let instruction = BattleInstruction::Pokemon(PokemonInstruction::SetWish {
+            target: user_position,
             heal_amount,
             turns_remaining: 2, // Activates after 2 turns
+            previous_wish: None,
         });
         
-        vec![StateInstructions::new(100.0, vec![instruction])]
+        vec![BattleInstructions::new(100.0, vec![instruction])]
     } else {
-        vec![StateInstructions::empty()]
+        vec![BattleInstructions::new(100.0, vec![])]
     }
 }
 
 /// Apply Healing Wish - user faints, fully heals replacement
 pub fn apply_healing_wish(
-    _state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instruction_list = Vec::new();
     
+    // Get the user's current HP before fainting
+    let user_current_hp = state.get_pokemon_at_position(user_position)
+        .map(|pokemon| pokemon.hp)
+        .unwrap_or(0);
+    
     // Faint the user
-    instruction_list.push(Instruction::Faint(crate::core::instruction::FaintInstruction {
-        target_position: user_position,
-        previous_hp: 0, // TODO: Should be set to actual HP before fainting
+    instruction_list.push(BattleInstruction::Pokemon(PokemonInstruction::Faint {
+        target: user_position,
+        previous_hp: user_current_hp,
+        previous_status: None,
     }));
     
     // Set up healing for next Pokemon
     // Note: This is simplified - in the full implementation, this would set a side condition
     // that heals the next Pokemon that switches in
-    let instruction = Instruction::ApplySideCondition(ApplySideConditionInstruction {
+    let instruction = BattleInstruction::Field(FieldInstruction::ApplySideCondition {
         side: user_position.side,
         condition: SideCondition::Safeguard, // Using as placeholder for healing wish
-        duration: Some(1),
+        duration: 1,
+        previous_duration: None,
     });
     instruction_list.push(instruction);
     
-    vec![StateInstructions::new(100.0, instruction_list)]
+    vec![BattleInstructions::new(100.0, instruction_list)]
 }
 
 /// Apply Life Dew - heals user and ally
 pub fn apply_life_dew(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instruction_list = Vec::new();
     
     // Heal user
     if let Some(user) = state.get_pokemon_at_position(user_position) {
         let heal_amount = user.max_hp / 4; // Heals 25%
-        instruction_list.push(Instruction::PositionHeal(PositionHealInstruction {
-            target_position: user_position,
-            heal_amount,
+        instruction_list.push(BattleInstruction::Pokemon(PokemonInstruction::Heal {
+            target: user_position,
+            amount: heal_amount,
             previous_hp: Some(user.hp),
         }));
     }
@@ -3242,24 +3342,24 @@ pub fn apply_life_dew(
     for &target_position in target_positions {
         if let Some(target) = state.get_pokemon_at_position(target_position) {
             let heal_amount = target.max_hp / 4;
-            instruction_list.push(Instruction::PositionHeal(PositionHealInstruction {
-                target_position,
-                heal_amount,
+            instruction_list.push(BattleInstruction::Pokemon(PokemonInstruction::Heal {
+                target: target_position,
+                amount: heal_amount,
                 previous_hp: Some(target.hp),
             }));
         }
     }
     
-    vec![StateInstructions::new(100.0, instruction_list)]
+    vec![BattleInstructions::new(100.0, instruction_list)]
 }
 
 /// Apply No Retreat - boosts all stats but prevents switching
 pub fn apply_no_retreat(
-    _state: &State,
+    _state: &BattleState,
     user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instruction_list = Vec::new();
     
     // Boost all stats by 1 stage
@@ -3270,31 +3370,33 @@ pub fn apply_no_retreat(
     stat_boosts.insert(Stat::SpecialDefense, 1);
     stat_boosts.insert(Stat::Speed, 1);
     
-    instruction_list.push(Instruction::BoostStats(BoostStatsInstruction {
-        target_position: user_position,
-        stat_boosts,
-        previous_boosts: Some(HashMap::new()),
+    instruction_list.push(BattleInstruction::Stats(StatsInstruction::BoostStats {
+        target: user_position,
+        stat_changes: stat_boosts,
+        previous_boosts: HashMap::new(),
     }));
     
     // Apply No Retreat status
-    instruction_list.push(Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-        target_position: user_position,
-        volatile_status: VolatileStatus::NoRetreat,
+    instruction_list.push(BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+        target: user_position,
+        status: VolatileStatus::NoRetreat,
         duration: None, // Permanent
+        previous_had_status: false,
+        previous_duration: None,
     }));
     
-    vec![StateInstructions::new(100.0, instruction_list)]
+    vec![BattleInstructions::new(100.0, instruction_list)]
 }
 
 /// Apply Pain Split - averages HP between user and target
 pub fn apply_pain_split(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     if target_positions.is_empty() {
-        return vec![StateInstructions::empty()];
+        return vec![BattleInstructions::new(100.0, vec![])];
     }
     
     let target_position = target_positions[0];
@@ -3311,15 +3413,15 @@ pub fn apply_pain_split(
         // Adjust user's HP
         let user_hp_change = new_hp - user.hp;
         if user_hp_change > 0 {
-            instruction_list.push(Instruction::PositionHeal(PositionHealInstruction {
-                target_position: user_position,
-                heal_amount: user_hp_change,
+            instruction_list.push(BattleInstruction::Pokemon(PokemonInstruction::Heal {
+                target: user_position,
+                amount: user_hp_change,
                 previous_hp: Some(user.hp),
             }));
         } else if user_hp_change < 0 {
-            instruction_list.push(Instruction::PositionDamage(PositionDamageInstruction {
-                target_position: user_position,
-                damage_amount: -user_hp_change,
+            instruction_list.push(BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                target: user_position,
+                amount: -user_hp_change,
                 previous_hp: Some(user.hp),
             }));
         }
@@ -3327,32 +3429,32 @@ pub fn apply_pain_split(
         // Adjust target's HP
         let target_hp_change = new_hp - target.hp;
         if target_hp_change > 0 {
-            instruction_list.push(Instruction::PositionHeal(PositionHealInstruction {
-                target_position,
-                heal_amount: target_hp_change,
+            instruction_list.push(BattleInstruction::Pokemon(PokemonInstruction::Heal {
+                target: target_position,
+                amount: target_hp_change,
                 previous_hp: Some(target.hp),
             }));
         } else if target_hp_change < 0 {
-            instruction_list.push(Instruction::PositionDamage(PositionDamageInstruction {
-                target_position,
-                damage_amount: -target_hp_change,
+            instruction_list.push(BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                target: target_position,
+                amount: -target_hp_change,
                 previous_hp: Some(target.hp),
             }));
         }
         
-        vec![StateInstructions::new(100.0, instruction_list)]
+        vec![BattleInstructions::new(100.0, instruction_list)]
     } else {
-        vec![StateInstructions::empty()]
+        vec![BattleInstructions::new(100.0, vec![])]
     }
 }
 
 /// Apply Parting Shot - lowers opponent's stats then switches
 pub fn apply_parting_shot(
-    _state: &State,
+    _state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instruction_list = Vec::new();
     
     // Lower target's Attack and Special Attack by 1 stage
@@ -3361,45 +3463,49 @@ pub fn apply_parting_shot(
         stat_boosts.insert(Stat::Attack, -1);
         stat_boosts.insert(Stat::SpecialAttack, -1);
         
-        instruction_list.push(Instruction::BoostStats(BoostStatsInstruction {
-            target_position,
-            stat_boosts,
-            previous_boosts: Some(HashMap::new()),
+        instruction_list.push(BattleInstruction::Stats(StatsInstruction::BoostStats {
+            target: target_position,
+            stat_changes: stat_boosts,
+            previous_boosts: HashMap::new(),
         }));
     }
     
     // Force switch (this would be handled by the switching system)
     // For now, just apply the stat changes
     
-    vec![StateInstructions::new(100.0, instruction_list)]
+    vec![BattleInstructions::new(100.0, instruction_list)]
 }
 
 /// Apply Perish Song - both Pokemon faint in 3 turns
 pub fn apply_perish_song(
-    _state: &State,
+    _state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instruction_list = Vec::new();
     
     // Apply Perish 3 to user
-    instruction_list.push(Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-        target_position: user_position,
-        volatile_status: VolatileStatus::Perish3,
+    instruction_list.push(BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+        target: user_position,
+        status: VolatileStatus::Perish3,
         duration: Some(3),
+        previous_had_status: false,
+        previous_duration: None,
     }));
     
     // Apply Perish 3 to all targets
     for &target_position in target_positions {
-        instruction_list.push(Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-            target_position,
-            volatile_status: VolatileStatus::Perish3,
+        instruction_list.push(BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+            target: target_position,
+            status: VolatileStatus::Perish3,
             duration: Some(3),
+            previous_had_status: false,
+            previous_duration: None,
         }));
     }
     
-    vec![StateInstructions::new(100.0, instruction_list)]
+    vec![BattleInstructions::new(100.0, instruction_list)]
 }
 
 // =============================================================================
@@ -3408,71 +3514,73 @@ pub fn apply_perish_song(
 
 /// Apply Accelerock - Rock-type priority move
 pub fn apply_accelerock(
-    _state: &State,
+    _state: &BattleState,
     _move_data: &EngineMoveData,
     _user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Priority is handled by PS data, no special effects
-    vec![StateInstructions::empty()]
+    vec![BattleInstructions::new(100.0, vec![])]
 }
 
 /// Apply Aqua Jet - Water-type priority move
 pub fn apply_aqua_jet(
-    _state: &State,
+    _state: &BattleState,
     _move_data: &EngineMoveData,
     _user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
-    vec![StateInstructions::empty()]
+) -> Vec<BattleInstructions> {
+    vec![BattleInstructions::new(100.0, vec![])]
 }
 
 /// Apply Bullet Punch - Steel-type priority move
 pub fn apply_bullet_punch(
-    _state: &State,
+    _state: &BattleState,
     _move_data: &EngineMoveData,
     _user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
-    vec![StateInstructions::empty()]
+) -> Vec<BattleInstructions> {
+    vec![BattleInstructions::new(100.0, vec![])]
 }
 
 /// Apply Extreme Speed - +2 priority Normal move
 pub fn apply_extreme_speed(
-    _state: &State,
+    _state: &BattleState,
     _move_data: &EngineMoveData,
     _user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
-    vec![StateInstructions::empty()]
+) -> Vec<BattleInstructions> {
+    vec![BattleInstructions::new(100.0, vec![])]
 }
 
 /// Apply Fake Out - flinches, only works on first turn
 pub fn apply_fake_out(
-    _state: &State,
+    _state: &BattleState,
     _move_data: &EngineMoveData,
     _user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     // Apply flinch to targets (damage is handled separately)
     for &target_position in target_positions {
-        let instruction = Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-            target_position,
-            volatile_status: VolatileStatus::Flinch,
+        let instruction = BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+            target: target_position,
+            status: VolatileStatus::Flinch,
             duration: Some(1),
+            previous_had_status: false,
+            previous_duration: None,
         });
-        instructions.push(StateInstructions::new(100.0, vec![instruction]));
+        instructions.push(BattleInstructions::new(100.0, vec![instruction]));
     }
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -3480,12 +3588,12 @@ pub fn apply_fake_out(
 
 /// Apply Feint - breaks through protection
 pub fn apply_feint(
-    state: &State,
+    state: &BattleState,
     _move_data: &EngineMoveData,
     _user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     // Feint removes protection from targets
@@ -3495,22 +3603,24 @@ pub fn apply_feint(
             
             // Remove Protect status
             if target_pokemon.volatile_statuses.contains(&VolatileStatus::Protect) {
-                instruction_list.push(Instruction::RemoveVolatileStatus(RemoveVolatileStatusInstruction {
-                    target_position,
-                    volatile_status: VolatileStatus::Protect,
+                instruction_list.push(BattleInstruction::Status(StatusInstruction::RemoveVolatile {
+                    target: target_position,
+                    status: VolatileStatus::Protect,
+                    previous_duration: None,
                 }));
             }
             
             // Remove other protection statuses
             if target_pokemon.volatile_statuses.contains(&VolatileStatus::Endure) {
-                instruction_list.push(Instruction::RemoveVolatileStatus(RemoveVolatileStatusInstruction {
-                    target_position,
-                    volatile_status: VolatileStatus::Endure,
+                instruction_list.push(BattleInstruction::Status(StatusInstruction::RemoveVolatile {
+                    target: target_position,
+                    status: VolatileStatus::Endure,
+                    previous_duration: None,
                 }));
             }
             
             if !instruction_list.is_empty() {
-                instructions.push(StateInstructions::new(100.0, instruction_list));
+                instructions.push(BattleInstructions::new(100.0, instruction_list));
             }
         }
     }
@@ -3520,29 +3630,29 @@ pub fn apply_feint(
 
 /// Apply First Impression - Bug-type priority, only works on first turn
 pub fn apply_first_impression(
-    _state: &State,
+    _state: &BattleState,
     _move_data: &EngineMoveData,
     _user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // First Impression only works on the first turn the Pokemon is on the field
     // For now, we'll implement basic logic - in a full implementation, 
     // we'd need to track turn count since Pokemon entered battle
     
     // This is a priority move with no special effects beyond damage
-    vec![StateInstructions::new(100.0, vec![])]
+    vec![BattleInstructions::new(100.0, vec![])]
 }
 
 /// Apply Mach Punch - Fighting-type priority move
 pub fn apply_mach_punch(
-    _state: &State,
+    _state: &BattleState,
     _move_data: &EngineMoveData,
     _user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
-    vec![StateInstructions::empty()]
+) -> Vec<BattleInstructions> {
+    vec![BattleInstructions::new(100.0, vec![])]
 }
 
 // =============================================================================
@@ -3551,52 +3661,52 @@ pub fn apply_mach_punch(
 
 /// Apply Seismic Toss - damage equals user's level
 pub fn apply_seismic_toss(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     if let Some(user) = state.get_pokemon_at_position(user_position) {
         let damage_amount = user.level as i16;
         let mut instructions = Vec::new();
         
         for &target_position in target_positions {
-            let instruction = Instruction::PositionDamage(PositionDamageInstruction {
-                target_position,
-                damage_amount,
+            let instruction = BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                target: target_position,
+                amount: damage_amount,
                 previous_hp: None, // Will be filled by state application
             });
-            instructions.push(StateInstructions::new(100.0, vec![instruction]));
+            instructions.push(BattleInstructions::new(100.0, vec![instruction]));
         }
         
         if instructions.is_empty() {
-            instructions.push(StateInstructions::empty());
+            instructions.push(BattleInstructions::new(100.0, vec![]));
         }
         
         instructions
     } else {
-        vec![StateInstructions::empty()]
+        vec![BattleInstructions::new(100.0, vec![])]
     }
 }
 
 /// Apply Night Shade - damage equals user's level
 pub fn apply_night_shade(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Same as Seismic Toss
     apply_seismic_toss(state, user_position, target_positions, _generation)
 }
 
 /// Apply Endeavor - reduces target HP to user's HP
 pub fn apply_endeavor(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     if let Some(user) = state.get_pokemon_at_position(user_position) {
         let mut instructions = Vec::new();
         
@@ -3604,83 +3714,84 @@ pub fn apply_endeavor(
             if let Some(target) = state.get_pokemon_at_position(target_position) {
                 if target.hp > user.hp {
                     let damage_amount = target.hp - user.hp;
-                    let instruction = Instruction::PositionDamage(PositionDamageInstruction {
-                        target_position,
-                        damage_amount,
+                    let instruction = BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                        target: target_position,
+                        amount: damage_amount,
                         previous_hp: Some(target.hp),
                     });
-                    instructions.push(StateInstructions::new(100.0, vec![instruction]));
+                    instructions.push(BattleInstructions::new(100.0, vec![instruction]));
                 }
             }
         }
         
         if instructions.is_empty() {
-            instructions.push(StateInstructions::empty());
+            instructions.push(BattleInstructions::new(100.0, vec![]));
         }
         
         instructions
     } else {
-        vec![StateInstructions::empty()]
+        vec![BattleInstructions::new(100.0, vec![])]
     }
 }
 
 /// Apply Final Gambit - damage equals user's HP, user faints
 pub fn apply_final_gambit(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     if let Some(user) = state.get_pokemon_at_position(user_position) {
         let damage_amount = user.hp;
         let mut instruction_list = Vec::new();
         
         // User faints
-        instruction_list.push(Instruction::Faint(crate::core::instruction::FaintInstruction {
-            target_position: user_position,
-            previous_hp: 0, // TODO: Should be set to actual HP before fainting
+        instruction_list.push(BattleInstruction::Pokemon(PokemonInstruction::Faint {
+            target: user_position,
+            previous_hp: user.hp, // Store actual HP before fainting
+            previous_status: Some(user.status),
         }));
         
         // Deal damage to targets
         for &target_position in target_positions {
-            instruction_list.push(Instruction::PositionDamage(PositionDamageInstruction {
-                target_position,
-                damage_amount,
+            instruction_list.push(BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                target: target_position,
+                amount: damage_amount,
                 previous_hp: None,
             }));
         }
         
-        vec![StateInstructions::new(100.0, instruction_list)]
+        vec![BattleInstructions::new(100.0, instruction_list)]
     } else {
-        vec![StateInstructions::empty()]
+        vec![BattleInstructions::new(100.0, vec![])]
     }
 }
 
 /// Apply Nature's Madness - halves target's HP
 pub fn apply_natures_madness(
-    state: &State,
+    state: &BattleState,
     _user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     for &target_position in target_positions {
         if let Some(target) = state.get_pokemon_at_position(target_position) {
             let damage_amount = target.hp / 2;
             if damage_amount > 0 {
-                let instruction = Instruction::PositionDamage(PositionDamageInstruction {
-                    target_position,
-                    damage_amount,
+                let instruction = BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                    target: target_position,
+                    amount: damage_amount,
                     previous_hp: Some(target.hp),
                 });
-                instructions.push(StateInstructions::new(100.0, vec![instruction]));
+                instructions.push(BattleInstructions::new(100.0, vec![instruction]));
             }
         }
     }
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -3688,22 +3799,22 @@ pub fn apply_natures_madness(
 
 /// Apply Ruination - halves target's HP
 pub fn apply_ruination(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Same as Nature's Madness
     apply_natures_madness(state, user_position, target_positions, generation)
 }
 
 /// Apply Super Fang - halves target's HP
 pub fn apply_super_fang(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Same as Nature's Madness
     apply_natures_madness(state, user_position, target_positions, generation)
 }
@@ -3714,11 +3825,11 @@ pub fn apply_super_fang(
 
 /// Apply Counter - returns 2x physical damage
 pub fn apply_counter(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Get the side that would be targeted by counter (opponent side)
     let target_side = match user_position.side {
         crate::core::battle_format::SideReference::SideOne => &state.side_two,
@@ -3740,35 +3851,35 @@ pub fn apply_counter(
             // Check type immunity - Counter can't hit Ghost types
             if let Some(target_pokemon) = state.get_pokemon_at_position(target_position) {
                 if target_pokemon.types.contains(&"ghost".to_string()) {
-                    return vec![StateInstructions::empty()];
+                    return vec![BattleInstructions::new(100.0, vec![])];
                 }
             }
             
-            instruction_list.push(Instruction::PositionDamage(PositionDamageInstruction {
-                target_position,
-                damage_amount: counter_damage,
+            instruction_list.push(BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                target: target_position,
+                amount: counter_damage,
                 previous_hp: None, // Will be filled by state application
             }));
         }
         
         if instruction_list.is_empty() {
-            vec![StateInstructions::empty()]
+            vec![BattleInstructions::new(100.0, vec![])]
         } else {
-            vec![StateInstructions::new(100.0, instruction_list)]
+            vec![BattleInstructions::new(100.0, instruction_list)]
         }
     } else {
         // No physical damage was taken, Counter fails
-        vec![StateInstructions::empty()]
+        vec![BattleInstructions::new(100.0, vec![])]
     }
 }
 
 /// Apply Mirror Coat - returns 2x special damage
 pub fn apply_mirror_coat(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Get the side that would be targeted by mirror coat (opponent side)
     let target_side = match user_position.side {
         crate::core::battle_format::SideReference::SideOne => &state.side_two,
@@ -3787,31 +3898,31 @@ pub fn apply_mirror_coat(
         
         // Deal damage to the first target (should be the opponent who dealt damage)
         if let Some(&target_position) = target_positions.first() {
-            instruction_list.push(Instruction::PositionDamage(PositionDamageInstruction {
-                target_position,
-                damage_amount: counter_damage,
+            instruction_list.push(BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                target: target_position,
+                amount: counter_damage,
                 previous_hp: None, // Will be filled by state application
             }));
         }
         
         if instruction_list.is_empty() {
-            vec![StateInstructions::empty()]
+            vec![BattleInstructions::new(100.0, vec![])]
         } else {
-            vec![StateInstructions::new(100.0, instruction_list)]
+            vec![BattleInstructions::new(100.0, instruction_list)]
         }
     } else {
         // No special damage was taken, Mirror Coat fails
-        vec![StateInstructions::empty()]
+        vec![BattleInstructions::new(100.0, vec![])]
     }
 }
 
 /// Apply Comeuppance - returns 1.5x damage taken
 pub fn apply_comeuppance(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Get the side that would be targeted by comeuppance (opponent side)
     let target_side = match user_position.side {
         crate::core::battle_format::SideReference::SideOne => &state.side_two,
@@ -3828,31 +3939,31 @@ pub fn apply_comeuppance(
         
         // Deal damage to the first target (should be the opponent who dealt damage)
         if let Some(&target_position) = target_positions.first() {
-            instruction_list.push(Instruction::PositionDamage(PositionDamageInstruction {
-                target_position,
-                damage_amount: counter_damage,
+            instruction_list.push(BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                target: target_position,
+                amount: counter_damage,
                 previous_hp: None, // Will be filled by state application
             }));
         }
         
         if instruction_list.is_empty() {
-            vec![StateInstructions::empty()]
+            vec![BattleInstructions::new(100.0, vec![])]
         } else {
-            vec![StateInstructions::new(100.0, instruction_list)]
+            vec![BattleInstructions::new(100.0, instruction_list)]
         }
     } else {
         // No damage was taken, Comeuppance fails
-        vec![StateInstructions::empty()]
+        vec![BattleInstructions::new(100.0, vec![])]
     }
 }
 
 /// Apply Metal Burst - returns 1.5x damage taken
 pub fn apply_metal_burst(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Get the side that would be targeted by metal burst (opponent side)
     let target_side = match user_position.side {
         crate::core::battle_format::SideReference::SideOne => &state.side_two,
@@ -3869,21 +3980,21 @@ pub fn apply_metal_burst(
         
         // Deal damage to the first target (should be the opponent who dealt damage)
         if let Some(&target_position) = target_positions.first() {
-            instruction_list.push(Instruction::PositionDamage(PositionDamageInstruction {
-                target_position,
-                damage_amount: counter_damage,
+            instruction_list.push(BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                target: target_position,
+                amount: counter_damage,
                 previous_hp: None, // Will be filled by state application
             }));
         }
         
         if instruction_list.is_empty() {
-            vec![StateInstructions::empty()]
+            vec![BattleInstructions::new(100.0, vec![])]
         } else {
-            vec![StateInstructions::new(100.0, instruction_list)]
+            vec![BattleInstructions::new(100.0, instruction_list)]
         }
     } else {
         // No damage was taken, Metal Burst fails
-        vec![StateInstructions::empty()]
+        vec![BattleInstructions::new(100.0, vec![])]
     }
 }
 
@@ -3893,12 +4004,12 @@ pub fn apply_metal_burst(
 
 /// Apply Facade - doubles power with status condition
 pub fn apply_facade(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     if let Some(user) = state.get_pokemon_at_position(user_position) {
         // Facade doubles power if user has a status condition (Burn, Paralysis, Poison)
         let has_status = matches!(user.status, 
@@ -3914,17 +4025,17 @@ pub fn apply_facade(
     }
     
     // No status condition, normal power
-    vec![StateInstructions::empty()]
+    vec![BattleInstructions::new(100.0, vec![])]
 }
 
 /// Apply Hex - doubles power against statused targets
 pub fn apply_hex(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut has_statused_target = false;
     
     for &target_position in target_positions {
@@ -3942,19 +4053,19 @@ pub fn apply_hex(
     }
     
     // No statused targets, normal power
-    vec![StateInstructions::empty()]
+    vec![BattleInstructions::new(100.0, vec![])]
 }
 
 /// Apply Gyro Ball - higher power with lower Speed
 pub fn apply_gyro_ball(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     if target_positions.is_empty() {
-        return vec![StateInstructions::empty()];
+        return vec![BattleInstructions::new(100.0, vec![])];
     }
     
     let target_position = target_positions[0];
@@ -3975,17 +4086,17 @@ pub fn apply_gyro_ball(
     }
     
     // Fallback to normal power
-    vec![StateInstructions::empty()]
+    vec![BattleInstructions::new(100.0, vec![])]
 }
 
 /// Apply Reversal - higher power at lower HP
 pub fn apply_reversal(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     if let Some(user) = state.get_pokemon_at_position(user_position) {
         // Reversal power based on HP percentage
         let hp_percentage = (user.hp as f32 / user.max_hp as f32) * 100.0;
@@ -4013,17 +4124,17 @@ pub fn apply_reversal(
     }
     
     // Fallback to normal power
-    vec![StateInstructions::empty()]
+    vec![BattleInstructions::new(100.0, vec![])]
 }
 
 /// Apply Acrobatics - doubles power without item
 pub fn apply_acrobatics(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     if let Some(user) = state.get_pokemon_at_position(user_position) {
         // Acrobatics doubles power if user has no item or an unusable item
         let has_no_item = user.item.is_none() || user.item.as_ref().map_or(true, |item| item.is_empty());
@@ -4034,26 +4145,29 @@ pub fn apply_acrobatics(
     }
     
     // Has item, normal power
-    vec![StateInstructions::empty()]
+    vec![BattleInstructions::new(100.0, vec![])]
 }
 
 /// Apply Weather Ball - type and power change based on weather
 pub fn apply_weather_ball(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Weather Ball doubles power and changes type based on weather
     let power_multiplier = match state.weather {
         crate::core::instruction::Weather::Sun | 
         crate::core::instruction::Weather::HarshSun |
+        crate::core::instruction::Weather::HarshSunlight |
         crate::core::instruction::Weather::Rain | 
         crate::core::instruction::Weather::HeavyRain |
         crate::core::instruction::Weather::Sand |
+        crate::core::instruction::Weather::Sandstorm |
         crate::core::instruction::Weather::Hail |
-        crate::core::instruction::Weather::Snow => 2.0,
+        crate::core::instruction::Weather::Snow |
+        crate::core::instruction::Weather::StrongWinds => 2.0,
         crate::core::instruction::Weather::None => 1.0,
     };
     
@@ -4062,31 +4176,31 @@ pub fn apply_weather_ball(
     }
     
     // No weather, normal power
-    vec![StateInstructions::empty()]
+    vec![BattleInstructions::new(100.0, vec![])]
 }
 
 /// Helper function to apply power modifier moves
 /// This is a placeholder - in a full implementation, this would create instructions
 /// that modify the move's power during damage calculation
 fn apply_power_modifier_move(
-    _state: &State,
+    _state: &BattleState,
     _move_data: &EngineMoveData,
     _user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
     _power_multiplier: f32,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // For now, return empty as power modification would need to be handled
     // by the damage calculation system, not the move effects system
     // In a full implementation, this would create a PowerModifier instruction
     // that the damage calculator would read and apply
-    vec![StateInstructions::empty()]
+    vec![BattleInstructions::new(100.0, vec![])]
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::state::{Pokemon, MoveCategory, State};
+    use crate::core::battle_state::{Pokemon, MoveCategory, BattleState};
     use crate::data::types::EngineMoveData;
     use crate::core::battle_format::{BattleFormat, FormatType, SideReference};
     use crate::generation::Generation;
@@ -4095,8 +4209,8 @@ mod tests {
         Pokemon::new("Test".to_string())
     }
 
-    fn create_test_state() -> State {
-        let mut state = State::new(BattleFormat::new("Singles".to_string(), Generation::Gen9, FormatType::Singles));
+    fn create_test_state() -> BattleState {
+        let mut state = BattleState::new(BattleFormat::new("Singles".to_string(), Generation::Gen9, FormatType::Singles));
         let pokemon1 = Pokemon::new("Attacker".to_string());
         let pokemon2 = Pokemon::new("Defender".to_string());
         
@@ -4123,7 +4237,7 @@ mod tests {
             move_type: "Normal".to_string(),
             category: MoveCategory::Physical,
             priority: 0,
-            target: crate::data::ps_types::PSMoveTarget::Scripted,
+            target: crate::data::showdown_types::MoveTarget::Scripted,
             effect_chance: None,
             effect_description: String::new(),
             flags: vec![],
@@ -4141,8 +4255,7 @@ mod tests {
         
         assert!(!instructions.is_empty());
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::ApplyStatus(status_instr) 
-                if status_instr.status == PokemonStatus::Paralysis)
+            matches!(instr, BattleInstruction::Status(StatusInstruction::Apply { status: PokemonStatus::Paralysis, .. }))
         }));
     }
 
@@ -4156,8 +4269,8 @@ mod tests {
         
         assert!(!instructions.is_empty());
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::BoostStats(boost_instr) 
-                if boost_instr.stat_boosts.get(&Stat::Attack) == Some(&2))
+            matches!(instr, BattleInstruction::Stats(StatsInstruction::BoostStats { stat_changes, .. }) 
+                if stat_changes.get(&Stat::Attack) == Some(&2))
         }));
     }
 
@@ -4171,7 +4284,7 @@ mod tests {
         
         assert!(!instructions.is_empty());
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::PositionHeal(_))
+            matches!(instr, BattleInstruction::Pokemon(PokemonInstruction::Heal { .. }))
         }));
     }
 
@@ -4261,7 +4374,7 @@ mod tests {
         pokemon
     }
 
-    fn create_test_state_with_weather(weather: crate::core::instruction::Weather) -> State {
+    fn create_test_state_with_weather(weather: crate::core::instruction::Weather) -> BattleState {
         let mut state = create_test_state();
         state.weather = weather;
         state
@@ -4278,8 +4391,7 @@ mod tests {
         
         assert!(!instructions.is_empty());
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::ApplyStatus(status_instr) 
-                if status_instr.status == PokemonStatus::Paralysis)
+            matches!(instr, BattleInstruction::Status(StatusInstruction::Apply { status: PokemonStatus::Paralysis, .. }))
         }));
     }
 
@@ -4294,8 +4406,7 @@ mod tests {
         
         assert!(!instructions.is_empty());
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::ApplyStatus(status_instr) 
-                if status_instr.status == PokemonStatus::Sleep)
+            matches!(instr, BattleInstruction::Status(StatusInstruction::Apply { status: PokemonStatus::Sleep, .. }))
         }));
     }
 
@@ -4324,8 +4435,8 @@ mod tests {
         
         assert!(!instructions.is_empty());
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::BoostStats(boost_instr) 
-                if boost_instr.stat_boosts.get(&Stat::Attack) == Some(&-2))
+            matches!(instr, BattleInstruction::Stats(StatsInstruction::BoostStats { stat_changes, .. }) 
+                if stat_changes.get(&Stat::Attack) == Some(&-2))
         }));
     }
 
@@ -4339,9 +4450,9 @@ mod tests {
         
         assert!(!instructions.is_empty());
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::BoostStats(boost_instr) 
-                if boost_instr.stat_boosts.get(&Stat::Attack) == Some(&2) 
-                && boost_instr.stat_boosts.get(&Stat::SpecialAttack) == Some(&2))
+            matches!(instr, BattleInstruction::Stats(StatsInstruction::BoostStats { stat_changes, .. }) 
+                if stat_changes.get(&Stat::Attack) == Some(&2) 
+                && stat_changes.get(&Stat::SpecialAttack) == Some(&2))
         }));
     }
 
@@ -4355,9 +4466,9 @@ mod tests {
         
         assert!(!instructions.is_empty());
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::BoostStats(boost_instr) 
-                if boost_instr.stat_boosts.get(&Stat::Attack) == Some(&1) 
-                && boost_instr.stat_boosts.get(&Stat::SpecialAttack) == Some(&1))
+            matches!(instr, BattleInstruction::Stats(StatsInstruction::BoostStats { stat_changes, .. }) 
+                if stat_changes.get(&Stat::Attack) == Some(&1) 
+                && stat_changes.get(&Stat::SpecialAttack) == Some(&1))
         }));
     }
 
@@ -4371,8 +4482,7 @@ mod tests {
         
         assert!(!instructions.is_empty());
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::ApplyVolatileStatus(vol_status_instr) 
-                if vol_status_instr.volatile_status == VolatileStatus::AquaRing)
+            matches!(instr, BattleInstruction::Status(StatusInstruction::ApplyVolatile { status: VolatileStatus::AquaRing, .. }))
         }));
     }
 
@@ -4386,8 +4496,8 @@ mod tests {
         
         assert!(!instructions.is_empty());
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::PositionHeal(heal_instr) 
-                if heal_instr.heal_amount > 0)
+            matches!(instr, BattleInstruction::Pokemon(PokemonInstruction::Heal { amount, .. }) 
+                if *amount > 0)
         }));
     }
 
@@ -4407,8 +4517,7 @@ mod tests {
         
         assert!(!instructions.is_empty());
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::ApplyStatus(status_instr) 
-                if status_instr.status == PokemonStatus::None)
+            matches!(instr, BattleInstruction::Status(StatusInstruction::Apply { status: PokemonStatus::None, .. }))
         }));
     }
 
@@ -4423,8 +4532,7 @@ mod tests {
         
         assert!(!instructions.is_empty());
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::ApplyVolatileStatus(vol_status_instr) 
-                if vol_status_instr.volatile_status == VolatileStatus::Attract)
+            matches!(instr, BattleInstruction::Status(StatusInstruction::ApplyVolatile { status: VolatileStatus::Attract, .. }))
         }));
     }
 
@@ -4439,8 +4547,7 @@ mod tests {
         
         assert!(!instructions.is_empty());
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::ApplyVolatileStatus(vol_status_instr) 
-                if vol_status_instr.volatile_status == VolatileStatus::Confusion)
+            matches!(instr, BattleInstruction::Status(StatusInstruction::ApplyVolatile { status: VolatileStatus::Confusion, .. }))
         }));
     }
 
@@ -4463,8 +4570,8 @@ mod tests {
         assert!(!instructions.is_empty());
         // Should generate instructions to reset stat boosts
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::BoostStats(boost_instr) 
-                if boost_instr.stat_boosts.is_empty())
+            matches!(instr, BattleInstruction::Stats(StatsInstruction::BoostStats { stat_changes, .. }) 
+                if stat_changes.is_empty())
         }));
     }
 
@@ -4479,8 +4586,8 @@ mod tests {
         
         assert!(!instructions.is_empty());
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::BoostStats(boost_instr) 
-                if boost_instr.stat_boosts.is_empty())
+            matches!(instr, BattleInstruction::Stats(StatsInstruction::BoostStats { stat_changes, .. }) 
+                if stat_changes.is_empty())
         }));
     }
 
@@ -4493,22 +4600,19 @@ mod tests {
         // Test Sunny Day
         let instructions = apply_sunny_day(&state, user_pos, &[], &generation);
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::ChangeWeather(weather_instr) 
-                if weather_instr.weather == crate::core::instruction::Weather::Sun)
+            matches!(instr, BattleInstruction::Field(FieldInstruction::Weather { new_weather: Weather::Sun, .. }))
         }));
         
         // Test Rain Dance
         let instructions = apply_rain_dance(&state, user_pos, &[], &generation);
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::ChangeWeather(weather_instr) 
-                if weather_instr.weather == crate::core::instruction::Weather::Rain)
+            matches!(instr, BattleInstruction::Field(FieldInstruction::Weather { new_weather: Weather::Rain, .. }))
         }));
         
         // Test Sandstorm
         let instructions = apply_sandstorm(&state, user_pos, &[], &generation);
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::ChangeWeather(weather_instr) 
-                if weather_instr.weather == crate::core::instruction::Weather::Sand)
+            matches!(instr, BattleInstruction::Field(FieldInstruction::Weather { new_weather: Weather::Sand, .. }))
         }));
     }
 
@@ -4521,15 +4625,13 @@ mod tests {
         // Test Light Screen
         let instructions = apply_light_screen(&state, user_pos, &[], &generation);
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::ApplySideCondition(side_cond_instr) 
-                if side_cond_instr.condition == SideCondition::LightScreen)
+            matches!(instr, BattleInstruction::Field(FieldInstruction::ApplySideCondition { condition: SideCondition::LightScreen, .. }))
         }));
         
         // Test Reflect
         let instructions = apply_reflect_move(&state, user_pos, &[], &generation);
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::ApplySideCondition(side_cond_instr) 
-                if side_cond_instr.condition == SideCondition::Reflect)
+            matches!(instr, BattleInstruction::Field(FieldInstruction::ApplySideCondition { condition: SideCondition::Reflect, .. }))
         }));
     }
 
@@ -4543,8 +4645,7 @@ mod tests {
         
         assert!(!instructions.is_empty());
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::ApplySideCondition(side_cond_instr) 
-                if side_cond_instr.condition == SideCondition::AuroraVeil)
+            matches!(instr, BattleInstruction::Field(FieldInstruction::ApplySideCondition { condition: SideCondition::AuroraVeil, .. }))
         }));
     }
 
@@ -4569,22 +4670,19 @@ mod tests {
         // Test Spikes
         let instructions = apply_spikes(&state, user_pos, &[], &generation);
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::ApplySideCondition(side_cond_instr) 
-                if side_cond_instr.condition == SideCondition::Spikes)
+            matches!(instr, BattleInstruction::Field(FieldInstruction::ApplySideCondition { condition: SideCondition::Spikes, .. }))
         }));
         
         // Test Stealth Rock
         let instructions = apply_stealth_rock(&state, user_pos, &[], &generation);
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::ApplySideCondition(side_cond_instr) 
-                if side_cond_instr.condition == SideCondition::StealthRock)
+            matches!(instr, BattleInstruction::Field(FieldInstruction::ApplySideCondition { condition: SideCondition::StealthRock, .. }))
         }));
         
         // Test Toxic Spikes
         let instructions = apply_toxic_spikes(&state, user_pos, &[], &generation);
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::ApplySideCondition(side_cond_instr) 
-                if side_cond_instr.condition == SideCondition::ToxicSpikes)
+            matches!(instr, BattleInstruction::Field(FieldInstruction::ApplySideCondition { condition: SideCondition::ToxicSpikes, .. }))
         }));
     }
 
@@ -4598,14 +4696,14 @@ mod tests {
         let instructions = apply_rapid_spin(&state, user_pos, &[], &generation);
         assert!(!instructions.is_empty());
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::RemoveSideCondition(_))
+            matches!(instr, BattleInstruction::Field(FieldInstruction::RemoveSideCondition { .. }))
         }));
         
         // Test Defog
         let instructions = apply_defog(&state, user_pos, &[], &generation);
         assert!(!instructions.is_empty());
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::RemoveSideCondition(_))
+            matches!(instr, BattleInstruction::Field(FieldInstruction::RemoveSideCondition { .. }))
         }));
     }
 
@@ -4619,7 +4717,7 @@ mod tests {
         
         assert!(!instructions.is_empty());
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::ToggleBatonPassing(_))
+            matches!(instr, BattleInstruction::Field(FieldInstruction::ToggleBatonPassing { .. }))
         }));
     }
 
@@ -4634,11 +4732,11 @@ mod tests {
         assert!(!instructions.is_empty());
         // Should have both damage and stat boost instructions
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::PositionDamage(_))
+            matches!(instr, BattleInstruction::Pokemon(PokemonInstruction::Damage { .. }))
         }));
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::BoostStats(boost_instr) 
-                if boost_instr.stat_boosts.get(&Stat::Attack) == Some(&6))
+            matches!(instr, BattleInstruction::Stats(StatsInstruction::BoostStats { stat_changes, .. }) 
+                if stat_changes.get(&Stat::Attack) == Some(&6))
         }));
     }
 
@@ -4656,10 +4754,10 @@ mod tests {
         assert!(!instructions.is_empty());
         // Non-Ghost curse should boost Attack/Defense, lower Speed
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::BoostStats(boost_instr) 
-                if boost_instr.stat_boosts.get(&Stat::Attack) == Some(&1)
-                && boost_instr.stat_boosts.get(&Stat::Defense) == Some(&1)
-                && boost_instr.stat_boosts.get(&Stat::Speed) == Some(&-1))
+            matches!(instr, BattleInstruction::Stats(StatsInstruction::BoostStats { stat_changes, .. }) 
+                if stat_changes.get(&Stat::Attack) == Some(&1)
+                && stat_changes.get(&Stat::Defense) == Some(&1)
+                && stat_changes.get(&Stat::Speed) == Some(&-1))
         }));
     }
 
@@ -4673,8 +4771,7 @@ mod tests {
         
         assert!(!instructions.is_empty());
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::ApplyVolatileStatus(vol_status_instr) 
-                if vol_status_instr.volatile_status == VolatileStatus::DestinyBond)
+            matches!(instr, BattleInstruction::Status(StatusInstruction::ApplyVolatile { status: VolatileStatus::DestinyBond, .. }))
         }));
     }
 
@@ -4689,8 +4786,7 @@ mod tests {
         
         assert!(!instructions.is_empty());
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::ApplyVolatileStatus(vol_status_instr) 
-                if vol_status_instr.volatile_status == VolatileStatus::Encore)
+            matches!(instr, BattleInstruction::Status(StatusInstruction::ApplyVolatile { status: VolatileStatus::Encore, .. }))
         }));
     }
 
@@ -4705,8 +4801,7 @@ mod tests {
         
         assert!(!instructions.is_empty());
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::ApplyVolatileStatus(vol_status_instr) 
-                if vol_status_instr.volatile_status == VolatileStatus::LeechSeed)
+            matches!(instr, BattleInstruction::Status(StatusInstruction::ApplyVolatile { status: VolatileStatus::LeechSeed, .. }))
         }));
     }
 
@@ -4726,14 +4821,13 @@ mod tests {
         assert!(!instructions.is_empty());
         // Should have heal, status change to sleep, and rest turns instructions
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::PositionHeal(_))
+            matches!(instr, BattleInstruction::Pokemon(PokemonInstruction::Heal { .. }))
         }));
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::ApplyStatus(status_instr) 
-                if status_instr.status == PokemonStatus::Sleep)
+            matches!(instr, BattleInstruction::Status(StatusInstruction::Apply { status: PokemonStatus::Sleep, .. }))
         }));
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::SetRestTurns(_))
+            matches!(instr, BattleInstruction::Status(StatusInstruction::SetRestTurns { .. }))
         }));
     }
 
@@ -4765,8 +4859,7 @@ mod tests {
         
         assert!(!instructions.is_empty());
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::ApplyVolatileStatus(vol_status_instr) 
-                if vol_status_instr.volatile_status == VolatileStatus::Taunt)
+            matches!(instr, BattleInstruction::Status(StatusInstruction::ApplyVolatile { status: VolatileStatus::Taunt, .. }))
         }));
     }
 
@@ -4780,7 +4873,7 @@ mod tests {
         
         assert!(!instructions.is_empty());
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::ToggleSideTwoForceSwitch)
+            matches!(instr, BattleInstruction::Field(FieldInstruction::ToggleForceSwitch { .. }))
         }));
     }
 
@@ -4795,8 +4888,7 @@ mod tests {
         
         assert!(!instructions.is_empty());
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::ApplyVolatileStatus(vol_status_instr) 
-                if vol_status_instr.volatile_status == VolatileStatus::Yawn)
+            matches!(instr, BattleInstruction::Status(StatusInstruction::ApplyVolatile { status: VolatileStatus::Yawn, .. }))
         }));
     }
 
@@ -4824,8 +4916,8 @@ mod tests {
         
         assert!(!instructions.is_empty());
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::BoostStats(boost_instr) 
-                if boost_instr.stat_boosts.get(&Stat::Accuracy) == Some(&-1))
+            matches!(instr, BattleInstruction::Stats(StatsInstruction::BoostStats { stat_changes, .. }) 
+                if stat_changes.get(&Stat::Accuracy) == Some(&-1))
         }));
     }
 
@@ -4839,9 +4931,7 @@ mod tests {
         
         assert!(!instructions.is_empty());
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::ApplySideCondition(side_condition_instr) 
-                if side_condition_instr.condition == SideCondition::TailWind 
-                && side_condition_instr.duration == Some(4))
+            matches!(instr, BattleInstruction::Field(FieldInstruction::ApplySideCondition { condition: SideCondition::Tailwind, duration: 4, .. }))
         }));
     }
 
@@ -4856,8 +4946,8 @@ mod tests {
         
         assert!(!instructions.is_empty());
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::PositionDamage(damage_instr) 
-                if damage_instr.damage_amount == 50) // Default level in test state
+            matches!(instr, BattleInstruction::Pokemon(PokemonInstruction::Damage { amount, .. }) 
+                if *amount == 50) // Default level in test state
         }));
     }
 
@@ -4885,12 +4975,12 @@ mod tests {
         
         // Should have instructions for both Pokemon to reach average HP (80)
         let has_user_damage = instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::PositionDamage(damage_instr) 
-                if damage_instr.target_position == user_pos && damage_instr.damage_amount == 20)
+            matches!(instr, BattleInstruction::Pokemon(PokemonInstruction::Damage { target, amount, .. }) 
+                if *target == user_pos && *amount == 20)
         });
         let has_target_heal = instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::PositionHeal(heal_instr) 
-                if heal_instr.target_position == target_pos && heal_instr.heal_amount == 20)
+            matches!(instr, BattleInstruction::Pokemon(PokemonInstruction::Heal { target, amount, .. }) 
+                if *target == target_pos && *amount == 20)
         });
         
         assert!(has_user_damage);
@@ -4909,8 +4999,7 @@ mod tests {
         
         assert!(!instructions.is_empty());
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::ApplyVolatileStatus(vol_status_instr) 
-                if vol_status_instr.volatile_status == VolatileStatus::Flinch)
+            matches!(instr, BattleInstruction::Status(StatusInstruction::ApplyVolatile { status: VolatileStatus::Flinch, .. }))
         }));
     }
 
@@ -4936,8 +5025,8 @@ mod tests {
         
         assert!(!instructions.is_empty());
         assert!(instructions[0].instruction_list.iter().any(|instr| {
-            matches!(instr, Instruction::PositionDamage(damage_instr) 
-                if damage_instr.target_position == target_pos && damage_instr.damage_amount == 60) // 80 - 20 = 60
+            matches!(instr, BattleInstruction::Pokemon(PokemonInstruction::Damage { target, amount, .. }) 
+                if *target == target_pos && *amount == 60) // 80 - 20 = 60
         }));
     }
 }
@@ -4950,13 +5039,13 @@ mod tests {
 /// Fails if both Pokemon have the same item, target is behind Substitute,
 /// target has Sticky Hold ability, or target has a permanent item
 pub fn apply_trick(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     if target_positions.is_empty() {
-        return vec![StateInstructions::empty()];
+        return vec![BattleInstructions::new(100.0, vec![])];
     }
     
     let target_position = target_positions[0]; // Trick only targets one Pokemon
@@ -4964,104 +5053,109 @@ pub fn apply_trick(
     // Get user and target Pokemon
     let user = match state.get_pokemon_at_position(user_position) {
         Some(pokemon) => pokemon,
-        None => return vec![StateInstructions::empty()],
+        None => return vec![BattleInstructions::new(100.0, vec![])],
     };
     
     let target = match state.get_pokemon_at_position(target_position) {
         Some(pokemon) => pokemon,
-        None => return vec![StateInstructions::empty()],
+        None => return vec![BattleInstructions::new(100.0, vec![])],
     };
     
     // Check if move should fail
     if should_item_swap_fail(user, target) {
-        return vec![StateInstructions::empty()];
+        return vec![BattleInstructions::new(100.0, vec![])];
     }
     
     // Create item swap instructions
     let mut instructions = Vec::new();
     
     // Change user's item to target's item
-    instructions.push(Instruction::ChangeItem(ChangeItemInstruction {
-        target_position: user_position,
+    instructions.push(BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+        target: user_position,
         new_item: target.item.clone(),
         previous_item: user.item.clone(),
     }));
     
     // Change target's item to user's item
-    instructions.push(Instruction::ChangeItem(ChangeItemInstruction {
-        target_position,
+    instructions.push(BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+        target: target_position,
         new_item: user.item.clone(),
         previous_item: target.item.clone(),
     }));
     
-    vec![StateInstructions::new(100.0, instructions)]
+    vec![BattleInstructions::new(100.0, instructions)]
 }
 
 /// Apply Switcheroo - identical to Trick but Dark-type
 pub fn apply_switcheroo(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Switcheroo has identical mechanics to Trick
     apply_trick(state, user_position, target_positions, generation)
 }
 
 /// Apply Tidy Up - removes hazards and substitutes from both sides, then boosts user's Attack and Speed
 pub fn apply_tidy_up(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     // Remove all hazards from both sides
     for side_ref in [SideReference::SideOne, SideReference::SideTwo] {
         // Remove Spikes
-        if state.get_side(side_ref).side_conditions.contains_key(&SideCondition::Spikes) {
-            instructions.push(Instruction::RemoveSideCondition(RemoveSideConditionInstruction {
+        if state.get_side_by_ref(side_ref).side_conditions.contains_key(&SideCondition::Spikes) {
+            instructions.push(BattleInstruction::Field(FieldInstruction::RemoveSideCondition {
                 side: side_ref,
                 condition: SideCondition::Spikes,
+                previous_duration: 0,
             }));
         }
         
         // Remove Stealth Rock
-        if state.get_side(side_ref).side_conditions.contains_key(&SideCondition::StealthRock) {
-            instructions.push(Instruction::RemoveSideCondition(RemoveSideConditionInstruction {
+        if state.get_side_by_ref(side_ref).side_conditions.contains_key(&SideCondition::StealthRock) {
+            instructions.push(BattleInstruction::Field(FieldInstruction::RemoveSideCondition {
                 side: side_ref,
                 condition: SideCondition::StealthRock,
+                previous_duration: 0,
             }));
         }
         
         // Remove Toxic Spikes
-        if state.get_side(side_ref).side_conditions.contains_key(&SideCondition::ToxicSpikes) {
-            instructions.push(Instruction::RemoveSideCondition(RemoveSideConditionInstruction {
+        if state.get_side_by_ref(side_ref).side_conditions.contains_key(&SideCondition::ToxicSpikes) {
+            instructions.push(BattleInstruction::Field(FieldInstruction::RemoveSideCondition {
                 side: side_ref,
                 condition: SideCondition::ToxicSpikes,
+                previous_duration: 0,
             }));
         }
         
         // Remove Sticky Web
-        if state.get_side(side_ref).side_conditions.contains_key(&SideCondition::StickyWeb) {
-            instructions.push(Instruction::RemoveSideCondition(RemoveSideConditionInstruction {
+        if state.get_side_by_ref(side_ref).side_conditions.contains_key(&SideCondition::StickyWeb) {
+            instructions.push(BattleInstruction::Field(FieldInstruction::RemoveSideCondition {
                 side: side_ref,
                 condition: SideCondition::StickyWeb,
+                previous_duration: 0,
             }));
         }
     }
     
     // Remove substitutes from all Pokemon
     for side_ref in [SideReference::SideOne, SideReference::SideTwo] {
-        let side = state.get_side(side_ref);
+        let side = state.get_side_by_ref(side_ref);
         for slot in 0..state.format.active_pokemon_count() {
             if let Some(pokemon) = side.get_active_pokemon_at_slot(slot) {
                 if pokemon.volatile_statuses.contains(&VolatileStatus::Substitute) {
                     let position = BattlePosition::new(side_ref, slot);
-                    instructions.push(Instruction::RemoveVolatileStatus(RemoveVolatileStatusInstruction {
-                        target_position: position,
-                        volatile_status: VolatileStatus::Substitute,
+                    instructions.push(BattleInstruction::Status(StatusInstruction::RemoveVolatile {
+                        target: position,
+                        status: VolatileStatus::Substitute,
+                        previous_duration: None,
                     }));
                 }
             }
@@ -5073,100 +5167,105 @@ pub fn apply_tidy_up(
     stat_boosts.insert(Stat::Attack, 1);
     stat_boosts.insert(Stat::Speed, 1);
     
-    instructions.push(Instruction::BoostStats(BoostStatsInstruction {
-        target_position: user_position,
-        stat_boosts,
-        previous_boosts: Some(HashMap::new()),
+    instructions.push(BattleInstruction::Stats(StatsInstruction::BoostStats {
+        target: user_position,
+        stat_changes: stat_boosts,
+        previous_boosts: HashMap::new(),
     }));
     
-    vec![StateInstructions::new(100.0, instructions)]
+    vec![BattleInstructions::new(100.0, instructions)]
 }
 
 /// Apply Court Change - swaps all hazards and side conditions between the two sides
 pub fn apply_court_change(
-    state: &State,
+    state: &BattleState,
     _user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
-    let side_one_conditions = &state.side_one.side_conditions;
-    let side_two_conditions = &state.side_two.side_conditions;
+    let side_one_conditions = &state.sides[0].side_conditions;
+    let side_two_conditions = &state.sides[1].side_conditions;
     
     // Remove all conditions from both sides first
     for (condition, _) in side_one_conditions {
-        instructions.push(Instruction::RemoveSideCondition(RemoveSideConditionInstruction {
+        instructions.push(BattleInstruction::Field(FieldInstruction::RemoveSideCondition {
             side: SideReference::SideOne,
             condition: *condition,
+            previous_duration: 0,
         }));
     }
     
     for (condition, _) in side_two_conditions {
-        instructions.push(Instruction::RemoveSideCondition(RemoveSideConditionInstruction {
+        instructions.push(BattleInstruction::Field(FieldInstruction::RemoveSideCondition {
             side: SideReference::SideTwo,
             condition: *condition,
+            previous_duration: 0,
         }));
     }
     
     // Apply side one's conditions to side two
     for (condition, &duration) in side_one_conditions {
-        instructions.push(Instruction::ApplySideCondition(ApplySideConditionInstruction {
+        instructions.push(BattleInstruction::Field(FieldInstruction::ApplySideCondition {
             side: SideReference::SideTwo,
             condition: *condition,
-            duration: Some(duration),
+            duration: duration,
+            previous_duration: None,
         }));
     }
     
     // Apply side two's conditions to side one  
     for (condition, &duration) in side_two_conditions {
-        instructions.push(Instruction::ApplySideCondition(ApplySideConditionInstruction {
+        instructions.push(BattleInstruction::Field(FieldInstruction::ApplySideCondition {
             side: SideReference::SideOne,
             condition: *condition,
-            duration: Some(duration),
+            duration: duration,
+            previous_duration: None,
         }));
     }
     
-    vec![StateInstructions::new(100.0, instructions)]
+    vec![BattleInstructions::new(100.0, instructions)]
 }
 
 /// Apply Chilly Reception - sets Snow weather and forces user to switch out
 pub fn apply_chilly_reception(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     // Set Snow weather (5 turns)
-    instructions.push(Instruction::ChangeWeather(ChangeWeatherInstruction {
-        weather: crate::core::instruction::Weather::Snow,
-        duration: Some(5),
-        previous_weather: Some(state.weather),
-        previous_duration: Some(state.weather_turns_remaining),
+    instructions.push(BattleInstruction::Field(FieldInstruction::Weather {
+        new_weather: crate::core::instruction::Weather::Snow,
+        previous_weather: state.weather,
+        turns: Some(5),
+        previous_turns: state.weather_turns_remaining,
+        source: None,
     }));
     
-    // Force the user to switch out - this would need additional logic
-    // For now, we apply a volatile status that indicates the Pokemon must switch
-    // TODO: Add MustSwitch volatile status to handle forced switching
-    // instructions.push(Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-    //     target_position: user_position,
-    //     volatile_status: VolatileStatus::MustSwitch, // Would need to add this volatile status
-    //     duration: Some(1),
-    // }));
+    // Force the user to switch out - apply MustSwitch volatile status
+    instructions.push(BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+        target: user_position,
+        status: VolatileStatus::MustSwitch,
+        duration: Some(1),
+        previous_had_status: false,
+        previous_duration: None,
+    }));
     
-    vec![StateInstructions::new(100.0, instructions)]
+    vec![BattleInstructions::new(100.0, instructions)]
 }
 
 /// Apply Grassy Glide - priority move that gets +1 priority in Grassy Terrain
 pub fn apply_grassy_glide(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Check if we're in Grassy Terrain
     let has_priority = matches!(state.terrain, crate::core::instruction::Terrain::GrassyTerrain);
     
@@ -5190,21 +5289,22 @@ pub fn apply_grassy_glide(
 
 /// Apply Solar Beam - no charge in sun, reduced power in other weather
 pub fn apply_solar_beam(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     // Check if user is already charging Solar Beam
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
-        if user_pokemon.volatile_statuses.contains(&VolatileStatus::SolarBeam) {
+        if user_pokemon.volatile_statuses.contains(&VolatileStatus::TwoTurnMove) {
             // Second turn - attack with potentially modified power
             let power_multiplier = match state.weather {
-                Weather::Sun | Weather::HarshSun => 1.0, // Full power in sun
-                Weather::Rain | Weather::HeavyRain | Weather::Sand | Weather::Hail | Weather::Snow => 0.5, // Half power in other weather
+                Weather::Sun | Weather::HarshSun | Weather::HarshSunlight => 1.0, // Full power in sun
+                Weather::Rain | Weather::HeavyRain | Weather::Sand | Weather::Sandstorm | 
+                Weather::Hail | Weather::Snow | Weather::StrongWinds => 0.5, // Half power in other weather
                 Weather::None => 1.0, // Full power in no weather
             };
             
@@ -5214,10 +5314,11 @@ pub fn apply_solar_beam(
             };
             
             // Remove charging status
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::RemoveVolatileStatus(RemoveVolatileStatusInstruction {
-                    target_position: user_position,
-                    volatile_status: VolatileStatus::SolarBeam,
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Status(StatusInstruction::RemoveVolatile {
+                    target: user_position,
+                    status: VolatileStatus::TwoTurnMove,
+                    previous_duration: None,
                 })
             ]));
             
@@ -5232,11 +5333,13 @@ pub fn apply_solar_beam(
                 instructions.extend(generic_instructions);
             } else {
                 // Start charging
-                instructions.push(StateInstructions::new(100.0, vec![
-                    Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-                        target_position: user_position,
-                        volatile_status: VolatileStatus::SolarBeam,
+                instructions.push(BattleInstructions::new(100.0, vec![
+                    BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                        target: user_position,
+                        status: VolatileStatus::TwoTurnMove,
                         duration: Some(1), // Charge for 1 turn
+                        previous_had_status: false,
+                        previous_duration: None,
                     })
                 ]));
             }
@@ -5248,33 +5351,34 @@ pub fn apply_solar_beam(
 
 /// Apply Solar Blade - identical to Solar Beam but physical
 pub fn apply_solar_blade(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Solar Blade has identical mechanics to Solar Beam
     apply_solar_beam(state, move_data, user_position, target_positions, generation)
 }
 
 /// Apply Meteor Beam - boosts Special Attack on charge turn
 pub fn apply_meteor_beam(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
-        if user_pokemon.volatile_statuses.contains(&VolatileStatus::MeteorBeam) {
+        if user_pokemon.volatile_statuses.contains(&VolatileStatus::TwoTurnMove) {
             // Second turn - attack
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::RemoveVolatileStatus(RemoveVolatileStatusInstruction {
-                    target_position: user_position,
-                    volatile_status: VolatileStatus::MeteorBeam,
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Status(StatusInstruction::RemoveVolatile {
+                    target: user_position,
+                    status: VolatileStatus::TwoTurnMove,
+                    previous_duration: None,
                 })
             ]));
             
@@ -5283,19 +5387,21 @@ pub fn apply_meteor_beam(
         } else {
             // First turn - charge and boost Special Attack
             let mut charge_instructions = vec![
-                Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-                    target_position: user_position,
-                    volatile_status: VolatileStatus::MeteorBeam,
+                BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                    target: user_position,
+                    status: VolatileStatus::TwoTurnMove,
                     duration: Some(1),
+                    previous_had_status: false,
+                    previous_duration: None,
                 }),
-                Instruction::BoostStats(BoostStatsInstruction {
-                    target_position: user_position,
-                    stat_boosts: [(Stat::SpecialAttack, 1)].iter().cloned().collect(),
-                    previous_boosts: None,
+                BattleInstruction::Stats(StatsInstruction::BoostStats {
+                    target: user_position,
+                    stat_changes: [(Stat::SpecialAttack, 1)].iter().cloned().collect(),
+                    previous_boosts: HashMap::new(),
                 })
             ];
             
-            instructions.push(StateInstructions::new(100.0, charge_instructions));
+            instructions.push(BattleInstructions::new(100.0, charge_instructions));
         }
     }
     
@@ -5304,33 +5410,34 @@ pub fn apply_meteor_beam(
 
 /// Apply Electro Shot - boosts Special Attack on charge turn
 pub fn apply_electro_shot(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Electro Shot has identical mechanics to Meteor Beam
     apply_meteor_beam(state, move_data, user_position, target_positions, generation)
 }
 
 /// Apply Dig - user goes underground on turn 1, attacks on turn 2
 pub fn apply_dig(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
         if user_pokemon.volatile_statuses.contains(&VolatileStatus::Dig) {
             // Second turn - attack and come back up
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::RemoveVolatileStatus(RemoveVolatileStatusInstruction {
-                    target_position: user_position,
-                    volatile_status: VolatileStatus::Dig,
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Status(StatusInstruction::RemoveVolatile {
+                    target: user_position,
+                    status: VolatileStatus::Dig,
+                    previous_duration: None,
                 })
             ]));
             
@@ -5338,11 +5445,13 @@ pub fn apply_dig(
             instructions.extend(generic_instructions);
         } else {
             // First turn - go underground
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-                    target_position: user_position,
-                    volatile_status: VolatileStatus::Dig,
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                    target: user_position,
+                    status: VolatileStatus::Dig,
                     duration: Some(1),
+                    previous_had_status: false,
+                    previous_duration: None,
                 })
             ]));
         }
@@ -5353,21 +5462,22 @@ pub fn apply_dig(
 
 /// Apply Fly - user flies up on turn 1, attacks on turn 2
 pub fn apply_fly(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
         if user_pokemon.volatile_statuses.contains(&VolatileStatus::Fly) {
             // Second turn - attack and come down
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::RemoveVolatileStatus(RemoveVolatileStatusInstruction {
-                    target_position: user_position,
-                    volatile_status: VolatileStatus::Fly,
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Status(StatusInstruction::RemoveVolatile {
+                    target: user_position,
+                    status: VolatileStatus::Fly,
+                    previous_duration: None,
                 })
             ]));
             
@@ -5375,11 +5485,13 @@ pub fn apply_fly(
             instructions.extend(generic_instructions);
         } else {
             // First turn - fly up
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-                    target_position: user_position,
-                    volatile_status: VolatileStatus::Fly,
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                    target: user_position,
+                    status: VolatileStatus::Fly,
                     duration: Some(1),
+                    previous_had_status: false,
+                    previous_duration: None,
                 })
             ]));
         }
@@ -5390,21 +5502,22 @@ pub fn apply_fly(
 
 /// Apply Bounce - user bounces up on turn 1, attacks on turn 2 with paralysis chance
 pub fn apply_bounce(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
         if user_pokemon.volatile_statuses.contains(&VolatileStatus::Fly) {
             // Second turn - attack and come down
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::RemoveVolatileStatus(RemoveVolatileStatusInstruction {
-                    target_position: user_position,
-                    volatile_status: VolatileStatus::Fly,
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Status(StatusInstruction::RemoveVolatile {
+                    target: user_position,
+                    status: VolatileStatus::Fly,
+                    previous_duration: None,
                 })
             ]));
             
@@ -5416,12 +5529,13 @@ pub fn apply_bounce(
             for &target_position in target_positions {
                 if let Some(target) = state.get_pokemon_at_position(target_position) {
                     if target.status == PokemonStatus::None && !is_immune_to_paralysis(target, generation) {
-                        instructions.push(StateInstructions::new(30.0, vec![
-                            Instruction::ApplyStatus(ApplyStatusInstruction {
-                                target_position,
+                        instructions.push(BattleInstructions::new(30.0, vec![
+                            BattleInstruction::Status(StatusInstruction::Apply {
+                                target: target_position,
                                 status: PokemonStatus::Paralysis,
+                                duration: None,
                                 previous_status: Some(target.status),
-                                previous_status_duration: None,
+                                previous_duration: None,
                             })
                         ]));
                     }
@@ -5429,11 +5543,13 @@ pub fn apply_bounce(
             }
         } else {
             // First turn - bounce up
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-                    target_position: user_position,
-                    volatile_status: VolatileStatus::Fly,
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                    target: user_position,
+                    status: VolatileStatus::Fly,
                     duration: Some(1),
+                    previous_had_status: false,
+                    previous_duration: None,
                 })
             ]));
         }
@@ -5444,21 +5560,22 @@ pub fn apply_bounce(
 
 /// Apply Dive - user dives underwater on turn 1, attacks on turn 2
 pub fn apply_dive(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
         if user_pokemon.volatile_statuses.contains(&VolatileStatus::Dive) {
             // Second turn - attack and come back up
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::RemoveVolatileStatus(RemoveVolatileStatusInstruction {
-                    target_position: user_position,
-                    volatile_status: VolatileStatus::Dive,
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Status(StatusInstruction::RemoveVolatile {
+                    target: user_position,
+                    status: VolatileStatus::Dive,
+                    previous_duration: None,
                 })
             ]));
             
@@ -5466,11 +5583,13 @@ pub fn apply_dive(
             instructions.extend(generic_instructions);
         } else {
             // First turn - dive underwater
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-                    target_position: user_position,
-                    volatile_status: VolatileStatus::Dive,
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                    target: user_position,
+                    status: VolatileStatus::Dive,
                     duration: Some(1),
+                    previous_had_status: false,
+                    previous_duration: None,
                 })
             ]));
         }
@@ -5481,21 +5600,22 @@ pub fn apply_dive(
 
 /// Apply Phantom Force - user vanishes on turn 1, attacks on turn 2 (ignores protection)
 pub fn apply_phantom_force(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
-        if user_pokemon.volatile_statuses.contains(&VolatileStatus::PhantomForce) {
+        if user_pokemon.volatile_statuses.contains(&VolatileStatus::TwoTurnMove) {
             // Second turn - attack and reappear
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::RemoveVolatileStatus(RemoveVolatileStatusInstruction {
-                    target_position: user_position,
-                    volatile_status: VolatileStatus::PhantomForce,
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Status(StatusInstruction::RemoveVolatile {
+                    target: user_position,
+                    status: VolatileStatus::TwoTurnMove,
+                    previous_duration: None,
                 })
             ]));
             
@@ -5504,11 +5624,13 @@ pub fn apply_phantom_force(
             instructions.extend(generic_instructions);
         } else {
             // First turn - vanish
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-                    target_position: user_position,
-                    volatile_status: VolatileStatus::PhantomForce,
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                    target: user_position,
+                    status: VolatileStatus::TwoTurnMove,
                     duration: Some(1),
+                    previous_had_status: false,
+                    previous_duration: None,
                 })
             ]));
         }
@@ -5519,12 +5641,12 @@ pub fn apply_phantom_force(
 
 /// Apply Shadow Force - identical to Phantom Force but different type
 pub fn apply_shadow_force(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Shadow Force has identical mechanics to Phantom Force
     apply_phantom_force(state, move_data, user_position, target_positions, generation)
 }
@@ -5602,23 +5724,17 @@ fn is_permanent_item(item: &str, pokemon_species: &str) -> bool {
 
 /// Apply Avalanche - doubles power if user was hit by Physical/Special move and moved second
 pub fn apply_avalanche(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     // Check if user was hit by a Physical or Special move this turn and moved second
-    let user_pokemon = state.get_pokemon_at_position(user_position);
-    let power_multiplier = if user_pokemon.map_or(false, |p| {
-        // Check if user took damage from Physical/Special move this turn
-        // For now, assume 1x power since we don't track move order yet
-        // TODO: Implement turn order tracking for proper Avalanche mechanics
-        false
-    }) {
-        2.0 // Double power if hit first
+    let power_multiplier = if state.user_moved_after_taking_damage(user_position) {
+        2.0 // Double power if user took damage from attack and moved second
     } else {
         1.0 // Base power
     };
@@ -5637,12 +5753,12 @@ pub fn apply_avalanche(
 
 /// Apply Bolt Beak - doubles power if user moves first
 pub fn apply_boltbeak(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     // Check if user moves first this turn
@@ -5667,24 +5783,24 @@ pub fn apply_boltbeak(
 
 /// Apply Fishious Rend - doubles power if user moves first
 pub fn apply_fishious_rend(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Fishious Rend has identical mechanics to Bolt Beak
     apply_boltbeak(state, move_data, user_position, target_positions, generation)
 }
 
 /// Apply Electro Ball - power based on speed ratio between user and target
 pub fn apply_electroball(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
@@ -5729,12 +5845,12 @@ pub fn apply_electroball(
 
 /// Apply Eruption - power based on user's current HP percentage
 pub fn apply_eruption(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
@@ -5756,36 +5872,36 @@ pub fn apply_eruption(
 
 /// Apply Water Spout - power based on user's current HP percentage
 pub fn apply_waterspout(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Water Spout has identical mechanics to Eruption
     apply_eruption(state, move_data, user_position, target_positions, generation)
 }
 
 /// Apply Dragon Energy - power based on user's current HP percentage
 pub fn apply_dragon_energy(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Dragon Energy has identical mechanics to Eruption
     apply_eruption(state, move_data, user_position, target_positions, generation)
 }
 
 /// Apply Grass Knot - power based on target's weight
 pub fn apply_grass_knot(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     for &target_position in target_positions {
@@ -5821,24 +5937,24 @@ pub fn apply_grass_knot(
 
 /// Apply Low Kick - power based on target's weight
 pub fn apply_low_kick(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Low Kick has identical mechanics to Grass Knot
     apply_grass_knot(state, move_data, user_position, target_positions, generation)
 }
 
 /// Apply Heat Crash - power based on weight ratio between user and target
 pub fn apply_heat_crash(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
@@ -5881,12 +5997,12 @@ pub fn apply_heat_crash(
 
 /// Apply Heavy Slam - power based on weight ratio between user and target
 pub fn apply_heavy_slam(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Heavy Slam has identical mechanics to Heat Crash
     apply_heat_crash(state, move_data, user_position, target_positions, generation)
 }
@@ -5897,12 +6013,12 @@ pub fn apply_heavy_slam(
 
 /// Apply Barb Barrage - doubles power against poisoned targets
 pub fn apply_barb_barrage(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     for &target_position in target_positions {
@@ -5921,7 +6037,7 @@ pub fn apply_barb_barrage(
     }
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -5929,12 +6045,12 @@ pub fn apply_barb_barrage(
 
 /// Apply Collision Course - 1.3x power when super effective
 pub fn apply_collision_course(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     let move_type = &move_data.move_type;
     
@@ -5954,7 +6070,7 @@ pub fn apply_collision_course(
     }
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -5962,12 +6078,12 @@ pub fn apply_collision_course(
 
 /// Apply Electro Drift - 1.3x power when super effective
 pub fn apply_electro_drift(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     let move_type = &move_data.move_type;
     
@@ -5987,7 +6103,7 @@ pub fn apply_electro_drift(
     }
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -5995,12 +6111,12 @@ pub fn apply_electro_drift(
 
 /// Apply Freeze-Dry - Ice move that's super effective against Water types
 pub fn apply_freeze_dry(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     for &target_position in target_positions {
@@ -6024,7 +6140,7 @@ pub fn apply_freeze_dry(
     }
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -6032,12 +6148,12 @@ pub fn apply_freeze_dry(
 
 /// Apply Hard Press - power decreases as target's HP increases (1-100 power)
 pub fn apply_hard_press(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     for &target_position in target_positions {
@@ -6058,12 +6174,12 @@ pub fn apply_hard_press(
 
 /// Apply Hydro Steam - boosted power in sun weather
 pub fn apply_hydro_steam(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let power_multiplier = match state.weather {
         Weather::Sun | Weather::HarshSun => 1.5, // 1.5x power in sun
         _ => 1.0,
@@ -6074,12 +6190,12 @@ pub fn apply_hydro_steam(
 
 /// Apply Last Respects - power increases based on fainted team members
 pub fn apply_last_respects(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let user_side = match user_position.side {
         SideReference::SideOne => &state.side_one,
         SideReference::SideTwo => &state.side_two,
@@ -6099,19 +6215,19 @@ pub fn apply_last_respects(
 
 /// Apply Poltergeist - fails if target has no item
 pub fn apply_poltergeist(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     for &target_position in target_positions {
         if let Some(target) = state.get_pokemon_at_position(target_position) {
             if target.item.is_none() {
                 // Move fails if target has no item
-                instructions.push(StateInstructions::empty());
+                instructions.push(BattleInstructions::new(100.0, vec![]));
             } else {
                 let target_instructions = apply_generic_effects(state, move_data, user_position, &[target_position], generation);
                 instructions.extend(target_instructions);
@@ -6120,7 +6236,7 @@ pub fn apply_poltergeist(
     }
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -6128,13 +6244,13 @@ pub fn apply_poltergeist(
 
 /// Apply Pursuit - doubles power against switching targets
 pub fn apply_pursuit(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
     context: &MoveContext,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut modified_move_data = move_data.clone();
     
     // Check if opponent is switching out
@@ -6149,12 +6265,12 @@ pub fn apply_pursuit(
 
 /// Apply Stored Power - power increases with stat boosts
 pub fn apply_stored_power(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     if let Some(user) = state.get_pokemon_at_position(user_position) {
         let total_boosts: i32 = user.stat_boosts.values()
             .filter(|&&boost| boost > 0)
@@ -6173,23 +6289,23 @@ pub fn apply_stored_power(
 
 /// Apply Power Trip - identical to Stored Power
 pub fn apply_power_trip(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     apply_stored_power(state, move_data, user_position, target_positions, generation)
 }
 
 /// Apply Strength Sap - heals based on target's Attack stat and lowers it
 pub fn apply_strength_sap(
-    state: &State,
+    state: &BattleState,
     _move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instruction_list = Vec::new();
     
     for &target_position in target_positions {
@@ -6197,18 +6313,18 @@ pub fn apply_strength_sap(
             // Lower target's Attack by 1 stage
             let mut stat_changes = HashMap::new();
             stat_changes.insert(Stat::Attack, -1);
-            instruction_list.push(Instruction::BoostStats(BoostStatsInstruction {
-                target_position,
-                stat_boosts: stat_changes,
-                previous_boosts: None,
+            instruction_list.push(BattleInstruction::Stats(StatsInstruction::BoostStats {
+                target: target_position,
+                stat_changes: stat_changes,
+                previous_boosts: HashMap::new(),
             }));
             
             // Heal user based on target's current Attack stat
             if let Some(user) = state.get_pokemon_at_position(user_position) {
                 let heal_amount = target.stats.attack as i16;
-                instruction_list.push(Instruction::PositionHeal(PositionHealInstruction {
-                    target_position: user_position,
-                    heal_amount,
+                instruction_list.push(BattleInstruction::Pokemon(PokemonInstruction::Heal {
+                    target: user_position,
+                    amount: heal_amount,
                     previous_hp: Some(user.hp),
                 }));
             }
@@ -6216,21 +6332,21 @@ pub fn apply_strength_sap(
     }
     
     if instruction_list.is_empty() {
-        vec![StateInstructions::empty()]
+        vec![BattleInstructions::new(100.0, vec![])]
     } else {
-        vec![StateInstructions::new(100.0, instruction_list)]
+        vec![BattleInstructions::new(100.0, instruction_list)]
     }
 }
 
 /// Apply Sucker Punch - priority move that fails against status moves
 pub fn apply_sucker_punch(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
     context: &MoveContext,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Sucker Punch fails if:
     // 1. User doesn't go first, OR
     // 2. Opponent is using a status move
@@ -6241,7 +6357,7 @@ pub fn apply_sucker_punch(
     
     if move_fails {
         // Move fails - return empty instructions
-        vec![StateInstructions::empty()]
+        vec![BattleInstructions::new(100.0, vec![])]
     } else {
         apply_generic_effects(state, move_data, user_position, target_positions, generation)
     }
@@ -6249,13 +6365,13 @@ pub fn apply_sucker_punch(
 
 /// Apply Thunder Clap - priority move that fails against status moves
 pub fn apply_thunder_clap(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
     context: &MoveContext,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Thunder Clap fails if:
     // 1. User doesn't go first, OR
     // 2. Opponent is using a status move
@@ -6266,7 +6382,7 @@ pub fn apply_thunder_clap(
     
     if move_fails {
         // Move fails - return empty instructions
-        vec![StateInstructions::empty()]
+        vec![BattleInstructions::new(100.0, vec![])]
     } else {
         apply_generic_effects(state, move_data, user_position, target_positions, generation)
     }
@@ -6274,12 +6390,12 @@ pub fn apply_thunder_clap(
 
 /// Apply Terrain Pulse - power and type change based on terrain
 pub fn apply_terrain_pulse(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut modified_move_data = move_data.clone();
     
     // Base power is 50, doubles to 100 on terrain
@@ -6287,19 +6403,19 @@ pub fn apply_terrain_pulse(
     
     // Type and power change based on terrain
     match state.terrain {
-        Terrain::ElectricTerrain => {
+        Terrain::Electric | Terrain::ElectricTerrain => {
             modified_move_data.move_type = "Electric".to_string();
             modified_move_data.base_power = Some(base_power * 2);
         }
-        Terrain::GrassyTerrain => {
+        Terrain::Grassy | Terrain::GrassyTerrain => {
             modified_move_data.move_type = "Grass".to_string();
             modified_move_data.base_power = Some(base_power * 2);
         }
-        Terrain::MistyTerrain => {
+        Terrain::Misty | Terrain::MistyTerrain => {
             modified_move_data.move_type = "Fairy".to_string();
             modified_move_data.base_power = Some(base_power * 2);
         }
-        Terrain::PsychicTerrain => {
+        Terrain::Psychic | Terrain::PsychicTerrain => {
             modified_move_data.move_type = "Psychic".to_string();
             modified_move_data.base_power = Some(base_power * 2);
         }
@@ -6315,13 +6431,13 @@ pub fn apply_terrain_pulse(
 
 /// Apply Upper Hand - priority counter to priority moves
 pub fn apply_upper_hand(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
     context: &MoveContext,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Upper Hand only works when both conditions are met:
     // 1. User goes first, AND
     // 2. Target is using a priority move
@@ -6329,7 +6445,7 @@ pub fn apply_upper_hand(
     
     if !move_succeeds {
         // Move fails completely
-        vec![StateInstructions::empty()]
+        vec![BattleInstructions::new(100.0, vec![])]
     } else {
         // Move succeeds - apply damage and 100% flinch chance
         apply_generic_effects(state, move_data, user_position, target_positions, generation)
@@ -6338,12 +6454,12 @@ pub fn apply_upper_hand(
 
 /// Apply Future Sight - delayed damage after 3 turns
 pub fn apply_future_sight(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instruction_list = Vec::new();
     
     // Calculate damage that will be dealt in 3 turns
@@ -6353,19 +6469,20 @@ pub fn apply_future_sight(
     
     for &target_position in target_positions {
         // Set up Future Sight to activate in 3 turns
-        instruction_list.push(Instruction::SetFutureSight(SetFutureSightInstruction {
-            target_position,
+        instruction_list.push(BattleInstruction::Pokemon(PokemonInstruction::SetFutureSight {
+            target: target_position,
             attacker_position: user_position,
             damage_amount: base_damage,
             turns_remaining: 3,
             move_name: move_data.name.clone(),
+            previous_future_sight: None,
         }));
     }
     
     if instruction_list.is_empty() {
-        vec![StateInstructions::empty()]
+        vec![BattleInstructions::new(100.0, vec![])]
     } else {
-        vec![StateInstructions::new(100.0, instruction_list)]
+        vec![BattleInstructions::new(100.0, instruction_list)]
     }
 }
 
@@ -6375,12 +6492,12 @@ pub fn apply_future_sight(
 
 /// Apply Knock Off - removes target's item and deals bonus damage
 pub fn apply_knock_off(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     for &target_position in target_positions {
@@ -6402,19 +6519,19 @@ pub fn apply_knock_off(
             
             // Remove target's item if it has one
             if target.item.is_some() {
-                instruction_list.push(Instruction::ChangeItem(ChangeItemInstruction {
-                    target_position,
+                instruction_list.push(BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+                    target: target_position,
                     new_item: None,
                     previous_item: target.item.clone(),
                 }));
             }
             
-            instructions.push(StateInstructions::new(100.0, instruction_list));
+            instructions.push(BattleInstructions::new(100.0, instruction_list));
         }
     }
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -6422,12 +6539,12 @@ pub fn apply_knock_off(
 
 /// Apply Thief - steals target's item if user has none
 pub fn apply_thief(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     if let Some(user) = state.get_pokemon_at_position(user_position) {
@@ -6446,27 +6563,27 @@ pub fn apply_thief(
                     let stolen_item = target.item.clone();
                     
                     // Give item to user
-                    instruction_list.push(Instruction::ChangeItem(ChangeItemInstruction {
-                        target_position: user_position,
+                    instruction_list.push(BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+                        target: user_position,
                         new_item: stolen_item,
                         previous_item: user.item.clone(),
                     }));
                     
                     // Remove item from target
-                    instruction_list.push(Instruction::ChangeItem(ChangeItemInstruction {
-                        target_position,
+                    instruction_list.push(BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+                        target: target_position,
                         new_item: None,
                         previous_item: target.item.clone(),
                     }));
                 }
                 
-                instructions.push(StateInstructions::new(100.0, instruction_list));
+                instructions.push(BattleInstructions::new(100.0, instruction_list));
             }
         }
     }
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -6474,27 +6591,34 @@ pub fn apply_thief(
 
 /// Apply Fling - power and effect based on held item
 pub fn apply_fling(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     if let Some(user) = state.get_pokemon_at_position(user_position) {
         if let Some(item) = &user.item {
-            // Use item service to get fling data
-            let item_service = crate::data::services::item_service::PSItemService::default();
+            // Check if item can be flung using repository lookup with fallback
+            let mut can_be_flung = true;
             
-            // Check if item can be flung
-            if !item_service.can_be_flung(item) {
+            if let Ok(repository) = Repository::from_path("data/ps-extracted") {
+                can_be_flung = repository.can_item_be_flung(item);
+            } else {
+                // Fallback check for specific unflingable items if repository fails
+                let unflingable_items = ["Red Orb", "Blue Orb", "Adamant Orb", "Lustrous Orb", "Griseous Orb"];
+                can_be_flung = !unflingable_items.contains(&item.as_str());
+            }
+            
+            if !can_be_flung {
                 // Move fails if item can't be flung
-                return vec![StateInstructions::empty()];
+                return vec![BattleInstructions::new(100.0, vec![])];
             }
             
             let mut instruction_list = Vec::new();
             
-            // Get item-specific power
-            let fling_power = item_service.get_fling_power(item);
+            // Get item-specific power (repository lookup with fallback)
+            let fling_power = get_fling_power(item);
             
             // Create modified move data with item-specific power
             let mut modified_move = move_data.clone();
@@ -6510,7 +6634,7 @@ pub fn apply_fling(
             for target_position in target_positions {
                 if let Some(target) = state.get_pokemon_at_position(*target_position) {
                     // Apply main status effect if item has one
-                    if let Some(status) = item_service.get_fling_status(item) {
+                    if let Some(status) = get_fling_status(item) {
                         let status_effect = match status {
                             "brn" => PokemonStatus::Burn,
                             "par" => PokemonStatus::Paralysis,
@@ -6523,45 +6647,48 @@ pub fn apply_fling(
                         
                         // Don't apply if target already has a status condition
                         if target.status == PokemonStatus::None {
-                            instruction_list.push(Instruction::ApplyStatus(ApplyStatusInstruction {
-                                target_position: *target_position,
+                            instruction_list.push(BattleInstruction::Status(StatusInstruction::Apply {
+                                target: *target_position,
                                 status: status_effect,
+                                duration: None,
                                 previous_status: Some(target.status),
-                                previous_status_duration: None,
+                                previous_duration: None,
                             }));
                         }
                     }
                     
                     // Apply volatile status effect if item has one
-                    if let Some(volatile_status) = item_service.get_fling_volatile_status(item) {
+                    if let Some(volatile_status) = get_fling_volatile_status(item) {
                         let volatile_effect = match volatile_status {
                             "flinch" => VolatileStatus::Flinch,
                             _ => continue, // Unknown volatile status
                         };
                         
-                        instruction_list.push(Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-                            target_position: *target_position,
-                            volatile_status: volatile_effect,
+                        instruction_list.push(BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                            target: *target_position,
+                            status: volatile_effect,
                             duration: None,
+                            previous_had_status: false,
+                            previous_duration: None,
                         }));
                     }
                 }
             }
             
             // Consume user's item
-            instruction_list.push(Instruction::ChangeItem(ChangeItemInstruction {
-                target_position: user_position,
+            instruction_list.push(BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+                target: user_position,
                 new_item: None,
                 previous_item: user.item.clone(),
             }));
             
-            vec![StateInstructions::new(100.0, instruction_list)]
+            vec![BattleInstructions::new(100.0, instruction_list)]
         } else {
             // Move fails if user has no item
-            vec![StateInstructions::empty()]
+            vec![BattleInstructions::new(100.0, vec![])]
         }
     } else {
-        vec![StateInstructions::empty()]
+        vec![BattleInstructions::new(100.0, vec![])]
     }
 }
 
@@ -6571,12 +6698,12 @@ pub fn apply_fling(
 
 /// Apply Blizzard - 100% accuracy in hail/snow, normal accuracy otherwise
 pub fn apply_blizzard(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Weather accuracy modification is handled by the accuracy calculation system
     // in apply_weather_accuracy_modifiers function - no special handling needed here
     apply_generic_effects(state, move_data, user_position, target_positions, generation)
@@ -6584,12 +6711,12 @@ pub fn apply_blizzard(
 
 /// Apply Hurricane - 100% accuracy in rain, 50% accuracy in sun
 pub fn apply_hurricane(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Weather accuracy modification is handled by the accuracy calculation system
     // in apply_weather_accuracy_modifiers function - no special handling needed here
     
@@ -6599,11 +6726,13 @@ pub fn apply_hurricane(
     // Add confusion effect (30% chance)
     for &target_position in target_positions {
         if let Some(_target) = state.get_pokemon_at_position(target_position) {
-            instructions.push(StateInstructions::new(30.0, vec![
-                Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-                    target_position,
-                    volatile_status: VolatileStatus::Confusion,
+            instructions.push(BattleInstructions::new(30.0, vec![
+                BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                    target: target_position,
+                    status: VolatileStatus::Confusion,
                     duration: Some(3), // 3 turns (simplified)
+                    previous_had_status: false,
+                    previous_duration: None,
                 }),
             ]));
         }
@@ -6614,12 +6743,12 @@ pub fn apply_hurricane(
 
 /// Apply Thunder - 100% accuracy in rain, 50% accuracy in sun
 pub fn apply_thunder(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Weather accuracy modification is handled by the accuracy calculation system
     // in apply_weather_accuracy_modifiers function - no special handling needed here
     
@@ -6630,12 +6759,13 @@ pub fn apply_thunder(
     for &target_position in target_positions {
         if let Some(target) = state.get_pokemon_at_position(target_position) {
             if !is_immune_to_paralysis(target, generation) {
-                instructions.push(StateInstructions::new(30.0, vec![
-                    Instruction::ApplyStatus(ApplyStatusInstruction {
-                        target_position,
+                instructions.push(BattleInstructions::new(30.0, vec![
+                    BattleInstruction::Status(StatusInstruction::Apply {
+                        target: target_position,
                         status: PokemonStatus::Paralysis,
+                        duration: None,
                         previous_status: Some(target.status),
-                        previous_status_duration: Some(target.status_duration),
+                        previous_duration: target.status_duration,
                     }),
                 ]));
             }
@@ -6651,12 +6781,12 @@ pub fn apply_thunder(
 
 /// Apply Aura Wheel - Type changes with Morpeko form
 pub fn apply_aura_wheel(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
         // Check Morpeko form to determine type
         let modified_move_type = if user_pokemon.species.to_lowercase().contains("hangry") {
@@ -6678,11 +6808,11 @@ pub fn apply_aura_wheel(
         let mut speed_boost = HashMap::new();
         speed_boost.insert(Stat::Speed, 1);
         
-        instructions.push(StateInstructions::new(100.0, vec![
-            Instruction::BoostStats(BoostStatsInstruction {
-                target_position: user_position,
-                stat_boosts: speed_boost,
-                previous_boosts: Some(HashMap::new()),
+        instructions.push(BattleInstructions::new(100.0, vec![
+            BattleInstruction::Stats(StatsInstruction::BoostStats {
+                target: user_position,
+                stat_changes: speed_boost,
+                previous_boosts: HashMap::new(),
             }),
         ]));
         
@@ -6694,12 +6824,12 @@ pub fn apply_aura_wheel(
 
 /// Apply Raging Bull - Type and effects change with Tauros form
 pub fn apply_raging_bull(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
         // Determine type based on Tauros form
         let modified_move_type = match user_pokemon.species.to_lowercase().as_str() {
@@ -6711,7 +6841,7 @@ pub fn apply_raging_bull(
         
         // Check if screens are present on the target's side to boost power
         let power_multiplier = if !target_positions.is_empty() {
-            let target_side = state.get_side(target_positions[0].side);
+            let target_side = state.get_side_by_ref(target_positions[0].side);
             if target_side.side_conditions.contains_key(&SideCondition::Reflect) ||
                target_side.side_conditions.contains_key(&SideCondition::LightScreen) {
                 2.0 // Double power against screens
@@ -6741,24 +6871,26 @@ pub fn apply_raging_bull(
         // Remove screens after hitting (screen-breaking effect)
         if !target_positions.is_empty() {
             let target_side_ref = target_positions[0].side;
-            let target_side = state.get_side(target_side_ref);
+            let target_side = state.get_side_by_ref(target_side_ref);
             
             // Remove Reflect
             if target_side.side_conditions.contains_key(&SideCondition::Reflect) {
-                instructions.push(StateInstructions::new(100.0, vec![
-                    Instruction::RemoveSideCondition(RemoveSideConditionInstruction {
+                instructions.push(BattleInstructions::new(100.0, vec![
+                    BattleInstruction::Field(FieldInstruction::RemoveSideCondition {
                         side: target_side_ref,
                         condition: SideCondition::Reflect,
+                        previous_duration: 0,
                     }),
                 ]));
             }
             
             // Remove Light Screen
             if target_side.side_conditions.contains_key(&SideCondition::LightScreen) {
-                instructions.push(StateInstructions::new(100.0, vec![
-                    Instruction::RemoveSideCondition(RemoveSideConditionInstruction {
+                instructions.push(BattleInstructions::new(100.0, vec![
+                    BattleInstruction::Field(FieldInstruction::RemoveSideCondition {
                         side: target_side_ref,
                         condition: SideCondition::LightScreen,
+                        previous_duration: 0,
                     }),
                 ]));
             }
@@ -6776,12 +6908,12 @@ pub fn apply_raging_bull(
 
 /// Apply Photon Geyser - Physical if Attack > Special Attack
 pub fn apply_photon_geyser(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
         // Compare Attack vs Special Attack stats to determine category
         let attack_stat = user_pokemon.stats.attack;
@@ -6804,12 +6936,12 @@ pub fn apply_photon_geyser(
 
 /// Apply Sky Drop - Two-turn move that lifts target
 pub fn apply_sky_drop(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
         // Check if user is already in the Sky Drop charging state
         if user_pokemon.volatile_statuses.contains(&VolatileStatus::SkyDrop) {
@@ -6817,10 +6949,11 @@ pub fn apply_sky_drop(
             let mut instructions = apply_generic_effects(state, move_data, user_position, target_positions, generation);
             
             // Remove Sky Drop status from user
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::RemoveVolatileStatus(RemoveVolatileStatusInstruction {
-                    target_position: user_position,
-                    volatile_status: VolatileStatus::SkyDrop,
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Status(StatusInstruction::RemoveVolatile {
+                    target: user_position,
+                    status: VolatileStatus::SkyDrop,
+                    previous_duration: None,
                 }),
             ]));
             
@@ -6828,10 +6961,11 @@ pub fn apply_sky_drop(
             for &target_position in target_positions {
                 if let Some(target) = state.get_pokemon_at_position(target_position) {
                     if target.volatile_statuses.contains(&VolatileStatus::SkyDrop) {
-                        instructions.push(StateInstructions::new(100.0, vec![
-                            Instruction::RemoveVolatileStatus(RemoveVolatileStatusInstruction {
-                                target_position,
-                                volatile_status: VolatileStatus::SkyDrop,
+                        instructions.push(BattleInstructions::new(100.0, vec![
+                            BattleInstruction::Status(StatusInstruction::RemoveVolatile {
+                                target: target_position,
+                                status: VolatileStatus::SkyDrop,
+                                previous_duration: None,
                             }),
                         ]));
                     }
@@ -6844,22 +6978,26 @@ pub fn apply_sky_drop(
             let mut instructions = Vec::new();
             
             // Apply Sky Drop status to user
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-                    target_position: user_position,
-                    volatile_status: VolatileStatus::SkyDrop,
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                    target: user_position,
+                    status: VolatileStatus::SkyDrop,
                     duration: None, // Lasts until second turn
+                    previous_had_status: false,
+                    previous_duration: None,
                 }),
             ]));
             
             // Apply Sky Drop status to target (lifted into sky)
             for &target_position in target_positions {
                 if let Some(_target) = state.get_pokemon_at_position(target_position) {
-                    instructions.push(StateInstructions::new(100.0, vec![
-                        Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-                            target_position,
-                            volatile_status: VolatileStatus::SkyDrop,
+                    instructions.push(BattleInstructions::new(100.0, vec![
+                        BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                            target: target_position,
+                            status: VolatileStatus::SkyDrop,
                             duration: None, // Lasts until second turn
+                            previous_had_status: false,
+                            previous_duration: None,
                         }),
                     ]));
                 }
@@ -6868,7 +7006,7 @@ pub fn apply_sky_drop(
             instructions
         }
     } else {
-        vec![StateInstructions::empty()]
+        vec![BattleInstructions::new(100.0, vec![])]
     }
 }
 
@@ -6879,12 +7017,12 @@ pub fn apply_sky_drop(
 
 /// Apply Mortal Spin - Rapid Spin + poison damage to adjacent opponents
 pub fn apply_mortal_spin(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     // Apply normal move damage first
@@ -6892,7 +7030,7 @@ pub fn apply_mortal_spin(
     
     // Remove hazards from user's side (like Rapid Spin)
     let user_side_ref = user_position.side;
-    let user_side = state.get_side(user_side_ref);
+    let user_side = state.get_side_by_ref(user_side_ref);
     
     let hazards_to_remove = vec![
         SideCondition::Spikes,
@@ -6903,10 +7041,11 @@ pub fn apply_mortal_spin(
     
     for condition in hazards_to_remove {
         if let Some(duration) = user_side.side_conditions.get(&condition) {
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::RemoveSideCondition(RemoveSideConditionInstruction {
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Field(FieldInstruction::RemoveSideCondition {
                     side: user_side_ref,
                     condition,
+                    previous_duration: 0,
                 }),
             ]));
         }
@@ -6919,7 +7058,7 @@ pub fn apply_mortal_spin(
     };
     
     // Get all active opponents and poison them
-    let opponent_side = state.get_side(opponent_side_ref);
+    let opponent_side = state.get_side_by_ref(opponent_side_ref);
     for (slot, pokemon) in opponent_side.pokemon.iter().enumerate() {
         if let Some(active_slot) = opponent_side.active_pokemon_indices.get(slot) {
             if active_slot.is_some() && !pokemon.is_fainted() {
@@ -6927,12 +7066,13 @@ pub fn apply_mortal_spin(
                 
                 // Apply poison if not already statused and not immune
                 if pokemon.status == PokemonStatus::None && !is_immune_to_poison(pokemon, generation) {
-                    instructions.push(StateInstructions::new(100.0, vec![
-                        Instruction::ApplyStatus(ApplyStatusInstruction {
-                            target_position: opponent_position,
+                    instructions.push(BattleInstructions::new(100.0, vec![
+                        BattleInstruction::Status(StatusInstruction::Apply {
+                            target: opponent_position,
                             status: PokemonStatus::Poison,
+                            duration: None,
                             previous_status: Some(pokemon.status),
-                            previous_status_duration: Some(pokemon.status_duration),
+                            previous_duration: pokemon.status_duration,
                         }),
                     ]));
                 }
@@ -6949,12 +7089,12 @@ pub fn apply_mortal_spin(
 
 /// Apply Explosion - user faints before dealing damage
 pub fn apply_explosion(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instruction_list = Vec::new();
     
     // Apply damage to targets first
@@ -6963,23 +7103,29 @@ pub fn apply_explosion(
         instruction_list.extend(damage_instruction.instruction_list);
     }
     
+    // Get the user's current HP before fainting
+    let user_current_hp = state.get_pokemon_at_position(user_position)
+        .map(|pokemon| pokemon.hp)
+        .unwrap_or(0);
+    
     // User faints after dealing damage
-    instruction_list.push(Instruction::Faint(crate::core::instruction::FaintInstruction {
-        target_position: user_position,
-        previous_hp: 0, // TODO: Should be set to actual HP before fainting
+    instruction_list.push(BattleInstruction::Pokemon(PokemonInstruction::Faint {
+        target: user_position,
+        previous_hp: user_current_hp,
+        previous_status: None,
     }));
     
-    vec![StateInstructions::new(100.0, instruction_list)]
+    vec![BattleInstructions::new(100.0, instruction_list)]
 }
 
 /// Apply Self-Destruct - user faints before dealing damage
 pub fn apply_self_destruct(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Self-Destruct has identical mechanics to Explosion
     apply_explosion(state, move_data, user_position, target_positions, generation)
 }
@@ -6988,11 +7134,20 @@ pub fn apply_self_destruct(
 // HELPER FUNCTIONS FOR NEW MOVES
 // =============================================================================
 
-/// Check if user moves first this turn (placeholder implementation)
-fn user_moves_first(_state: &State, _user_position: BattlePosition) -> bool {
-    // TODO: Implement proper turn order tracking
-    // For now, return false to use base power
-    false
+/// Check if user moves first this turn
+fn user_moves_first(state: &BattleState, user_position: BattlePosition) -> bool {
+    // Check if the user has already moved this turn
+    // If they haven't moved yet, they're moving first (relatively speaking)
+    // If they have moved, check if they were the first to move
+    let moved_positions = &state.turn_info.moved_this_turn;
+    
+    // If no one has moved yet, consider this moving first
+    if moved_positions.is_empty() {
+        return true;
+    }
+    
+    // Check if user was the first position to move
+    moved_positions.get(0) == Some(&user_position)
 }
 
 /// Calculate boosted speed stat for a Pokemon
@@ -7024,21 +7179,22 @@ fn calculate_boosted_speed(pokemon: &Pokemon) -> i32 {
 
 /// Apply Razor Wind - two-turn Normal move with high critical hit ratio
 pub fn apply_razor_wind(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
-        if user_pokemon.volatile_statuses.contains(&VolatileStatus::RazorWind) {
+        if user_pokemon.volatile_statuses.contains(&VolatileStatus::TwoTurnMove) {
             // Second turn - attack with high critical hit ratio
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::RemoveVolatileStatus(RemoveVolatileStatusInstruction {
-                    target_position: user_position,
-                    volatile_status: VolatileStatus::RazorWind,
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Status(StatusInstruction::RemoveVolatile {
+                    target: user_position,
+                    status: VolatileStatus::TwoTurnMove,
+                    previous_duration: None,
                 }),
             ]));
             
@@ -7046,11 +7202,13 @@ pub fn apply_razor_wind(
             // using the move's PS data flags
         } else {
             // First turn - charge
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-                    target_position: user_position,
-                    volatile_status: VolatileStatus::RazorWind,
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                    target: user_position,
+                    status: VolatileStatus::TwoTurnMove,
                     duration: Some(1),
+                    previous_had_status: false,
+                    previous_duration: None,
                 }),
             ]));
         }
@@ -7061,43 +7219,46 @@ pub fn apply_razor_wind(
 
 /// Apply Skull Bash - two-turn Normal move that boosts Defense on charge turn
 pub fn apply_skull_bash(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
-        if user_pokemon.volatile_statuses.contains(&VolatileStatus::SkullBash) {
+        if user_pokemon.volatile_statuses.contains(&VolatileStatus::TwoTurnMove) {
             // Second turn - attack
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::RemoveVolatileStatus(RemoveVolatileStatusInstruction {
-                    target_position: user_position,
-                    volatile_status: VolatileStatus::SkullBash,
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Status(StatusInstruction::RemoveVolatile {
+                    target: user_position,
+                    status: VolatileStatus::TwoTurnMove,
+                    previous_duration: None,
                 }),
             ]));
         } else {
             // First turn - charge and boost Defense
             let mut instruction_list = vec![
-                Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-                    target_position: user_position,
-                    volatile_status: VolatileStatus::SkullBash,
+                BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                    target: user_position,
+                    status: VolatileStatus::TwoTurnMove,
                     duration: Some(1),
+                    previous_had_status: false,
+                    previous_duration: None,
                 }),
-                Instruction::BoostStats(BoostStatsInstruction {
-                    target_position: user_position,
-                    stat_boosts: {
+                BattleInstruction::Stats(StatsInstruction::BoostStats {
+                    target: user_position,
+                    stat_changes: {
                         let mut boosts = HashMap::new();
                         boosts.insert(Stat::Defense, 1);
                         boosts
                     },
-                    previous_boosts: None,
+                    previous_boosts: HashMap::new(),
                 }),
             ];
             
-            instructions.push(StateInstructions::new(100.0, instruction_list));
+            instructions.push(BattleInstructions::new(100.0, instruction_list));
         }
     }
     
@@ -7106,21 +7267,22 @@ pub fn apply_skull_bash(
 
 /// Apply Sky Attack - two-turn Flying move with high critical hit ratio and 30% flinch chance
 pub fn apply_sky_attack(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
-        if user_pokemon.volatile_statuses.contains(&VolatileStatus::SkyAttack) {
+        if user_pokemon.volatile_statuses.contains(&VolatileStatus::TwoTurnMove) {
             // Second turn - attack with high critical hit ratio and flinch chance
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::RemoveVolatileStatus(RemoveVolatileStatusInstruction {
-                    target_position: user_position,
-                    volatile_status: VolatileStatus::SkyAttack,
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Status(StatusInstruction::RemoveVolatile {
+                    target: user_position,
+                    status: VolatileStatus::TwoTurnMove,
+                    previous_duration: None,
                 }),
             ]));
             
@@ -7128,11 +7290,13 @@ pub fn apply_sky_attack(
             // calculation and effect systems using the move's PS data
         } else {
             // First turn - charge
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-                    target_position: user_position,
-                    volatile_status: VolatileStatus::SkyAttack,
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                    target: user_position,
+                    status: VolatileStatus::TwoTurnMove,
                     duration: Some(1),
+                    previous_had_status: false,
+                    previous_duration: None,
                 }),
             ]));
         }
@@ -7143,35 +7307,44 @@ pub fn apply_sky_attack(
 
 /// Apply Focus Punch - fails if user takes direct damage, otherwise powerful Fighting move
 pub fn apply_focus_punch(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
         if user_pokemon.volatile_statuses.contains(&VolatileStatus::Charge) {
             // Second turn - check if user took damage this turn
-            // TODO: Need damage tracking system to check if user was damaged
-            // For now, assume move succeeds (proper implementation would check damage taken)
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::RemoveVolatileStatus(RemoveVolatileStatusInstruction {
-                    target_position: user_position,
-                    volatile_status: VolatileStatus::Charge,
+            // Sky Attack fails if the user took direct damage
+            let move_fails = state.turn_info.took_damage_from_attack(user_position);
+            
+            // Remove the charging status regardless
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Status(StatusInstruction::RemoveVolatile {
+                    target: user_position,
+                    status: VolatileStatus::Charge,
+                    previous_duration: None,
                 }),
             ]));
             
-            // The move fails if the user took direct damage, but that logic
-            // would be handled by the damage tracking system
+            // If the move doesn't fail, execute the attack
+            if !move_fails {
+                // Execute the Sky Attack damage
+                let damage_instructions = apply_generic_effects(state, move_data, user_position, target_positions, generation);
+                instructions.extend(damage_instructions);
+            }
         } else {
             // First turn - focus (charging)
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::ApplyVolatileStatus(ApplyVolatileStatusInstruction {
-                    target_position: user_position,
-                    volatile_status: VolatileStatus::Charge,
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                    target: user_position,
+                    status: VolatileStatus::Charge,
                     duration: Some(1),
+                    previous_had_status: false,
+                    previous_duration: None,
                 }),
             ]));
         }
@@ -7182,12 +7355,12 @@ pub fn apply_focus_punch(
 
 /// Apply Fillet Away - boosts offensive stats but costs 1/2 HP
 pub fn apply_fillet_away(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
@@ -7195,26 +7368,26 @@ pub fn apply_fillet_away(
         
         let mut instruction_list = vec![
             // Damage user for half their max HP
-            Instruction::PositionDamage(PositionDamageInstruction {
-                target_position: user_position,
-                damage_amount: half_hp,
+            BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                target: user_position,
+                amount: half_hp,
                 previous_hp: Some(user_pokemon.hp),
             }),
             // Boost Attack, Special Attack, and Speed by 2 stages each
-            Instruction::BoostStats(BoostStatsInstruction {
-                target_position: user_position,
-                stat_boosts: {
+            BattleInstruction::Stats(StatsInstruction::BoostStats {
+                target: user_position,
+                stat_changes: {
                     let mut boosts = HashMap::new();
                     boosts.insert(Stat::Attack, 2);
                     boosts.insert(Stat::SpecialAttack, 2);
                     boosts.insert(Stat::Speed, 2);
                     boosts
                 },
-                previous_boosts: None,
+                previous_boosts: HashMap::new(),
             }),
         ];
         
-        instructions.push(StateInstructions::new(100.0, instruction_list));
+        instructions.push(BattleInstructions::new(100.0, instruction_list));
     }
     
     instructions
@@ -7222,12 +7395,12 @@ pub fn apply_fillet_away(
 
 /// Apply Clangorous Soul - boosts all stats but costs 1/3 HP
 pub fn apply_clangorous_soul(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
@@ -7235,15 +7408,15 @@ pub fn apply_clangorous_soul(
         
         let mut instruction_list = vec![
             // Damage user for 1/3 their max HP
-            Instruction::PositionDamage(PositionDamageInstruction {
-                target_position: user_position,
-                damage_amount: third_hp,
+            BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                target: user_position,
+                amount: third_hp,
                 previous_hp: Some(user_pokemon.hp),
             }),
             // Boost all stats by 1 stage each
-            Instruction::BoostStats(BoostStatsInstruction {
-                target_position: user_position,
-                stat_boosts: {
+            BattleInstruction::Stats(StatsInstruction::BoostStats {
+                target: user_position,
+                stat_changes: {
                     let mut boosts = HashMap::new();
                     boosts.insert(Stat::Attack, 1);
                     boosts.insert(Stat::Defense, 1);
@@ -7252,51 +7425,81 @@ pub fn apply_clangorous_soul(
                     boosts.insert(Stat::Speed, 1);
                     boosts
                 },
-                previous_boosts: None,
+                previous_boosts: HashMap::new(),
             }),
         ];
         
-        instructions.push(StateInstructions::new(100.0, instruction_list));
+        instructions.push(BattleInstructions::new(100.0, instruction_list));
     }
     
     instructions
 }
 
-/// Get Pokemon weight in kilograms using PS data
+/// Get Pokemon weight in kilograms using repository lookup with fallback
 fn get_pokemon_weight(species: &str) -> f32 {
-    // Try to get weight from PS data
-    let pokemon_service = match crate::data::services::pokemon_service::PSPokemonService::new() {
-        Ok(service) => service,
-        Err(_) => {
-            // Fallback to hardcoded values if PS data unavailable
-            return match species.to_lowercase().as_str() {
-                "pikachu" => 6.0,
-                "charizard" => 90.5,
-                "snorlax" => 460.0,
-                "groudon" => 950.0,
-                "gastly" => 0.1,
-                _ => 50.0, // Default weight
-            };
+    // Try repository lookup first
+    if let Ok(repository) = Repository::from_path("data/ps-extracted") {
+        if let Some(weight) = repository.get_pokemon_weight(species) {
+            return weight;
         }
-    };
+    }
     
-    // Get weight from PS data
-    if let Some(weight) = pokemon_service.get_weight(species) {
-        weight
-    } else {
-        // Fallback to default if not found
-        50.0
+    // Fallback to hardcoded values if repository fails
+    match species.to_lowercase().as_str() {
+        "pikachu" => 6.0,
+        "charizard" => 90.5,
+        "snorlax" => 460.0,
+        "groudon" => 950.0,
+        "gastly" => 0.1,
+        _ => 50.0, // Default weight
+    }
+}
+
+/// Get fling power for an item using repository lookup with fallback
+fn get_fling_power(item: &str) -> u8 {
+    // Try repository lookup first
+    if let Ok(repository) = Repository::from_path("data/ps-extracted") {
+        if let Some(power) = repository.get_item_fling_power(item) {
+            return power;
+        }
+    }
+    
+    // Fallback to hardcoded values if repository fails
+    match item.to_lowercase().as_str() {
+        "flame orb" | "toxic orb" => 30,
+        "iron ball" | "lagging tail" => 130,
+        "thick club" | "light ball" => 90,
+        "choice band" | "choice specs" | "choice scarf" => 10,
+        "leftovers" | "black sludge" => 10,
+        _ => 10, // Default power
+    }
+}
+
+/// Get fling status effect for an item (hardcoded lookup)
+fn get_fling_status(item: &str) -> Option<&'static str> {
+    match item.to_lowercase().as_str() {
+        "flame orb" => Some("brn"),
+        "toxic orb" => Some("tox"),
+        _ => None,
+    }
+}
+
+/// Get fling volatile status effect for an item (hardcoded lookup)
+fn get_fling_volatile_status(item: &str) -> Option<&'static str> {
+    match item.to_lowercase().as_str() {
+        "kings rock" | "razor fang" => Some("flinch"),
+        _ => None,
     }
 }
 
 /// Apply Judgment - Type matches Arceus's type/plate
 pub fn apply_judgment(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
@@ -7313,7 +7516,7 @@ pub fn apply_judgment(
         
         // Apply normal damage with the modified type
         // Note: The actual damage calculation will use the modified type
-        instructions.push(StateInstructions::new(100.0, vec![]));
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -7321,12 +7524,12 @@ pub fn apply_judgment(
 
 /// Apply Multi-Attack - Type matches Silvally's memory disc
 pub fn apply_multi_attack(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
@@ -7342,7 +7545,7 @@ pub fn apply_multi_attack(
         modified_move_data.move_type = attack_type;
         
         // Apply normal damage with the modified type
-        instructions.push(StateInstructions::new(100.0, vec![]));
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -7350,12 +7553,12 @@ pub fn apply_multi_attack(
 
 /// Apply Revelation Dance - Type matches user's primary type
 pub fn apply_revelation_dance(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
@@ -7371,7 +7574,7 @@ pub fn apply_revelation_dance(
         modified_move_data.move_type = dance_type;
         
         // Apply normal damage with the modified type
-        instructions.push(StateInstructions::new(100.0, vec![]));
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -7379,12 +7582,12 @@ pub fn apply_revelation_dance(
 
 /// Apply Burn Up - Fire move that removes user's Fire typing
 pub fn apply_burn_up(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
@@ -7401,11 +7604,11 @@ pub fn apply_burn_up(
             new_types
         };
         
-        instructions.push(StateInstructions::new(100.0, vec![
-            Instruction::ChangeType(ChangeTypeInstruction {
-                target_position: user_position,
+        instructions.push(BattleInstructions::new(100.0, vec![
+            BattleInstruction::Pokemon(PokemonInstruction::ChangeType {
+                target: user_position,
                 new_types: final_types,
-                previous_types: Some(user_pokemon.types.clone()),
+                previous_types: user_pokemon.types.clone(),
             }),
         ]));
     }
@@ -7415,12 +7618,12 @@ pub fn apply_burn_up(
 
 /// Apply Double Shock - Electric move that removes user's Electric typing
 pub fn apply_double_shock(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
@@ -7437,11 +7640,11 @@ pub fn apply_double_shock(
             new_types
         };
         
-        instructions.push(StateInstructions::new(100.0, vec![
-            Instruction::ChangeType(ChangeTypeInstruction {
-                target_position: user_position,
+        instructions.push(BattleInstructions::new(100.0, vec![
+            BattleInstruction::Pokemon(PokemonInstruction::ChangeType {
+                target: user_position,
                 new_types: final_types,
-                previous_types: Some(user_pokemon.types.clone()),
+                previous_types: user_pokemon.types.clone(),
             }),
         ]));
     }
@@ -7454,12 +7657,12 @@ pub fn apply_double_shock(
 
 /// Apply Expanding Force - Boosted power in Psychic Terrain
 pub fn apply_expanding_force(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Check if Psychic Terrain is active
     if state.terrain == Terrain::PsychicTerrain {
         // 1.5x power in Psychic Terrain
@@ -7473,12 +7676,12 @@ pub fn apply_expanding_force(
 
 /// Apply Rising Voltage - Boosted power in Electric Terrain
 pub fn apply_rising_voltage(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Check if Electric Terrain is active
     if state.terrain == Terrain::ElectricTerrain {
         // 1.5x power in Electric Terrain
@@ -7492,12 +7695,12 @@ pub fn apply_rising_voltage(
 
 /// Apply Misty Explosion - Boosted power in Misty Terrain
 pub fn apply_misty_explosion(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     // Check if Misty Terrain is active for power boost
@@ -7514,11 +7717,17 @@ pub fn apply_misty_explosion(
         instructions.extend(apply_generic_effects(state, move_data, user_position, target_positions, generation));
     }
     
+    // Get the user's current HP before fainting
+    let user_current_hp = state.get_pokemon_at_position(user_position)
+        .map(|pokemon| pokemon.hp)
+        .unwrap_or(0);
+    
     // User faints (self-destruct effect)
-    instructions.push(StateInstructions::new(100.0, vec![
-        Instruction::Faint(FaintInstruction {
-            target_position: user_position,
-            previous_hp: 0, // TODO: Should be set to actual HP before fainting
+    instructions.push(BattleInstructions::new(100.0, vec![
+        BattleInstruction::Pokemon(PokemonInstruction::Faint {
+            target: user_position,
+            previous_hp: user_current_hp,
+            previous_status: None,
         }),
     ]));
     
@@ -7527,12 +7736,12 @@ pub fn apply_misty_explosion(
 
 /// Apply Psy Blade - Boosted power in Electric Terrain
 pub fn apply_psy_blade(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Check if Electric Terrain is active
     if state.terrain == Terrain::ElectricTerrain {
         // 1.5x power in Electric Terrain
@@ -7546,27 +7755,28 @@ pub fn apply_psy_blade(
 
 /// Apply Steel Roller - Fails without terrain
 pub fn apply_steel_roller(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     // Check if any terrain is active
     if state.terrain == Terrain::None {
         // Move fails when no terrain is active
-        vec![StateInstructions::empty()]
+        vec![BattleInstructions::new(100.0, vec![])]
     } else {
         // Normal move behavior when terrain is active
         let mut instructions = apply_generic_effects(state, move_data, user_position, target_positions, generation);
         
         // Remove terrain after hitting
-        instructions.push(StateInstructions::new(100.0, vec![
-            Instruction::ChangeTerrain(ChangeTerrainInstruction {
-                terrain: Terrain::None,
-                duration: None,
-                previous_terrain: Some(state.terrain),
-                previous_duration: Some(state.terrain_turns_remaining),
+        instructions.push(BattleInstructions::new(100.0, vec![
+            BattleInstruction::Field(FieldInstruction::Terrain {
+                new_terrain: Terrain::None,
+                previous_terrain: state.terrain,
+                turns: None,
+                previous_turns: state.terrain_turns_remaining,
+                source: None,
             }),
         ]));
         
@@ -7576,22 +7786,23 @@ pub fn apply_steel_roller(
 
 /// Apply Ice Spinner - Removes terrain after hitting
 pub fn apply_ice_spinner(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = apply_generic_effects(state, move_data, user_position, target_positions, generation);
     
     // Remove terrain after hitting (if any terrain is active)
     if state.terrain != Terrain::None {
-        instructions.push(StateInstructions::new(100.0, vec![
-            Instruction::ChangeTerrain(ChangeTerrainInstruction {
-                terrain: Terrain::None,
-                duration: None,
-                previous_terrain: Some(state.terrain),
-                previous_duration: Some(state.terrain_turns_remaining),
+        instructions.push(BattleInstructions::new(100.0, vec![
+            BattleInstruction::Field(FieldInstruction::Terrain {
+                new_terrain: Terrain::None,
+                previous_terrain: state.terrain,
+                turns: None,
+                previous_turns: state.terrain_turns_remaining,
+                source: None,
             }),
         ]));
     }
@@ -7604,12 +7815,12 @@ pub fn apply_ice_spinner(
 
 /// Apply Mind Blown - Damages user for 1/2 max HP
 pub fn apply_mind_blown(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
@@ -7618,10 +7829,10 @@ pub fn apply_mind_blown(
         
         // Apply self-damage before the move
         if damage_amount > 0 {
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::PositionDamage(PositionDamageInstruction {
-                    target_position: user_position,
-                    damage_amount,
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                    target: user_position,
+                    amount: damage_amount,
                     previous_hp: Some(user_pokemon.hp),
                 }),
             ]));
@@ -7639,12 +7850,12 @@ pub fn apply_mind_blown(
 
 /// Apply Ivy Cudgel - Type changes with mask items
 pub fn apply_ivy_cudgel(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
         // Check for mask items to change type
         let modified_move_type = match user_pokemon.item.as_deref() {
@@ -7668,12 +7879,12 @@ pub fn apply_ivy_cudgel(
 
 /// Apply Tera Blast - Type and category change when Terastallized
 pub fn apply_tera_blast(
-    state: &State,
+    state: &BattleState,
     move_data: &EngineMoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
         // Check if Pokemon is Terastallized (Gen 9+ only)
         let is_tera = generation.generation.number() >= 9 && user_pokemon.is_terastallized;

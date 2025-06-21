@@ -5,7 +5,7 @@
 use clap::Parser;
 use tapu_simu::data::RandomTeamLoader;
 use tapu_simu::io::{parse_battle_format, print_engine_info, Cli, Commands};
-use tapu_simu::{BattleFormat, State};
+use tapu_simu::{BattleFormat, BattleState};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
@@ -141,15 +141,18 @@ fn run_battle(
         println!("{:?}", team_one);
 
         // Create initial battle state with the format and teams
-        let mut state = State::new_with_teams(format.clone(), team_one, team_two);
+        let mut battle_state = BattleState::new(format.clone());
+        // Initialize with teams using the builders pattern
+        // Use modern BattleState
+        let mut state = BattleState::new_with_teams(format.clone(), team_one, team_two);
 
         if verbose && run == 1 {
             println!("Initialized battle state with format: {}", state.format);
             println!("Turn: {}", state.turn);
             println!("Weather: {:?}", state.weather);
             println!("Terrain: {:?}", state.terrain);
-            println!("Side one team: {} Pokemon", state.side_one.pokemon_count());
-            println!("Side two team: {} Pokemon", state.side_two.pokemon_count());
+            println!("Side one team: {} Pokemon", state.side_one.pokemon.len());
+            println!("Side two team: {} Pokemon", state.side_two.pokemon.len());
             println!();
         }
 

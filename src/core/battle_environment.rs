@@ -3,10 +3,10 @@
 //! This module provides the main battle orchestration and player interfaces for Tapu Simu.
 //! It implements 100% parity with poke-engine's battle_environment.rs, adapted for V2 architecture.
 
-use crate::core::state::State;
+use crate::core::battle_state::BattleState;
 use crate::core::move_choice::MoveChoice;
 use crate::core::battle_format::SideReference;
-use crate::core::instruction::StateInstructions;
+use crate::core::instructions::BattleInstructions;
 use crate::engine::turn::instruction_generator::GenerationXInstructionGenerator;
 use rand::{thread_rng, Rng};
 use std::sync::{Arc, Mutex};
@@ -15,13 +15,24 @@ use std::io::Write;
 
 /// Player trait for different agent types - exact parity with poke-engine
 pub trait Player: Send + Sync + 'static {
-    /// Choose a move from available options
+    /// Choose a move from available options (legacy interface)
     fn choose_move(
         &self,
-        state: &State,
+        state: &BattleState,
         side_ref: SideReference,
         options: &[MoveChoice],
     ) -> MoveChoice;
+
+    /// Choose a move from available options (modern interface)
+    /// Default implementation converts BattleState to State for compatibility
+    fn choose_move_modern(
+        &self,
+        state: &BattleState,
+        side_ref: SideReference,
+        options: &[MoveChoice],
+    ) -> MoveChoice {
+        self.choose_move(state, side_ref, options)
+    }
     
     /// Get the player's name for identification
     fn name(&self) -> &str;
@@ -41,7 +52,7 @@ impl RandomPlayer {
 impl Player for RandomPlayer {
     fn choose_move(
         &self,
-        _state: &State,
+        _state: &BattleState,
         _side_ref: SideReference,
         options: &[MoveChoice],
     ) -> MoveChoice {
@@ -68,7 +79,7 @@ impl FirstMovePlayer {
 impl Player for FirstMovePlayer {
     fn choose_move(
         &self,
-        _state: &State,
+        _state: &BattleState,
         _side_ref: SideReference,
         options: &[MoveChoice],
     ) -> MoveChoice {
@@ -92,7 +103,7 @@ impl DamageMaximizer {
 
     fn estimate_damage(
         &self,
-        state: &State,
+        state: &BattleState,
         side_ref: SideReference,
         move_choice: &MoveChoice,
     ) -> f32 {
@@ -141,7 +152,7 @@ impl DamageMaximizer {
 impl Player for DamageMaximizer {
     fn choose_move(
         &self,
-        state: &State,
+        state: &BattleState,
         side_ref: SideReference,
         options: &[MoveChoice],
     ) -> MoveChoice {
@@ -169,7 +180,7 @@ impl Player for DamageMaximizer {
 pub struct BattleResult {
     pub winner: Option<SideReference>,
     pub turn_count: usize,
-    pub final_state: State,
+    pub final_state: BattleState,
     pub turn_history: Vec<TurnInfo>,
 }
 
@@ -177,11 +188,11 @@ pub struct BattleResult {
 #[derive(Debug, Clone)]
 pub struct TurnInfo {
     pub turn_number: usize,
-    pub state_before: State,
+    pub state_before: BattleState,
     pub side_one_choice: MoveChoice,
     pub side_two_choice: MoveChoice,
-    pub instructions_generated: Vec<StateInstructions>,
-    pub state_after: State,
+    pub instructions_generated: Vec<BattleInstructions>,
+    pub state_after: BattleState,
 }
 
 /// Battle environment orchestrator - exact parity with poke-engine's BattleEnvironment
@@ -217,17 +228,17 @@ impl BattleEnvironment {
     }
 
     /// Generate initial switch-in instructions
-    fn generate_initial_instructions(state: &mut State) -> Vec<StateInstructions> {
+    fn generate_initial_instructions(state: &mut BattleState) -> Vec<BattleInstructions> {
         // Generate initial instructions for start-of-battle effects like abilities
         let no_move_s1 = MoveChoice::None;
         let no_move_s2 = MoveChoice::None;
 
         let generator = GenerationXInstructionGenerator::new(state.format.clone());
-        generator.generate_instructions_from_move_pair(state, &no_move_s1, &no_move_s2)
+        generator.generate_modern_instructions(state, &no_move_s1, &no_move_s2)
     }
 
     /// Run a complete battle - exact parity with poke-engine logic
-    pub fn run_battle(&self, initial_state: State) -> BattleResult {
+    pub fn run_battle(&self, initial_state: BattleState) -> BattleResult {
         let mut state = initial_state.clone();
         let mut turn_history = Vec::new();
         let mut turn_count = 0;
@@ -349,7 +360,7 @@ impl BattleEnvironment {
                     "\n========== Turn {} ==========\n{}\n\nSerialized State:\n{}\n",
                     turn_count,
                     state.pretty_print(),
-                    state.serialize()
+                    serde_json::to_string_pretty(&state).unwrap_or_else(|_| "Failed to serialize state".to_string())
                 );
 
                 if let Some(ref mut file) = log_file {
@@ -396,7 +407,7 @@ impl BattleEnvironment {
 
             // Generate instructions from the move pair
             let generator = GenerationXInstructionGenerator::new(state.format.clone());
-            let instructions = generator.generate_instructions_from_move_pair(
+            let instructions = generator.generate_modern_instructions(
                 &mut state,
                 &side_one_choice,
                 &side_two_choice,
@@ -460,7 +471,13 @@ impl BattleEnvironment {
         }
 
         // Determine winner
-        let winner = state.get_winner();
+        let winner = state.get_winner().map(|side_index| {
+            match side_index {
+                0 => SideReference::SideOne,
+                1 => SideReference::SideTwo,
+                _ => SideReference::SideOne, // Fallback
+            }
+        });
 
         if self.verbose {
             let end_msg = format!(
@@ -496,8 +513,20 @@ impl BattleEnvironment {
         }
     }
 
+    /// Run a complete battle using modern BattleState
+    /// This is the preferred method for new code
+    pub fn run_battle_modern(&self, initial_battle_state: BattleState) -> BattleResult {
+        self.run_battle(initial_battle_state)
+    }
+
+    /// Run a complete battle - modern version that takes BattleState directly
+    /// This will be the primary interface once migration is complete
+    pub fn run_battle_with_battle_state(&self, initial_state: BattleState) -> BattleResult {
+        self.run_battle(initial_state)
+    }
+
     /// Sample from possible instruction outcomes based on their probabilities
-    fn sample_instruction_index(&self, state_instructions: &[StateInstructions]) -> usize {
+    fn sample_instruction_index(&self, state_instructions: &[BattleInstructions]) -> usize {
         if state_instructions.len() == 1 {
             return 0;
         }
@@ -517,7 +546,7 @@ impl BattleEnvironment {
     }
 
     /// Format full team stats for battle logging
-    fn format_team_stats(&self, state: &State) -> String {
+    fn format_team_stats(&self, state: &BattleState) -> String {
         let mut output = String::new();
         
         output.push_str("\n=== Full Team Stats ===\n");
@@ -541,7 +570,7 @@ impl BattleEnvironment {
     }
 
     /// Format individual Pokemon's full stats
-    fn format_pokemon_full_stats(&self, pokemon: &crate::core::state::Pokemon) -> String {
+    fn format_pokemon_full_stats(&self, pokemon: &crate::core::battle_state::Pokemon) -> String {
         format!(
             "{} (Lv. {}) - HP: {}/{} | ATK: {} | DEF: {} | SPA: {} | SPD: {} | SPE: {} | Ability: {} | Item: {} | Type(s): {}",
             pokemon.species,
@@ -560,7 +589,7 @@ impl BattleEnvironment {
     }
 
     /// Generate Showdown paste export for both teams
-    fn format_showdown_export(&self, state: &State) -> String {
+    fn format_showdown_export(&self, state: &BattleState) -> String {
         let mut output = String::new();
         
         output.push_str("\n=== Showdown Team Export ===\n");
@@ -586,14 +615,14 @@ impl BattleEnvironment {
     }
 
     /// Format individual Pokemon as Showdown paste format
-    fn format_pokemon_showdown_paste(&self, pokemon: &crate::core::state::Pokemon) -> String {
+    fn format_pokemon_showdown_paste(&self, pokemon: &crate::core::battle_state::Pokemon) -> String {
         let mut paste = String::new();
         
         // Species line with item and gender
         let gender_str = match pokemon.gender {
-            crate::core::state::Gender::Male => " (M)",
-            crate::core::state::Gender::Female => " (F)",
-            crate::core::state::Gender::Unknown => "",
+            crate::core::battle_state::Gender::Male => " (M)",
+            crate::core::battle_state::Gender::Female => " (F)",
+            crate::core::battle_state::Gender::Unknown => "",
         };
         
         if let Some(ref item) = pokemon.item {
@@ -642,7 +671,7 @@ impl BattleEnvironment {
     }
 
     /// Determine IVs and EVs based on Pokemon's moveset following Smogon Random Battle rules
-    fn determine_ivs_evs_for_pokemon(&self, pokemon: &crate::core::state::Pokemon) -> (PokemonIVs, PokemonEVs) {
+    fn determine_ivs_evs_for_pokemon(&self, pokemon: &crate::core::battle_state::Pokemon) -> (PokemonIVs, PokemonEVs) {
         // Check if Pokemon has any physical moves
         let has_physical_moves = pokemon.moves.values()
             .any(|m| matches!(m.category, crate::core::instruction::MoveCategory::Physical));
@@ -797,7 +826,7 @@ impl ParallelBattleResults {
 
 /// Run parallel battles with pre-generated states - exact parity with poke-engine
 pub fn run_parallel_battles_with_states<F1, F2>(
-    battle_states: Vec<State>,
+    battle_states: Vec<BattleState>,
     num_threads: usize,
     player_one_factory: F1,
     player_two_factory: F2,
@@ -871,7 +900,7 @@ where
 
 /// Helper function to create a battle from a state and run it
 pub fn run_battle_from_state(
-    initial_state: State,
+    initial_state: BattleState,
     player_one: Box<dyn Player>,
     player_two: Box<dyn Player>,
     max_turns: usize,
@@ -879,6 +908,18 @@ pub fn run_battle_from_state(
 ) -> BattleResult {
     let env = BattleEnvironment::new(player_one, player_two, max_turns, verbose);
     env.run_battle(initial_state)
+}
+
+/// Helper function to create a battle from a modern BattleState and run it
+pub fn run_battle_from_battle_state(
+    initial_battle_state: BattleState,
+    player_one: Box<dyn Player>,
+    player_two: Box<dyn Player>,
+    max_turns: usize,
+    verbose: bool,
+) -> BattleResult {
+    let env = BattleEnvironment::new(player_one, player_two, max_turns, verbose);
+    env.run_battle_modern(initial_battle_state)
 }
 
 #[cfg(test)]
@@ -895,7 +936,7 @@ mod tests {
     #[test]
     fn test_first_move_player() {
         let player = FirstMovePlayer::new("FirstBot".to_string());
-        let state = State::new(BattleFormat::gen9_ou());
+        let state = BattleState::new(BattleFormat::gen9_ou());
         let options = vec![MoveChoice::None, MoveChoice::Switch(crate::core::move_choice::PokemonIndex::P0)];
         
         let choice = player.choose_move(&state, SideReference::SideOne, &options);

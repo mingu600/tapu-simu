@@ -8,11 +8,11 @@ use std::collections::HashMap;
 
 /// Pokemon species data from PS
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PSPokemonData {
+pub struct PokemonData {
     pub name: String,
     pub types: Vec<String>,
     #[serde(rename = "baseStats")]
-    pub base_stats: PSBaseStats,
+    pub base_stats: BaseStats,
     pub abilities: HashMap<String, String>,
     #[serde(default)]
     pub moves: Vec<String>,
@@ -24,7 +24,7 @@ pub struct PSPokemonData {
 
 /// Base stats from PS data
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PSBaseStats {
+pub struct BaseStats {
     pub hp: i16,
     #[serde(rename = "atk")]
     pub attack: i16,
@@ -40,7 +40,7 @@ pub struct PSBaseStats {
 
 /// Move data from PS
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PSMoveData {
+pub struct MoveData {
     pub name: String,
     #[serde(rename = "type")]
     pub move_type: String,
@@ -57,7 +57,7 @@ pub struct PSMoveData {
 
 /// Item data from PS
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PSItemData {
+pub struct ItemData {
     pub name: String,
     #[serde(default)]
     pub description: String,
@@ -65,9 +65,9 @@ pub struct PSItemData {
 
 /// Pokemon builder for creating Pokemon from PS data
 pub struct PokemonBuilder {
-    pokemon_data: HashMap<String, PSPokemonData>,
-    move_data: HashMap<String, PSMoveData>,
-    item_data: HashMap<String, PSItemData>,
+    pokemon_data: HashMap<String, PokemonData>,
+    move_data: HashMap<String, MoveData>,
+    item_data: HashMap<String, ItemData>,
 }
 
 impl PokemonBuilder {
@@ -85,21 +85,21 @@ impl PokemonBuilder {
         // Load Pokemon data
         let pokemon_file = std::fs::read_to_string("data/ps-extracted/pokemon.json")
             .map_err(|e| format!("Failed to read pokemon.json: {}", e))?;
-        let pokemon_map: HashMap<String, PSPokemonData> = serde_json::from_str(&pokemon_file)
+        let pokemon_map: HashMap<String, PokemonData> = serde_json::from_str(&pokemon_file)
             .map_err(|e| format!("Failed to parse pokemon.json: {}", e))?;
         self.pokemon_data = pokemon_map;
 
         // Load move data
         let moves_file = std::fs::read_to_string("data/ps-extracted/moves.json")
             .map_err(|e| format!("Failed to read moves.json: {}", e))?;
-        let moves_map: HashMap<String, PSMoveData> = serde_json::from_str(&moves_file)
+        let moves_map: HashMap<String, MoveData> = serde_json::from_str(&moves_file)
             .map_err(|e| format!("Failed to parse moves.json: {}", e))?;
         self.move_data = moves_map;
 
         // Load item data
         let items_file = std::fs::read_to_string("data/ps-extracted/items.json")
             .map_err(|e| format!("Failed to read items.json: {}", e))?;
-        let items_map: HashMap<String, PSItemData> = serde_json::from_str(&items_file)
+        let items_map: HashMap<String, ItemData> = serde_json::from_str(&items_file)
             .map_err(|e| format!("Failed to parse items.json: {}", e))?;
         self.item_data = items_map;
 
@@ -304,7 +304,7 @@ impl PokemonBuilder {
 
     /// Calculate stats with IVs, EVs, and nature
     /// ivs and evs are arrays in order: [HP, Atk, Def, SpA, SpD, Spe]
-    fn calculate_stats_with_ivs_evs(&self, base_stats: &PSBaseStats, level: u8, ivs: &[u8; 6], evs: &[u8; 6], nature: &str) -> UIPokemonStats {
+    fn calculate_stats_with_ivs_evs(&self, base_stats: &BaseStats, level: u8, ivs: &[u8; 6], evs: &[u8; 6], nature: &str) -> UIPokemonStats {
         let level = level as f32;
         
         // Nature modifiers (1.1 for boosted, 0.9 for hindered, 1.0 for neutral)

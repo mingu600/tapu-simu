@@ -3,15 +3,15 @@
 //! This module provides the bridge between the web UI and the tapu-simu engine.
 //! It handles state serialization, instruction generation, and engine integration.
 
-use crate::core::state::State;
+use crate::core::battle_state::BattleState;
 use crate::core::move_choice::MoveChoice;
 use crate::core::battle_format::{BattleFormat, BattlePosition};
 use crate::core::battle_format::SideReference;
-use crate::core::instruction::{StateInstructions, Instruction};
-use crate::core::state::{Pokemon, Move, MoveCategory, Gender};
+use crate::core::instructions::{BattleInstruction, BattleInstructions, PokemonInstruction, StatusInstruction, StatsInstruction, FieldInstruction};
+use crate::core::battle_state::{Pokemon, Move, MoveCategory, Gender};
 use crate::data::types::Stats;
 use crate::core::move_choice::{MoveIndex, PokemonIndex};
-use crate::data::ps_types::PSMoveTarget;
+use crate::data::showdown_types::MoveTarget;
 use crate::generation::Generation;
 use crate::core::battle_format::FormatType;
 use crate::engine::turn::instruction_generator::GenerationXInstructionGenerator;
@@ -122,9 +122,9 @@ pub struct UIInstruction {
     pub details: HashMap<String, serde_json::Value>,
 }
 
-/// State instructions for the UI
+/// Battle instructions for the UI
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UIStateInstructions {
+pub struct UIBattleInstructions {
     pub percentage: f32,
     pub instructions: Vec<UIInstruction>,
     pub affected_positions: Vec<UIBattlePosition>,
@@ -135,7 +135,7 @@ pub struct UIStateInstructions {
 pub struct InstructionGenerationResponse {
     pub success: bool,
     pub error: Option<String>,
-    pub instructions: Vec<UIStateInstructions>,
+    pub instructions: Vec<UIBattleInstructions>,
     pub updated_state: Option<UIBattleState>,
 }
 
@@ -153,7 +153,7 @@ pub struct UILegalOption {
 #[derive(Clone, Debug)]
 pub struct EngineBridge {
     format: BattleFormat,
-    last_instructions: Option<Vec<StateInstructions>>,
+    last_instructions: Option<Vec<BattleInstructions>>,
 }
 
 impl EngineBridge {
@@ -171,7 +171,7 @@ impl EngineBridge {
     }
 
     /// Convert internal state to UI state
-    pub fn state_to_ui(&self, state: &State) -> UIBattleState {
+    pub fn state_to_ui(&self, state: &BattleState) -> UIBattleState {
         UIBattleState {
             format: UIBattleFormat {
                 name: state.format.name.clone(),
@@ -192,7 +192,7 @@ impl EngineBridge {
     }
 
     /// Convert battle side to UI representation
-    fn battle_side_to_ui(&self, side: &crate::core::state::BattleSide) -> UIBattleSide {
+    fn battle_side_to_ui(&self, side: &crate::core::battle_state::BattleSide) -> UIBattleSide {
         UIBattleSide {
             pokemon: side.pokemon.iter().map(|p| self.pokemon_to_ui(p)).collect(),
             active_pokemon_indices: side.active_pokemon_indices.clone(),
@@ -219,7 +219,7 @@ impl EngineBridge {
                 speed: pokemon.stats.speed,
             },
             moves: pokemon.moves.iter().map(|(_, m)| self.move_to_ui(m)).collect(),
-            ability: pokemon.ability.clone(),
+            ability: pokemon.ability.as_str().to_string(),
             item: pokemon.item.clone(),
             types: pokemon.types.clone(),
             gender: format!("{:?}", pokemon.gender),
@@ -302,9 +302,9 @@ impl EngineBridge {
     }
 
     /// Convert internal instructions to UI representation
-    fn instructions_to_ui(&self, instructions: &[StateInstructions]) -> Vec<UIStateInstructions> {
+    fn instructions_to_ui(&self, instructions: &[BattleInstructions]) -> Vec<UIBattleInstructions> {
         instructions.iter().map(|instr| {
-            UIStateInstructions {
+            UIBattleInstructions {
                 percentage: instr.percentage,
                 instructions: instr.instruction_list.iter().map(|i| self.instruction_to_ui(i)).collect(),
                 affected_positions: instr.affected_positions.iter().map(|p| self.internal_position_to_ui(p)).collect(),
@@ -313,59 +313,59 @@ impl EngineBridge {
     }
 
     /// Convert single instruction to UI representation
-    fn instruction_to_ui(&self, instruction: &Instruction) -> UIInstruction {
+    fn instruction_to_ui(&self, instruction: &BattleInstruction) -> UIInstruction {
         let (instruction_type, description, target_position, details) = match instruction {
-            Instruction::PositionDamage(instr) => (
+            BattleInstruction::Pokemon(PokemonInstruction::Damage { target, amount, .. }) => (
                 "PositionDamage".to_string(),
-                format!("Deal {} damage to {:?}", instr.damage_amount, instr.target_position),
-                Some(self.internal_position_to_ui(&instr.target_position)),
+                format!("Deal {} damage to {:?}", amount, target),
+                Some(self.internal_position_to_ui(&target)),
                 {
                     let mut details = HashMap::new();
-                    details.insert("damage_amount".to_string(), serde_json::Value::Number(instr.damage_amount.into()));
+                    details.insert("damage_amount".to_string(), serde_json::Value::Number((*amount).into()));
                     details
                 }
             ),
-            Instruction::PositionHeal(instr) => (
+            BattleInstruction::Pokemon(PokemonInstruction::Heal { target, amount, .. }) => (
                 "PositionHeal".to_string(),
-                format!("Heal {} HP at {:?}", instr.heal_amount, instr.target_position),
-                Some(self.internal_position_to_ui(&instr.target_position)),
+                format!("Heal {} HP at {:?}", amount, target),
+                Some(self.internal_position_to_ui(&target)),
                 {
                     let mut details = HashMap::new();
-                    details.insert("heal_amount".to_string(), serde_json::Value::Number(instr.heal_amount.into()));
+                    details.insert("heal_amount".to_string(), serde_json::Value::Number((*amount).into()));
                     details
                 }
             ),
-            Instruction::ApplyStatus(instr) => (
+            BattleInstruction::Status(StatusInstruction::Apply { target, status, .. }) => (
                 "ApplyStatus".to_string(),
-                format!("Apply {:?} status to {:?}", instr.status, instr.target_position),
-                Some(self.internal_position_to_ui(&instr.target_position)),
+                format!("Apply {:?} status to {:?}", status, target),
+                Some(self.internal_position_to_ui(&target)),
                 {
                     let mut details = HashMap::new();
-                    details.insert("status".to_string(), serde_json::Value::String(format!("{:?}", instr.status)));
+                    details.insert("status".to_string(), serde_json::Value::String(format!("{:?}", status)));
                     details
                 }
             ),
-            Instruction::BoostStats(instr) => (
+            BattleInstruction::Stats(StatsInstruction::BoostStats { target, stat_changes, .. }) => (
                 "BoostStats".to_string(),
-                format!("Boost stats at {:?}: {:?}", instr.target_position, instr.stat_boosts),
-                Some(self.internal_position_to_ui(&instr.target_position)),
+                format!("Boost stats at {:?}: {:?}", target, stat_changes),
+                Some(self.internal_position_to_ui(&target)),
                 {
                     let mut details = HashMap::new();
-                    for (stat, boost) in &instr.stat_boosts {
+                    for (stat, boost) in stat_changes {
                         details.insert(format!("{:?}", stat), serde_json::Value::Number((*boost).into()));
                     }
                     details
                 }
             ),
-            Instruction::ChangeWeather(instr) => (
+            BattleInstruction::Field(FieldInstruction::Weather { new_weather, turns, .. }) => (
                 "ChangeWeather".to_string(),
-                format!("Change weather to {:?} for {:?} turns", instr.weather, instr.duration),
+                format!("Change weather to {:?} for {:?} turns", new_weather, turns),
                 None,
                 {
                     let mut details = HashMap::new();
-                    details.insert("weather".to_string(), serde_json::Value::String(format!("{:?}", instr.weather)));
-                    if let Some(duration) = instr.duration {
-                        details.insert("duration".to_string(), serde_json::Value::Number(duration.into()));
+                    details.insert("weather".to_string(), serde_json::Value::String(format!("{:?}", new_weather)));
+                    if let Some(duration) = turns {
+                        details.insert("duration".to_string(), serde_json::Value::Number((*duration).into()));
                     }
                     details
                 }
@@ -390,7 +390,7 @@ impl EngineBridge {
     /// Generate instructions from move choices
     pub fn generate_instructions(
         &mut self,
-        state: &mut State,
+        state: &mut BattleState,
         side_one_choice: &UIMoveChoice,
         side_two_choice: &UIMoveChoice,
     ) -> InstructionGenerationResponse {
@@ -417,7 +417,7 @@ impl EngineBridge {
 
         // Generate instructions using the engine
         let generator = self.get_generator();
-        let instructions = generator.generate_instructions(state, &internal_choice_one, &internal_choice_two);
+        let instructions = generator.generate_modern_instructions(state, &internal_choice_one, &internal_choice_two);
 
         // Store instructions for later application
         self.last_instructions = Some(instructions.clone());
@@ -439,7 +439,7 @@ impl EngineBridge {
     /// Apply a specific instruction set to the battle state
     pub fn apply_instruction_set(
         &self,
-        state: &mut State,
+        state: &mut BattleState,
         instruction_set_index: usize,
         expected_turn_number: Option<u32>,
     ) -> Result<UIBattleState, String> {
@@ -552,10 +552,10 @@ impl EngineBridge {
                 };
 
                 let target = match ui_move.target.as_str() {
-                    "Self_" => PSMoveTarget::Self_,
-                    "AllAdjacent" => PSMoveTarget::AllAdjacent,
-                    "AllAdjacentFoes" => PSMoveTarget::AllAdjacentFoes,
-                    _ => PSMoveTarget::Normal,
+                    "Self_" => MoveTarget::Self_,
+                    "AllAdjacent" => MoveTarget::AllAdjacent,
+                    "AllAdjacentFoes" => MoveTarget::AllAdjacentFoes,
+                    _ => MoveTarget::Normal,
                 };
 
                 let move_data = Move::new_with_details(
@@ -564,6 +564,7 @@ impl EngineBridge {
                     ui_move.accuracy,
                     ui_move.move_type.clone(),
                     ui_move.pp,
+                    ui_move.pp, // max_pp should be the same as pp initially
                     target,
                     move_category,
                     ui_move.priority,
@@ -581,7 +582,7 @@ impl EngineBridge {
     }
 
     /// Get all legal options for both sides
-    pub fn get_all_legal_options(&self, state: &State) -> Result<(Vec<UILegalOption>, Vec<UILegalOption>), String> {
+    pub fn get_all_legal_options(&self, state: &BattleState) -> Result<(Vec<UILegalOption>, Vec<UILegalOption>), String> {
         let (side_one_choices, side_two_choices) = state.get_all_options();
         
         let side_one_options = side_one_choices.into_iter().enumerate().map(|(index, choice)| {
@@ -596,7 +597,7 @@ impl EngineBridge {
     }
     
     /// Get the move name for a specific side and move index
-    fn get_move_name_for_side(&self, state: &State, side: SideReference, move_index: MoveIndex) -> Option<String> {
+    fn get_move_name_for_side(&self, state: &BattleState, side: SideReference, move_index: MoveIndex) -> Option<String> {
         let battle_side = match side {
             SideReference::SideOne => &state.side_one,
             SideReference::SideTwo => &state.side_two,
@@ -617,7 +618,7 @@ impl EngineBridge {
     }
     
     /// Get the Pokemon name for a specific side and Pokemon index
-    fn get_pokemon_name_for_side(&self, state: &State, side: SideReference, pokemon_index: PokemonIndex) -> Option<String> {
+    fn get_pokemon_name_for_side(&self, state: &BattleState, side: SideReference, pokemon_index: PokemonIndex) -> Option<String> {
         let battle_side = match side {
             SideReference::SideOne => &state.side_one,
             SideReference::SideTwo => &state.side_two,
@@ -633,7 +634,7 @@ impl EngineBridge {
     }
     
     /// Convert a move choice to a legal option for display
-    fn move_choice_to_legal_option(&self, choice: MoveChoice, _index: usize, state: &State, side: SideReference) -> UILegalOption {
+    fn move_choice_to_legal_option(&self, choice: MoveChoice, _index: usize, state: &BattleState, side: SideReference) -> UILegalOption {
         let (display_name, ui_choice, is_disabled, disabled_reason) = match &choice {
             MoveChoice::Move { move_index, target_positions } => {
                 let targets_str = if target_positions.len() > 1 {
@@ -737,7 +738,7 @@ impl EngineBridge {
     }
 
     /// Create a battle state from UI components
-    pub fn create_battle_state(&self, format: &UIBattleFormat, side_one: &UIBattleSide, side_two: &UIBattleSide) -> Result<State, String> {
+    pub fn create_battle_state(&self, format: &UIBattleFormat, side_one: &UIBattleSide, side_two: &UIBattleSide) -> Result<BattleState, String> {
         // Convert format
         let format_type = match format.format_type.as_str() {
             "Singles" => FormatType::Singles,
@@ -758,7 +759,7 @@ impl EngineBridge {
         };
 
         let battle_format = BattleFormat::new(format.name.clone(), generation, format_type);
-        let mut state = State::new(battle_format);
+        let mut state = BattleState::new(battle_format);
 
         // Add Pokemon to sides
         for (i, ui_pokemon) in side_one.pokemon.iter().enumerate() {
@@ -779,7 +780,7 @@ impl EngineBridge {
     }
 
     /// Convert UI state back to internal state
-    pub fn ui_to_state(&self, ui_state: &UIBattleState) -> Result<State, String> {
+    pub fn ui_to_state(&self, ui_state: &UIBattleState) -> Result<BattleState, String> {
         // Start with the basic state creation from format and sides
         let mut state = self.create_battle_state(&ui_state.format, &ui_state.side_one, &ui_state.side_two)?;
         

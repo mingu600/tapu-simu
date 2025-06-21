@@ -1,0 +1,1 @@
+Please read @LEGACY_STATE_REMOVAL_PLAN.md thoroughly. Then, continue executing the plan. Be very precise and skip no steps. Do not leave placeholders or TODOs. :

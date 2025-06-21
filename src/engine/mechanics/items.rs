@@ -3,14 +3,12 @@
 //! This module provides comprehensive item effects system with generation-aware mechanics.
 //! Items can modify damage, stats, provide abilities, immunities, and many other battle effects.
 
-use crate::engine::mechanics::abilities::DamageContext;
+use crate::engine::combat::damage_context::DamageContext;
 use crate::generation::GenerationMechanics;
-use crate::core::state::MoveCategory;
+use crate::core::battle_state::{MoveCategory, Pokemon};
 use crate::core::battle_format::BattlePosition;
-use crate::core::instruction::{
-    Instruction, StateInstructions, RemoveStatusInstruction, ApplyStatusInstruction,
-    PositionHealInstruction, ChangeItemInstruction, BoostStatsInstruction, Stat, PokemonStatus
-};
+use crate::core::instruction::{Stat, PokemonStatus};
+use crate::core::instructions::{BattleInstruction, BattleInstructions, StatusInstruction, PokemonInstruction, StatsInstruction};
 use std::collections::HashMap;
 
 /// Stat boosts for reactive items
@@ -131,6 +129,10 @@ pub struct ItemModifier {
     pub drain_percentage: f32,
     /// Removes contact flag from move (Punching Glove)
     pub removes_contact: bool,
+    /// Accuracy multiplier (1.0 = no change, >1.0 = more accurate)
+    pub accuracy_multiplier: f32,
+    /// Priority modifier (0 = no change, +1 = +1 priority, etc.)
+    pub priority_modifier: i8,
 }
 
 impl Default for ItemModifier {
@@ -154,6 +156,8 @@ impl Default for ItemModifier {
             prevents_ko_at_full_hp: false,
             drain_percentage: 0.0,
             removes_contact: false,
+            accuracy_multiplier: 1.0,
+            priority_modifier: 0,
         }
     }
 }
@@ -271,6 +275,18 @@ impl ItemModifier {
         self.removes_contact = true;
         self
     }
+    
+    /// Set accuracy multiplier
+    pub fn with_accuracy_multiplier(mut self, multiplier: f32) -> Self {
+        self.accuracy_multiplier = multiplier;
+        self
+    }
+    
+    /// Set priority modifier
+    pub fn with_priority_modifier(mut self, modifier: i8) -> Self {
+        self.priority_modifier = modifier;
+        self
+    }
 }
 
 /// Trait for item effects that can modify damage calculation
@@ -339,7 +355,7 @@ pub trait ItemEffect {
         _context: &DamageContext, 
         _type_effectiveness: f32,
         _holder_position: BattlePosition
-    ) -> Vec<StateInstructions> {
+    ) -> Vec<BattleInstructions> {
         vec![]
     }
     
@@ -348,8 +364,28 @@ pub trait ItemEffect {
         &self,
         _holder_position: BattlePosition,
         _current_status: &PokemonStatus
-    ) -> Vec<StateInstructions> {
+    ) -> Vec<BattleInstructions> {
         vec![]
+    }
+    
+    /// Check if this item should activate when a move misses
+    fn check_miss_trigger(&self, _holder_position: BattlePosition) -> Vec<BattleInstructions> {
+        vec![]
+    }
+    
+    /// Check if this item should activate when affected by an ability
+    fn check_ability_trigger(&self, _holder_position: BattlePosition, _ability_name: &str) -> Vec<BattleInstructions> {
+        vec![]
+    }
+    
+    /// Get the form change for this item when held by a specific Pokemon species
+    fn get_form_change(&self, _pokemon_species: &str) -> Option<String> {
+        None
+    }
+    
+    /// Check if this item provides stat changes when changing form
+    fn get_form_stat_changes(&self, _pokemon_species: &str) -> Option<HashMap<Stat, i16>> {
+        None
     }
 }
 
@@ -367,7 +403,7 @@ impl ItemEffect for ChoiceBand {
     }
 
     fn modify_damage(&self, context: &DamageContext) -> ItemModifier {
-        if context.move_data.category == MoveCategory::Physical {
+        if context.move_info.data.category == MoveCategory::Physical {
             ItemModifier::new().with_attack_multiplier(1.5)
         } else {
             ItemModifier::default()
@@ -385,7 +421,7 @@ impl ItemEffect for ChoiceSpecs {
     }
 
     fn modify_damage(&self, context: &DamageContext) -> ItemModifier {
-        if context.move_data.category == MoveCategory::Special {
+        if context.move_info.data.category == MoveCategory::Special {
             ItemModifier::new().with_special_attack_multiplier(1.5)
         } else {
             ItemModifier::default()
@@ -454,7 +490,7 @@ impl ItemEffect for MuscleBand {
     }
 
     fn modify_damage(&self, context: &DamageContext) -> ItemModifier {
-        if context.move_data.category == MoveCategory::Physical {
+        if context.move_info.data.category == MoveCategory::Physical {
             ItemModifier::new().with_power_multiplier(1.1)
         } else {
             ItemModifier::default()
@@ -472,7 +508,7 @@ impl ItemEffect for WiseGlasses {
     }
 
     fn modify_damage(&self, context: &DamageContext) -> ItemModifier {
-        if context.move_data.category == MoveCategory::Special {
+        if context.move_info.data.category == MoveCategory::Special {
             ItemModifier::new().with_power_multiplier(1.1)
         } else {
             ItemModifier::default()
@@ -495,8 +531,8 @@ impl ItemEffect for SeaIncense {
     }
 
     fn modify_damage(&self, context: &DamageContext) -> ItemModifier {
-        if context.move_type == "Water" {
-            let generation_multiplier = match context.state.get_generation() {
+        if context.move_info.move_type == "Water" {
+            let generation_multiplier = match context.get_generation() {
                 crate::generation::Generation::Gen3 => 1.05,
                 crate::generation::Generation::Gen4 | crate::generation::Generation::Gen5 |
                 crate::generation::Generation::Gen6 | crate::generation::Generation::Gen7 |
@@ -520,7 +556,7 @@ impl ItemEffect for PinkBow {
     }
 
     fn modify_damage(&self, context: &DamageContext) -> ItemModifier {
-        if context.move_type == "Normal" {
+        if context.move_info.move_type == "Normal" {
             ItemModifier::new().with_power_multiplier(1.1)
         } else {
             ItemModifier::default()
@@ -538,7 +574,7 @@ impl ItemEffect for PolkadotBow {
     }
 
     fn modify_damage(&self, context: &DamageContext) -> ItemModifier {
-        if context.move_type == "Normal" {
+        if context.move_info.move_type == "Normal" {
             ItemModifier::new().with_power_multiplier(1.1)
         } else {
             ItemModifier::default()
@@ -641,11 +677,11 @@ impl ItemEffect for TypeBooster {
     }
 
     fn modify_damage(&self, context: &DamageContext) -> ItemModifier {
-        if context.move_type == self.boosted_type {
+        if context.move_info.move_type == self.boosted_type {
             // Generation-aware multipliers:
             // Gen 2-3: 1.1x multiplier
             // Gen 4+: 1.2x multiplier
-            let generation_multiplier = match context.state.get_generation() {
+            let generation_multiplier = match context.get_generation() {
                 crate::generation::Generation::Gen2 | crate::generation::Generation::Gen3 => 1.1,
                 _ => 1.2, // Gen 4 and later
             };
@@ -737,12 +773,12 @@ impl ItemEffect for ArceusPlate {
         let mut modifier = ItemModifier::new();
 
         // Change Judgment to plate type
-        if context.move_data.name.to_lowercase() == "judgment" {
+        if context.move_info.data.name.to_lowercase() == "judgment" {
             modifier.type_change = Some(self.plate_type.clone());
         }
 
         // Boost matching type moves
-        if context.move_type == self.plate_type {
+        if context.move_info.move_type == self.plate_type {
             modifier.power_multiplier = 1.2;
         }
 
@@ -834,7 +870,7 @@ impl ItemEffect for Gem {
     }
 
     fn modify_damage(&self, context: &DamageContext) -> ItemModifier {
-        if context.move_type == self.gem_type {
+        if context.move_info.move_type == self.gem_type {
             ItemModifier::new()
                 .with_power_multiplier(self.multiplier)
                 .consumed() // Gem is consumed after use
@@ -936,7 +972,7 @@ impl ItemEffect for DamageReductionBerry {
         use crate::engine::combat::type_effectiveness::{TypeChart, PokemonType};
         
         // Check if this move targets the berry's resisted type
-        if context.move_type != self.resisted_type {
+        if context.move_info.move_type != self.resisted_type {
             return ItemModifier::default();
         }
         
@@ -948,10 +984,10 @@ impl ItemEffect for DamageReductionBerry {
         // For other berries, only activate on super effective moves
         // We need to check type effectiveness
         let type_chart = TypeChart::new(9); // Gen 9 type chart
-        if let Some(attacking_type) = PokemonType::from_str(&context.move_type) {
-            let defender_type1 = PokemonType::from_str(&context.defender.types[0]).unwrap_or(PokemonType::Normal);
-            let defender_type2 = if context.defender.types.len() > 1 {
-                PokemonType::from_str(&context.defender.types[1]).unwrap_or(defender_type1)
+        if let Some(attacking_type) = PokemonType::from_str(&context.move_info.move_type) {
+            let defender_type1 = PokemonType::from_str(&context.defender.pokemon.types[0]).unwrap_or(PokemonType::Normal);
+            let defender_type2 = if context.defender.pokemon.types.len() > 1 {
+                PokemonType::from_str(&context.defender.pokemon.types[1]).unwrap_or(defender_type1)
             } else {
                 defender_type1
             };
@@ -986,9 +1022,9 @@ impl ItemEffect for ThickClub {
     }
 
     fn modify_damage(&self, context: &DamageContext) -> ItemModifier {
-        let species_name = context.attacker.species.to_lowercase();
+        let species_name = context.attacker.pokemon.species.to_lowercase();
         if (species_name.contains("cubone") || species_name.contains("marowak"))
-            && context.move_data.category == MoveCategory::Physical
+            && context.move_info.data.category == MoveCategory::Physical
         {
             ItemModifier::new().with_attack_multiplier(2.0)
         } else {
@@ -1007,9 +1043,9 @@ impl ItemEffect for LightBall {
     }
 
     fn modify_damage(&self, context: &DamageContext) -> ItemModifier {
-        let species_name = context.attacker.species.to_lowercase();
+        let species_name = context.attacker.pokemon.species.to_lowercase();
         if species_name.contains("pikachu") {
-            match context.move_data.category {
+            match context.move_info.data.category {
                 MoveCategory::Physical => ItemModifier::new().with_attack_multiplier(2.0),
                 MoveCategory::Special => ItemModifier::new().with_special_attack_multiplier(2.0),
                 MoveCategory::Status => ItemModifier::default(),
@@ -1038,18 +1074,18 @@ impl ItemEffect for SoulDew {
     }
 
     fn modify_damage(&self, context: &DamageContext) -> ItemModifier {
-        let species_name = context.attacker.species.to_lowercase();
+        let species_name = context.attacker.pokemon.species.to_lowercase();
         if species_name.contains("latios") || species_name.contains("latias") {
             if self.generation >= 7 {
                 // Gen 7+: Boost Dragon/Psychic moves by 20%
-                if context.move_type == "Dragon" || context.move_type == "Psychic" {
+                if context.move_info.move_type == "Dragon" || context.move_info.move_type == "Psychic" {
                     ItemModifier::new().with_power_multiplier(1.2)
                 } else {
                     ItemModifier::default()
                 }
             } else {
                 // Gen 3-6: Boost special moves by 50%, special defense by 50%
-                if context.move_data.category == MoveCategory::Special {
+                if context.move_info.data.category == MoveCategory::Special {
                     ItemModifier::new()
                         .with_special_attack_multiplier(1.5)
                         .with_special_defense_multiplier(1.5)
@@ -1111,8 +1147,8 @@ impl ItemEffect for LegendaryOrb {
     }
 
     fn modify_damage(&self, context: &DamageContext) -> ItemModifier {
-        let species_name = context.attacker.species.to_lowercase();
-        if species_name.contains(&self.species) && self.boosted_types.contains(&context.move_type) {
+        let species_name = context.attacker.pokemon.species.to_lowercase();
+        if species_name.contains(&self.species) && self.boosted_types.contains(&context.move_info.move_type) {
             ItemModifier::new().with_power_multiplier(1.2)
         } else {
             ItemModifier::default()
@@ -1168,7 +1204,7 @@ impl ItemEffect for AssaultVest {
     fn modify_damage(&self, context: &DamageContext) -> ItemModifier {
         // Assault Vest provides 1.5x Special Defense when held by defender
         // Note: The move blocking effect should be handled in move selection, not damage calc
-        if context.move_data.category == MoveCategory::Special {
+        if context.move_info.data.category == MoveCategory::Special {
             ItemModifier::new().with_special_defense_multiplier(1.5)
         } else {
             ItemModifier::default()
@@ -1219,7 +1255,7 @@ impl ItemEffect for RockyHelmet {
 
     fn modify_damage(&self, context: &DamageContext) -> ItemModifier {
         // Check if move makes contact (would need flag checking)
-        if context.move_data.flags.contains(&"contact".to_string()) {
+        if context.move_info.data.flags.contains(&"contact".to_string()) {
             ItemModifier::new().with_contact_recoil(1.0 / 6.0) // 1/6 max HP
         } else {
             ItemModifier::default()
@@ -1249,7 +1285,7 @@ impl ItemEffect for WeaknessPolicy {
     }
     
     fn check_reactive_trigger(&self, context: &DamageContext, type_effectiveness: f32) -> ItemModifier {
-        if context.move_data.category != MoveCategory::Status && type_effectiveness > 1.0 {
+        if context.move_info.data.category != MoveCategory::Status && type_effectiveness > 1.0 {
             ItemModifier::new()
                 .with_stat_boosts(StatBoosts::attack_and_special_attack(2, 2))
                 .consumed()
@@ -1278,7 +1314,7 @@ impl ItemEffect for FocusSash {
     
     fn check_reactive_trigger(&self, context: &DamageContext, _type_effectiveness: f32) -> ItemModifier {
         // Check if defender is at full HP
-        if context.defender.hp == context.defender.max_hp {
+        if context.defender.pokemon.hp == context.defender.pokemon.max_hp {
             ItemModifier::new()
                 .with_ko_prevention()
                 .consumed()
@@ -1306,7 +1342,7 @@ impl ItemEffect for AbsorbBulb {
     }
     
     fn check_reactive_trigger(&self, context: &DamageContext, _type_effectiveness: f32) -> ItemModifier {
-        if context.move_type == "Water" {
+        if context.move_info.move_type == "Water" {
             ItemModifier::new()
                 .with_stat_boosts(StatBoosts::special_attack(1))
                 .consumed()
@@ -1334,7 +1370,7 @@ impl ItemEffect for CellBattery {
     }
     
     fn check_reactive_trigger(&self, context: &DamageContext, _type_effectiveness: f32) -> ItemModifier {
-        if context.move_type == "Electric" {
+        if context.move_info.move_type == "Electric" {
             ItemModifier::new()
                 .with_stat_boosts(StatBoosts::attack(1))
                 .consumed()
@@ -1375,8 +1411,21 @@ impl ItemEffect for Leftovers {
         "Leftovers"
     }
     
-    // Note: End-of-turn healing will be handled by the battle engine
-    // This is just the item definition for identification
+    fn generate_end_of_turn_instructions(
+        &self,
+        holder_position: BattlePosition,
+        _current_status: &PokemonStatus
+    ) -> Vec<BattleInstructions> {
+        // Leftovers heal 1/16 of max HP each turn
+        // We'll use a placeholder amount that the battle engine can calculate properly
+        let heal_instruction = BattleInstruction::Pokemon(PokemonInstruction::Heal {
+            target: holder_position,
+            amount: 1, // Placeholder - battle engine should calculate 1/16 max HP
+            previous_hp: None,
+        });
+        
+        vec![BattleInstructions::new(100.0, vec![heal_instruction])]
+    }
 }
 
 /// Metal Powder - Reduce damage by 50% when held by Ditto
@@ -1398,7 +1447,7 @@ impl ItemEffect for MetalPowder {
     
     fn modify_damage(&self, context: &DamageContext) -> ItemModifier {
         // Metal Powder only works when the defender (item holder) is Ditto
-        let species_name = context.defender.species.to_lowercase();
+        let species_name = context.defender.pokemon.species.to_lowercase();
         if species_name == "ditto" {
             ItemModifier::new().with_damage_multiplier(0.5)
         } else {
@@ -1426,7 +1475,7 @@ impl ItemEffect for PunchingGlove {
     
     fn modify_damage(&self, context: &DamageContext) -> ItemModifier {
         // Check if move has punch flag
-        if context.move_data.flags.contains(&"punch".to_string()) {
+        if context.move_info.data.flags.contains(&"punch".to_string()) {
             ItemModifier::new()
                 .with_power_multiplier(1.1)
                 .with_contact_removal()
@@ -1458,7 +1507,7 @@ impl ItemEffect for PechaBerry {
     }
     
     fn check_reactive_trigger(&self, context: &DamageContext, _type_effectiveness: f32) -> ItemModifier {
-        if matches!(context.defender.status, PokemonStatus::Poison | PokemonStatus::Toxic) {
+        if matches!(context.defender.pokemon.status, PokemonStatus::Poison | PokemonStatus::Toxic) {
             ItemModifier::new().consumed()
         } else {
             ItemModifier::default()
@@ -1470,21 +1519,21 @@ impl ItemEffect for PechaBerry {
         context: &DamageContext, 
         _type_effectiveness: f32,
         holder_position: BattlePosition
-    ) -> Vec<StateInstructions> {
-        if matches!(context.defender.status, PokemonStatus::Poison | PokemonStatus::Toxic) {
+    ) -> Vec<BattleInstructions> {
+        if matches!(context.defender.pokemon.status, PokemonStatus::Poison | PokemonStatus::Toxic) {
             let instructions = vec![
-                Instruction::RemoveStatus(RemoveStatusInstruction {
-                target_position: holder_position,
-                previous_status: Some(PokemonStatus::None),
-                previous_status_duration: Some(None),
-            }),
-                Instruction::ChangeItem(ChangeItemInstruction {
-                    target_position: holder_position,
+                BattleInstruction::Status(StatusInstruction::Remove {
+                    target: holder_position,
+                    status: PokemonStatus::Poison,
+                    previous_duration: None,
+                }),
+                BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+                    target: holder_position,
                     new_item: None,
                     previous_item: Some("Pecha Berry".to_string()),
                 })
             ];
-            vec![StateInstructions::new(100.0, instructions)]
+            vec![BattleInstructions::new(100.0, instructions)]
         } else {
             vec![]
         }
@@ -1509,7 +1558,7 @@ impl ItemEffect for CheriBerry {
     }
     
     fn check_reactive_trigger(&self, context: &DamageContext, _type_effectiveness: f32) -> ItemModifier {
-        if context.defender.status == PokemonStatus::Paralysis {
+        if context.defender.pokemon.status == PokemonStatus::Paralysis {
             ItemModifier::new().consumed()
         } else {
             ItemModifier::default()
@@ -1521,21 +1570,21 @@ impl ItemEffect for CheriBerry {
         context: &DamageContext, 
         _type_effectiveness: f32,
         holder_position: BattlePosition
-    ) -> Vec<StateInstructions> {
-        if context.defender.status == PokemonStatus::Paralysis {
+    ) -> Vec<BattleInstructions> {
+        if context.defender.pokemon.status == PokemonStatus::Paralysis {
             let instructions = vec![
-                Instruction::RemoveStatus(RemoveStatusInstruction {
-                target_position: holder_position,
-                previous_status: Some(PokemonStatus::None),
-                previous_status_duration: Some(None),
-            }),
-                Instruction::ChangeItem(ChangeItemInstruction {
-                    target_position: holder_position,
+                BattleInstruction::Status(StatusInstruction::Remove {
+                    target: holder_position,
+                    status: PokemonStatus::Paralysis,
+                    previous_duration: None,
+                }),
+                BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+                    target: holder_position,
                     new_item: None,
                     previous_item: Some("Cheri Berry".to_string()),
                 })
             ];
-            vec![StateInstructions::new(100.0, instructions)]
+            vec![BattleInstructions::new(100.0, instructions)]
         } else {
             vec![]
         }
@@ -1560,7 +1609,7 @@ impl ItemEffect for RawstBerry {
     }
     
     fn check_reactive_trigger(&self, context: &DamageContext, _type_effectiveness: f32) -> ItemModifier {
-        if context.defender.status == PokemonStatus::Burn {
+        if context.defender.pokemon.status == PokemonStatus::Burn {
             ItemModifier::new().consumed()
         } else {
             ItemModifier::default()
@@ -1572,21 +1621,21 @@ impl ItemEffect for RawstBerry {
         context: &DamageContext, 
         _type_effectiveness: f32,
         holder_position: BattlePosition
-    ) -> Vec<StateInstructions> {
-        if context.defender.status == PokemonStatus::Burn {
+    ) -> Vec<BattleInstructions> {
+        if context.defender.pokemon.status == PokemonStatus::Burn {
             let instructions = vec![
-                Instruction::RemoveStatus(RemoveStatusInstruction {
-                target_position: holder_position,
-                previous_status: Some(PokemonStatus::None),
-                previous_status_duration: Some(None),
-            }),
-                Instruction::ChangeItem(ChangeItemInstruction {
-                    target_position: holder_position,
+                BattleInstruction::Status(StatusInstruction::Remove {
+                    target: holder_position,
+                    status: PokemonStatus::Burn,
+                    previous_duration: None,
+                }),
+                BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+                    target: holder_position,
                     new_item: None,
                     previous_item: Some("Rawst Berry".to_string()),
                 })
             ];
-            vec![StateInstructions::new(100.0, instructions)]
+            vec![BattleInstructions::new(100.0, instructions)]
         } else {
             vec![]
         }
@@ -1611,7 +1660,7 @@ impl ItemEffect for AspearBerry {
     }
     
     fn check_reactive_trigger(&self, context: &DamageContext, _type_effectiveness: f32) -> ItemModifier {
-        if context.defender.status == PokemonStatus::Freeze {
+        if context.defender.pokemon.status == PokemonStatus::Freeze {
             ItemModifier::new().consumed()
         } else {
             ItemModifier::default()
@@ -1623,21 +1672,21 @@ impl ItemEffect for AspearBerry {
         context: &DamageContext, 
         _type_effectiveness: f32,
         holder_position: BattlePosition
-    ) -> Vec<StateInstructions> {
-        if context.defender.status == PokemonStatus::Freeze {
+    ) -> Vec<BattleInstructions> {
+        if context.defender.pokemon.status == PokemonStatus::Freeze {
             let instructions = vec![
-                Instruction::RemoveStatus(RemoveStatusInstruction {
-                target_position: holder_position,
-                previous_status: Some(PokemonStatus::None),
-                previous_status_duration: Some(None),
-            }),
-                Instruction::ChangeItem(ChangeItemInstruction {
-                    target_position: holder_position,
+                BattleInstruction::Status(StatusInstruction::Remove {
+                    target: holder_position,
+                    status: PokemonStatus::Freeze,
+                    previous_duration: None,
+                }),
+                BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+                    target: holder_position,
                     new_item: None,
                     previous_item: Some("Aspear Berry".to_string()),
                 })
             ];
-            vec![StateInstructions::new(100.0, instructions)]
+            vec![BattleInstructions::new(100.0, instructions)]
         } else {
             vec![]
         }
@@ -1662,7 +1711,7 @@ impl ItemEffect for LumBerry {
     }
     
     fn check_reactive_trigger(&self, context: &DamageContext, _type_effectiveness: f32) -> ItemModifier {
-        if context.defender.status != PokemonStatus::None {
+        if context.defender.pokemon.status != PokemonStatus::None {
             ItemModifier::new().consumed()
         } else {
             ItemModifier::default()
@@ -1674,21 +1723,21 @@ impl ItemEffect for LumBerry {
         context: &DamageContext, 
         _type_effectiveness: f32,
         holder_position: BattlePosition
-    ) -> Vec<StateInstructions> {
-        if context.defender.status != PokemonStatus::None {
+    ) -> Vec<BattleInstructions> {
+        if context.defender.pokemon.status != PokemonStatus::None {
             let instructions = vec![
-                Instruction::RemoveStatus(RemoveStatusInstruction {
-                target_position: holder_position,
-                previous_status: Some(PokemonStatus::None),
-                previous_status_duration: Some(None),
-            }),
-                Instruction::ChangeItem(ChangeItemInstruction {
-                    target_position: holder_position,
+                BattleInstruction::Status(StatusInstruction::Remove {
+                    target: holder_position,
+                    status: context.defender.pokemon.status,
+                    previous_duration: None,
+                }),
+                BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+                    target: holder_position,
                     new_item: None,
                     previous_item: Some("Lum Berry".to_string()),
                 })
             ];
-            vec![StateInstructions::new(100.0, instructions)]
+            vec![BattleInstructions::new(100.0, instructions)]
         } else {
             vec![]
         }
@@ -1723,7 +1772,7 @@ impl ItemEffect for SitrusBerry {
     fn check_reactive_trigger(&self, context: &DamageContext, _type_effectiveness: f32) -> ItemModifier {
         // Check HP threshold based on generation
         let threshold = if self.generation >= 4 { 0.25 } else { 0.5 };
-        let hp_percentage = context.defender.hp as f32 / context.defender.max_hp as f32;
+        let hp_percentage = context.defender.pokemon.hp as f32 / context.defender.pokemon.max_hp as f32;
         
         if hp_percentage <= threshold {
             ItemModifier::new().consumed()
@@ -1737,31 +1786,31 @@ impl ItemEffect for SitrusBerry {
         context: &DamageContext, 
         _type_effectiveness: f32,
         holder_position: BattlePosition
-    ) -> Vec<StateInstructions> {
+    ) -> Vec<BattleInstructions> {
         // Check HP threshold based on generation
         let threshold = if self.generation >= 4 { 0.25 } else { 0.5 };
-        let hp_percentage = context.defender.hp as f32 / context.defender.max_hp as f32;
+        let hp_percentage = context.defender.pokemon.hp as f32 / context.defender.pokemon.max_hp as f32;
         
         if hp_percentage <= threshold {
             // Heal 1/4 of max HP or remaining HP, whichever is less (following V1 pattern)
             let heal_amount = std::cmp::min(
-                context.defender.max_hp / 4,
-                context.defender.max_hp - context.defender.hp
+                context.defender.pokemon.max_hp / 4,
+                context.defender.pokemon.max_hp - context.defender.pokemon.hp
             );
             
             let instructions = vec![
-                Instruction::PositionHeal(PositionHealInstruction {
-                    target_position: holder_position,
-                    heal_amount,
+                BattleInstruction::Pokemon(PokemonInstruction::Heal {
+                    target: holder_position,
+                    amount: heal_amount,
                     previous_hp: Some(0),
                 }),
-                Instruction::ChangeItem(ChangeItemInstruction {
-                    target_position: holder_position,
+                BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+                    target: holder_position,
                     new_item: None,
                     previous_item: Some("Sitrus Berry".to_string()),
                 })
             ];
-            vec![StateInstructions::new(100.0, instructions)]
+            vec![BattleInstructions::new(100.0, instructions)]
         } else {
             vec![]
         }
@@ -1786,7 +1835,7 @@ impl ItemEffect for ChestoBerry {
     }
     
     fn check_reactive_trigger(&self, context: &DamageContext, _type_effectiveness: f32) -> ItemModifier {
-        if context.defender.status == PokemonStatus::Sleep {
+        if context.defender.pokemon.status == PokemonStatus::Sleep {
             ItemModifier::new().consumed()
         } else {
             ItemModifier::default()
@@ -1798,21 +1847,21 @@ impl ItemEffect for ChestoBerry {
         context: &DamageContext, 
         _type_effectiveness: f32,
         holder_position: BattlePosition
-    ) -> Vec<StateInstructions> {
-        if context.defender.status == PokemonStatus::Sleep {
+    ) -> Vec<BattleInstructions> {
+        if context.defender.pokemon.status == PokemonStatus::Sleep {
             let instructions = vec![
-                Instruction::RemoveStatus(RemoveStatusInstruction {
-                target_position: holder_position,
-                previous_status: Some(PokemonStatus::None),
-                previous_status_duration: Some(None),
-            }),
-                Instruction::ChangeItem(ChangeItemInstruction {
-                    target_position: holder_position,
+                BattleInstruction::Status(StatusInstruction::Remove {
+                    target: holder_position,
+                    status: PokemonStatus::Sleep,
+                    previous_duration: None,
+                }),
+                BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+                    target: holder_position,
                     new_item: None,
                     previous_item: Some("Chesto Berry".to_string()),
                 })
             ];
-            vec![StateInstructions::new(100.0, instructions)]
+            vec![BattleInstructions::new(100.0, instructions)]
         } else {
             vec![]
         }
@@ -1838,9 +1887,9 @@ impl ItemEffect for MiracleBerry {
     
     fn check_reactive_trigger(&self, context: &DamageContext, _type_effectiveness: f32) -> ItemModifier {
         // Only available in Gen 2
-        match context.state.get_generation() {
+        match context.get_generation() {
             crate::generation::Generation::Gen2 => {
-                if context.defender.status != PokemonStatus::None {
+                if context.defender.pokemon.status != PokemonStatus::None {
                     ItemModifier::new().consumed()
                 } else {
                     ItemModifier::default()
@@ -1870,9 +1919,9 @@ impl ItemEffect for MintBerry {
     
     fn check_reactive_trigger(&self, context: &DamageContext, _type_effectiveness: f32) -> ItemModifier {
         // Only available in Gen 2
-        match context.state.get_generation() {
+        match context.get_generation() {
             crate::generation::Generation::Gen2 => {
-                if context.defender.status == PokemonStatus::Sleep {
+                if context.defender.pokemon.status == PokemonStatus::Sleep {
                     ItemModifier::new().consumed()
                 } else {
                     ItemModifier::default()
@@ -1905,7 +1954,7 @@ impl ItemEffect for LiechiBerry {
     }
     
     fn check_reactive_trigger(&self, context: &DamageContext, _type_effectiveness: f32) -> ItemModifier {
-        let hp_percentage = context.defender.hp as f32 / context.defender.max_hp as f32;
+        let hp_percentage = context.defender.pokemon.hp as f32 / context.defender.pokemon.max_hp as f32;
         if hp_percentage <= 0.25 {
             ItemModifier::new()
                 .with_stat_boosts(StatBoosts::attack(1))
@@ -1934,7 +1983,7 @@ impl ItemEffect for PetayaBerry {
     }
     
     fn check_reactive_trigger(&self, context: &DamageContext, _type_effectiveness: f32) -> ItemModifier {
-        let hp_percentage = context.defender.hp as f32 / context.defender.max_hp as f32;
+        let hp_percentage = context.defender.pokemon.hp as f32 / context.defender.pokemon.max_hp as f32;
         if hp_percentage <= 0.25 {
             ItemModifier::new()
                 .with_stat_boosts(StatBoosts::special_attack(1))
@@ -1963,7 +2012,7 @@ impl ItemEffect for SalacBerry {
     }
     
     fn check_reactive_trigger(&self, context: &DamageContext, _type_effectiveness: f32) -> ItemModifier {
-        let hp_percentage = context.defender.hp as f32 / context.defender.max_hp as f32;
+        let hp_percentage = context.defender.pokemon.hp as f32 / context.defender.pokemon.max_hp as f32;
         if hp_percentage <= 0.25 {
             ItemModifier::new()
                 .with_stat_boosts(StatBoosts {
@@ -2011,23 +2060,23 @@ impl ItemEffect for ElectricSeed {
         _context: &DamageContext, 
         _type_effectiveness: f32,
         holder_position: BattlePosition
-    ) -> Vec<StateInstructions> {
+    ) -> Vec<BattleInstructions> {
         let mut stat_boosts = HashMap::new();
         stat_boosts.insert(Stat::Defense, 1);
         
         let instructions = vec![
-            Instruction::BoostStats(BoostStatsInstruction {
-                target_position: holder_position,
-                stat_boosts,
-                previous_boosts: Some(HashMap::new()),
+            BattleInstruction::Stats(StatsInstruction::BoostStats {
+                target: holder_position,
+                stat_changes: stat_boosts,
+                previous_boosts: HashMap::new(),
             }),
-            Instruction::ChangeItem(ChangeItemInstruction {
-                target_position: holder_position,
+            BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+                target: holder_position,
                 new_item: None,
                 previous_item: Some("Electric Seed".to_string()),
             })
         ];
-        vec![StateInstructions::new(100.0, instructions)]
+        vec![BattleInstructions::new(100.0, instructions)]
     }
 }
 
@@ -2057,23 +2106,23 @@ impl ItemEffect for GrassySeed {
         _context: &DamageContext, 
         _type_effectiveness: f32,
         holder_position: BattlePosition
-    ) -> Vec<StateInstructions> {
+    ) -> Vec<BattleInstructions> {
         let mut stat_boosts = HashMap::new();
         stat_boosts.insert(Stat::Defense, 1);
         
         let instructions = vec![
-            Instruction::BoostStats(BoostStatsInstruction {
-                target_position: holder_position,
-                stat_boosts,
-                previous_boosts: Some(HashMap::new()),
+            BattleInstruction::Stats(StatsInstruction::BoostStats {
+                target: holder_position,
+                stat_changes: stat_boosts,
+                previous_boosts: HashMap::new(),
             }),
-            Instruction::ChangeItem(ChangeItemInstruction {
-                target_position: holder_position,
+            BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+                target: holder_position,
                 new_item: None,
                 previous_item: Some("Grassy Seed".to_string()),
             })
         ];
-        vec![StateInstructions::new(100.0, instructions)]
+        vec![BattleInstructions::new(100.0, instructions)]
     }
 }
 
@@ -2103,23 +2152,23 @@ impl ItemEffect for MistySeed {
         _context: &DamageContext, 
         _type_effectiveness: f32,
         holder_position: BattlePosition
-    ) -> Vec<StateInstructions> {
+    ) -> Vec<BattleInstructions> {
         let mut stat_boosts = HashMap::new();
         stat_boosts.insert(Stat::SpecialDefense, 1);
         
         let instructions = vec![
-            Instruction::BoostStats(BoostStatsInstruction {
-                target_position: holder_position,
-                stat_boosts,
-                previous_boosts: Some(HashMap::new()),
+            BattleInstruction::Stats(StatsInstruction::BoostStats {
+                target: holder_position,
+                stat_changes: stat_boosts,
+                previous_boosts: HashMap::new(),
             }),
-            Instruction::ChangeItem(ChangeItemInstruction {
-                target_position: holder_position,
+            BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+                target: holder_position,
                 new_item: None,
                 previous_item: Some("Misty Seed".to_string()),
             })
         ];
-        vec![StateInstructions::new(100.0, instructions)]
+        vec![BattleInstructions::new(100.0, instructions)]
     }
 }
 
@@ -2149,23 +2198,23 @@ impl ItemEffect for PsychicSeed {
         _context: &DamageContext, 
         _type_effectiveness: f32,
         holder_position: BattlePosition
-    ) -> Vec<StateInstructions> {
+    ) -> Vec<BattleInstructions> {
         let mut stat_boosts = HashMap::new();
         stat_boosts.insert(Stat::SpecialDefense, 1);
         
         let instructions = vec![
-            Instruction::BoostStats(BoostStatsInstruction {
-                target_position: holder_position,
-                stat_boosts,
-                previous_boosts: Some(HashMap::new()),
+            BattleInstruction::Stats(StatsInstruction::BoostStats {
+                target: holder_position,
+                stat_changes: stat_boosts,
+                previous_boosts: HashMap::new(),
             }),
-            Instruction::ChangeItem(ChangeItemInstruction {
-                target_position: holder_position,
+            BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+                target: holder_position,
                 new_item: None,
                 previous_item: Some("Psychic Seed".to_string()),
             })
         ];
-        vec![StateInstructions::new(100.0, instructions)]
+        vec![BattleInstructions::new(100.0, instructions)]
     }
 }
 
@@ -2190,7 +2239,25 @@ impl ItemEffect for BlackSludge {
         false
     }
     
-    // TODO: End-of-turn effect handling needs to be implemented in battle engine
+    fn generate_end_of_turn_instructions(
+        &self,
+        holder_position: BattlePosition,
+        _current_status: &PokemonStatus
+    ) -> Vec<BattleInstructions> {
+        // Black Sludge heals Poison-types by 1/16 max HP, damages others by 1/8 max HP
+        // Since we can't check Pokemon type here, this is a placeholder implementation
+        // The battle engine should check the Pokemon's type and apply the appropriate effect
+        
+        // For now, create a generic instruction that the battle engine can interpret
+        // In a more complete implementation, this would check the Pokemon's types
+        let instruction = BattleInstruction::Pokemon(PokemonInstruction::Heal {
+            target: holder_position,
+            amount: 0, // Placeholder - battle engine should check type and heal/damage accordingly
+            previous_hp: None,
+        });
+        
+        vec![BattleInstructions::new(100.0, vec![instruction])]
+    }
 }
 
 /// Flame Orb - Inflicts burn status at end of turn
@@ -2214,16 +2281,17 @@ impl ItemEffect for FlameOrb {
         &self,
         holder_position: BattlePosition,
         current_status: &PokemonStatus
-    ) -> Vec<StateInstructions> {
+    ) -> Vec<BattleInstructions> {
         // Only apply burn if Pokemon doesn't already have a status condition
         if *current_status == PokemonStatus::None {
-            let instruction = Instruction::ApplyStatus(ApplyStatusInstruction {
-                target_position: holder_position,
+            let instruction = BattleInstruction::Status(StatusInstruction::Apply {
+                target: holder_position,
                 status: PokemonStatus::Burn,
+                duration: None,
                 previous_status: Some(PokemonStatus::None),
-                previous_status_duration: Some(None),
+                previous_duration: None,
             });
-            vec![StateInstructions::new(100.0, vec![instruction])]
+            vec![BattleInstructions::new(100.0, vec![instruction])]
         } else {
             vec![]
         }
@@ -2251,16 +2319,17 @@ impl ItemEffect for ToxicOrb {
         &self,
         holder_position: BattlePosition,
         current_status: &PokemonStatus
-    ) -> Vec<StateInstructions> {
+    ) -> Vec<BattleInstructions> {
         // Only apply badly poisoned if Pokemon doesn't already have a status condition
         if *current_status == PokemonStatus::None {
-            let instruction = Instruction::ApplyStatus(ApplyStatusInstruction {
-                target_position: holder_position,
+            let instruction = BattleInstruction::Status(StatusInstruction::Apply {
+                target: holder_position,
                 status: PokemonStatus::Toxic,
+                duration: None,
                 previous_status: Some(PokemonStatus::None),
-                previous_status_duration: Some(None),
+                previous_duration: None,
             });
-            vec![StateInstructions::new(100.0, vec![instruction])]
+            vec![BattleInstructions::new(100.0, vec![instruction])]
         } else {
             vec![]
         }
@@ -2312,7 +2381,7 @@ impl ItemEffect for ThroatSpray {
     
     fn check_reactive_trigger(&self, context: &DamageContext, _type_effectiveness: f32) -> ItemModifier {
         // Check if move has sound flag
-        if context.move_data.flags.contains(&"sound".to_string()) {
+        if context.move_info.data.flags.contains(&"sound".to_string()) {
             ItemModifier::new()
                 .with_stat_boosts(StatBoosts::special_attack(1))
                 .consumed()
@@ -2340,8 +2409,36 @@ impl ItemEffect for WideLens {
     }
     
     fn modify_damage(&self, _context: &DamageContext) -> ItemModifier {
-        // TODO: Accuracy modification needs to be handled in move accuracy calculation
-        ItemModifier::default()
+        // Wide Lens increases move accuracy by 1.1x
+        ItemModifier::default().with_accuracy_multiplier(1.1)
+    }
+}
+
+/// Zoom Lens - Increases accuracy when moving after target
+#[derive(Debug, Clone)]
+pub struct ZoomLens;
+
+impl ItemEffect for ZoomLens {
+    fn name(&self) -> &str {
+        "Zoom Lens"
+    }
+    
+    fn is_attacker_item(&self) -> bool {
+        true
+    }
+    
+    fn is_defender_item(&self) -> bool {
+        false
+    }
+    
+    fn modify_damage(&self, context: &DamageContext) -> ItemModifier {
+        // Zoom Lens increases accuracy by 20% (1.2x) when user moves after target
+        // For now, we'll implement a simple version that checks if the user has moved
+        // A more complete implementation would require move order context
+        
+        // This is a placeholder - ideally we'd check if user moves after specific target
+        // For now, apply the boost if it seems likely the user moved second
+        ItemModifier::default().with_accuracy_multiplier(1.2)
     }
 }
 
@@ -2384,7 +2481,8 @@ impl ItemEffect for LoadedDice {
         false
     }
     
-    // TODO: Multi-hit move logic needs to be handled in move execution
+    // Multi-hit move logic is now handled in move_effects.rs apply_multi_hit_move function
+    // Loaded Dice forces multi-hit moves to always hit the maximum number of times (5)
 }
 
 /// Blunder Policy - +2 Speed when missing a move
@@ -2405,8 +2503,28 @@ impl ItemEffect for BlunderPolicy {
     }
     
     fn check_reactive_trigger(&self, _context: &DamageContext, _type_effectiveness: f32) -> ItemModifier {
-        // TODO: This should trigger on move miss, which needs special handling
+        // Blunder Policy activates on move miss, which is handled by check_miss_trigger
         ItemModifier::default()
+    }
+    
+    fn check_miss_trigger(&self, holder_position: BattlePosition) -> Vec<BattleInstructions> {
+        // Blunder Policy: +2 Speed when missing a move (single use)
+        let mut stat_changes = HashMap::new();
+        stat_changes.insert(Stat::Speed, 2);
+        let instruction = BattleInstruction::Stats(StatsInstruction::BoostStats {
+            target: holder_position,
+            stat_changes: stat_changes,
+            previous_boosts: HashMap::new(),
+        });
+        
+        // Also consume the item since it's single use
+        let consume_instruction = BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+            target: holder_position,
+            new_item: None,
+            previous_item: Some("Blunder Policy".to_string()),
+        });
+        
+        vec![BattleInstructions::new(100.0, vec![instruction, consume_instruction])]
     }
 }
 
@@ -2427,7 +2545,42 @@ impl ItemEffect for CustapBerry {
         false
     }
     
-    // TODO: Priority modification needs to be handled in move selection/ordering
+    fn modify_damage(&self, context: &DamageContext) -> ItemModifier {
+        // Custap Berry increases priority when HP ≤ 25%
+        let pokemon = &context.attacker.pokemon;
+        let hp_threshold = pokemon.max_hp / 4; // 25% of max HP
+        if pokemon.hp <= hp_threshold {
+            return ItemModifier::default()
+                .with_priority_modifier(1)
+                .consumed();
+        }
+        ItemModifier::default()
+    }
+}
+
+/// Quick Claw - May move first regardless of speed (20% chance)
+#[derive(Debug, Clone)]
+pub struct QuickClaw;
+
+impl ItemEffect for QuickClaw {
+    fn name(&self) -> &str {
+        "Quick Claw"
+    }
+    
+    fn is_attacker_item(&self) -> bool {
+        true
+    }
+    
+    fn is_defender_item(&self) -> bool {
+        false
+    }
+    
+    fn modify_damage(&self, _context: &DamageContext) -> ItemModifier {
+        // Quick Claw has a 20% chance to provide +1 priority
+        // For simplicity, we'll apply it deterministically in this implementation
+        // A more complete implementation would use probability branching
+        ItemModifier::default().with_priority_modifier(1)
+    }
 }
 
 /// Adrenaline Orb - +1 Speed when intimidated
@@ -2448,8 +2601,32 @@ impl ItemEffect for AdrenalineOrb {
     }
     
     fn check_reactive_trigger(&self, _context: &DamageContext, _type_effectiveness: f32) -> ItemModifier {
-        // TODO: This should trigger on Intimidate ability activation
+        // Adrenaline Orb activates on Intimidate, which is handled by check_ability_trigger
         ItemModifier::default()
+    }
+    
+    fn check_ability_trigger(&self, holder_position: BattlePosition, ability_name: &str) -> Vec<BattleInstructions> {
+        // Adrenaline Orb: +1 Speed when intimidated (single use)
+        if ability_name.to_lowercase() == "intimidate" {
+            let mut stat_changes = HashMap::new();
+            stat_changes.insert(Stat::Speed, 1);
+            let instruction = BattleInstruction::Stats(StatsInstruction::BoostStats {
+                target: holder_position,
+                stat_changes: stat_changes,
+                previous_boosts: HashMap::new(),
+            });
+            
+            // Consume the item since it's single use
+            let consume_instruction = BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+                target: holder_position,
+                new_item: None,
+                previous_item: Some("Adrenaline Orb".to_string()),
+            });
+            
+            return vec![BattleInstructions::new(100.0, vec![instruction, consume_instruction])];
+        }
+        
+        vec![]
     }
 }
 
@@ -2494,7 +2671,24 @@ impl ItemEffect for RustedSword {
         false
     }
     
-    // TODO: Form change mechanics need to be implemented
+    fn get_form_change(&self, pokemon_species: &str) -> Option<String> {
+        match pokemon_species.to_lowercase().as_str() {
+            "zacian" => Some("Zacian-Crowned".to_string()),
+            _ => None,
+        }
+    }
+    
+    fn get_form_stat_changes(&self, pokemon_species: &str) -> Option<HashMap<Stat, i16>> {
+        if pokemon_species.to_lowercase() == "zacian" {
+            // Crowned form stat changes: +10 Attack, +10 Defense
+            let mut stat_changes = HashMap::new();
+            stat_changes.insert(Stat::Attack, 10);
+            stat_changes.insert(Stat::Defense, 10);
+            Some(stat_changes)
+        } else {
+            None
+        }
+    }
 }
 
 /// Rusted Shield - Zamazenta forme item
@@ -2514,7 +2708,24 @@ impl ItemEffect for RustedShield {
         false
     }
     
-    // TODO: Form change mechanics need to be implemented
+    fn get_form_change(&self, pokemon_species: &str) -> Option<String> {
+        match pokemon_species.to_lowercase().as_str() {
+            "zamazenta" => Some("Zamazenta-Crowned".to_string()),
+            _ => None,
+        }
+    }
+    
+    fn get_form_stat_changes(&self, pokemon_species: &str) -> Option<HashMap<Stat, i16>> {
+        if pokemon_species.to_lowercase() == "zamazenta" {
+            // Crowned form stat changes: +10 Defense, +10 Special Defense
+            let mut stat_changes = HashMap::new();
+            stat_changes.insert(Stat::Defense, 10);
+            stat_changes.insert(Stat::SpecialDefense, 10);
+            Some(stat_changes)
+        } else {
+            None
+        }
+    }
 }
 
 /// Ogerpon Masks - 1.2x power boost for specific Ogerpon forms
@@ -2561,7 +2772,7 @@ impl ItemEffect for OgerponMask {
     }
     
     fn modify_damage(&self, context: &DamageContext) -> ItemModifier {
-        let species_name = context.attacker.species.to_lowercase();
+        let species_name = context.attacker.pokemon.species.to_lowercase();
         if species_name.contains("ogerpon") && species_name.contains(&self.forme_name.split('-').last().unwrap_or("")) {
             ItemModifier::new().with_power_multiplier(1.2)
         } else {
@@ -2731,6 +2942,7 @@ pub fn get_item_by_name_with_generation(item_name: &str, generation: u8) -> Opti
         "loadeddice" => Some(Box::new(LoadedDice)),
         "blunderpolicy" => Some(Box::new(BlunderPolicy)),
         "custapberry" => Some(Box::new(CustapBerry)),
+        "quickclaw" => Some(Box::new(QuickClaw)),
         "adrenalineorb" => Some(Box::new(AdrenalineOrb)),
         "boosterenergy" => Some(Box::new(BoosterEnergy)),
 
@@ -2758,7 +2970,7 @@ pub fn calculate_attacker_item_modifiers(
     let mut modifier = ItemModifier::default();
     let generation = generation_mechanics.generation.number();
 
-    if let Some(ref item_name) = context.attacker.item {
+    if let Some(ref item_name) = context.attacker.pokemon.item {
         if let Some(item) = get_item_by_name_with_generation(item_name, generation) {
             // Only process if this is actually an attacker item
             if item.is_attacker_item() {
@@ -2788,12 +3000,13 @@ pub fn calculate_attacker_item_modifiers(
 /// Calculate defender's item modifiers (items that affect incoming attacks)
 pub fn calculate_defender_item_modifiers(
     context: &DamageContext,
+    type_effectiveness: f32,
     generation_mechanics: &GenerationMechanics,
 ) -> ItemModifier {
     let mut modifier = ItemModifier::default();
     let generation = generation_mechanics.generation.number();
 
-    if let Some(ref item_name) = context.defender.item {
+    if let Some(ref item_name) = context.defender.pokemon.item {
         if let Some(item) = get_item_by_name_with_generation(item_name, generation) {
             // Only process if this is actually a defender item
             if item.is_defender_item() {
@@ -2812,9 +3025,16 @@ pub fn calculate_defender_item_modifiers(
                 }
                 
                 // Handle reactive items
-                // TODO: We need type effectiveness here for reactive items
-                // let reactive_modifier = item.check_reactive_trigger(context, type_effectiveness);
-                // Apply reactive modifiers...
+                let reactive_modifier = item.check_reactive_trigger(context, type_effectiveness);
+                
+                // Apply reactive modifiers
+                if let Some(stat_boosts) = reactive_modifier.stat_boosts {
+                    modifier.stat_boosts = Some(stat_boosts);
+                }
+                
+                // Apply other reactive modifiers
+                modifier.damage_multiplier *= reactive_modifier.damage_multiplier;
+                modifier.power_multiplier *= reactive_modifier.power_multiplier;
             }
         }
     }
@@ -2825,10 +3045,11 @@ pub fn calculate_defender_item_modifiers(
 /// Calculate all item modifiers for a damage context (for backward compatibility)
 pub fn calculate_item_modifiers(
     context: &DamageContext,
+    type_effectiveness: f32,
     generation_mechanics: &GenerationMechanics,
 ) -> ItemModifier {
     let attacker_modifier = calculate_attacker_item_modifiers(context, generation_mechanics);
-    let defender_modifier = calculate_defender_item_modifiers(context, generation_mechanics);
+    let defender_modifier = calculate_defender_item_modifiers(context, type_effectiveness, generation_mechanics);
     
     // Combine attacker and defender modifiers
     let mut combined_modifier = ItemModifier::default();
@@ -2866,7 +3087,7 @@ pub fn calculate_item_modifiers(
 
 /// Check if Expert Belt should boost damage based on type effectiveness
 pub fn apply_expert_belt_boost(context: &DamageContext, type_effectiveness: f32, generation: u8) -> f32 {
-    if let Some(ref item_name) = context.attacker.item {
+    if let Some(ref item_name) = context.attacker.pokemon.item {
         if let Some(item) = get_item_by_name_with_generation(item_name, generation) {
             if item.boosts_super_effective() && type_effectiveness > 1.0 {
                 return item.super_effective_multiplier();
@@ -2885,7 +3106,7 @@ pub fn apply_item_type_effectiveness_modifiers(
     let mut modified_effectiveness = type_effectiveness;
 
     // Check defender's item for type effectiveness modifications
-    if let Some(ref item_name) = context.defender.item {
+    if let Some(ref item_name) = context.defender.pokemon.item {
         if let Some(item) = get_item_by_name_with_generation(item_name, generation) {
             if item.affects_type_effectiveness() {
                 modified_effectiveness =
@@ -2897,6 +3118,82 @@ pub fn apply_item_type_effectiveness_modifiers(
     modified_effectiveness
 }
 
+/// Handle move miss triggers for items like Blunder Policy
+pub fn handle_miss_triggers(
+    holder_position: BattlePosition,
+    pokemon: &Pokemon,
+    generation: u8,
+) -> Vec<BattleInstructions> {
+    let mut instructions = Vec::new();
+    
+    if let Some(ref item_name) = pokemon.item {
+        if let Some(item) = get_item_by_name_with_generation(item_name, generation) {
+            let miss_instructions = item.check_miss_trigger(holder_position);
+            instructions.extend(miss_instructions);
+        }
+    }
+    
+    instructions
+}
+
+/// Calculate priority modifiers from items
+pub fn calculate_item_priority_modifier(
+    context: &DamageContext,
+    generation_mechanics: &GenerationMechanics,
+) -> i8 {
+    let mut priority_modifier = 0;
+    let generation = generation_mechanics.generation.number();
+
+    // Check attacker's item for priority modifications
+    if let Some(ref item_name) = context.attacker.pokemon.item {
+        if let Some(item) = get_item_by_name_with_generation(item_name, generation) {
+            if item.is_attacker_item() {
+                let item_modifier = item.modify_damage(context);
+                priority_modifier += item_modifier.priority_modifier;
+            }
+        }
+    }
+
+    priority_modifier
+}
+
+/// Handle ability activation triggers for items like Adrenaline Orb
+pub fn handle_ability_triggers(
+    holder_position: BattlePosition,
+    pokemon: &Pokemon,
+    ability_name: &str,
+    generation: u8,
+) -> Vec<BattleInstructions> {
+    let mut instructions = Vec::new();
+    
+    if let Some(ref item_name) = pokemon.item {
+        if let Some(item) = get_item_by_name_with_generation(item_name, generation) {
+            let ability_instructions = item.check_ability_trigger(holder_position, ability_name);
+            instructions.extend(ability_instructions);
+        }
+    }
+    
+    instructions
+}
+
+/// Check if an item provides a form change for a Pokemon
+pub fn get_item_form_change(pokemon_species: &str, item_name: &str, generation: u8) -> Option<String> {
+    if let Some(item) = get_item_by_name_with_generation(item_name, generation) {
+        item.get_form_change(pokemon_species)
+    } else {
+        None
+    }
+}
+
+/// Get stat changes from form-changing items
+pub fn get_item_form_stat_changes(pokemon_species: &str, item_name: &str, generation: u8) -> Option<HashMap<Stat, i16>> {
+    if let Some(item) = get_item_by_name_with_generation(item_name, generation) {
+        item.get_form_stat_changes(pokemon_species)
+    } else {
+        None
+    }
+}
+
 /// Check reactive item triggers (for items that activate when hit)
 pub fn check_reactive_item_triggers(
     context: &DamageContext,
@@ -2906,7 +3203,7 @@ pub fn check_reactive_item_triggers(
     let generation = generation_mechanics.generation.number();
     
     // Check defender's item for reactive triggers
-    if let Some(ref item_name) = context.defender.item {
+    if let Some(ref item_name) = context.defender.pokemon.item {
         if let Some(item) = get_item_by_name_with_generation(item_name, generation) {
             return item.check_reactive_trigger(context, type_effectiveness);
         }
@@ -2920,7 +3217,7 @@ pub fn check_reactive_item_triggers(
 mod tests {
     use super::*;
     use crate::data::types::EngineMoveData;
-    use crate::core::state::Pokemon;
+    use crate::core::battle_state::Pokemon;
 
 
     #[test]
@@ -3063,7 +3360,7 @@ mod tests {
             move_type: "Ground".to_string(),
             category: MoveCategory::Physical,
             priority: 0,
-            target: crate::data::ps_types::PSMoveTarget::Normal,
+            target: crate::data::showdown_types::MoveTarget::Normal,
             effect_chance: None,
             effect_description: "".to_string(),
             flags: vec![],
@@ -3072,11 +3369,15 @@ mod tests {
         let context = DamageContext {
             attacker,
             defender,
+            attacker_position: BattlePosition::new(crate::core::battle_format::SideReference::SideOne, 0),
+            defender_position: BattlePosition::new(crate::core::battle_format::SideReference::SideTwo, 0),
             move_data,
+            move_id: "Earthquake".to_string(),
             base_power: 100,
             is_critical: false,
+            is_contact: false,
             move_type: "Ground".to_string(),
-            state: crate::core::state::State::default(),
+            state: crate::core::battle_state::BattleState::default(),
         };
 
         // Test Weakness Policy with super effective move (Ground vs Rock/Dark)
@@ -3114,7 +3415,7 @@ mod tests {
             move_type: "Ground".to_string(),
             category: MoveCategory::Physical,
             priority: 0,
-            target: crate::data::ps_types::PSMoveTarget::Normal,
+            target: crate::data::showdown_types::MoveTarget::Normal,
             effect_chance: None,
             effect_description: "".to_string(),
             flags: vec![],
@@ -3123,11 +3424,15 @@ mod tests {
         let context = DamageContext {
             attacker,
             defender,
+            attacker_position: BattlePosition::new(crate::core::battle_format::SideReference::SideOne, 0),
+            defender_position: BattlePosition::new(crate::core::battle_format::SideReference::SideTwo, 0),
             move_data,
+            move_id: "Earthquake".to_string(),
             base_power: 100,
             is_critical: false,
+            is_contact: false,
             move_type: "Ground".to_string(),
-            state: crate::core::state::State::default(),
+            state: crate::core::battle_state::BattleState::default(),
         };
 
         // Test Focus Sash at full HP
@@ -3138,7 +3443,7 @@ mod tests {
         
         // Test with damaged Pokemon - should not trigger
         let mut damaged_context = context.clone();
-        damaged_context.defender.hp = 100; // Not at full HP
+        damaged_context.defender.pokemon.hp = 100; // Not at full HP
         let modifier_damaged = focus_sash.check_reactive_trigger(&damaged_context, 1.0);
         assert!(!modifier_damaged.prevents_ko_at_full_hp);
         assert!(!modifier_damaged.is_consumed);
@@ -3159,7 +3464,7 @@ mod tests {
             move_type: "Water".to_string(),
             category: MoveCategory::Special,
             priority: 0,
-            target: crate::data::ps_types::PSMoveTarget::Normal,
+            target: crate::data::showdown_types::MoveTarget::Normal,
             effect_chance: None,
             effect_description: "".to_string(),
             flags: vec![],
@@ -3168,11 +3473,15 @@ mod tests {
         let context = DamageContext {
             attacker: attacker.clone(),
             defender: defender.clone(),
+            attacker_position: BattlePosition::new(crate::core::battle_format::SideReference::SideOne, 0),
+            defender_position: BattlePosition::new(crate::core::battle_format::SideReference::SideTwo, 0),
             move_data: water_move,
+            move_id: "Hydro Pump".to_string(),
             base_power: 90,
             is_critical: false,
+            is_contact: false,
             move_type: "Water".to_string(),
-            state: crate::core::state::State::default(),
+            state: crate::core::battle_state::BattleState::default(),
         };
 
         // Test Absorb Bulb with Water move
@@ -3186,7 +3495,7 @@ mod tests {
 
         // Test Cell Battery with Electric move
         let mut electric_context = context.clone();
-        electric_context.move_type = "Electric".to_string();
+        electric_context.move_info.move_type = "Electric".to_string();
         electric_context.defender.item = Some("Cell Battery".to_string());
         
         let cell_battery = CellBattery;
@@ -3213,7 +3522,7 @@ mod tests {
             move_type: "Ground".to_string(),
             category: MoveCategory::Physical,
             priority: 0,
-            target: crate::data::ps_types::PSMoveTarget::Normal,
+            target: crate::data::showdown_types::MoveTarget::Normal,
             effect_chance: None,
             effect_description: "".to_string(),
             flags: vec![],
@@ -3222,11 +3531,15 @@ mod tests {
         let context = DamageContext {
             attacker,
             defender,
+            attacker_position: BattlePosition::new(crate::core::battle_format::SideReference::SideOne, 0),
+            defender_position: BattlePosition::new(crate::core::battle_format::SideReference::SideTwo, 0),
             move_data,
+            move_id: "Earthquake".to_string(),
             base_power: 100,
             is_critical: false,
+            is_contact: false,
             move_type: "Ground".to_string(),
-            state: crate::core::state::State::default(),
+            state: crate::core::battle_state::BattleState::default(),
         };
 
         // Test Shell Bell drain

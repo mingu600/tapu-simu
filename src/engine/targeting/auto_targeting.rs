@@ -4,15 +4,15 @@
 //! move target conventions directly, enabling seamless PS data integration.
 
 use crate::core::battle_format::{BattleFormat, BattlePosition, SideReference};
-use crate::data::ps_types::PSMoveTarget;
-use crate::core::state::State;
+use crate::data::showdown_types::MoveTarget;
+use crate::core::battle_state::BattleState;
 
 /// PS-compatible auto-targeting engine
-pub struct PSAutoTargetingEngine {
+pub struct AutoTargetingEngine {
     format: BattleFormat,
 }
 
-impl PSAutoTargetingEngine {
+impl AutoTargetingEngine {
     pub fn new(format: BattleFormat) -> Self {
         Self { format }
     }
@@ -20,21 +20,21 @@ impl PSAutoTargetingEngine {
     /// Resolve targets for a PS move target in the current format
     pub fn resolve_targets(
         &self,
-        ps_target: PSMoveTarget,
+        target: MoveTarget,
         user_position: BattlePosition,
-        state: &State,
+        state: &BattleState,
     ) -> Vec<BattlePosition> {
         let user_side = user_position.side;
         let user_slot = user_position.slot;
         let opponent_side = user_side.opposite();
         let active_per_side = self.format.active_pokemon_count();
 
-        match ps_target {
-            PSMoveTarget::Self_ => {
+        match target {
+            MoveTarget::Self_ => {
                 vec![user_position]
             }
             
-            PSMoveTarget::Normal | PSMoveTarget::AdjacentFoe => {
+            MoveTarget::Normal | MoveTarget::AdjacentFoe => {
                 // In singles, target the opponent
                 // In doubles, target the opponent in front (or first available)
                 self.get_default_opponent_target(opponent_side, user_slot, state)
@@ -42,12 +42,12 @@ impl PSAutoTargetingEngine {
                     .unwrap_or_default()
             }
             
-            PSMoveTarget::AllAdjacentFoes => {
+            MoveTarget::AllAdjacentFoes => {
                 // All active opponents
                 self.get_all_active_opponents(opponent_side, state)
             }
             
-            PSMoveTarget::AllAdjacent => {
+            MoveTarget::AllAdjacent => {
                 // All adjacent Pokemon (opponents + ally in doubles)
                 let mut targets = self.get_all_active_opponents(opponent_side, state);
                 
@@ -61,7 +61,7 @@ impl PSAutoTargetingEngine {
                 targets
             }
             
-            PSMoveTarget::AdjacentAlly => {
+            MoveTarget::AdjacentAlly => {
                 // Only in doubles - target the ally
                 if active_per_side > 1 {
                     self.get_ally_position(user_position, state)
@@ -72,12 +72,12 @@ impl PSAutoTargetingEngine {
                 }
             }
             
-            PSMoveTarget::AdjacentAllyOrSelf => {
+            MoveTarget::AdjacentAllyOrSelf => {
                 // Default to self (user can override with explicit target)
                 vec![user_position]
             }
             
-            PSMoveTarget::Any => {
+            MoveTarget::Any => {
                 // Long-range move - default to first opponent
                 // In full implementation, this would allow targeting any Pokemon
                 self.get_any_opponent_target(opponent_side, state)
@@ -85,14 +85,14 @@ impl PSAutoTargetingEngine {
                     .unwrap_or_default()
             }
             
-            PSMoveTarget::RandomNormal => {
+            MoveTarget::RandomNormal => {
                 // Random opponent - select random target from available opponents
                 self.get_random_opponent_target(opponent_side, state)
                     .map(|pos| vec![pos])
                     .unwrap_or_default()
             }
             
-            PSMoveTarget::Allies => {
+            MoveTarget::Allies => {
                 // All active allies (not including user)
                 let mut targets = vec![];
                 if active_per_side > 1 {
@@ -104,17 +104,17 @@ impl PSAutoTargetingEngine {
             }
             
             // Field/side targets don't have position targets
-            PSMoveTarget::All | PSMoveTarget::AllySide | PSMoveTarget::FoeSide => {
+            MoveTarget::All | MoveTarget::AllySide | MoveTarget::FoeSide => {
                 vec![]
             }
             
             // Team targets affect all team members (not position-based)
-            PSMoveTarget::AllyTeam => {
+            MoveTarget::AllyTeam => {
                 vec![]
             }
             
             // Scripted moves need special handling (Counter, Mirror Coat)
-            PSMoveTarget::Scripted => {
+            MoveTarget::Scripted => {
                 // Would need to track last attacker
                 vec![]
             }
@@ -126,7 +126,7 @@ impl PSAutoTargetingEngine {
         &self,
         opponent_side: SideReference,
         user_slot: usize,
-        state: &State,
+        state: &BattleState,
     ) -> Option<BattlePosition> {
         // In singles, just get the active opponent
         if self.format.active_pokemon_count() == 1 {
@@ -158,7 +158,7 @@ impl PSAutoTargetingEngine {
     fn get_any_opponent_target(
         &self,
         opponent_side: SideReference,
-        state: &State,
+        state: &BattleState,
     ) -> Option<BattlePosition> {
         for slot in 0..self.format.active_pokemon_count() {
             let position = BattlePosition::new(opponent_side, slot);
@@ -173,7 +173,7 @@ impl PSAutoTargetingEngine {
     fn get_all_active_opponents(
         &self,
         opponent_side: SideReference,
-        state: &State,
+        state: &BattleState,
     ) -> Vec<BattlePosition> {
         (0..self.format.active_pokemon_count())
             .map(|slot| BattlePosition::new(opponent_side, slot))
@@ -185,7 +185,7 @@ impl PSAutoTargetingEngine {
     fn get_ally_position(
         &self,
         user_position: BattlePosition,
-        state: &State,
+        state: &BattleState,
     ) -> Option<BattlePosition> {
         if self.format.active_pokemon_count() <= 1 {
             return None;
@@ -205,7 +205,7 @@ impl PSAutoTargetingEngine {
     fn get_random_opponent_target(
         &self,
         opponent_side: SideReference,
-        state: &State,
+        state: &BattleState,
     ) -> Option<BattlePosition> {
         let active_opponents = self.get_all_active_opponents(opponent_side, state);
         
@@ -222,47 +222,47 @@ impl PSAutoTargetingEngine {
     /// Check if explicit targets are valid for the given PS target type
     pub fn validate_targets(
         &self,
-        ps_target: PSMoveTarget,
+        target: MoveTarget,
         user_position: BattlePosition,
         explicit_targets: &[BattlePosition],
-        state: &State,
+        state: &BattleState,
     ) -> Result<(), String> {
         // Field effects don't have position targets
-        if ps_target.is_field_target() && !explicit_targets.is_empty() {
+        if target.is_field_target() && !explicit_targets.is_empty() {
             return Err("Field effect moves cannot have position targets".to_string());
         }
 
         // Validate each target is appropriate for the move
-        for &target in explicit_targets {
+        for &target_position in explicit_targets {
             // Check if position is active
-            if !state.is_position_active(target) {
-                return Err(format!("Target position {:?} has no active Pokemon", target));
+            if !state.is_position_active(target_position) {
+                return Err(format!("Target position {:?} has no active Pokemon", target_position));
             }
 
             // Check targeting restrictions
-            match ps_target {
-                PSMoveTarget::Self_ => {
-                    if target != user_position {
+            match target {
+                MoveTarget::Self_ => {
+                    if target_position != user_position {
                         return Err("Self-targeting moves can only target the user".to_string());
                     }
                 }
-                PSMoveTarget::AdjacentAlly | PSMoveTarget::Allies => {
-                    if target.side != user_position.side || target == user_position {
+                MoveTarget::AdjacentAlly | MoveTarget::Allies => {
+                    if target_position.side != user_position.side || target_position == user_position {
                         return Err("Ally-targeting moves can only target allies".to_string());
                     }
                 }
-                PSMoveTarget::Normal | PSMoveTarget::AdjacentFoe => {
-                    if target.side == user_position.side {
+                MoveTarget::Normal | MoveTarget::AdjacentFoe => {
+                    if target_position.side == user_position.side {
                         return Err("Opponent-targeting moves cannot target allies".to_string());
                     }
                 }
-                PSMoveTarget::AdjacentAllyOrSelf => {
-                    if target.side != user_position.side {
+                MoveTarget::AdjacentAllyOrSelf => {
+                    if target_position.side != user_position.side {
                         return Err("This move can only target user or allies".to_string());
                     }
                 }
                 // Any allows any target
-                PSMoveTarget::Any => {}
+                MoveTarget::Any => {}
                 // Spread moves are validated differently
                 _ => {}
             }
@@ -277,7 +277,7 @@ impl PSAutoTargetingEngine {
         user_side: SideReference,
         user_slot: usize,
         move_choice: &mut crate::core::move_choice::MoveChoice,
-        state: &State,
+        state: &BattleState,
     ) -> Result<(), String> {
         use crate::core::battle_format::BattlePosition;
 
@@ -298,20 +298,20 @@ impl PSAutoTargetingEngine {
         let user_position = BattlePosition::new(user_side, user_slot);
         
         // Get the move and its PS target type
-        let side = state.get_side(user_side);
-        let pokemon = side.get_active_pokemon_at_slot(user_slot)
+        let side = state.get_side(user_side.to_index());
+        let pokemon = side.and_then(|s| s.get_active_pokemon_at_slot(user_slot))
             .ok_or("No active Pokemon at specified slot")?;
         
         let move_data = pokemon.get_move(move_index)
             .ok_or("Move not found on Pokemon")?;
         
-        let ps_target = move_data.target;
+        let move_target = move_data.target;
 
         // Resolve targets using PS targeting system
-        let targets = self.resolve_targets(ps_target, user_position, state);
+        let targets = self.resolve_targets(move_target, user_position, state);
         
         // Validate the resolved targets
-        self.validate_targets(ps_target, user_position, &targets, state)?;
+        self.validate_targets(move_target, user_position, &targets, state)?;
         
         // Update the move choice with resolved targets
         move_choice.set_target_positions(targets);
@@ -323,10 +323,10 @@ impl PSAutoTargetingEngine {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::state::{State, Pokemon};
+    use crate::core::battle_state::{BattleState, Pokemon};
 
-    fn create_test_state_doubles() -> State {
-        let mut state = State::new(BattleFormat::doubles());
+    fn create_test_state_doubles() -> BattleState {
+        let mut state = BattleState::new(BattleFormat::doubles());
         
         // Set up active Pokemon on both sides
         state.side_one.active_pokemon_indices = vec![Some(0), Some(1)];
@@ -335,12 +335,12 @@ mod tests {
         // Add some Pokemon to teams
         for _ in 0..2 {
             let mut pokemon_one = Pokemon::new("Test".to_string());
-            pokemon_one.ability = "Test".to_string();
+            pokemon_one.ability = crate::types::identifiers::AbilityId::from("Test".to_string());
             pokemon_one.hp = 100;
             pokemon_one.max_hp = 100;
             
             let mut pokemon_two = Pokemon::new("Test".to_string());
-            pokemon_two.ability = "Test".to_string();
+            pokemon_two.ability = crate::types::identifiers::AbilityId::from("Test".to_string());
             pokemon_two.hp = 100;
             pokemon_two.max_hp = 100;
             
@@ -352,34 +352,34 @@ mod tests {
     }
 
     #[test]
-    fn test_ps_self_targeting() {
+    fn test_self_targeting() {
         let state = create_test_state_doubles();
-        let engine = PSAutoTargetingEngine::new(BattleFormat::doubles());
+        let engine = AutoTargetingEngine::new(BattleFormat::doubles());
         let user_pos = BattlePosition::new(SideReference::SideOne, 0);
         
-        let targets = engine.resolve_targets(PSMoveTarget::Self_, user_pos, &state);
+        let targets = engine.resolve_targets(MoveTarget::Self_, user_pos, &state);
         assert_eq!(targets, vec![user_pos]);
     }
 
     #[test]
-    fn test_ps_spread_move_targeting() {
+    fn test_spread_move_targeting() {
         let state = create_test_state_doubles();
-        let engine = PSAutoTargetingEngine::new(BattleFormat::doubles());
+        let engine = AutoTargetingEngine::new(BattleFormat::doubles());
         let user_pos = BattlePosition::new(SideReference::SideOne, 0);
         
-        let targets = engine.resolve_targets(PSMoveTarget::AllAdjacentFoes, user_pos, &state);
+        let targets = engine.resolve_targets(MoveTarget::AllAdjacentFoes, user_pos, &state);
         assert_eq!(targets.len(), 2);
         assert!(targets.contains(&BattlePosition::new(SideReference::SideTwo, 0)));
         assert!(targets.contains(&BattlePosition::new(SideReference::SideTwo, 1)));
     }
 
     #[test]
-    fn test_ps_ally_targeting() {
+    fn test_ally_targeting() {
         let state = create_test_state_doubles();
-        let engine = PSAutoTargetingEngine::new(BattleFormat::doubles());
+        let engine = AutoTargetingEngine::new(BattleFormat::doubles());
         let user_pos = BattlePosition::new(SideReference::SideOne, 0);
         
-        let targets = engine.resolve_targets(PSMoveTarget::AdjacentAlly, user_pos, &state);
+        let targets = engine.resolve_targets(MoveTarget::AdjacentAlly, user_pos, &state);
         assert_eq!(targets, vec![BattlePosition::new(SideReference::SideOne, 1)]);
     }
 }

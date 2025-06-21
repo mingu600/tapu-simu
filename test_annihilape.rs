@@ -1,9 +1,8 @@
-use tapu_simu::data::{RandomPokemonSet, random_team_loader::RandomStats, ps_move_factory::PSMoveFactory, ps_pokemon_factory::PSPokemonFactory};
+use tapu_simu::data::{RandomPokemonSet, random_team_loader::RandomStats, ps::Repository};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Create the factories
-    let move_factory = PSMoveFactory::new()?;
-    let pokemon_factory = PSPokemonFactory::new()?;
+    // Create the repository
+    let repository = Repository::from_path("data/ps-extracted")?;
     
     // Create an Annihilape set matching the one from the battle log
     let annihilape_set = RandomPokemonSet {
@@ -43,7 +42,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     
     // Convert to battle Pokemon (this will trigger our debug output)
-    let pokemon = annihilape_set.to_battle_pokemon(&move_factory, &pokemon_factory);
+    let pokemon = annihilape_set.to_battle_pokemon(&repository);
     
     println!("\nFinal Pokemon stats:");
     println!("HP: {}/{}", pokemon.hp, pokemon.max_hp);

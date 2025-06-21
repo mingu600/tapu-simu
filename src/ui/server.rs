@@ -17,7 +17,7 @@ use tower_http::cors::{Any, CorsLayer};
 use uuid::Uuid;
 
 use crate::core::battle_format::BattleFormat;
-use crate::core::state::State;
+use crate::core::battle_state::BattleState;
 use crate::core::battle_format::FormatType;
 use crate::generation::Generation;
 use super::bridge::{
@@ -37,7 +37,7 @@ pub struct ServerState {
 #[derive(Debug, Clone)]
 pub struct BattleSession {
     pub id: Uuid,
-    pub battle_state: State,
+    pub battle_state: BattleState,
     pub engine_bridge: EngineBridge,
     pub created_at: std::time::SystemTime,
 }

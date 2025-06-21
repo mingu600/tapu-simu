@@ -23,12 +23,12 @@
 //! ## Example Usage
 //! 
 //! ```rust
-//! use tapu_simu::{BattleFormat, State, MoveChoice};
+//! use tapu_simu::{BattleFormat, BattleState, MoveChoice};
 //! use tapu_simu::core::move_choice::{MoveIndex, PokemonIndex};
 //! use tapu_simu::core::battle_format::{BattlePosition, SideReference};
 //! 
-//! // Create a new singles battle
-//! let mut state = State::new(BattleFormat::gen9_ou());
+//! // Create a new singles battle using modern BattleState
+//! let mut battle_state = BattleState::new(BattleFormat::gen9_ou());
 //! 
 //! // Create move choices
 //! let move1 = MoveChoice::new_move(
@@ -49,18 +49,28 @@ pub mod testing;
 pub mod ui;
 pub mod generation;
 pub mod io;
+pub mod types;
+pub mod config;
+pub mod simulator;
+pub mod builders;
 
-// Re-exports for convenience
+// Modern API exports (primary interfaces)
 pub use core::battle_format::{BattleFormat, BattlePosition, SideReference, FormatType};
 pub use core::battle_environment::{
     Player, RandomPlayer, FirstMovePlayer, DamageMaximizer,
     BattleEnvironment, BattleResult, TurnInfo, ParallelBattleResults,
-    run_parallel_battles_with_states, run_battle_from_state
+    run_parallel_battles_with_states, run_battle_from_state, run_battle_from_battle_state
 };
-pub use core::instruction::{Instruction, StateInstructions};
+pub use core::instructions::{BattleInstruction, BattleInstructions, PokemonInstruction, FieldInstruction, StatusInstruction, StatsInstruction};
 pub use core::move_choice::MoveChoice;
-pub use core::state::State;
+pub use core::battle_state::BattleState;
+
 pub use generation::{Generation, GenerationMechanics, GenerationBattleMechanics};
+
+// Modern API re-exports
+pub use simulator::{Simulator, WinRate, BenchmarkResult};
+pub use config::{Config, ConfigBuilder};
+pub use builders::{BattleBuilder, FormatBuilder, TeamBuilder};
 
 // Test framework re-export
 pub use testing::framework::{TestFramework, ContactStatusResult};

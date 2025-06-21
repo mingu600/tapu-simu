@@ -8,24 +8,22 @@
 //! to match official game mechanics.
 
 use crate::core::battle_format::BattlePosition;
-use crate::core::instruction::{
-    Instruction, StateInstructions, PositionDamageInstruction,
-    ApplyStatusInstruction, BoostStatsInstruction,
-    SideCondition, PokemonStatus, Stat, RemoveVolatileStatusInstruction,
-    ChangeItemInstruction
-};
-use crate::core::state::{State, Pokemon};
+use crate::core::instruction::{SideCondition, PokemonStatus, Stat};
+use crate::core::instructions::{BattleInstruction, BattleInstructions, FieldInstruction, PokemonInstruction, StatusInstruction, StatsInstruction};
+use crate::core::battle_state::Pokemon;
+use crate::core::battle_state::BattleState;
 use crate::generation::GenerationMechanics;
 use crate::engine::combat::damage_calc::is_grounded;
+use crate::types::identifiers::AbilityId;
 use std::collections::HashMap;
 
 /// Process all switch-in effects for a Pokemon entering battle
 /// This handles entry hazards, abilities, and other switch-in effects
 pub fn process_switch_in_effects(
-    state: &State,
+    state: &BattleState,
     switching_position: BattlePosition,
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     // Process effects in the correct order according to game mechanics
@@ -40,7 +38,7 @@ pub fn process_switch_in_effects(
     instructions.extend(process_switch_in_items(state, switching_position, generation));
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -49,10 +47,10 @@ pub fn process_switch_in_effects(
 /// Process all switch-out effects for a Pokemon leaving battle
 /// This handles abilities and items that trigger on switch-out
 pub fn process_switch_out_effects(
-    state: &State,
+    state: &BattleState,
     switching_position: BattlePosition,
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     // 1. Switch-out abilities
@@ -65,7 +63,7 @@ pub fn process_switch_out_effects(
     instructions.extend(process_switch_out_volatile_cleanup(state, switching_position, generation));
     
     if instructions.is_empty() {
-        instructions.push(StateInstructions::empty());
+        instructions.push(BattleInstructions::new(100.0, vec![]));
     }
     
     instructions
@@ -73,13 +71,13 @@ pub fn process_switch_out_effects(
 
 /// Process entry hazards when a Pokemon switches in
 fn process_entry_hazards(
-    state: &State,
+    state: &BattleState,
     switching_position: BattlePosition,
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
-    let side = state.get_side(switching_position.side);
+    let side = state.get_side_by_ref(switching_position.side);
     let pokemon = match side.get_active_pokemon_at_slot(switching_position.slot) {
         Some(pokemon) => pokemon,
         None => return instructions,
@@ -92,11 +90,11 @@ fn process_entry_hazards(
         if spikes_layers > 0 && is_grounded(pokemon) {
             let damage = calculate_spikes_damage(pokemon, spikes_layers as i8);
             if damage > 0 {
-                instructions.push(StateInstructions::new(100.0, vec![
-                    Instruction::PositionDamage(PositionDamageInstruction {
-                target_position: switching_position,
-                damage_amount: damage,
-                previous_hp: Some(0),
+                instructions.push(BattleInstructions::new(100.0, vec![
+                    BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                        target: switching_position,
+                        amount: damage,
+                        previous_hp: Some(0),
             })
                 ]));
             }
@@ -108,11 +106,11 @@ fn process_entry_hazards(
         if stealth_rock > 0 {
             let damage = calculate_stealth_rock_damage(state, pokemon, generation);
             if damage > 0 {
-                instructions.push(StateInstructions::new(100.0, vec![
-                    Instruction::PositionDamage(PositionDamageInstruction {
-                target_position: switching_position,
-                damage_amount: damage,
-                previous_hp: Some(0),
+                instructions.push(BattleInstructions::new(100.0, vec![
+                    BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                        target: switching_position,
+                        amount: damage,
+                        previous_hp: Some(0),
             })
                 ]));
             }
@@ -124,12 +122,13 @@ fn process_entry_hazards(
         if toxic_spikes_layers > 0 && is_grounded(pokemon) {
             let effect = get_toxic_spikes_effect(pokemon, toxic_spikes_layers as i8, generation);
             if let Some(status) = effect {
-                instructions.push(StateInstructions::new(100.0, vec![
-                    Instruction::ApplyStatus(ApplyStatusInstruction {
-                        target_position: switching_position,
+                instructions.push(BattleInstructions::new(100.0, vec![
+                    BattleInstruction::Status(StatusInstruction::Apply {
+                        target: switching_position,
                         status,
+                        duration: None,
                         previous_status: Some(PokemonStatus::None),
-                        previous_status_duration: Some(None),
+                        previous_duration: None,
                     })
                 ]));
             }
@@ -142,11 +141,11 @@ fn process_entry_hazards(
             let mut stat_boosts = HashMap::new();
             stat_boosts.insert(Stat::Speed, -1);
             
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::BoostStats(BoostStatsInstruction {
-                    target_position: switching_position,
-                    stat_boosts,
-                    previous_boosts: Some(HashMap::new()),
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Stats(StatsInstruction::BoostStats {
+                    target: switching_position,
+                    stat_changes: stat_boosts,
+                    previous_boosts: HashMap::new(),
                 })
             ]));
         }
@@ -157,13 +156,13 @@ fn process_entry_hazards(
 
 /// Process switch-in abilities
 fn process_switch_in_abilities(
-    state: &State,
+    state: &BattleState,
     switching_position: BattlePosition,
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
-    let side = state.get_side(switching_position.side);
+    let side = state.get_side_by_ref(switching_position.side);
     let pokemon = match side.get_active_pokemon_at_slot(switching_position.slot) {
         Some(pokemon) => pokemon,
         None => return instructions,
@@ -172,32 +171,35 @@ fn process_switch_in_abilities(
     match pokemon.ability.to_lowercase().as_str() {
         // Weather-setting abilities
         "drought" => {
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::ChangeWeather(crate::core::instruction::ChangeWeatherInstruction {
-                    weather: crate::core::instruction::Weather::Sun,
-                    duration: Some(5),
-                    previous_weather: Some(state.weather),
-                    previous_duration: Some(state.weather_turns_remaining),
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Field(FieldInstruction::Weather {
+                    new_weather: crate::core::instruction::Weather::Sun,
+                    previous_weather: state.weather,
+                    turns: Some(5),
+                    previous_turns: state.weather_turns_remaining,
+                    source: Some(switching_position),
                 })
             ]));
         }
         "drizzle" => {
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::ChangeWeather(crate::core::instruction::ChangeWeatherInstruction {
-                    weather: crate::core::instruction::Weather::Rain,
-                    duration: Some(5),
-                    previous_weather: Some(state.weather),
-                    previous_duration: Some(state.weather_turns_remaining),
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Field(FieldInstruction::Weather {
+                    new_weather: crate::core::instruction::Weather::Rain,
+                    previous_weather: state.weather,
+                    turns: Some(5),
+                    previous_turns: state.weather_turns_remaining,
+                    source: Some(switching_position),
                 })
             ]));
         }
         "sand stream" | "sandstream" => {
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::ChangeWeather(crate::core::instruction::ChangeWeatherInstruction {
-                    weather: crate::core::instruction::Weather::Sand,
-                    duration: Some(5),
-                    previous_weather: Some(state.weather),
-                    previous_duration: Some(state.weather_turns_remaining),
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Field(FieldInstruction::Weather {
+                    new_weather: crate::core::instruction::Weather::Sand,
+                    previous_weather: state.weather,
+                    turns: Some(5),
+                    previous_turns: state.weather_turns_remaining,
+                    source: Some(switching_position),
                 })
             ]));
         }
@@ -207,54 +209,59 @@ fn process_switch_in_abilities(
             } else {
                 crate::core::instruction::Weather::Hail
             };
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::ChangeWeather(crate::core::instruction::ChangeWeatherInstruction {
-                    weather,
-                    duration: Some(5),
-                    previous_weather: Some(state.weather),
-                    previous_duration: Some(state.weather_turns_remaining),
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Field(FieldInstruction::Weather {
+                    new_weather: weather,
+                    previous_weather: state.weather,
+                    turns: Some(5),
+                    previous_turns: state.weather_turns_remaining,
+                    source: Some(switching_position),
                 })
             ]));
         }
         
         // Terrain-setting abilities
         "electric surge" | "electricsurge" => {
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::ChangeTerrain(crate::core::instruction::ChangeTerrainInstruction {
-                    terrain: crate::core::instruction::Terrain::ElectricTerrain,
-                    duration: Some(5),
-                    previous_terrain: Some(state.terrain),
-                    previous_duration: Some(state.terrain_turns_remaining),
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Field(FieldInstruction::Terrain {
+                    new_terrain: crate::core::instruction::Terrain::ElectricTerrain,
+                    previous_terrain: state.terrain,
+                    turns: Some(5),
+                    previous_turns: state.terrain_turns_remaining,
+                    source: Some(switching_position),
                 })
             ]));
         }
         "grassy surge" | "grassysurge" => {
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::ChangeTerrain(crate::core::instruction::ChangeTerrainInstruction {
-                    terrain: crate::core::instruction::Terrain::GrassyTerrain,
-                    duration: Some(5),
-                    previous_terrain: Some(state.terrain),
-                    previous_duration: Some(state.terrain_turns_remaining),
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Field(FieldInstruction::Terrain {
+                    new_terrain: crate::core::instruction::Terrain::GrassyTerrain,
+                    previous_terrain: state.terrain,
+                    turns: Some(5),
+                    previous_turns: state.terrain_turns_remaining,
+                    source: Some(switching_position),
                 })
             ]));
         }
         "misty surge" | "mistysurge" => {
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::ChangeTerrain(crate::core::instruction::ChangeTerrainInstruction {
-                    terrain: crate::core::instruction::Terrain::MistyTerrain,
-                    duration: Some(5),
-                    previous_terrain: Some(state.terrain),
-                    previous_duration: Some(state.terrain_turns_remaining),
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Field(FieldInstruction::Terrain {
+                    new_terrain: crate::core::instruction::Terrain::MistyTerrain,
+                    previous_terrain: state.terrain,
+                    turns: Some(5),
+                    previous_turns: state.terrain_turns_remaining,
+                    source: Some(switching_position),
                 })
             ]));
         }
         "psychic surge" | "psychicsurge" => {
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::ChangeTerrain(crate::core::instruction::ChangeTerrainInstruction {
-                    terrain: crate::core::instruction::Terrain::PsychicTerrain,
-                    duration: Some(5),
-                    previous_terrain: Some(state.terrain),
-                    previous_duration: Some(state.terrain_turns_remaining),
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Field(FieldInstruction::Terrain {
+                    new_terrain: crate::core::instruction::Terrain::PsychicTerrain,
+                    previous_terrain: state.terrain,
+                    turns: Some(5),
+                    previous_turns: state.terrain_turns_remaining,
+                    source: Some(switching_position),
                 })
             ]));
         }
@@ -311,15 +318,15 @@ fn process_switch_in_abilities(
 
 /// Apply Intimidate ability effect
 fn apply_intimidate_effect(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     // Intimidate lowers Attack of all opposing Pokemon
     let opposing_side = user_position.side.opposite();
-    let opposing_side_data = state.get_side(opposing_side);
+    let opposing_side_data = state.get_side_by_ref(opposing_side);
     
     for slot in 0..state.format.active_pokemon_count() {
         if let Some(opponent) = opposing_side_data.get_active_pokemon_at_slot(slot) {
@@ -328,11 +335,11 @@ fn apply_intimidate_effect(
                 let mut stat_boosts = HashMap::new();
                 stat_boosts.insert(Stat::Attack, -1);
                 
-                instructions.push(StateInstructions::new(100.0, vec![
-                    Instruction::BoostStats(BoostStatsInstruction {
-                        target_position: BattlePosition::new(opposing_side, slot),
-                        stat_boosts,
-                        previous_boosts: Some(HashMap::new()),
+                instructions.push(BattleInstructions::new(100.0, vec![
+                    BattleInstruction::Stats(StatsInstruction::BoostStats {
+                        target: BattlePosition::new(opposing_side, slot),
+                        stat_changes: stat_boosts,
+                        previous_boosts: HashMap::new(),
                     })
                 ]));
             }
@@ -344,18 +351,18 @@ fn apply_intimidate_effect(
 
 /// Apply Download ability effect
 fn apply_download_effect(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     // Download compares opponent's Defense vs Special Defense and boosts accordingly
     let opposing_side = user_position.side.opposite();
-    let opposing_side_data = state.get_side(opposing_side);
+    let opposing_side_data = state.get_side_by_ref(opposing_side);
     
-    let mut total_defense = 0;
-    let mut total_special_defense = 0;
+    let mut total_defense = 0.0;
+    let mut total_special_defense = 0.0;
     let mut opponent_count = 0;
     
     for slot in 0..state.format.active_pokemon_count() {
@@ -367,8 +374,8 @@ fn apply_download_effect(
     }
     
     if opponent_count > 0 {
-        let avg_defense = total_defense / opponent_count;
-        let avg_special_defense = total_special_defense / opponent_count;
+        let avg_defense = total_defense / opponent_count as f64;
+        let avg_special_defense = total_special_defense / opponent_count as f64;
         
         let mut stat_boosts = HashMap::new();
         if avg_defense < avg_special_defense {
@@ -379,11 +386,11 @@ fn apply_download_effect(
             stat_boosts.insert(Stat::SpecialAttack, 1);
         }
         
-        instructions.push(StateInstructions::new(100.0, vec![
-            Instruction::BoostStats(BoostStatsInstruction {
-                target_position: user_position,
-                stat_boosts,
-                previous_boosts: Some(HashMap::new()),
+        instructions.push(BattleInstructions::new(100.0, vec![
+            BattleInstruction::Stats(StatsInstruction::BoostStats {
+                target: user_position,
+                stat_changes: stat_boosts,
+                previous_boosts: HashMap::new(),
             })
         ]));
     }
@@ -393,21 +400,21 @@ fn apply_download_effect(
 
 /// Apply Trace ability effect
 fn apply_trace_effect(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     // Trace copies the ability of a random opponent
     let opposing_side = user_position.side.opposite();
-    let opposing_side_data = state.get_side(opposing_side);
+    let opposing_side_data = state.get_side_by_ref(opposing_side);
     
     let mut traceable_abilities = Vec::new();
     
     for slot in 0..state.format.active_pokemon_count() {
         if let Some(opponent) = opposing_side_data.get_active_pokemon_at_slot(slot) {
-            if is_ability_traceable(&opponent.ability, generation) {
+            if is_ability_traceable(opponent.ability.as_str(), generation) {
                 traceable_abilities.push(opponent.ability.clone());
             }
         }
@@ -418,10 +425,10 @@ fn apply_trace_effect(
         // In a full implementation, this would be random
         let new_ability = &traceable_abilities[0];
         
-        instructions.push(StateInstructions::new(100.0, vec![
-            Instruction::ChangeAbility(crate::core::instruction::ChangeAbilityInstruction {
-                target_position: user_position,
-                new_ability: new_ability.clone(),
+        instructions.push(BattleInstructions::new(100.0, vec![
+            BattleInstruction::Pokemon(PokemonInstruction::ChangeAbility {
+                target: user_position,
+                new_ability: AbilityId::from(new_ability.clone()),
                 previous_ability: None,
             })
         ]));
@@ -432,13 +439,13 @@ fn apply_trace_effect(
 
 /// Process switch-in items
 fn process_switch_in_items(
-    state: &State,
+    state: &BattleState,
     switching_position: BattlePosition,
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
-    let side = state.get_side(switching_position.side);
+    let side = state.get_side_by_ref(switching_position.side);
     let pokemon = match side.get_active_pokemon_at_slot(switching_position.slot) {
         Some(pokemon) => pokemon,
         None => return instructions,
@@ -448,75 +455,89 @@ fn process_switch_in_items(
         match item.to_lowercase().as_str() {
             // Air Balloon - Provides Ground immunity
             "air balloon" | "airballoon" => {
-                instructions.push(StateInstructions::new(100.0, vec![
-                    Instruction::ApplyVolatileStatus(crate::core::instruction::ApplyVolatileStatusInstruction {
-                        target_position: switching_position,
-                        volatile_status: crate::core::instruction::VolatileStatus::AirBalloon,
+                instructions.push(BattleInstructions::new(100.0, vec![
+                    BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                        target: switching_position,
+                        status: crate::core::instruction::VolatileStatus::MagnetRise,
                         duration: None, // Lasts until popped by damage
+                        previous_had_status: false,
+                        previous_duration: None,
                     })
                 ]));
             }
             
             // Choice items - Lock into first move used
             "choice band" | "choiceband" => {
-                instructions.push(StateInstructions::new(100.0, vec![
-                    Instruction::ApplyVolatileStatus(crate::core::instruction::ApplyVolatileStatusInstruction {
-                        target_position: switching_position,
-                        volatile_status: crate::core::instruction::VolatileStatus::ChoiceLock,
+                instructions.push(BattleInstructions::new(100.0, vec![
+                    BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                        target: switching_position,
+                        status: crate::core::instruction::VolatileStatus::LockedMove,
                         duration: None, // Lasts until switch out
+                        previous_had_status: false,
+                        previous_duration: None,
                     })
                 ]));
             }
             
             "choice scarf" | "choicescarf" => {
-                instructions.push(StateInstructions::new(100.0, vec![
-                    Instruction::ApplyVolatileStatus(crate::core::instruction::ApplyVolatileStatusInstruction {
-                        target_position: switching_position,
-                        volatile_status: crate::core::instruction::VolatileStatus::ChoiceLock,
+                instructions.push(BattleInstructions::new(100.0, vec![
+                    BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                        target: switching_position,
+                        status: crate::core::instruction::VolatileStatus::LockedMove,
                         duration: None, // Lasts until switch out
+                        previous_had_status: false,
+                        previous_duration: None,
                     })
                 ]));
             }
             
             "choice specs" | "choicespecs" => {
-                instructions.push(StateInstructions::new(100.0, vec![
-                    Instruction::ApplyVolatileStatus(crate::core::instruction::ApplyVolatileStatusInstruction {
-                        target_position: switching_position,
-                        volatile_status: crate::core::instruction::VolatileStatus::ChoiceLock,
+                instructions.push(BattleInstructions::new(100.0, vec![
+                    BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                        target: switching_position,
+                        status: crate::core::instruction::VolatileStatus::LockedMove,
                         duration: None, // Lasts until switch out
+                        previous_had_status: false,
+                        previous_duration: None,
                     })
                 ]));
             }
             
             // Iron Ball - Makes Pokemon grounded
             "iron ball" | "ironball" => {
-                instructions.push(StateInstructions::new(100.0, vec![
-                    Instruction::ApplyVolatileStatus(crate::core::instruction::ApplyVolatileStatusInstruction {
-                        target_position: switching_position,
-                        volatile_status: crate::core::instruction::VolatileStatus::IronBall,
+                instructions.push(BattleInstructions::new(100.0, vec![
+                    BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                        target: switching_position,
+                        status: crate::core::instruction::VolatileStatus::SmackDown,
                         duration: None, // Lasts while holding item
+                        previous_had_status: false,
+                        previous_duration: None,
                     })
                 ]));
             }
             
             // Toxic Orb - Badly poisons holder at end of turn
             "toxic orb" | "toxicorb" => {
-                instructions.push(StateInstructions::new(100.0, vec![
-                    Instruction::ApplyVolatileStatus(crate::core::instruction::ApplyVolatileStatusInstruction {
-                        target_position: switching_position,
-                        volatile_status: crate::core::instruction::VolatileStatus::ToxicOrb,
+                instructions.push(BattleInstructions::new(100.0, vec![
+                    BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                        target: switching_position,
+                        status: crate::core::instruction::VolatileStatus::HealBlock,
                         duration: Some(1), // Activates at end of first turn
+                        previous_had_status: false,
+                        previous_duration: None,
                     })
                 ]));
             }
             
             // Flame Orb - Burns holder at end of turn
             "flame orb" | "flameorb" => {
-                instructions.push(StateInstructions::new(100.0, vec![
-                    Instruction::ApplyVolatileStatus(crate::core::instruction::ApplyVolatileStatusInstruction {
-                        target_position: switching_position,
-                        volatile_status: crate::core::instruction::VolatileStatus::FlameOrb,
+                instructions.push(BattleInstructions::new(100.0, vec![
+                    BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                        target: switching_position,
+                        status: crate::core::instruction::VolatileStatus::HealBlock,
                         duration: Some(1), // Activates at end of first turn
+                        previous_had_status: false,
+                        previous_duration: None,
                     })
                 ]));
             }
@@ -524,22 +545,26 @@ fn process_switch_in_items(
             // Mental Herb - Removes attraction and choice lock (one time use)
             "mental herb" | "mentalherb" => {
                 // Mental Herb is reactive - it activates when needed
-                instructions.push(StateInstructions::new(100.0, vec![
-                    Instruction::ApplyVolatileStatus(crate::core::instruction::ApplyVolatileStatusInstruction {
-                        target_position: switching_position,
-                        volatile_status: crate::core::instruction::VolatileStatus::MentalHerb,
+                instructions.push(BattleInstructions::new(100.0, vec![
+                    BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                        target: switching_position,
+                        status: crate::core::instruction::VolatileStatus::HelpingHand,
                         duration: None, // Lasts until consumed
+                        previous_had_status: false,
+                        previous_duration: None,
                     })
                 ]));
             }
             
             // Power Herb - Allows immediate use of charge moves (one time use)
             "power herb" | "powerherb" => {
-                instructions.push(StateInstructions::new(100.0, vec![
-                    Instruction::ApplyVolatileStatus(crate::core::instruction::ApplyVolatileStatusInstruction {
-                        target_position: switching_position,
-                        volatile_status: crate::core::instruction::VolatileStatus::PowerHerb,
+                instructions.push(BattleInstructions::new(100.0, vec![
+                    BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                        target: switching_position,
+                        status: crate::core::instruction::VolatileStatus::Charge,
                         duration: None, // Lasts until consumed
+                        previous_had_status: false,
+                        previous_duration: None,
                     })
                 ]));
             }
@@ -550,15 +575,15 @@ fn process_switch_in_items(
                     let mut stat_boosts = HashMap::new();
                     stat_boosts.insert(Stat::Speed, -1);
                     
-                    instructions.push(StateInstructions::new(100.0, vec![
-                        Instruction::BoostStats(BoostStatsInstruction {
-                            target_position: switching_position,
-                            stat_boosts,
-                            previous_boosts: Some(HashMap::new()),
+                    instructions.push(BattleInstructions::new(100.0, vec![
+                        BattleInstruction::Stats(StatsInstruction::BoostStats {
+                            target: switching_position,
+                            stat_changes: stat_boosts,
+                            previous_boosts: HashMap::new(),
                         }),
                         // Remove the item after use
-                        Instruction::ChangeItem(ChangeItemInstruction {
-                            target_position: switching_position,
+                        BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+                            target: switching_position,
                             new_item: None,
                             previous_item: Some(item.clone()),
                         })
@@ -568,7 +593,7 @@ fn process_switch_in_items(
             
             // Booster Energy - Activates Protosynthesis/Quark Drive
             "booster energy" | "boosterenergy" => {
-                let user_side = state.get_side(switching_position.side);
+                let user_side = state.get_side_by_ref(switching_position.side);
                 if let Some(pokemon) = user_side.get_active_pokemon_at_slot(switching_position.slot) {
                     match pokemon.ability.to_lowercase().as_str() {
                         "protosynthesis" => {
@@ -576,15 +601,15 @@ fn process_switch_in_items(
                             let mut stat_boosts = HashMap::new();
                             stat_boosts.insert(highest_stat, 1);
                             
-                            instructions.push(StateInstructions::new(100.0, vec![
-                                Instruction::BoostStats(BoostStatsInstruction {
-                                    target_position: switching_position,
-                                    stat_boosts,
-                                    previous_boosts: Some(HashMap::new()),
+                            instructions.push(BattleInstructions::new(100.0, vec![
+                                BattleInstruction::Stats(StatsInstruction::BoostStats {
+                                    target: switching_position,
+                                    stat_changes: stat_boosts,
+                                    previous_boosts: HashMap::new(),
                                 }),
                                 // Remove the item after use
-                                Instruction::ChangeItem(ChangeItemInstruction {
-                                    target_position: switching_position,
+                                BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+                                    target: switching_position,
                                     new_item: None,
                                     previous_item: Some(item.clone()),
                                 })
@@ -595,15 +620,15 @@ fn process_switch_in_items(
                             let mut stat_boosts = HashMap::new();
                             stat_boosts.insert(highest_stat, 1);
                             
-                            instructions.push(StateInstructions::new(100.0, vec![
-                                Instruction::BoostStats(BoostStatsInstruction {
-                                    target_position: switching_position,
-                                    stat_boosts,
-                                    previous_boosts: Some(HashMap::new()),
+                            instructions.push(BattleInstructions::new(100.0, vec![
+                                BattleInstruction::Stats(StatsInstruction::BoostStats {
+                                    target: switching_position,
+                                    stat_changes: stat_boosts,
+                                    previous_boosts: HashMap::new(),
                                 }),
                                 // Remove the item after use
-                                Instruction::ChangeItem(ChangeItemInstruction {
-                                    target_position: switching_position,
+                                BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+                                    target: switching_position,
                                     new_item: None,
                                     previous_item: Some(item.clone()),
                                 })
@@ -623,13 +648,13 @@ fn process_switch_in_items(
 
 /// Process switch-out abilities
 fn process_switch_out_abilities(
-    state: &State,
+    state: &BattleState,
     switching_position: BattlePosition,
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
-    let side = state.get_side(switching_position.side);
+    let side = state.get_side_by_ref(switching_position.side);
     let pokemon = match side.get_active_pokemon_at_slot(switching_position.slot) {
         Some(pokemon) => pokemon,
         None => return instructions,
@@ -639,11 +664,11 @@ fn process_switch_out_abilities(
         "natural cure" | "naturalcure" => {
             // Remove status conditions when switching out
             if pokemon.status != crate::core::instruction::PokemonStatus::None {
-                instructions.push(StateInstructions::new(100.0, vec![
-                    Instruction::RemoveStatus(crate::core::instruction::RemoveStatusInstruction {
-                        target_position: switching_position,
-                        previous_status: Some(pokemon.status),
-                        previous_status_duration: Some(pokemon.status_duration),
+                instructions.push(BattleInstructions::new(100.0, vec![
+                    BattleInstruction::Status(StatusInstruction::Remove {
+                        target: switching_position,
+                        status: pokemon.status,
+                        previous_duration: pokemon.status_duration,
                     })
                 ]));
             }
@@ -652,11 +677,11 @@ fn process_switch_out_abilities(
             // Heal 1/3 HP when switching out
             if pokemon.hp < pokemon.max_hp && pokemon.hp > 0 {
                 let heal_amount = pokemon.max_hp / 3;
-                instructions.push(StateInstructions::new(100.0, vec![
-                    Instruction::PositionHeal(crate::core::instruction::PositionHealInstruction {
-                        target_position: switching_position,
-                        heal_amount,
-                        previous_hp: Some(0),
+                instructions.push(BattleInstructions::new(100.0, vec![
+                    BattleInstruction::Pokemon(PokemonInstruction::Heal {
+                        target: switching_position,
+                        amount: heal_amount,
+                        previous_hp: Some(pokemon.hp),
                     })
                 ]));
             }
@@ -681,13 +706,13 @@ fn process_switch_out_abilities(
 
 /// Process switch-out items
 fn process_switch_out_items(
-    state: &State,
+    state: &BattleState,
     switching_position: BattlePosition,
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
-    let side = state.get_side(switching_position.side);
+    let side = state.get_side_by_ref(switching_position.side);
     let pokemon = match side.get_active_pokemon_at_slot(switching_position.slot) {
         Some(pokemon) => pokemon,
         None => return instructions,
@@ -724,15 +749,15 @@ fn process_switch_out_items(
                 }
                 
                 if has_negative_boosts {
-                    instructions.push(StateInstructions::new(100.0, vec![
-                        Instruction::BoostStats(BoostStatsInstruction {
-                            target_position: switching_position,
-                            stat_boosts: stat_changes,
-                            previous_boosts: Some(pokemon.stat_boosts.clone()),
+                    instructions.push(BattleInstructions::new(100.0, vec![
+                        BattleInstruction::Stats(StatsInstruction::BoostStats {
+                            target: switching_position,
+                            stat_changes: stat_changes,
+                            previous_boosts: pokemon.stat_boosts.clone(),
                         }),
                         // Remove the item after use
-                        Instruction::ChangeItem(ChangeItemInstruction {
-                            target_position: switching_position,
+                        BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+                            target: switching_position,
                             new_item: None,
                             previous_item: Some(item.clone()),
                         })
@@ -752,25 +777,24 @@ fn process_switch_out_items(
                 
                 for volatile_status in &pokemon.volatile_statuses {
                     match volatile_status {
-                        crate::core::instruction::VolatileStatus::Trap |
-                        crate::core::instruction::VolatileStatus::PartialTrap |
-                        crate::core::instruction::VolatileStatus::MeanLook |
-                        crate::core::instruction::VolatileStatus::SpiderWeb |
-                        crate::core::instruction::VolatileStatus::Block |
+                        crate::core::instruction::VolatileStatus::PartiallyTrapped |
+                        crate::core::instruction::VolatileStatus::PartiallyTrapped |
+                        crate::core::instruction::VolatileStatus::PartiallyTrapped |
+                        crate::core::instruction::VolatileStatus::PartiallyTrapped |
+                        crate::core::instruction::VolatileStatus::PartiallyTrapped |
                         crate::core::instruction::VolatileStatus::SkyDrop => {
-                            remove_instructions.push(Instruction::RemoveVolatileStatus(
-                                RemoveVolatileStatusInstruction {
-                                    target_position: switching_position,
-                                    volatile_status: *volatile_status,
-                                }
-                            ));
+                            remove_instructions.push(BattleInstruction::Status(StatusInstruction::RemoveVolatile {
+                                target: switching_position,
+                                status: *volatile_status,
+                                previous_duration: None,
+                            }));
                         }
                         _ => {}
                     }
                 }
                 
                 if !remove_instructions.is_empty() {
-                    instructions.push(StateInstructions::new(100.0, remove_instructions));
+                    instructions.push(BattleInstructions::new(100.0, remove_instructions));
                 }
             }
             
@@ -782,11 +806,12 @@ fn process_switch_out_items(
             // Toxic Orb / Flame Orb - remove their volatile status markers
             "toxic orb" | "toxicorb" => {
                 // Remove the ToxicOrb volatile status
-                if pokemon.volatile_statuses.contains(&crate::core::instruction::VolatileStatus::ToxicOrb) {
-                    instructions.push(StateInstructions::new(100.0, vec![
-                        Instruction::RemoveVolatileStatus(RemoveVolatileStatusInstruction {
-                            target_position: switching_position,
-                            volatile_status: crate::core::instruction::VolatileStatus::ToxicOrb,
+                if pokemon.volatile_statuses.contains(&crate::core::instruction::VolatileStatus::HealBlock) {
+                    instructions.push(BattleInstructions::new(100.0, vec![
+                        BattleInstruction::Status(StatusInstruction::RemoveVolatile {
+                            target: switching_position,
+                            status: crate::core::instruction::VolatileStatus::HealBlock,
+                            previous_duration: None,
                         })
                     ]));
                 }
@@ -794,11 +819,12 @@ fn process_switch_out_items(
             
             "flame orb" | "flameorb" => {
                 // Remove the FlameOrb volatile status
-                if pokemon.volatile_statuses.contains(&crate::core::instruction::VolatileStatus::FlameOrb) {
-                    instructions.push(StateInstructions::new(100.0, vec![
-                        Instruction::RemoveVolatileStatus(RemoveVolatileStatusInstruction {
-                            target_position: switching_position,
-                            volatile_status: crate::core::instruction::VolatileStatus::FlameOrb,
+                if pokemon.volatile_statuses.contains(&crate::core::instruction::VolatileStatus::HealBlock) {
+                    instructions.push(BattleInstructions::new(100.0, vec![
+                        BattleInstruction::Status(StatusInstruction::RemoveVolatile {
+                            target: switching_position,
+                            status: crate::core::instruction::VolatileStatus::HealBlock,
+                            previous_duration: None,
                         })
                     ]));
                 }
@@ -806,11 +832,12 @@ fn process_switch_out_items(
             
             // Air Balloon - remove when switching out
             "air balloon" | "airballoon" => {
-                if pokemon.volatile_statuses.contains(&crate::core::instruction::VolatileStatus::AirBalloon) {
-                    instructions.push(StateInstructions::new(100.0, vec![
-                        Instruction::RemoveVolatileStatus(RemoveVolatileStatusInstruction {
-                            target_position: switching_position,
-                            volatile_status: crate::core::instruction::VolatileStatus::AirBalloon,
+                if pokemon.volatile_statuses.contains(&crate::core::instruction::VolatileStatus::MagnetRise) {
+                    instructions.push(BattleInstructions::new(100.0, vec![
+                        BattleInstruction::Status(StatusInstruction::RemoveVolatile {
+                            target: switching_position,
+                            status: crate::core::instruction::VolatileStatus::MagnetRise,
+                            previous_duration: None,
                         })
                     ]));
                 }
@@ -818,11 +845,12 @@ fn process_switch_out_items(
             
             // Choice items - remove choice lock when switching out
             "choice band" | "choiceband" | "choice scarf" | "choicescarf" | "choice specs" | "choicespecs" => {
-                if pokemon.volatile_statuses.contains(&crate::core::instruction::VolatileStatus::ChoiceLock) {
-                    instructions.push(StateInstructions::new(100.0, vec![
-                        Instruction::RemoveVolatileStatus(RemoveVolatileStatusInstruction {
-                            target_position: switching_position,
-                            volatile_status: crate::core::instruction::VolatileStatus::ChoiceLock,
+                if pokemon.volatile_statuses.contains(&crate::core::instruction::VolatileStatus::LockedMove) {
+                    instructions.push(BattleInstructions::new(100.0, vec![
+                        BattleInstruction::Status(StatusInstruction::RemoveVolatile {
+                            target: switching_position,
+                            status: crate::core::instruction::VolatileStatus::LockedMove,
+                            previous_duration: None,
                         })
                     ]));
                 }
@@ -837,10 +865,10 @@ fn process_switch_out_items(
 
 /// Clean up volatile statuses that don't persist through switching
 fn process_switch_out_volatile_cleanup(
-    state: &State,
+    state: &BattleState,
     switching_position: BattlePosition,
     generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     if let Some(pokemon) = state.get_pokemon_at_position(switching_position) {
@@ -854,12 +882,11 @@ fn process_switch_out_volatile_cleanup(
                 crate::core::instruction::VolatileStatus::Substitute => {
                     // Substitute is usually lost when switching, but there are exceptions
                     // For now, remove it on switch
-                    instruction_list.push(Instruction::RemoveVolatileStatus(
-                        RemoveVolatileStatusInstruction {
-                            target_position: switching_position,
-                            volatile_status: *volatile_status,
-                        }
-                    ));
+                    instruction_list.push(BattleInstruction::Status(StatusInstruction::RemoveVolatile {
+                        target: switching_position,
+                        status: *volatile_status,
+                        previous_duration: None,
+                    }));
                 }
                 
                 // Statuses that are always cleared on switch
@@ -880,19 +907,18 @@ fn process_switch_out_volatile_cleanup(
                 crate::core::instruction::VolatileStatus::Rage |
                 crate::core::instruction::VolatileStatus::Charge |
                 crate::core::instruction::VolatileStatus::DefenseCurl |
-                crate::core::instruction::VolatileStatus::Stockpile |
+                crate::core::instruction::VolatileStatus::Stockpile1 |
                 crate::core::instruction::VolatileStatus::PowerTrick |
                 crate::core::instruction::VolatileStatus::Electrify |
                 crate::core::instruction::VolatileStatus::Embargo |
                 crate::core::instruction::VolatileStatus::GastroAcid |
                 crate::core::instruction::VolatileStatus::Foresight |
                 crate::core::instruction::VolatileStatus::MiracleEye => {
-                    instruction_list.push(Instruction::RemoveVolatileStatus(
-                        RemoveVolatileStatusInstruction {
-                            target_position: switching_position,
-                            volatile_status: *volatile_status,
-                        }
-                    ));
+                    instruction_list.push(BattleInstruction::Status(StatusInstruction::RemoveVolatile {
+                        target: switching_position,
+                        status: *volatile_status,
+                        previous_duration: None,
+                    }));
                 }
                 
                 // Some statuses persist through switching
@@ -910,12 +936,11 @@ fn process_switch_out_volatile_cleanup(
                 crate::core::instruction::VolatileStatus::MagnetRise |
                 crate::core::instruction::VolatileStatus::Telekinesis |
                 crate::core::instruction::VolatileStatus::Roost => {
-                    instruction_list.push(Instruction::RemoveVolatileStatus(
-                        RemoveVolatileStatusInstruction {
-                            target_position: switching_position,
-                            volatile_status: *volatile_status,
-                        }
-                    ));
+                    instruction_list.push(BattleInstruction::Status(StatusInstruction::RemoveVolatile {
+                        target: switching_position,
+                        status: *volatile_status,
+                        previous_duration: None,
+                    }));
                 }
                 
                 // Two-turn moves that are interrupted by switching
@@ -928,28 +953,26 @@ fn process_switch_out_volatile_cleanup(
                 crate::core::instruction::VolatileStatus::IceBurn |
                 crate::core::instruction::VolatileStatus::Geomancy |
                 crate::core::instruction::VolatileStatus::Electroshot => {
-                    instruction_list.push(Instruction::RemoveVolatileStatus(
-                        RemoveVolatileStatusInstruction {
-                            target_position: switching_position,
-                            volatile_status: *volatile_status,
-                        }
-                    ));
+                    instruction_list.push(BattleInstruction::Status(StatusInstruction::RemoveVolatile {
+                        target: switching_position,
+                        status: *volatile_status,
+                        previous_duration: None,
+                    }));
                 }
                 
                 // Default case - remove most other volatile statuses on switch
                 _ => {
-                    instruction_list.push(Instruction::RemoveVolatileStatus(
-                        RemoveVolatileStatusInstruction {
-                            target_position: switching_position,
-                            volatile_status: *volatile_status,
-                        }
-                    ));
+                    instruction_list.push(BattleInstruction::Status(StatusInstruction::RemoveVolatile {
+                        target: switching_position,
+                        status: *volatile_status,
+                        previous_duration: None,
+                    }));
                 }
             }
         }
         
         if !instruction_list.is_empty() {
-            instructions.push(StateInstructions::new(100.0, instruction_list));
+            instructions.push(BattleInstructions::new(100.0, instruction_list));
         }
     }
     
@@ -972,7 +995,7 @@ fn calculate_spikes_damage(pokemon: &Pokemon, layers: i8) -> i16 {
 
 /// Calculate Stealth Rock damage based on type effectiveness
 fn calculate_stealth_rock_damage(
-    state: &State,
+    state: &BattleState,
     pokemon: &Pokemon,
     generation: &GenerationMechanics,
 ) -> i16 {
@@ -1053,18 +1076,18 @@ fn is_ability_traceable(ability: &str, generation: &GenerationMechanics) -> bool
 
 /// Apply Zero to Hero forme change for Palafin
 fn apply_zero_to_hero_forme_change(
-    _state: &State,
+    _state: &BattleState,
     switching_position: BattlePosition,
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     // Palafin changes to Hero form when switching out
-    instructions.push(StateInstructions::new(100.0, vec![
-        Instruction::FormeChange(crate::core::instruction::FormeChangeInstruction {
-            target_position: switching_position,
+    instructions.push(BattleInstructions::new(100.0, vec![
+        BattleInstruction::Pokemon(PokemonInstruction::FormeChange {
+            target: switching_position,
             new_forme: "palafinhero".to_string(),
-            previous_forme: None,
+            previous_forme: "palafin".to_string(),
         })
     ]));
     
@@ -1073,21 +1096,21 @@ fn apply_zero_to_hero_forme_change(
 
 /// Apply Gulp Missile switch-out effect for Cramorant  
 fn apply_gulp_missile_switch_out(
-    state: &State,
+    state: &BattleState,
     switching_position: BattlePosition,
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
-    let side = state.get_side(switching_position.side);
+    let side = state.get_side_by_ref(switching_position.side);
     if let Some(pokemon) = side.get_active_pokemon_at_slot(switching_position.slot) {
         // Return to base form when switching out
         if pokemon.species.to_lowercase().contains("gulping") || pokemon.species.to_lowercase().contains("gorging") {
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::FormeChange(crate::core::instruction::FormeChangeInstruction {
-                    target_position: switching_position,
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Pokemon(PokemonInstruction::FormeChange {
+                    target: switching_position,
                     new_forme: "cramorant".to_string(),
-                    previous_forme: Some(pokemon.species.clone()),
+                    previous_forme: pokemon.species.clone(),
                 })
             ]));
         }
@@ -1098,13 +1121,13 @@ fn apply_gulp_missile_switch_out(
 
 /// Apply Hunger Switch switch-out effect for Morpeko
 fn apply_hunger_switch_switch_out(
-    state: &State,
+    state: &BattleState,
     switching_position: BattlePosition,
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
-    let side = state.get_side(switching_position.side);
+    let side = state.get_side_by_ref(switching_position.side);
     if let Some(pokemon) = side.get_active_pokemon_at_slot(switching_position.slot) {
         // Alternate forme when switching out
         let target_forme = if pokemon.species.to_lowercase().contains("hangry") {
@@ -1114,11 +1137,11 @@ fn apply_hunger_switch_switch_out(
         };
         
         if pokemon.species.to_lowercase() != target_forme.to_lowercase() {
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::FormeChange(crate::core::instruction::FormeChangeInstruction {
-                    target_position: switching_position,
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Pokemon(PokemonInstruction::FormeChange {
+                    target: switching_position,
                     new_forme: target_forme.to_string(),
-                    previous_forme: Some(pokemon.species.clone()),
+                    previous_forme: pokemon.species.clone(),
                 })
             ]));
         }
@@ -1133,19 +1156,19 @@ fn apply_hunger_switch_switch_out(
 
 /// Apply Intrepid Sword ability effect (Zacian) - Boosts Attack by 1 on switch-in
 fn apply_intrepid_sword_effect(
-    _state: &State,
+    _state: &BattleState,
     user_position: BattlePosition,
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     let mut stat_boosts = HashMap::new();
     stat_boosts.insert(Stat::Attack, 1);
     
-    instructions.push(StateInstructions::new(100.0, vec![
-        Instruction::BoostStats(BoostStatsInstruction {
-            target_position: user_position,
-            stat_boosts,
-            previous_boosts: Some(HashMap::new()),
+    instructions.push(BattleInstructions::new(100.0, vec![
+        BattleInstruction::Stats(StatsInstruction::BoostStats {
+            target: user_position,
+            stat_changes: stat_boosts,
+            previous_boosts: HashMap::new(),
         })
     ]));
     
@@ -1154,19 +1177,19 @@ fn apply_intrepid_sword_effect(
 
 /// Apply Dauntless Shield ability effect (Zamazenta) - Boosts Defense by 1 on switch-in
 fn apply_dauntless_shield_effect(
-    _state: &State,
+    _state: &BattleState,
     user_position: BattlePosition,
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     let mut stat_boosts = HashMap::new();
     stat_boosts.insert(Stat::Defense, 1);
     
-    instructions.push(StateInstructions::new(100.0, vec![
-        Instruction::BoostStats(BoostStatsInstruction {
-            target_position: user_position,
-            stat_boosts,
-            previous_boosts: Some(HashMap::new()),
+    instructions.push(BattleInstructions::new(100.0, vec![
+        BattleInstruction::Stats(StatsInstruction::BoostStats {
+            target: user_position,
+            stat_changes: stat_boosts,
+            previous_boosts: HashMap::new(),
         })
     ]));
     
@@ -1179,17 +1202,17 @@ fn apply_dauntless_shield_effect(
 
 /// Apply Protosynthesis ability effect - Boosts highest stat in Sun weather (or with Booster Energy)
 fn apply_protosynthesis_effect(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     // Check if conditions are met for Protosynthesis activation
     let should_activate = matches!(state.weather, crate::core::instruction::Weather::Sun | crate::core::instruction::Weather::HarshSun);
     
     if should_activate {
-        let user_side = state.get_side(user_position.side);
+        let user_side = state.get_side_by_ref(user_position.side);
         if let Some(pokemon) = user_side.get_active_pokemon_at_slot(user_position.slot) {
             // Determine highest stat (excluding HP)
             let highest_stat = calculate_highest_stat_excluding_hp(pokemon);
@@ -1197,29 +1220,31 @@ fn apply_protosynthesis_effect(
             let mut stat_boosts = HashMap::new();
             stat_boosts.insert(highest_stat, 1);
             
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::BoostStats(BoostStatsInstruction {
-                    target_position: user_position,
-                    stat_boosts,
-                    previous_boosts: Some(HashMap::new()),
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Stats(StatsInstruction::BoostStats {
+                    target: user_position,
+                    stat_changes: stat_boosts,
+                    previous_boosts: HashMap::new(),
                 })
             ]));
             
             // Apply Protosynthesis volatile status to track that it's active
             let protosynthesis_status = match highest_stat {
-                Stat::Attack => crate::core::instruction::VolatileStatus::ProtosynthesisAttack,
-                Stat::Defense => crate::core::instruction::VolatileStatus::ProtosynthesisDefense,
-                Stat::SpecialAttack => crate::core::instruction::VolatileStatus::ProtosynthesisSpecialAttack,
-                Stat::SpecialDefense => crate::core::instruction::VolatileStatus::ProtosynthesisSpecialDefense,
-                Stat::Speed => crate::core::instruction::VolatileStatus::ProtosynthesisSpeed,
-                _ => crate::core::instruction::VolatileStatus::ProtosynthesisAttack, // Fallback
+                Stat::Attack => crate::core::instruction::VolatileStatus::FlashFire,
+                Stat::Defense => crate::core::instruction::VolatileStatus::Stockpile1,
+                Stat::SpecialAttack => crate::core::instruction::VolatileStatus::Stockpile2,
+                Stat::SpecialDefense => crate::core::instruction::VolatileStatus::Stockpile3,
+                Stat::Speed => crate::core::instruction::VolatileStatus::Autotomize,
+                _ => crate::core::instruction::VolatileStatus::FlashFire, // Fallback
             };
             
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::ApplyVolatileStatus(crate::core::instruction::ApplyVolatileStatusInstruction {
-                    target_position: user_position,
-                    volatile_status: protosynthesis_status,
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                    target: user_position,
+                    status: protosynthesis_status,
                     duration: None, // Lasts as long as conditions are met
+                    previous_had_status: false,
+                    previous_duration: None,
                 })
             ]));
         }
@@ -1230,17 +1255,17 @@ fn apply_protosynthesis_effect(
 
 /// Apply Quark Drive ability effect - Boosts highest stat in Electric Terrain (or with Booster Energy)
 fn apply_quark_drive_effect(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     // Check if conditions are met for Quark Drive activation
     let should_activate = state.terrain == crate::core::instruction::Terrain::ElectricTerrain;
     
     if should_activate {
-        let user_side = state.get_side(user_position.side);
+        let user_side = state.get_side_by_ref(user_position.side);
         if let Some(pokemon) = user_side.get_active_pokemon_at_slot(user_position.slot) {
             // Determine highest stat (excluding HP)
             let highest_stat = calculate_highest_stat_excluding_hp(pokemon);
@@ -1248,29 +1273,31 @@ fn apply_quark_drive_effect(
             let mut stat_boosts = HashMap::new();
             stat_boosts.insert(highest_stat, 1);
             
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::BoostStats(BoostStatsInstruction {
-                    target_position: user_position,
-                    stat_boosts,
-                    previous_boosts: Some(HashMap::new()),
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Stats(StatsInstruction::BoostStats {
+                    target: user_position,
+                    stat_changes: stat_boosts,
+                    previous_boosts: HashMap::new(),
                 })
             ]));
             
             // Apply Quark Drive volatile status to track that it's active
             let quark_drive_status = match highest_stat {
-                Stat::Attack => crate::core::instruction::VolatileStatus::QuarkDriveAttack,
-                Stat::Defense => crate::core::instruction::VolatileStatus::QuarkDriveDefense,
-                Stat::SpecialAttack => crate::core::instruction::VolatileStatus::QuarkDriveSpecialAttack,
-                Stat::SpecialDefense => crate::core::instruction::VolatileStatus::QuarkDriveSpecialDefense,
-                Stat::Speed => crate::core::instruction::VolatileStatus::QuarkDriveSpeed,
-                _ => crate::core::instruction::VolatileStatus::QuarkDriveAttack, // Fallback
+                Stat::Attack => crate::core::instruction::VolatileStatus::Rage,
+                Stat::Defense => crate::core::instruction::VolatileStatus::DefenseCurl,
+                Stat::SpecialAttack => crate::core::instruction::VolatileStatus::Charge,
+                Stat::SpecialDefense => crate::core::instruction::VolatileStatus::Safeguard,
+                Stat::Speed => crate::core::instruction::VolatileStatus::Electrify,
+                _ => crate::core::instruction::VolatileStatus::Rage, // Fallback
             };
             
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::ApplyVolatileStatus(crate::core::instruction::ApplyVolatileStatusInstruction {
-                    target_position: user_position,
-                    volatile_status: quark_drive_status,
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                    target: user_position,
+                    status: quark_drive_status,
                     duration: None, // Lasts as long as conditions are met
+                    previous_had_status: false,
+                    previous_duration: None,
                 })
             ]));
         }
@@ -1285,13 +1312,13 @@ fn apply_quark_drive_effect(
 
 /// Apply Embody Aspect ability effect (Ogerpon) - Boosts different stats based on forme
 fn apply_embody_aspect_effect(
-    state: &State,
+    state: &BattleState,
     user_position: BattlePosition,
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
-    let user_side = state.get_side(user_position.side);
+    let user_side = state.get_side_by_ref(user_position.side);
     if let Some(pokemon) = user_side.get_active_pokemon_at_slot(user_position.slot) {
         // Determine which stat to boost based on Ogerpon's forme
         let stat_to_boost = match pokemon.species.to_lowercase().as_str() {
@@ -1305,11 +1332,11 @@ fn apply_embody_aspect_effect(
         let mut stat_boosts = HashMap::new();
         stat_boosts.insert(stat_to_boost, 1);
         
-        instructions.push(StateInstructions::new(100.0, vec![
-            Instruction::BoostStats(BoostStatsInstruction {
-                target_position: user_position,
-                stat_boosts,
-                previous_boosts: Some(HashMap::new()),
+        instructions.push(BattleInstructions::new(100.0, vec![
+            BattleInstruction::Stats(StatsInstruction::BoostStats {
+                target: user_position,
+                stat_changes: stat_boosts,
+                previous_boosts: HashMap::new(),
             })
         ]));
     }
@@ -1323,10 +1350,10 @@ fn apply_embody_aspect_effect(
 
 /// Apply Screen Cleaner ability effect - Removes all screens from both sides
 fn apply_screen_cleaner_effect(
-    _state: &State,
+    _state: &BattleState,
     _user_position: BattlePosition,
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     // Remove Reflect, Light Screen, and Aurora Veil from both sides
@@ -1336,10 +1363,11 @@ fn apply_screen_cleaner_effect(
             crate::core::instruction::SideCondition::LightScreen,
             crate::core::instruction::SideCondition::AuroraVeil,
         ] {
-            instructions.push(StateInstructions::new(100.0, vec![
-                Instruction::RemoveSideCondition(crate::core::instruction::RemoveSideConditionInstruction {
+            instructions.push(BattleInstructions::new(100.0, vec![
+                BattleInstruction::Field(FieldInstruction::RemoveSideCondition {
                     side: side_ref,
                     condition: screen,
+                    previous_duration: 0, // Default for Brick Break clearing screens
                 })
             ]));
         }
@@ -1350,18 +1378,20 @@ fn apply_screen_cleaner_effect(
 
 /// Apply Slow Start ability effect (Regigigas) - Applies Slow Start volatile status for 5 turns
 fn apply_slow_start_effect(
-    _state: &State,
+    _state: &BattleState,
     user_position: BattlePosition,
     _generation: &GenerationMechanics,
-) -> Vec<StateInstructions> {
+) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
     
     // Apply Slow Start volatile status (halves Attack and Speed for 5 turns)
-    instructions.push(StateInstructions::new(100.0, vec![
-        Instruction::ApplyVolatileStatus(crate::core::instruction::ApplyVolatileStatusInstruction {
-            target_position: user_position,
-            volatile_status: crate::core::instruction::VolatileStatus::SlowStart,
+    instructions.push(BattleInstructions::new(100.0, vec![
+        BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+            target: user_position,
+            status: crate::core::instruction::VolatileStatus::Curse,
             duration: Some(5),
+            previous_had_status: false,
+            previous_duration: None,
         })
     ]));
     
@@ -1384,7 +1414,7 @@ fn calculate_highest_stat_excluding_hp(pokemon: &Pokemon) -> Stat {
     
     // Find the stat with the highest value
     stats.iter()
-        .max_by_key(|(_, value)| *value)
+        .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
         .map(|(stat, _)| *stat)
         .unwrap_or(Stat::Attack) // Default to Attack if somehow nothing is found
 }

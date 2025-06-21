@@ -4,7 +4,7 @@
 //! battle mechanics while staying compatible with rustemon/PokeAPI data.
 
 use serde::{Deserialize, Serialize};
-use crate::core::state::MoveCategory;
+use crate::core::battle_state::MoveCategory;
 
 /// Engine-optimized Pokemon data
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -41,7 +41,7 @@ pub struct EngineMoveData {
     pub move_type: String,
     pub category: MoveCategory,
     pub priority: i8,
-    pub target: crate::data::ps_types::PSMoveTarget,
+    pub target: crate::data::showdown_types::MoveTarget,
     pub effect_chance: Option<i16>,
     pub effect_description: String,
     pub flags: Vec<String>,

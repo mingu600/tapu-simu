@@ -7,9 +7,9 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use serde_json;
-use crate::data::ps_types::{PSMoveData, PSItemData};
-use crate::data::conversion::ps_target_from_string;
-use crate::core::state::{Move, MoveCategory};
+use crate::data::showdown_types::{MoveData, ItemData};
+use crate::data::conversion::target_from_string;
+use crate::core::battle_state::{Move, MoveCategory};
 
 /// Generation configuration
 #[derive(Debug, Clone)]
@@ -20,7 +20,7 @@ pub struct Generation {
 }
 
 /// Generation-specific data repository
-pub struct PSGenerationRepository {
+pub struct GenerationRepository {
     generations: Vec<Generation>,
     generation_move_data: HashMap<String, GenerationMoveData>,
     generation_item_data: HashMap<String, GenerationItemData>,
@@ -34,7 +34,7 @@ pub struct GenerationMoveData {
     pub generation: u8,
     pub name: String,
     pub move_count: usize,
-    pub moves: HashMap<String, PSMoveData>,
+    pub moves: HashMap<String, MoveData>,
 }
 
 /// Item data for a specific generation
@@ -43,7 +43,7 @@ pub struct GenerationItemData {
     pub generation: u8,
     pub name: String,
     pub item_count: usize,
-    pub items: HashMap<String, PSItemData>,
+    pub items: HashMap<String, ItemData>,
 }
 
 /// History of changes to a move across generations
@@ -75,7 +75,7 @@ pub struct FieldChange {
     pub to: serde_json::Value,
 }
 
-impl PSGenerationRepository {
+impl GenerationRepository {
     /// Load generation-specific data from directory
     pub fn load_from_directory(data_dir: &str) -> Result<Self, Box<dyn std::error::Error>> {
         let generations = vec![
@@ -103,7 +103,7 @@ impl PSGenerationRepository {
                 let mut gen_moves = HashMap::new();
 
                 for (move_id, move_value) in gen_moves_raw {
-                    let move_data: PSMoveData = serde_json::from_value(move_value.clone())?;
+                    let move_data: MoveData = serde_json::from_value(move_value.clone())?;
                     gen_moves.insert(move_id.clone(), move_data);
                 }
 
@@ -130,7 +130,7 @@ impl PSGenerationRepository {
                     let mut gen_items = HashMap::new();
 
                     for (item_id, item_value) in gen_items_raw {
-                        let item_data: PSItemData = serde_json::from_value(item_value.clone())?;
+                        let item_data: ItemData = serde_json::from_value(item_value.clone())?;
                         gen_items.insert(item_id.clone(), item_data);
                     }
 
@@ -234,24 +234,24 @@ impl PSGenerationRepository {
     }
 
     /// Get move data for a specific generation
-    pub fn get_move_for_generation(&self, move_name: &str, generation: u8) -> Option<&PSMoveData> {
+    pub fn get_move_for_generation(&self, move_name: &str, generation: u8) -> Option<&MoveData> {
         let gen_id = format!("gen{}", generation);
         self.generation_move_data.get(&gen_id)?.moves.get(move_name)
     }
 
     /// Get item data for a specific generation
-    pub fn get_item_for_generation(&self, item_name: &str, generation: u8) -> Option<&PSItemData> {
+    pub fn get_item_for_generation(&self, item_name: &str, generation: u8) -> Option<&ItemData> {
         let gen_id = format!("gen{}", generation);
         self.generation_item_data.get(&gen_id)?.items.get(item_name)
     }
 
     /// Get current generation move data (Gen 9)
-    pub fn get_move(&self, move_name: &str) -> Option<&PSMoveData> {
+    pub fn get_move(&self, move_name: &str) -> Option<&MoveData> {
         self.get_move_for_generation(move_name, 9)
     }
 
     /// Get current generation item data (Gen 9)
-    pub fn get_item(&self, item_name: &str) -> Option<&PSItemData> {
+    pub fn get_item(&self, item_name: &str) -> Option<&ItemData> {
         self.get_item_for_generation(item_name, 9)
     }
 
@@ -298,35 +298,35 @@ impl PSGenerationRepository {
     }
 
     /// Get all moves for a specific generation
-    pub fn get_all_moves_for_generation(&self, generation: u8) -> Option<&HashMap<String, PSMoveData>> {
+    pub fn get_all_moves_for_generation(&self, generation: u8) -> Option<&HashMap<String, MoveData>> {
         let gen_id = format!("gen{}", generation);
         Some(&self.generation_move_data.get(&gen_id)?.moves)
     }
 
     /// Get all items for a specific generation
-    pub fn get_all_items_for_generation(&self, generation: u8) -> Option<&HashMap<String, PSItemData>> {
+    pub fn get_all_items_for_generation(&self, generation: u8) -> Option<&HashMap<String, ItemData>> {
         let gen_id = format!("gen{}", generation);
         Some(&self.generation_item_data.get(&gen_id)?.items)
     }
 
-    /// Convert PS move data to engine move (with generation awareness)
-    pub fn ps_move_to_engine_move(&self, ps_move: &PSMoveData) -> Move {
+    /// Convert move data to engine move (with generation awareness)
+    pub fn move_to_engine_move(&self, move_data: &MoveData) -> Move {
         Move {
-            name: ps_move.name.clone(),
-            base_power: ps_move.base_power as u8,
-            accuracy: ps_move.accuracy as u8,
-            move_type: ps_move.move_type.clone(),
-            pp: ps_move.pp,
-            max_pp: ps_move.max_pp,
-            target: ps_target_from_string(&ps_move.target),
-            category: self.convert_ps_category_to_engine(&ps_move.category),
-            priority: ps_move.priority,
+            name: move_data.name.clone(),
+            base_power: move_data.base_power as u8,
+            accuracy: move_data.accuracy as u8,
+            move_type: move_data.move_type.clone(),
+            pp: move_data.pp,
+            max_pp: move_data.max_pp,
+            target: target_from_string(&move_data.target),
+            category: self.convert_category_to_engine(&move_data.category),
+            priority: move_data.priority,
         }
     }
 
-    /// Convert PS category to engine category
-    fn convert_ps_category_to_engine(&self, ps_category: &str) -> MoveCategory {
-        match ps_category {
+    /// Convert category to engine category
+    fn convert_category_to_engine(&self, category: &str) -> MoveCategory {
+        match category {
             "Physical" => MoveCategory::Physical,
             "Special" => MoveCategory::Special,
             "Status" => MoveCategory::Status,
@@ -405,7 +405,7 @@ mod tests {
     fn test_generation_repository_creation() {
         // This test will fail without actual PS generation data files
         // but demonstrates the intended usage
-        if let Ok(repo) = PSGenerationRepository::load_from_directory("data/ps-extracted") {
+        if let Ok(repo) = GenerationRepository::load_from_directory("data/ps-extracted") {
             let stats = repo.get_generation_stats();
             assert!(!stats.is_empty());
             
@@ -422,7 +422,7 @@ mod tests {
 
     #[test]
     fn test_move_generation_tracking() {
-        if let Ok(repo) = PSGenerationRepository::load_from_directory("data/ps-extracted") {
+        if let Ok(repo) = GenerationRepository::load_from_directory("data/ps-extracted") {
             // Test that a Gen 1 move exists in multiple generations
             let absorb_gens = repo.get_move_generations("absorb");
             assert!(!absorb_gens.is_empty());

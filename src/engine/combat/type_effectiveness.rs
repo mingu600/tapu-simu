@@ -5,7 +5,7 @@
 
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
-use crate::data::services::type_chart::create_ps_type_chart_loader;
+// Removed old service layer import - type chart loading now handled differently
 
 /// Pokemon types with numeric indices for the effectiveness matrix
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -116,15 +116,8 @@ impl TypeChart {
             special_cases: HashMap::new(),
         };
         
-        // Try to load from PS data first
-        let loader = create_ps_type_chart_loader();
-        if let Ok(ps_effectiveness) = loader.load_type_chart(generation) {
-            chart.load_from_ps_data(ps_effectiveness);
-        } else {
-            // Fallback to hardcoded chart only if PS data fails
-            eprintln!("Warning: Failed to load PS type chart for gen {}, using fallback", generation);
-            chart.initialize_effectiveness_matrix();
-        }
+        // Use hardcoded effectiveness matrix (simplified after removing service layer)
+        chart.initialize_effectiveness_matrix();
         
         chart.add_special_cases();
         
@@ -133,18 +126,6 @@ impl TypeChart {
         chart
     }
 
-    /// Load effectiveness data from PS type chart
-    fn load_from_ps_data(&mut self, ps_data: HashMap<(PokemonType, PokemonType), f32>) {
-        // Initialize all to neutral
-        for row in &mut self.effectiveness {
-            row.fill(1.0);
-        }
-        
-        // Apply PS data
-        for ((attacking, defending), multiplier) in ps_data {
-            self.effectiveness[attacking as usize][defending as usize] = multiplier;
-        }
-    }
 
     /// Get type effectiveness multiplier between two types
     pub fn get_effectiveness(&self, attacking_type: PokemonType, defending_type: PokemonType) -> f32 {

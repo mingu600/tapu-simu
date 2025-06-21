@@ -158,6 +158,24 @@ impl BattleFormat {
         }
     }
 
+    pub fn new_with_settings(
+        name: String,
+        generation: Generation,
+        format_type: FormatType,
+        team_size: usize,
+        active_per_side: usize,
+    ) -> Self {
+        Self {
+            name,
+            generation,
+            format_type,
+            team_size,
+            active_per_side,
+            clauses: Vec::new(),
+            ban_list: BanList::empty(),
+        }
+    }
+
     /// Serialize the battle format to a compact string format
     /// Format: name|generation|format_type|team_size|active_per_side|clauses|ban_list
     pub fn serialize(&self) -> String {
@@ -398,6 +416,18 @@ impl BattleFormat {
         ])
     }
 
+    pub fn gen9_vgc() -> Self {
+        Self::new(
+            "Gen 9 VGC".to_string(),
+            Generation::Gen9,
+            FormatType::Doubles,
+        )
+        .with_clauses(vec![
+            FormatClause::SpeciesClause,
+            FormatClause::ItemClause,
+        ])
+    }
+
     pub fn gen8_random_battle() -> Self {
         Self::new(
             "Gen 8 Random Battle".to_string(),
@@ -482,6 +512,14 @@ impl SideReference {
         match self {
             SideReference::SideOne => "S1".to_string(),
             SideReference::SideTwo => "S2".to_string(),
+        }
+    }
+
+    /// Convert to index for array access
+    pub fn to_index(&self) -> usize {
+        match self {
+            SideReference::SideOne => 0,
+            SideReference::SideTwo => 1,
         }
     }
 }

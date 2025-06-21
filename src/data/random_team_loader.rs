@@ -5,7 +5,7 @@
 
 use crate::core::battle_format::BattleFormat;
 use crate::core::move_choice::PokemonType;
-use crate::core::state::{Gender, Pokemon};
+use crate::core::battle_state::{Gender, Pokemon};
 use crate::data::types::{Nature, Stats};
 use rand::rngs::StdRng;
 use rand::seq::SliceRandom;
@@ -298,7 +298,7 @@ impl RandomPokemonSet {
     }
 
     /// Get EVs with Smogon Random Battle optimization rules
-    pub fn get_evs(&self, move_factory: &crate::data::ps_move_factory::PSMoveFactory) -> Stats {
+    pub fn get_evs(&self, repository: &crate::data::ps::Repository) -> Stats {
         // Start with default Random Battle EVs
         let mut evs = match &self.evs {
             Some(evs) => evs.to_stats(85),
@@ -314,11 +314,10 @@ impl RandomPokemonSet {
 
         // Apply Smogon Random Battle optimization rules
         let has_physical_moves = self.moves.iter().any(|move_name| {
-            if let Some(move_data) = move_factory.create_move(move_name) {
-                matches!(
-                    move_data.category,
-                    crate::core::state::MoveCategory::Physical
-                )
+            use crate::types::identifiers::MoveId;
+            let move_id = MoveId::from(move_name.clone());
+            if let Ok(move_data) = repository.move_data(&move_id) {
+                move_data.category == "Physical"
             } else {
                 false
             }
@@ -343,7 +342,7 @@ impl RandomPokemonSet {
     }
 
     /// Get IVs with Smogon Random Battle optimization rules
-    pub fn get_ivs(&self, move_factory: &crate::data::ps_move_factory::PSMoveFactory) -> Stats {
+    pub fn get_ivs(&self, repository: &crate::data::ps::Repository) -> Stats {
         // Start with default Random Battle IVs (perfect)
         let mut ivs = match &self.ivs {
             Some(ivs) => ivs.to_stats(31),
@@ -359,11 +358,10 @@ impl RandomPokemonSet {
 
         // Apply Smogon Random Battle optimization rules
         let has_physical_moves = self.moves.iter().any(|move_name| {
-            if let Some(move_data) = move_factory.create_move(move_name) {
-                matches!(
-                    move_data.category,
-                    crate::core::state::MoveCategory::Physical
-                )
+            use crate::types::identifiers::MoveId;
+            let move_id = MoveId::from(move_name.clone());
+            if let Ok(move_data) = repository.move_data(&move_id) {
+                move_data.category == "Physical"
             } else {
                 false
             }
@@ -400,18 +398,29 @@ impl RandomPokemonSet {
     /// Convert to battle engine Pokemon
     pub fn to_battle_pokemon(
         &self,
-        move_factory: &crate::data::ps_move_factory::PSMoveFactory,
-        pokemon_factory: &crate::data::ps_pokemon_factory::PSPokemonFactory,
+        repository: &crate::data::ps::Repository,
     ) -> Pokemon {
         let mut pokemon = Pokemon::new(self.species.clone());
 
         // Set basic attributes
         pokemon.level = self.level;
         // Set ability from random team data or default from PS data
-        pokemon.ability = self
-            .ability
-            .clone()
-            .unwrap_or_else(|| pokemon_factory.get_default_ability_with_fallback(&self.species));
+        use crate::types::identifiers::{AbilityId, SpeciesId};
+        pokemon.ability = if let Some(ability_name) = &self.ability {
+            ability_name.clone()
+        } else {
+            // Get default ability from repository
+            let species_id = SpeciesId::from(self.species.clone());
+            if let Ok(pokemon_data) = repository.pokemon_data(&species_id) {
+                // Get first ability if available (slot "0")
+                pokemon_data.abilities.get("0")
+                    .cloned()
+                    .unwrap_or_else(|| AbilityId::new(""))
+                    .to_string()
+            } else {
+                String::new()
+            }
+        };
         pokemon.item = self.item.clone();
 
         // Set gender
@@ -422,10 +431,24 @@ impl RandomPokemonSet {
         };
 
         // Calculate stats from base stats, level, nature, IVs, EVs
-        let base_stats = pokemon_factory.get_base_stats_with_fallback(&self.species);
+        let species_id = SpeciesId::from(self.species.clone());
+        let base_stats = if let Ok(pokemon_data) = repository.pokemon_data(&species_id) {
+            pokemon_data.base_stats.to_engine_stats()
+        } else {
+            eprintln!("Warning: Base stats for '{}' not found in PS data, using fallback", self.species);
+            // Use reasonable fallback stats
+            crate::data::types::EngineBaseStats {
+                hp: 70,
+                attack: 70,
+                defense: 70,
+                special_attack: 70,
+                special_defense: 70,
+                speed: 70,
+            }
+        };
         let nature = self.get_nature();
-        let ivs = self.get_ivs(move_factory);
-        let evs = self.get_evs(move_factory);
+        let ivs = self.get_ivs(repository);
+        let evs = self.get_evs(repository);
 
         // Calculate actual stats using Pokemon formula
         // HP = floor(((2 * base + iv + floor(ev / 4)) * level) / 100) + level + 10
@@ -480,7 +503,12 @@ impl RandomPokemonSet {
         };
 
         // Set types from PS data
-        pokemon.types = pokemon_factory.get_types_with_fallback(&self.species);
+        pokemon.types = if let Ok(pokemon_data) = repository.pokemon_data(&species_id) {
+            pokemon_data.types.iter().map(|type_id| type_id.as_str().to_string()).collect()
+        } else {
+            eprintln!("Warning: Types for '{}' not found in PS data, using Normal type", self.species);
+            vec!["Normal".to_string()]
+        };
 
         // Add moves to the Pokemon
         for (index, move_name) in self.moves.iter().enumerate() {
@@ -489,24 +517,26 @@ impl RandomPokemonSet {
             } // Pokemon can only have 4 moves
 
             // Create move using PS data
-            let move_data = match move_factory.create_move(move_name) {
-                Some(mv) => mv,
-                None => {
+            use crate::types::identifiers::MoveId;
+            let move_id = MoveId::from(move_name.clone());
+            let move_data = match repository.create_move(&move_id) {
+                Ok(mv) => mv,
+                Err(_) => {
                     // Fallback if move not found in PS data
                     eprintln!(
                         "Warning: Move '{}' not found in PS data, using placeholder",
                         move_name
                     );
-                    crate::core::state::Move {
+                    crate::core::battle_state::Move {
                         name: move_name.clone(),
                         base_power: 80,
                         move_type: "Normal".to_string(),
-                        category: crate::core::state::MoveCategory::Physical,
+                        category: crate::core::battle_state::MoveCategory::Physical,
                         accuracy: 100,
                         pp: 20,
                         max_pp: 20,
                         priority: 0,
-                        target: crate::data::ps_types::PSMoveTarget::Normal,
+                        target: crate::data::showdown_types::MoveTarget::Normal,
                     }
                 }
             };
@@ -601,10 +631,16 @@ mod tests {
         assert!(pokemon.is_shiny());
         assert!(!pokemon.has_gigantamax());
 
-        // Create a mock move factory for testing
-        let move_factory = crate::data::ps_move_factory::PSMoveFactory::new()
-            .expect("Failed to create move factory");
-        let evs = pokemon.get_evs(&move_factory);
+        // Create a repository for testing (might not have data, but should work for basic tests)
+        let repository = crate::data::ps::Repository::from_path("data/ps-extracted")
+            .unwrap_or_else(|_| {
+                // Create an empty repository for testing
+                crate::data::ps::Repository::from_path("/dev/null").unwrap_or_else(|_| {
+                    // This will create an empty repository
+                    panic!("Could not create test repository")
+                })
+            });
+        let evs = pokemon.get_evs(&repository);
         assert_eq!(evs.hp, 85);
         assert_eq!(evs.speed, 85);
     }

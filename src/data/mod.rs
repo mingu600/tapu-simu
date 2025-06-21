@@ -1,29 +1,23 @@
 //! # Data Layer
 //!
-//! This module provides the data layer for the V2 engine using
+//! This module provides the modernized data layer using
 //! Pokemon Showdown data as the primary source.
 
 pub mod conversion;
 pub mod loader;
-pub mod ps_generation_loader;
-pub mod ps_move_factory;
-pub mod ps_pokemon_factory;
-pub mod ps_types;
+pub mod ps;
+pub mod generation_loader;
+pub mod showdown_types;
 pub mod random_team_loader;
-pub mod services;
 pub mod types;
 
 // Re-exports for convenience
 pub use conversion::*;
-pub use loader::PSDataRepository;
-pub use ps_generation_loader::PSGenerationRepository;
-pub use ps_move_factory::PSMoveFactory;
-pub use ps_pokemon_factory::PSPokemonFactory;
-pub use ps_types::*;
+pub use loader::DataRepository;
+pub use ps::Repository;
+pub use generation_loader::GenerationRepository;
+pub use showdown_types::*;
 pub use random_team_loader::{RandomTeamLoader, RandomPokemonSet, RandomTeam};
-pub use services::move_service::PSMoveService;
-pub use services::pokemon_service::PSPokemonService;
-pub use services::type_chart::{create_ps_type_chart_loader, PSTypeChartLoader};
 
-// Legacy types still needed for some compatibility
+// Core types still needed for compatibility
 pub use types::{EngineMoveData, TypeEffectiveness, Nature, Stats};

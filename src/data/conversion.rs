@@ -2,30 +2,30 @@
 //! 
 //! This module provides conversion utilities for Pokemon Showdown data formats.
 
-use crate::data::ps_types::PSMoveTarget;
+use crate::data::showdown_types::MoveTarget;
 
-// This module previously handled conversion from legacy MoveTarget to PSMoveTarget
-// Since we now use PSMoveTarget throughout, only string conversion functions remain
+// This module previously handled conversion from legacy MoveTarget to MoveTarget
+// Since we now use MoveTarget throughout, only string conversion functions remain
 
 /// Convert Pokemon Showdown target string to enum
-pub fn ps_target_from_string(target: &str) -> PSMoveTarget {
+pub fn target_from_string(target: &str) -> MoveTarget {
     match target {
-        "normal" => PSMoveTarget::Normal,
-        "self" => PSMoveTarget::Self_,
-        "adjacentAlly" => PSMoveTarget::AdjacentAlly,
-        "adjacentAllyOrSelf" => PSMoveTarget::AdjacentAllyOrSelf,
-        "adjacentFoe" => PSMoveTarget::AdjacentFoe,
-        "allAdjacentFoes" => PSMoveTarget::AllAdjacentFoes,
-        "allAdjacent" => PSMoveTarget::AllAdjacent,
-        "all" => PSMoveTarget::All,
-        "allyTeam" => PSMoveTarget::AllyTeam,
-        "allySide" => PSMoveTarget::AllySide,
-        "foeSide" => PSMoveTarget::FoeSide,
-        "any" => PSMoveTarget::Any,
-        "randomNormal" => PSMoveTarget::RandomNormal,
-        "scripted" => PSMoveTarget::Scripted,
-        "allies" => PSMoveTarget::Allies,
-        _ => PSMoveTarget::Normal, // Default fallback
+        "normal" => MoveTarget::Normal,
+        "self" => MoveTarget::Self_,
+        "adjacentAlly" => MoveTarget::AdjacentAlly,
+        "adjacentAllyOrSelf" => MoveTarget::AdjacentAllyOrSelf,
+        "adjacentFoe" => MoveTarget::AdjacentFoe,
+        "allAdjacentFoes" => MoveTarget::AllAdjacentFoes,
+        "allAdjacent" => MoveTarget::AllAdjacent,
+        "all" => MoveTarget::All,
+        "allyTeam" => MoveTarget::AllyTeam,
+        "allySide" => MoveTarget::AllySide,
+        "foeSide" => MoveTarget::FoeSide,
+        "any" => MoveTarget::Any,
+        "randomNormal" => MoveTarget::RandomNormal,
+        "scripted" => MoveTarget::Scripted,
+        "allies" => MoveTarget::Allies,
+        _ => MoveTarget::Normal, // Default fallback
     }
 }
 
@@ -34,10 +34,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_ps_target_from_string() {
-        assert_eq!(ps_target_from_string("normal"), PSMoveTarget::Normal);
-        assert_eq!(ps_target_from_string("self"), PSMoveTarget::Self_);
-        assert_eq!(ps_target_from_string("allAdjacentFoes"), PSMoveTarget::AllAdjacentFoes);
-        assert_eq!(ps_target_from_string("unknown"), PSMoveTarget::Normal); // Fallback
+    fn test_target_from_string() {
+        assert_eq!(target_from_string("normal"), MoveTarget::Normal);
+        assert_eq!(target_from_string("self"), MoveTarget::Self_);
+        assert_eq!(target_from_string("allAdjacentFoes"), MoveTarget::AllAdjacentFoes);
+        assert_eq!(target_from_string("unknown"), MoveTarget::Normal); // Fallback
     }
 }

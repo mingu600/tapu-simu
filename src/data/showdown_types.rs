@@ -11,7 +11,7 @@ use std::fmt;
 /// These match PS's move target system exactly for seamless integration.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub enum PSMoveTarget {
+pub enum MoveTarget {
     /// Standard single-target move (most moves)
     Normal,
     /// Targets the user (Swords Dance, Recover, etc.)
@@ -45,7 +45,7 @@ pub enum PSMoveTarget {
     Allies,
 }
 
-impl PSMoveTarget {
+impl MoveTarget {
     /// Serialize the move target to a compact string format
     pub fn serialize(&self) -> String {
         (*self as u8).to_string()
@@ -56,21 +56,21 @@ impl PSMoveTarget {
         let target_id = serialized.parse::<u8>()
             .map_err(|_| format!("Invalid move target ID: {}", serialized))?;
         match target_id {
-            0 => Ok(PSMoveTarget::Normal),
-            1 => Ok(PSMoveTarget::Self_),
-            2 => Ok(PSMoveTarget::AdjacentAlly),
-            3 => Ok(PSMoveTarget::AdjacentAllyOrSelf),
-            4 => Ok(PSMoveTarget::AdjacentFoe),
-            5 => Ok(PSMoveTarget::AllAdjacentFoes),
-            6 => Ok(PSMoveTarget::AllAdjacent),
-            7 => Ok(PSMoveTarget::All),
-            8 => Ok(PSMoveTarget::AllyTeam),
-            9 => Ok(PSMoveTarget::AllySide),
-            10 => Ok(PSMoveTarget::FoeSide),
-            11 => Ok(PSMoveTarget::Any),
-            12 => Ok(PSMoveTarget::RandomNormal),
-            13 => Ok(PSMoveTarget::Scripted),
-            14 => Ok(PSMoveTarget::Allies),
+            0 => Ok(MoveTarget::Normal),
+            1 => Ok(MoveTarget::Self_),
+            2 => Ok(MoveTarget::AdjacentAlly),
+            3 => Ok(MoveTarget::AdjacentAllyOrSelf),
+            4 => Ok(MoveTarget::AdjacentFoe),
+            5 => Ok(MoveTarget::AllAdjacentFoes),
+            6 => Ok(MoveTarget::AllAdjacent),
+            7 => Ok(MoveTarget::All),
+            8 => Ok(MoveTarget::AllyTeam),
+            9 => Ok(MoveTarget::AllySide),
+            10 => Ok(MoveTarget::FoeSide),
+            11 => Ok(MoveTarget::Any),
+            12 => Ok(MoveTarget::RandomNormal),
+            13 => Ok(MoveTarget::Scripted),
+            14 => Ok(MoveTarget::Allies),
             _ => Err(format!("Invalid move target ID: {}", target_id)),
         }
     }
@@ -79,11 +79,11 @@ impl PSMoveTarget {
     pub fn requires_target_selection(&self, active_per_side: usize) -> bool {
         match self {
             // These always need selection when multiple targets available
-            PSMoveTarget::Normal | PSMoveTarget::AdjacentFoe | PSMoveTarget::Any => {
+            MoveTarget::Normal | MoveTarget::AdjacentFoe | MoveTarget::Any => {
                 active_per_side > 1
             }
             // These need selection when there's a choice (user or ally)
-            PSMoveTarget::AdjacentAllyOrSelf => active_per_side > 1,
+            MoveTarget::AdjacentAllyOrSelf => active_per_side > 1,
             // These never need selection - they have fixed targets
             _ => false,
         }
@@ -93,10 +93,10 @@ impl PSMoveTarget {
     pub fn is_spread_move(&self) -> bool {
         matches!(
             self,
-            PSMoveTarget::AllAdjacentFoes
-                | PSMoveTarget::AllAdjacent
-                | PSMoveTarget::All
-                | PSMoveTarget::Allies
+            MoveTarget::AllAdjacentFoes
+                | MoveTarget::AllAdjacent
+                | MoveTarget::All
+                | MoveTarget::Allies
         )
     }
 
@@ -104,11 +104,11 @@ impl PSMoveTarget {
     pub fn can_target_ally(&self) -> bool {
         matches!(
             self,
-            PSMoveTarget::AdjacentAlly
-                | PSMoveTarget::AdjacentAllyOrSelf
-                | PSMoveTarget::AllAdjacent
-                | PSMoveTarget::AllyTeam
-                | PSMoveTarget::Allies
+            MoveTarget::AdjacentAlly
+                | MoveTarget::AdjacentAllyOrSelf
+                | MoveTarget::AllAdjacent
+                | MoveTarget::AllyTeam
+                | MoveTarget::Allies
         )
     }
 
@@ -116,7 +116,7 @@ impl PSMoveTarget {
     pub fn can_target_self(&self) -> bool {
         matches!(
             self,
-            PSMoveTarget::Self_ | PSMoveTarget::AdjacentAllyOrSelf | PSMoveTarget::AllyTeam
+            MoveTarget::Self_ | MoveTarget::AdjacentAllyOrSelf | MoveTarget::AllyTeam
         )
     }
 
@@ -124,7 +124,7 @@ impl PSMoveTarget {
     pub fn is_field_target(&self) -> bool {
         matches!(
             self,
-            PSMoveTarget::All | PSMoveTarget::AllySide | PSMoveTarget::FoeSide
+            MoveTarget::All | MoveTarget::AllySide | MoveTarget::FoeSide
         )
     }
 
@@ -132,32 +132,32 @@ impl PSMoveTarget {
     pub fn affects_allies(&self) -> bool {
         matches!(
             self,
-            PSMoveTarget::AdjacentAlly
-                | PSMoveTarget::AdjacentAllyOrSelf
-                | PSMoveTarget::AllAdjacent
-                | PSMoveTarget::AllyTeam
-                | PSMoveTarget::Allies
-                | PSMoveTarget::AllySide
+            MoveTarget::AdjacentAlly
+                | MoveTarget::AdjacentAllyOrSelf
+                | MoveTarget::AllAdjacent
+                | MoveTarget::AllyTeam
+                | MoveTarget::Allies
+                | MoveTarget::AllySide
         )
     }
 
     /// Get the default targets for this move in the given format
     pub fn get_default_targets(&self, user_side: usize, user_slot: usize, active_per_side: usize) -> Vec<(usize, usize)> {
         match self {
-            PSMoveTarget::Self_ => vec![(user_side, user_slot)],
-            PSMoveTarget::Normal | PSMoveTarget::AdjacentFoe => {
+            MoveTarget::Self_ => vec![(user_side, user_slot)],
+            MoveTarget::Normal | MoveTarget::AdjacentFoe => {
                 // Target first opponent
                 let opponent_side = 1 - user_side;
                 vec![(opponent_side, 0)]
             }
-            PSMoveTarget::AllAdjacentFoes => {
+            MoveTarget::AllAdjacentFoes => {
                 // All opponents
                 let opponent_side = 1 - user_side;
                 (0..active_per_side)
                     .map(|slot| (opponent_side, slot))
                     .collect()
             }
-            PSMoveTarget::AllAdjacent => {
+            MoveTarget::AllAdjacent => {
                 // All adjacent Pokemon (opponents + ally in doubles)
                 let mut targets = Vec::new();
                 let opponent_side = 1 - user_side;
@@ -175,18 +175,18 @@ impl PSMoveTarget {
                 
                 targets
             }
-            PSMoveTarget::AdjacentAlly => {
+            MoveTarget::AdjacentAlly => {
                 if active_per_side > 1 {
                     vec![(user_side, 1 - user_slot)]
                 } else {
                     vec![]
                 }
             }
-            PSMoveTarget::AdjacentAllyOrSelf => {
+            MoveTarget::AdjacentAllyOrSelf => {
                 // Default to self
                 vec![(user_side, user_slot)]
             }
-            PSMoveTarget::RandomNormal => {
+            MoveTarget::RandomNormal => {
                 // Pick random opponent slot
                 let opponent_side = 1 - user_side;
                 use rand::Rng;
@@ -194,39 +194,39 @@ impl PSMoveTarget {
                 let random_slot = rng.gen_range(0..active_per_side);
                 vec![(opponent_side, random_slot)]
             }
-            PSMoveTarget::Any => {
+            MoveTarget::Any => {
                 // Default to first opponent for long-range
                 let opponent_side = 1 - user_side;
                 vec![(opponent_side, 0)]
             }
             // Field effects don't target specific positions
-            PSMoveTarget::All | PSMoveTarget::AllySide | PSMoveTarget::FoeSide => vec![],
+            MoveTarget::All | MoveTarget::AllySide | MoveTarget::FoeSide => vec![],
             // Team/ally effects handled specially
-            PSMoveTarget::AllyTeam | PSMoveTarget::Allies => vec![],
+            MoveTarget::AllyTeam | MoveTarget::Allies => vec![],
             // Scripted moves need special handling
-            PSMoveTarget::Scripted => vec![],
+            MoveTarget::Scripted => vec![],
         }
     }
 }
 
-impl fmt::Display for PSMoveTarget {
+impl fmt::Display for MoveTarget {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = match self {
-            PSMoveTarget::Normal => "normal",
-            PSMoveTarget::Self_ => "self",
-            PSMoveTarget::AdjacentAlly => "adjacentAlly",
-            PSMoveTarget::AdjacentAllyOrSelf => "adjacentAllyOrSelf",
-            PSMoveTarget::AdjacentFoe => "adjacentFoe",
-            PSMoveTarget::AllAdjacentFoes => "allAdjacentFoes",
-            PSMoveTarget::AllAdjacent => "allAdjacent",
-            PSMoveTarget::All => "all",
-            PSMoveTarget::AllyTeam => "allyTeam",
-            PSMoveTarget::AllySide => "allySide",
-            PSMoveTarget::FoeSide => "foeSide",
-            PSMoveTarget::Any => "any",
-            PSMoveTarget::RandomNormal => "randomNormal",
-            PSMoveTarget::Scripted => "scripted",
-            PSMoveTarget::Allies => "allies",
+            MoveTarget::Normal => "normal",
+            MoveTarget::Self_ => "self",
+            MoveTarget::AdjacentAlly => "adjacentAlly",
+            MoveTarget::AdjacentAllyOrSelf => "adjacentAllyOrSelf",
+            MoveTarget::AdjacentFoe => "adjacentFoe",
+            MoveTarget::AllAdjacentFoes => "allAdjacentFoes",
+            MoveTarget::AllAdjacent => "allAdjacent",
+            MoveTarget::All => "all",
+            MoveTarget::AllyTeam => "allyTeam",
+            MoveTarget::AllySide => "allySide",
+            MoveTarget::FoeSide => "foeSide",
+            MoveTarget::Any => "any",
+            MoveTarget::RandomNormal => "randomNormal",
+            MoveTarget::Scripted => "scripted",
+            MoveTarget::Allies => "allies",
         };
         write!(f, "{}", s)
     }
@@ -235,7 +235,7 @@ impl fmt::Display for PSMoveTarget {
 /// Pokemon Showdown move data structure
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct PSMoveData {
+pub struct MoveData {
     pub id: String,
     pub num: i32,
     pub name: String,
@@ -248,7 +248,7 @@ pub struct PSMoveData {
     pub move_type: String,
     pub category: String, // "Physical", "Special", "Status"
     pub priority: i8,
-    pub target: String, // We'll parse this into PSMoveTarget
+    pub target: String, // We'll parse this into MoveTarget
     pub flags: std::collections::HashMap<String, i32>, // PS uses 1 for true, 0 for false
     
     // Optional effect data
@@ -261,11 +261,11 @@ pub struct PSMoveData {
     pub volatile_status: Option<String>,
     
     // Secondary effects
-    pub secondary: Option<PSSecondaryEffect>,
+    pub secondary: Option<SecondaryEffect>,
     
     // Self effects
     #[serde(rename = "self")]
-    pub self_: Option<PSSelfEffect>,
+    pub self_: Option<SelfEffect>,
     
     // Special properties
     pub is_z: ZMoveData,
@@ -298,7 +298,7 @@ pub struct PSMoveData {
     pub is_nonstandard: Option<String>,
 }
 
-impl PSMoveData {
+impl MoveData {
     /// Check if a move has a specific flag
     pub fn has_flag(&self, flag: &str) -> bool {
         self.flags.get(flag).map(|&v| v != 0).unwrap_or(false)
@@ -315,7 +315,7 @@ impl PSMoveData {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PSSecondaryEffect {
+pub struct SecondaryEffect {
     pub chance: u8,
     pub status: Option<String>,
     pub volatile_status: Option<String>,
@@ -323,7 +323,7 @@ pub struct PSSecondaryEffect {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PSSelfEffect {
+pub struct SelfEffect {
     pub boosts: Option<std::collections::HashMap<String, i8>>,
     pub volatile_status: Option<String>,
 }
@@ -447,7 +447,7 @@ impl IgnoreImmunityData {
 /// Pokemon Showdown item data structure
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct PSItemData {
+pub struct ItemData {
     pub id: String,
     pub num: i32,
     pub name: String,
@@ -471,10 +471,10 @@ pub struct PSItemData {
     pub boosts: Option<std::collections::HashMap<String, i8>>,
     
     // Natural Gift properties
-    pub natural_gift: Option<PSNaturalGift>,
+    pub natural_gift: Option<NaturalGift>,
     
     // Fling properties
-    pub fling: Option<PSFling>,
+    pub fling: Option<Fling>,
     
     // Item effects
     pub desc: String,
@@ -511,7 +511,7 @@ pub struct PSItemData {
 
 /// Natural Gift data structure
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PSNaturalGift {
+pub struct NaturalGift {
     #[serde(rename = "basePower")]
     pub base_power: u8,
     #[serde(rename = "type")]
@@ -520,14 +520,14 @@ pub struct PSNaturalGift {
 
 /// Fling data structure
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PSFling {
+pub struct Fling {
     #[serde(rename = "basePower")]
     pub base_power: u8,
     pub status: Option<String>,
     pub volatile_status: Option<String>,
 }
 
-impl PSItemData {
+impl ItemData {
     /// Check if this item provides type boosting for the given type
     pub fn boosts_type(&self, move_type: &str) -> bool {
         // Check for type plates
