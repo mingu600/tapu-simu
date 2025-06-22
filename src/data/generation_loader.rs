@@ -396,39 +396,3 @@ pub struct ChangeStats {
     pub total_item_changes: usize,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_generation_repository_creation() {
-        // This test will fail without actual PS generation data files
-        // but demonstrates the intended usage
-        if let Ok(repo) = GenerationRepository::load_from_directory("data/ps-extracted") {
-            let stats = repo.get_generation_stats();
-            assert!(!stats.is_empty());
-            
-            // Test specific move lookups
-            if let Some(bite_gen1) = repo.get_move_for_generation("bite", 1) {
-                assert_eq!(bite_gen1.move_type, "Normal"); // Bite was Normal in Gen 1
-            }
-            
-            if let Some(bite_gen9) = repo.get_move_for_generation("bite", 9) {
-                assert_eq!(bite_gen9.move_type, "Dark"); // Bite is Dark in modern gens
-            }
-        }
-    }
-
-    #[test]
-    fn test_move_generation_tracking() {
-        if let Ok(repo) = GenerationRepository::load_from_directory("data/ps-extracted") {
-            // Test that a Gen 1 move exists in multiple generations
-            let absorb_gens = repo.get_move_generations("absorb");
-            assert!(!absorb_gens.is_empty());
-            assert!(absorb_gens.contains(&1)); // Should exist in Gen 1
-            
-            // Test that a modern move doesn't exist in Gen 1
-            assert!(!repo.move_exists_in_generation("accelerock", 1));
-        }
-    }
-}

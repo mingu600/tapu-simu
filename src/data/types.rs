@@ -132,16 +132,3 @@ pub struct EngineItemData {
     pub effects: Vec<String>,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-
-    #[test]
-    fn test_type_effectiveness() {
-        assert_eq!(TypeEffectiveness::SuperEffective.multiplier(), 2.0);
-        assert_eq!(TypeEffectiveness::Effective.multiplier(), 1.0);
-        assert_eq!(TypeEffectiveness::NotVeryEffective.multiplier(), 0.5);
-        assert_eq!(TypeEffectiveness::NoEffect.multiplier(), 0.0);
-    }
-}

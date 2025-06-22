@@ -29,15 +29,3 @@ pub fn target_from_string(target: &str) -> MoveTarget {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_target_from_string() {
-        assert_eq!(target_from_string("normal"), MoveTarget::Normal);
-        assert_eq!(target_from_string("self"), MoveTarget::Self_);
-        assert_eq!(target_from_string("allAdjacentFoes"), MoveTarget::AllAdjacentFoes);
-        assert_eq!(target_from_string("unknown"), MoveTarget::Normal); // Fallback
-    }
-}

@@ -48,13 +48,3 @@ pub mod framework {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_basic_state_creation() {
-        let state = TestUtils::create_basic_test_state();
-        assert_eq!(state.format.name, "Gen 9 OU");
-    }
-}

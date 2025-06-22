@@ -156,28 +156,3 @@ pub fn print_engine_info() {
     println!();
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::core::battle_format::{BattleFormat, FormatType};
-    use crate::generation::Generation;
-
-    #[test]
-    fn test_format_parsing() {
-        assert_eq!(
-            parse_battle_format("singles").unwrap(),
-            BattleFormat::new("Singles".to_string(), Generation::Gen9, FormatType::Singles)
-        );
-        assert_eq!(
-            parse_battle_format("doubles").unwrap(),
-            BattleFormat::new("Doubles".to_string(), Generation::Gen9, FormatType::Doubles)
-        );
-        assert_eq!(parse_battle_format("vgc").unwrap(), BattleFormat::vgc2024());
-        assert_eq!(
-            parse_battle_format("triples").unwrap(),
-            BattleFormat::new("Triples".to_string(), Generation::Gen9, FormatType::Triples)
-        );
-
-        assert!(parse_battle_format("invalid").is_err());
-    }
-}

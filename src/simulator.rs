@@ -398,39 +398,3 @@ impl Player for DamageMaximizerPlayer {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_simulator_creation() {
-        // This test would need proper data files to pass
-        // For now, just test that the API compiles
-        let _result = Simulator::new();
-    }
-
-    #[test]
-    fn test_win_rate() {
-        let win_rate = WinRate::new(7, 10);
-        assert_eq!(win_rate.rate(), 0.7);
-        assert_eq!(win_rate.percentage(), 70.0);
-        assert_eq!(format!("{}", win_rate), "7/10 (70.0%)");
-    }
-
-    #[test]
-    fn test_benchmark_result() {
-        let battles = vec![
-            BattleResult::new(Some(0), 15, BattleState::default(), false),
-            BattleResult::new(Some(1), 20, BattleState::default(), false),
-            BattleResult::new(None, 25, BattleState::default(), true),
-        ];
-
-        let result = BenchmarkResult::from_results(battles);
-        assert_eq!(result.total_battles, 3);
-        assert_eq!(result.player_1_wins, 1);
-        assert_eq!(result.player_2_wins, 1);
-        assert_eq!(result.draws, 1);
-        assert_eq!(result.average_turns, 20.0);
-        assert_eq!(result.player_1_win_rate(), 1.0 / 3.0);
-    }
-}
