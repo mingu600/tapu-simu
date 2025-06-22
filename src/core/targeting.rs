@@ -106,8 +106,16 @@ pub fn resolve_targets(
         
         // Scripted moves need special handling (Counter, Mirror Coat)
         MoveTarget::Scripted => {
-            // Would need to track last attacker
-            vec![]
+            // Target the last Pokemon that damaged this Pokemon with a direct attack
+            if let Some(damage_info) = state.turn_info.damaged_this_turn.get(&user_pos) {
+                if damage_info.is_direct_damage {
+                    vec![damage_info.attacker_position]
+                } else {
+                    vec![]
+                }
+            } else {
+                vec![]
+            }
         }
     }
 }
@@ -336,31 +344,67 @@ pub fn auto_resolve_targets(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::battle_state::Pokemon;
+    use crate::core::battle_state::{Pokemon, Move, MoveCategory};
+    use crate::core::move_choice::MoveIndex;
     use crate::generation::Generation;
     use crate::core::battle_format::FormatType;
+    use crate::data::random_team_loader::RandomPokemonSet;
+
+    fn create_test_pokemon_with_moves() -> Pokemon {
+        // Use RandomPokemonSet to create a proper test Pokemon
+        let pokemon_set = RandomPokemonSet {
+            name: "Test".to_string(),
+            species: "Pikachu".to_string(),
+            level: 50,
+            gender: Some("M".to_string()),
+            shiny: Some(false),
+            ability: Some("Static".to_string()),
+            item: None,
+            moves: vec!["Tackle".to_string(), "Quick Attack".to_string()],
+            nature: Some("Hardy".to_string()),
+            evs: None,
+            ivs: None,
+            tera_type: Some("Electric".to_string()),
+            role: None,
+            gigantamax: None,
+        };
+
+        // Create repository (we'll use a mock for testing)
+        // For now, create a basic Pokemon and add a test move manually
+        let mut pokemon = Pokemon::new("Pikachu".to_string());
+        pokemon.ability = "Static".to_string();
+        pokemon.hp = 100;
+        pokemon.max_hp = 100;
+        pokemon.level = 50;
+        
+        // Add a basic test move for targeting tests
+        pokemon.moves.insert(MoveIndex::M0, Move {
+            name: "Tackle".to_string(),
+            base_power: 40,
+            accuracy: 100,
+            move_type: "Normal".to_string(),
+            pp: 35,
+            max_pp: 35,
+            target: crate::data::showdown_types::MoveTarget::Normal,
+            category: MoveCategory::Physical,
+            priority: 0,
+        });
+        
+        pokemon
+    }
 
     fn create_test_state_doubles() -> BattleState {
         let mut state = BattleState::new(BattleFormat::new("Doubles".to_string(), Generation::Gen9, FormatType::Doubles));
         
-        // Set up active Pokemon on both sides
-        state.side_one.active_pokemon_indices = vec![Some(0), Some(1)];
-        state.side_two.active_pokemon_indices = vec![Some(0), Some(1)];
+        // Set up active Pokemon on both sides (use the proper sides array)
+        state.get_side_mut(0).active_pokemon_indices = vec![Some(0), Some(1)];
+        state.get_side_mut(1).active_pokemon_indices = vec![Some(0), Some(1)];
         
-        // Add some Pokemon to teams
+        // Add Pokemon to teams using established method
         for _ in 0..2 {
-            let mut pokemon_one = Pokemon::new("Test".to_string());
-            pokemon_one.ability = "Test".to_string();
-            pokemon_one.hp = 100;
-            pokemon_one.max_hp = 100;
-            
-            let mut pokemon_two = Pokemon::new("Test".to_string());
-            pokemon_two.ability = "Test".to_string();
-            pokemon_two.hp = 100;
-            pokemon_two.max_hp = 100;
-            
-            state.side_one.pokemon.push(pokemon_one);
-            state.side_two.pokemon.push(pokemon_two);
+            let pokemon = create_test_pokemon_with_moves();
+            state.get_side_mut(0).pokemon.push(pokemon.clone());
+            state.get_side_mut(1).pokemon.push(pokemon);
         }
         
         state
@@ -434,7 +478,7 @@ mod tests {
             priority: 0,
         };
         
-        if let Some(pokemon) = state.side_one.pokemon.get_mut(0) {
+        if let Some(pokemon) = state.sides[0].pokemon.get_mut(0) {
             pokemon.moves.insert(MoveIndex::M0, tackle);
         }
         

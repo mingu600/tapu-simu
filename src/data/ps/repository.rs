@@ -2,6 +2,9 @@ use crate::types::{AbilityId, DataError, DataResult, ItemId, MoveId, SpeciesId, 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::Path;
+use std::sync::{Arc, Mutex};
+use std::hash::{Hash, Hasher};
+use std::collections::hash_map::DefaultHasher;
 
 /// Direct data access repository without factory or service layers
 pub struct Repository {
@@ -9,11 +12,38 @@ pub struct Repository {
     pokemon: HashMap<SpeciesId, PokemonData>,
     items: HashMap<ItemId, ItemData>,
     abilities: HashMap<AbilityId, AbilityData>,
+    // Performance indexes
+    move_name_index: HashMap<String, MoveId>,
+    pokemon_name_index: HashMap<String, SpeciesId>,
+    item_name_index: HashMap<String, ItemId>,
+    // ID counters for unique ID generation
+    next_move_id: u32,
+    next_pokemon_id: u32,
+    next_item_id: u32,
+    next_ability_id: u32,
 }
 
+// Global repository instance
+use std::sync::OnceLock;
+static GLOBAL_REPOSITORY: OnceLock<Mutex<Option<Arc<Repository>>>> = OnceLock::new();
+
 impl Repository {
-    /// Load repository from PS data directory
-    pub fn from_path(path: impl AsRef<Path>) -> DataResult<Self> {
+    /// Get or create global repository instance (singleton pattern)
+    pub fn global(path: impl AsRef<Path>) -> DataResult<Arc<Self>> {
+        let mutex = GLOBAL_REPOSITORY.get_or_init(|| Mutex::new(None));
+        let mut repo = mutex.lock().unwrap();
+        
+        if let Some(existing) = repo.as_ref() {
+            return Ok(Arc::clone(existing));
+        }
+        
+        let new_repo = Arc::new(Self::from_path_internal(path)?);
+        *repo = Some(Arc::clone(&new_repo));
+        Ok(new_repo)
+    }
+    
+    /// Load repository from PS data directory (internal method)
+    fn from_path_internal(path: impl AsRef<Path>) -> DataResult<Self> {
         let path = path.as_ref();
         
         // Load each data type directly from JSON files
@@ -22,12 +52,56 @@ impl Repository {
         let items = load_items_data(&path.join("items.json"))?;
         let abilities = load_abilities_data(&path.join("abilities.json"))?;
         
-        Ok(Self {
+        let mut repo = Self {
             moves,
             pokemon, 
             items,
             abilities,
-        })
+            move_name_index: HashMap::new(),
+            pokemon_name_index: HashMap::new(),
+            item_name_index: HashMap::new(),
+            next_move_id: 1,
+            next_pokemon_id: 1,
+            next_item_id: 1,
+            next_ability_id: 1,
+        };
+        
+        // Build performance indexes
+        repo.build_indexes();
+        
+        Ok(repo)
+    }
+    
+    /// Load repository from PS data directory (kept for backward compatibility)
+    pub fn from_path(path: impl AsRef<Path>) -> DataResult<Self> {
+        Self::from_path_internal(path)
+    }
+    
+    /// Build performance indexes for fast lookups
+    fn build_indexes(&mut self) {
+        // Build move name index
+        for (move_id, move_data) in &self.moves {
+            let normalized_name = normalize_name(&move_data.name);
+            self.move_name_index.insert(normalized_name, move_id.clone());
+        }
+        
+        // Build pokemon name index
+        for (species_id, pokemon_data) in &self.pokemon {
+            let normalized_name = normalize_name(&pokemon_data.name);
+            self.pokemon_name_index.insert(normalized_name, species_id.clone());
+            // Also index by species ID string
+            let normalized_id = normalize_name(species_id.as_str());
+            self.pokemon_name_index.insert(normalized_id, species_id.clone());
+        }
+        
+        // Build item name index
+        for (item_id, item_data) in &self.items {
+            let normalized_name = normalize_name(&item_data.name);
+            self.item_name_index.insert(normalized_name, item_id.clone());
+            // Also index by item ID string
+            let normalized_id = normalize_name(item_id.as_str());
+            self.item_name_index.insert(normalized_id, item_id.clone());
+        }
     }
     
     /// Direct access to move data
@@ -84,6 +158,20 @@ impl Repository {
         self.abilities.contains_key(id)
     }
     
+    /// Find move data by name (case-insensitive) - optimized with index
+    pub fn find_move_by_name(&self, name: &str) -> Option<&MoveData> {
+        let normalized_name = normalize_name(name);
+        
+        // Try index lookup first
+        if let Some(move_id) = self.move_name_index.get(&normalized_name) {
+            return self.moves.get(move_id);
+        }
+        
+        // Fallback to linear search for edge cases
+        self.moves.values().find(|move_data| normalize_name(&move_data.name) == normalized_name)
+    }
+    
+    
     /// Get all available move IDs
     pub fn move_ids(&self) -> impl Iterator<Item = &MoveId> {
         self.moves.keys()
@@ -114,23 +202,20 @@ impl Repository {
         }
     }
     
-    /// Get Pokemon weight in kilograms
+    /// Get Pokemon weight in kilograms - optimized with index
     pub fn get_pokemon_weight(&self, species_name: &str) -> Option<f32> {
-        // Normalize the species name for lookup
-        let normalized_name = species_name.to_lowercase()
-            .replace(" ", "")
-            .replace("-", "")
-            .replace("'", "");
-            
-        // Try different name variations for lookup
-        for (pokemon_id, pokemon_data) in &self.pokemon {
-            let normalized_id = pokemon_id.as_str().to_lowercase()
-                .replace(" ", "")
-                .replace("-", "")
-                .replace("'", "");
-                
-            if normalized_id == normalized_name || 
-               pokemon_data.name.to_lowercase() == species_name.to_lowercase() {
+        let normalized_name = normalize_name(species_name);
+        
+        // Try index lookup first
+        if let Some(species_id) = self.pokemon_name_index.get(&normalized_name) {
+            if let Some(pokemon_data) = self.pokemon.get(species_id) {
+                return Some(pokemon_data.weight_kg);
+            }
+        }
+        
+        // Fallback to linear search for edge cases
+        for pokemon_data in self.pokemon.values() {
+            if normalize_name(&pokemon_data.name) == normalized_name {
                 return Some(pokemon_data.weight_kg);
             }
         }
@@ -138,14 +223,20 @@ impl Repository {
         None
     }
     
-    /// Get item fling power
+    /// Get item fling power - optimized with index
     pub fn get_item_fling_power(&self, item_name: &str) -> Option<u8> {
-        let normalized_name = item_name.to_lowercase().replace(" ", "").replace("-", "");
+        let normalized_name = normalize_name(item_name);
         
-        for (item_id, item_data) in &self.items {
-            let normalized_id = item_id.as_str().to_lowercase().replace(" ", "").replace("-", "");
-            
-            if normalized_id == normalized_name {
+        // Try index lookup first
+        if let Some(item_id) = self.item_name_index.get(&normalized_name) {
+            if let Some(item_data) = self.items.get(item_id) {
+                return item_data.fling_power;
+            }
+        }
+        
+        // Fallback to linear search for edge cases
+        for item_data in self.items.values() {
+            if normalize_name(&item_data.name) == normalized_name {
                 return item_data.fling_power;
             }
         }
@@ -153,14 +244,20 @@ impl Repository {
         None
     }
     
-    /// Check if item can be flung
+    /// Check if item can be flung - optimized with index
     pub fn can_item_be_flung(&self, item_name: &str) -> bool {
-        let normalized_name = item_name.to_lowercase().replace(" ", "").replace("-", "");
+        let normalized_name = normalize_name(item_name);
         
-        for (item_id, item_data) in &self.items {
-            let normalized_id = item_id.as_str().to_lowercase().replace(" ", "").replace("-", "");
-            
-            if normalized_id == normalized_name {
+        // Try index lookup first
+        if let Some(item_id) = self.item_name_index.get(&normalized_name) {
+            if let Some(item_data) = self.items.get(item_id) {
+                return item_data.can_be_flung;
+            }
+        }
+        
+        // Fallback to linear search for edge cases
+        for item_data in self.items.values() {
+            if normalize_name(&item_data.name) == normalized_name {
                 return item_data.can_be_flung;
             }
         }
@@ -187,7 +284,7 @@ pub struct MoveData {
 }
 
 impl MoveData {
-    /// Convert to engine Move type
+    /// Convert to engine Move type with safe conversions
     pub fn to_engine_move(&self) -> crate::core::battle_state::Move {
         use crate::core::battle_state::{Move, MoveCategory};
         use crate::data::conversion::target_from_string;
@@ -210,14 +307,26 @@ impl MoveData {
         }
     }
     
-    /// Get drain ratio if move has drain
+    /// Get drain ratio if move has drain (safe division)
     pub fn drain_ratio(&self) -> Option<f32> {
-        self.drain.map(|[num, denom]| num as f32 / denom as f32)
+        self.drain.and_then(|[num, denom]| {
+            if denom > 0 {
+                Some(num as f32 / denom as f32)
+            } else {
+                None // Avoid division by zero
+            }
+        })
     }
     
-    /// Get recoil ratio if move has recoil
+    /// Get recoil ratio if move has recoil (safe division)
     pub fn recoil_ratio(&self) -> Option<f32> {
-        self.recoil.map(|[num, denom]| num as f32 / denom as f32)
+        self.recoil.and_then(|[num, denom]| {
+            if denom > 0 {
+                Some(num as f32 / denom as f32)
+            } else {
+                None // Avoid division by zero
+            }
+        })
     }
 }
 
@@ -293,6 +402,25 @@ pub struct RepositoryStats {
     pub ability_count: usize,
 }
 
+/// Normalize string for consistent lookups
+fn normalize_name(name: &str) -> String {
+    name.to_lowercase()
+        .replace(" ", "")
+        .replace("-", "")
+        .replace("'", "")
+        .replace(".", "")
+}
+
+/// Generate consistent ID from string using hash
+fn generate_consistent_id(input: &str) -> u32 {
+    let mut hasher = DefaultHasher::new();
+    input.hash(&mut hasher);
+    // Ensure we don't generate 0 as ID
+    let hash = hasher.finish() as u32;
+    if hash == 0 { 1 } else { hash }
+}
+
+
 // Helper functions for loading data from JSON files
 fn load_moves_data(path: &Path) -> DataResult<HashMap<MoveId, MoveData>> {
     if !path.exists() {
@@ -312,9 +440,27 @@ fn load_moves_data(path: &Path) -> DataResult<HashMap<MoveId, MoveData>> {
         })?;
     
     let mut moves = HashMap::new();
+    let mut parse_errors = Vec::new();
+    
     for (id, value) in raw_data {
-        if let Ok(move_data) = serde_json::from_value::<MoveData>(value) {
-            moves.insert(MoveId::from(id), move_data);
+        match serde_json::from_value::<MoveData>(value) {
+            Ok(move_data) => {
+                moves.insert(MoveId::from(id), move_data);
+            }
+            Err(e) => {
+                parse_errors.push(format!("Failed to parse move '{}': {}", id, e));
+            }
+        }
+    }
+    
+    // Log parse errors if any (could be made configurable)
+    if !parse_errors.is_empty() {
+        eprintln!("Warning: {} move parsing errors occurred", parse_errors.len());
+        for error in parse_errors.iter().take(5) { // Show first 5 errors
+            eprintln!("  {}", error);
+        }
+        if parse_errors.len() > 5 {
+            eprintln!("  ... and {} more", parse_errors.len() - 5);
         }
     }
     
@@ -339,17 +485,35 @@ fn load_pokemon_data(path: &Path) -> DataResult<HashMap<SpeciesId, PokemonData>>
         })?;
     
     let mut pokemon = HashMap::new();
+    let mut parse_errors = Vec::new();
+    
     for (id, value) in raw_data {
         // Parse manually to handle weight extraction
-        if let Ok(mut pokemon_data) = serde_json::from_value::<PokemonData>(value.clone()) {
-            // Extract weight from PS data if available
-            pokemon_data.weight_kg = value
-                .get("weightkg")
-                .and_then(|v| v.as_f64())
-                .map(|v| v as f32)
-                .unwrap_or(50.0); // Default to 50kg if missing
-                
-            pokemon.insert(SpeciesId::from(id), pokemon_data);
+        match serde_json::from_value::<PokemonData>(value.clone()) {
+            Ok(mut pokemon_data) => {
+                // Extract weight from PS data if available
+                pokemon_data.weight_kg = value
+                    .get("weightkg")
+                    .and_then(|v| v.as_f64())
+                    .map(|v| v as f32)
+                    .unwrap_or(50.0); // Default to 50kg if missing
+                    
+                pokemon.insert(SpeciesId::from(id), pokemon_data);
+            }
+            Err(e) => {
+                parse_errors.push(format!("Failed to parse pokemon '{}': {}", id, e));
+            }
+        }
+    }
+    
+    // Log parse errors if any
+    if !parse_errors.is_empty() {
+        eprintln!("Warning: {} pokemon parsing errors occurred", parse_errors.len());
+        for error in parse_errors.iter().take(5) {
+            eprintln!("  {}", error);
+        }
+        if parse_errors.len() > 5 {
+            eprintln!("  ... and {} more", parse_errors.len() - 5);
         }
     }
     
@@ -374,30 +538,48 @@ fn load_items_data(path: &Path) -> DataResult<HashMap<ItemId, ItemData>> {
         })?;
     
     let mut items = HashMap::new();
+    let mut parse_errors = Vec::new();
+    
     for (id, value) in raw_data {
         // Parse manually to handle fling data extraction
-        if let Ok(mut item_data) = serde_json::from_value::<ItemData>(value.clone()) {
-            // Extract fling power from PS data
-            item_data.fling_power = value
-                .get("fling")
-                .and_then(|fling| fling.get("basePower"))
-                .and_then(|v| v.as_u64())
-                .map(|v| v as u8);
-            
-            // Determine if item can be flung - default to true unless marked as key item or unobtainable
-            let is_key_item = value.get("isNonstandard")
-                .and_then(|v| v.as_str())
-                .map(|s| s == "Unobtainable" || s == "Past")
-                .unwrap_or(false);
-            
-            // Specific unflingable items (orbs, etc.)
-            let is_unflingable_orb = id.contains("orb") && 
-                (id.contains("red") || id.contains("blue") || id.contains("adamant") || 
-                 id.contains("lustrous") || id.contains("griseous"));
-            
-            item_data.can_be_flung = !is_key_item && !is_unflingable_orb;
-            
-            items.insert(ItemId::from(id), item_data);
+        match serde_json::from_value::<ItemData>(value.clone()) {
+            Ok(mut item_data) => {
+                // Extract fling power from PS data
+                item_data.fling_power = value
+                    .get("fling")
+                    .and_then(|fling| fling.get("basePower"))
+                    .and_then(|v| v.as_u64())
+                    .map(|v| v as u8);
+                
+                // Determine if item can be flung - default to true unless marked as key item or unobtainable
+                let is_key_item = value.get("isNonstandard")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s == "Unobtainable" || s == "Past")
+                    .unwrap_or(false);
+                
+                // Specific unflingable items (orbs, etc.)
+                let is_unflingable_orb = id.contains("orb") && 
+                    (id.contains("red") || id.contains("blue") || id.contains("adamant") || 
+                     id.contains("lustrous") || id.contains("griseous"));
+                
+                item_data.can_be_flung = !is_key_item && !is_unflingable_orb;
+                
+                items.insert(ItemId::from(id), item_data);
+            }
+            Err(e) => {
+                parse_errors.push(format!("Failed to parse item '{}': {}", id, e));
+            }
+        }
+    }
+    
+    // Log parse errors if any
+    if !parse_errors.is_empty() {
+        eprintln!("Warning: {} item parsing errors occurred", parse_errors.len());
+        for error in parse_errors.iter().take(5) {
+            eprintln!("  {}", error);
+        }
+        if parse_errors.len() > 5 {
+            eprintln!("  ... and {} more", parse_errors.len() - 5);
         }
     }
     
@@ -422,9 +604,27 @@ fn load_abilities_data(path: &Path) -> DataResult<HashMap<AbilityId, AbilityData
         })?;
     
     let mut abilities = HashMap::new();
+    let mut parse_errors = Vec::new();
+    
     for (id, value) in raw_data {
-        if let Ok(ability_data) = serde_json::from_value::<AbilityData>(value) {
-            abilities.insert(AbilityId::from(id), ability_data);
+        match serde_json::from_value::<AbilityData>(value) {
+            Ok(ability_data) => {
+                abilities.insert(AbilityId::from(id), ability_data);
+            }
+            Err(e) => {
+                parse_errors.push(format!("Failed to parse ability '{}': {}", id, e));
+            }
+        }
+    }
+    
+    // Log parse errors if any
+    if !parse_errors.is_empty() {
+        eprintln!("Warning: {} ability parsing errors occurred", parse_errors.len());
+        for error in parse_errors.iter().take(5) {
+            eprintln!("  {}", error);
+        }
+        if parse_errors.len() > 5 {
+            eprintln!("  ... and {} more", parse_errors.len() - 5);
         }
     }
     

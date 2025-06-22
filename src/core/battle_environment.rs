@@ -1,21 +1,21 @@
 //! # Battle Environment Module
-//! 
+//!
 //! This module provides the main battle orchestration and player interfaces for Tapu Simu.
 //! It implements 100% parity with poke-engine's battle_environment.rs, adapted for V2 architecture.
 
-use crate::core::battle_state::BattleState;
-use crate::core::move_choice::MoveChoice;
 use crate::core::battle_format::SideReference;
+use crate::core::battle_state::BattleState;
 use crate::core::instructions::BattleInstructions;
-use crate::engine::turn::instruction_generator::GenerationXInstructionGenerator;
+use crate::core::move_choice::MoveChoice;
+use crate::engine::turn;
 use rand::{thread_rng, Rng};
+use std::io::Write;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::io::Write;
 
-/// Player trait for different agent types - exact parity with poke-engine
+/// Player trait for different agent types - modern interface only
 pub trait Player: Send + Sync + 'static {
-    /// Choose a move from available options (legacy interface)
+    /// Choose a move from available options
     fn choose_move(
         &self,
         state: &BattleState,
@@ -23,17 +23,6 @@ pub trait Player: Send + Sync + 'static {
         options: &[MoveChoice],
     ) -> MoveChoice;
 
-    /// Choose a move from available options (modern interface)
-    /// Default implementation converts BattleState to State for compatibility
-    fn choose_move_modern(
-        &self,
-        state: &BattleState,
-        side_ref: SideReference,
-        options: &[MoveChoice],
-    ) -> MoveChoice {
-        self.choose_move(state, side_ref, options)
-    }
-    
     /// Get the player's name for identification
     fn name(&self) -> &str;
 }
@@ -110,10 +99,10 @@ impl DamageMaximizer {
         match move_choice {
             MoveChoice::Move { move_index, .. } => {
                 let side = match side_ref {
-                    SideReference::SideOne => &state.side_one,
-                    SideReference::SideTwo => &state.side_two,
+                    SideReference::SideOne => &state.sides[0],
+                    SideReference::SideTwo => &state.sides[1],
                 };
-                
+
                 // Get the active Pokemon at position 0
                 if let Some(active_pokemon) = side.get_active_pokemon_at_slot(0) {
                     if let Some(move_data) = active_pokemon.get_move(*move_index) {
@@ -129,10 +118,10 @@ impl DamageMaximizer {
             MoveChoice::MoveTera { move_index, .. } => {
                 // Same logic as regular move but potentially higher power due to Tera
                 let side = match side_ref {
-                    SideReference::SideOne => &state.side_one,
-                    SideReference::SideTwo => &state.side_two,
+                    SideReference::SideOne => &state.sides[0],
+                    SideReference::SideTwo => &state.sides[1],
                 };
-                
+
                 if let Some(active_pokemon) = side.get_active_pokemon_at_slot(0) {
                     if let Some(_move_data) = active_pokemon.get_move(*move_index) {
                         120.0 // Slightly higher estimate for Tera moves
@@ -233,8 +222,8 @@ impl BattleEnvironment {
         let no_move_s1 = MoveChoice::None;
         let no_move_s2 = MoveChoice::None;
 
-        let generator = GenerationXInstructionGenerator::new(state.format.clone());
-        generator.generate_modern_instructions(state, &no_move_s1, &no_move_s2)
+        turn::generate_instructions(state, (&no_move_s1, &no_move_s2))
+            .unwrap_or_else(|_| vec![BattleInstructions::new(100.0, vec![])])
     }
 
     /// Run a complete battle - exact parity with poke-engine logic
@@ -246,16 +235,18 @@ impl BattleEnvironment {
         // Create log file if verbose
         let mut log_file = if self.verbose && self.log_file.is_some() {
             use std::fs::OpenOptions;
-            Some(OpenOptions::new()
-                .create(true)
-                .write(true)
-                .truncate(true)
-                .open(self.log_file.as_ref().unwrap())
-                .expect("Failed to create log file"))
+            Some(
+                OpenOptions::new()
+                    .create(true)
+                    .write(true)
+                    .truncate(true)
+                    .open(self.log_file.as_ref().unwrap())
+                    .expect("Failed to create log file"),
+            )
         } else {
             None
         };
-        
+
         // Set environment variable for players to use
         if let Some(ref log_path) = self.log_file {
             std::env::set_var("BATTLE_LOG_FILE", log_path);
@@ -283,29 +274,20 @@ impl BattleEnvironment {
             }
         }
 
-        // DEBUG: Check stats before initial instructions
-        if self.verbose {
-            for (i, pokemon) in state.side_one.pokemon.iter().enumerate() {
-                if pokemon.species == "Gothitelle" {
-                    if let Some(ref mut file) = log_file {
-                        writeln!(file, "DEBUG: {} stats BEFORE initial instructions: ATK:{} DEF:{} SPA:{} SPD:{} SPE:{}", 
-                                pokemon.species, pokemon.stats.attack, pokemon.stats.defense, 
-                                pokemon.stats.special_attack, pokemon.stats.special_defense, pokemon.stats.speed).unwrap();
-                    }
-                    println!("DEBUG: {} stats BEFORE initial instructions: ATK:{} DEF:{} SPA:{} SPD:{} SPE:{}", 
-                            pokemon.species, pokemon.stats.attack, pokemon.stats.defense, 
-                            pokemon.stats.special_attack, pokemon.stats.special_defense, pokemon.stats.speed);
-                }
-            }
-        }
-
         // Generate and apply initial switch-in instructions
         let initial_instructions = Self::generate_initial_instructions(&mut state);
         if !initial_instructions.is_empty() {
             if self.verbose {
-                println!("DEBUG: Generated {} initial instruction sequences", initial_instructions.len());
+                println!(
+                    "DEBUG: Generated {} initial instruction sequences",
+                    initial_instructions.len()
+                );
                 for (i, sequence) in initial_instructions.iter().enumerate() {
-                    println!("  Sequence {}: {} instructions", i, sequence.instruction_list.len());
+                    println!(
+                        "  Sequence {}: {} instructions",
+                        i,
+                        sequence.instruction_list.len()
+                    );
                     for (j, instruction) in sequence.instruction_list.iter().enumerate() {
                         println!("    {}: {:?}", j, instruction);
                     }
@@ -313,27 +295,14 @@ impl BattleEnvironment {
             }
             let chosen_index = self.sample_instruction_index(&initial_instructions);
             if self.verbose {
-                println!("DEBUG: Applying initial instruction sequence {}", chosen_index);
+                println!(
+                    "DEBUG: Applying initial instruction sequence {}",
+                    chosen_index
+                );
             }
             state.apply_instructions(&initial_instructions[chosen_index].instruction_list);
         } else if self.verbose {
             println!("DEBUG: No initial instructions generated");
-        }
-        
-        // DEBUG: Check stats after initial instructions
-        if self.verbose {
-            for (i, pokemon) in state.side_one.pokemon.iter().enumerate() {
-                if pokemon.species == "Gothitelle" {
-                    if let Some(ref mut file) = log_file {
-                        writeln!(file, "DEBUG: {} stats AFTER initial instructions: ATK:{} DEF:{} SPA:{} SPD:{} SPE:{}", 
-                                pokemon.species, pokemon.stats.attack, pokemon.stats.defense, 
-                                pokemon.stats.special_attack, pokemon.stats.special_defense, pokemon.stats.speed).unwrap();
-                    }
-                    println!("DEBUG: {} stats AFTER initial instructions: ATK:{} DEF:{} SPA:{} SPD:{} SPE:{}", 
-                            pokemon.species, pokemon.stats.attack, pokemon.stats.defense, 
-                            pokemon.stats.special_attack, pokemon.stats.special_defense, pokemon.stats.speed);
-                }
-            }
         }
 
         // Main battle loop - exact parity with poke-engine
@@ -360,7 +329,8 @@ impl BattleEnvironment {
                     "\n========== Turn {} ==========\n{}\n\nSerialized State:\n{}\n",
                     turn_count,
                     state.pretty_print(),
-                    serde_json::to_string_pretty(&state).unwrap_or_else(|_| "Failed to serialize state".to_string())
+                    serde_json::to_string_pretty(&state)
+                        .unwrap_or_else(|_| "Failed to serialize state".to_string())
                 );
 
                 if let Some(ref mut file) = log_file {
@@ -370,7 +340,7 @@ impl BattleEnvironment {
                     print!("{}", turn_header);
                 }
             }
-            
+
             // Close the log file so players can append to it
             if log_file.is_some() {
                 drop(log_file.take());
@@ -387,16 +357,18 @@ impl BattleEnvironment {
             // Reopen log file to write the selected moves
             if self.verbose && self.log_file.is_some() {
                 use std::fs::OpenOptions;
-                log_file = Some(OpenOptions::new()
-                    .create(true)
-                    .append(true)
-                    .open(self.log_file.as_ref().unwrap())
-                    .expect("Failed to reopen log file"));
-                    
+                log_file = Some(
+                    OpenOptions::new()
+                        .create(true)
+                        .append(true)
+                        .open(self.log_file.as_ref().unwrap())
+                        .expect("Failed to reopen log file"),
+                );
+
                 let moves_msg = format!(
                     "\nMoves Selected:\n  Side 1: {}\n  Side 2: {}\n=============================\n",
-                    side_one_choice.to_string(&state.side_one),
-                    side_two_choice.to_string(&state.side_two)
+                    side_one_choice.to_string(&state.sides[0]),
+                    side_two_choice.to_string(&state.sides[1])
                 );
 
                 if let Some(ref mut file) = log_file {
@@ -406,12 +378,9 @@ impl BattleEnvironment {
             }
 
             // Generate instructions from the move pair
-            let generator = GenerationXInstructionGenerator::new(state.format.clone());
-            let instructions = generator.generate_modern_instructions(
-                &mut state,
-                &side_one_choice,
-                &side_two_choice,
-            );
+            let instructions =
+                turn::generate_instructions(&state, (&side_one_choice, &side_two_choice))
+                    .unwrap_or_else(|_| vec![BattleInstructions::new(100.0, vec![])]);
 
             // Log generated instructions if verbose
             if self.verbose {
@@ -423,8 +392,16 @@ impl BattleEnvironment {
                 if let Some(ref mut file) = log_file {
                     write!(file, "{}", instructions_msg).unwrap();
                     for (i, instruction_set) in instructions.iter().enumerate() {
-                        writeln!(file, "  Sequence {} ({:.1}%): {} instructions", i, instruction_set.percentage, instruction_set.instruction_list.len()).unwrap();
-                        for (j, instruction) in instruction_set.instruction_list.iter().enumerate() {
+                        writeln!(
+                            file,
+                            "  Sequence {} ({:.1}%): {} instructions",
+                            i,
+                            instruction_set.percentage,
+                            instruction_set.instruction_list.len()
+                        )
+                        .unwrap();
+                        for (j, instruction) in instruction_set.instruction_list.iter().enumerate()
+                        {
                             writeln!(file, "    {}: {:?}", j, instruction).unwrap();
                         }
                     }
@@ -433,8 +410,14 @@ impl BattleEnvironment {
                 } else {
                     print!("{}", instructions_msg);
                     for (i, instruction_set) in instructions.iter().enumerate() {
-                        println!("  Sequence {} ({:.1}%): {} instructions", i, instruction_set.percentage, instruction_set.instruction_list.len());
-                        for (j, instruction) in instruction_set.instruction_list.iter().enumerate() {
+                        println!(
+                            "  Sequence {} ({:.1}%): {} instructions",
+                            i,
+                            instruction_set.percentage,
+                            instruction_set.instruction_list.len()
+                        );
+                        for (j, instruction) in instruction_set.instruction_list.iter().enumerate()
+                        {
                             println!("    {}: {:?}", j, instruction);
                         }
                     }
@@ -445,7 +428,7 @@ impl BattleEnvironment {
             // Apply the instructions (sampling from possibilities)
             if !instructions.is_empty() {
                 let chosen_index = self.sample_instruction_index(&instructions);
-                
+
                 if self.verbose {
                     let chosen_msg = format!("Applying instruction sequence {}\n", chosen_index);
                     if let Some(ref mut file) = log_file {
@@ -455,7 +438,7 @@ impl BattleEnvironment {
                         print!("{}", chosen_msg);
                     }
                 }
-                
+
                 state.apply_instructions(&instructions[chosen_index].instruction_list);
             }
 
@@ -504,7 +487,7 @@ impl BattleEnvironment {
         if self.log_file.is_some() {
             std::env::remove_var("BATTLE_LOG_FILE");
         }
-        
+
         BattleResult {
             winner,
             turn_count,
@@ -513,17 +496,6 @@ impl BattleEnvironment {
         }
     }
 
-    /// Run a complete battle using modern BattleState
-    /// This is the preferred method for new code
-    pub fn run_battle_modern(&self, initial_battle_state: BattleState) -> BattleResult {
-        self.run_battle(initial_battle_state)
-    }
-
-    /// Run a complete battle - modern version that takes BattleState directly
-    /// This will be the primary interface once migration is complete
-    pub fn run_battle_with_battle_state(&self, initial_state: BattleState) -> BattleResult {
-        self.run_battle(initial_state)
-    }
 
     /// Sample from possible instruction outcomes based on their probabilities
     fn sample_instruction_index(&self, state_instructions: &[BattleInstructions]) -> usize {
@@ -548,23 +520,31 @@ impl BattleEnvironment {
     /// Format full team stats for battle logging
     fn format_team_stats(&self, state: &BattleState) -> String {
         let mut output = String::new();
-        
+
         output.push_str("\n=== Full Team Stats ===\n");
-        
+
         // Side One stats
         output.push_str(&format!("Player 1 ({})\n", self.player_one.name()));
-        for (i, pokemon) in state.side_one.pokemon.iter().enumerate() {
-            output.push_str(&format!("  Pokemon {}: {}\n", i + 1, self.format_pokemon_full_stats(pokemon)));
+        for (i, pokemon) in state.sides[0].pokemon.iter().enumerate() {
+            output.push_str(&format!(
+                "  Pokemon {}: {}\n",
+                i + 1,
+                self.format_pokemon_full_stats(pokemon)
+            ));
         }
-        
+
         output.push_str("\n");
-        
+
         // Side Two stats
         output.push_str(&format!("Player 2 ({})\n", self.player_two.name()));
-        for (i, pokemon) in state.side_two.pokemon.iter().enumerate() {
-            output.push_str(&format!("  Pokemon {}: {}\n", i + 1, self.format_pokemon_full_stats(pokemon)));
+        for (i, pokemon) in state.sides[1].pokemon.iter().enumerate() {
+            output.push_str(&format!(
+                "  Pokemon {}: {}\n",
+                i + 1,
+                self.format_pokemon_full_stats(pokemon)
+            ));
         }
-        
+
         output.push_str("========================\n");
         output
     }
@@ -591,113 +571,122 @@ impl BattleEnvironment {
     /// Generate Showdown paste export for both teams
     fn format_showdown_export(&self, state: &BattleState) -> String {
         let mut output = String::new();
-        
+
         output.push_str("\n=== Showdown Team Export ===\n");
-        
+
         // Side One export
         output.push_str(&format!("Player 1 ({})\n", self.player_one.name()));
-        for pokemon in &state.side_one.pokemon {
+        for pokemon in &state.sides[0].pokemon {
             output.push_str(&self.format_pokemon_showdown_paste(pokemon));
             output.push_str("\n");
         }
-        
+
         output.push_str("\n");
-        
+
         // Side Two export
         output.push_str(&format!("Player 2 ({})\n", self.player_two.name()));
-        for pokemon in &state.side_two.pokemon {
+        for pokemon in &state.sides[1].pokemon {
             output.push_str(&self.format_pokemon_showdown_paste(pokemon));
             output.push_str("\n");
         }
-        
+
         output.push_str("=============================\n");
         output
     }
 
     /// Format individual Pokemon as Showdown paste format
-    fn format_pokemon_showdown_paste(&self, pokemon: &crate::core::battle_state::Pokemon) -> String {
+    fn format_pokemon_showdown_paste(
+        &self,
+        pokemon: &crate::core::battle_state::Pokemon,
+    ) -> String {
         let mut paste = String::new();
-        
+
         // Species line with item and gender
         let gender_str = match pokemon.gender {
             crate::core::battle_state::Gender::Male => " (M)",
             crate::core::battle_state::Gender::Female => " (F)",
             crate::core::battle_state::Gender::Unknown => "",
         };
-        
+
         if let Some(ref item) = pokemon.item {
             paste.push_str(&format!("{}{} @ {}\n", pokemon.species, gender_str, item));
         } else {
             paste.push_str(&format!("{}{}\n", pokemon.species, gender_str));
         }
-        
+
         // Ability
         paste.push_str(&format!("Ability: {}\n", pokemon.ability));
-        
+
         // Level (only if not 50/100)
         if pokemon.level != 50 && pokemon.level != 100 {
             paste.push_str(&format!("Level: {}\n", pokemon.level));
         }
-        
+
         // Tera Type (Gen 9+)
         if let Some(ref tera_type) = pokemon.tera_type {
             paste.push_str(&format!("Tera Type: {:?}\n", tera_type));
         }
-        
+
         // Determine IVs and EVs based on moveset
         let (ivs, evs) = self.determine_ivs_evs_for_pokemon(pokemon);
-        
+
         // EVs (only show if not all zero - Random Battles always have EVs)
         if !evs.is_all_zero() {
             paste.push_str(&format!("EVs: {}\n", evs.format_showdown()));
         }
-        
+
         // Nature (neutral for Random Battle)
         paste.push_str("Nature: Hardy\n");
-        
+
         // IVs (only show if not all 31)
         if !ivs.is_all_31() {
             paste.push_str(&format!("IVs: {}\n", ivs.format_showdown()));
         }
-        
+
         // Moves
         let mut move_names: Vec<String> = pokemon.moves.values().map(|m| m.name.clone()).collect();
         move_names.sort(); // Sort for consistent output
         for move_name in move_names {
             paste.push_str(&format!("- {}\n", move_name));
         }
-        
+
         paste
     }
 
     /// Determine IVs and EVs based on Pokemon's moveset following Smogon Random Battle rules
-    fn determine_ivs_evs_for_pokemon(&self, pokemon: &crate::core::battle_state::Pokemon) -> (PokemonIVs, PokemonEVs) {
+    fn determine_ivs_evs_for_pokemon(
+        &self,
+        pokemon: &crate::core::battle_state::Pokemon,
+    ) -> (PokemonIVs, PokemonEVs) {
         // Check if Pokemon has any physical moves
-        let has_physical_moves = pokemon.moves.values()
-            .any(|m| matches!(m.category, crate::core::instruction::MoveCategory::Physical));
-        
+        let has_physical_moves = pokemon.moves.values().any(|m| {
+            matches!(
+                m.category,
+                crate::core::instructions::MoveCategory::Physical
+            )
+        });
+
         // Check if Pokemon has Trick Room or Gyro Ball
-        let has_speed_dependent_moves = pokemon.moves.values()
-            .any(|m| {
-                let name_lower = m.name.to_lowercase();
-                name_lower == "trick room" || name_lower == "gyro ball"
-            });
-        
+        let has_speed_dependent_moves = pokemon.moves.values().any(|m| {
+            let name_lower = m.name.to_lowercase();
+            name_lower == "trick room" || name_lower == "gyro ball"
+        });
+
         let mut ivs = PokemonIVs::default(); // 31 in all stats
         let mut evs = PokemonEVs::default(); // 85 in all stats
-        
+
         // No physical attacks: Attack IV/EV = 0
         if !has_physical_moves {
             ivs.attack = 0;
             evs.attack = 0;
         }
-        
+
         // Has Trick Room or Gyro Ball: Speed IV/EV = 0
         if has_speed_dependent_moves {
             ivs.speed = 0;
             evs.speed = 0;
         }
-        
+
         (ivs, evs)
     }
 }
@@ -728,18 +717,34 @@ impl Default for PokemonIVs {
 
 impl PokemonIVs {
     fn is_all_31(&self) -> bool {
-        self.hp == 31 && self.attack == 31 && self.defense == 31 && 
-        self.special_attack == 31 && self.special_defense == 31 && self.speed == 31
+        self.hp == 31
+            && self.attack == 31
+            && self.defense == 31
+            && self.special_attack == 31
+            && self.special_defense == 31
+            && self.speed == 31
     }
-    
+
     fn format_showdown(&self) -> String {
         let mut parts = Vec::new();
-        if self.hp != 31 { parts.push(format!("{} HP", self.hp)); }
-        if self.attack != 31 { parts.push(format!("{} Atk", self.attack)); }
-        if self.defense != 31 { parts.push(format!("{} Def", self.defense)); }
-        if self.special_attack != 31 { parts.push(format!("{} SpA", self.special_attack)); }
-        if self.special_defense != 31 { parts.push(format!("{} SpD", self.special_defense)); }
-        if self.speed != 31 { parts.push(format!("{} Spe", self.speed)); }
+        if self.hp != 31 {
+            parts.push(format!("{} HP", self.hp));
+        }
+        if self.attack != 31 {
+            parts.push(format!("{} Atk", self.attack));
+        }
+        if self.defense != 31 {
+            parts.push(format!("{} Def", self.defense));
+        }
+        if self.special_attack != 31 {
+            parts.push(format!("{} SpA", self.special_attack));
+        }
+        if self.special_defense != 31 {
+            parts.push(format!("{} SpD", self.special_defense));
+        }
+        if self.speed != 31 {
+            parts.push(format!("{} Spe", self.speed));
+        }
         parts.join(" / ")
     }
 }
@@ -770,18 +775,34 @@ impl Default for PokemonEVs {
 
 impl PokemonEVs {
     fn is_all_zero(&self) -> bool {
-        self.hp == 0 && self.attack == 0 && self.defense == 0 && 
-        self.special_attack == 0 && self.special_defense == 0 && self.speed == 0
+        self.hp == 0
+            && self.attack == 0
+            && self.defense == 0
+            && self.special_attack == 0
+            && self.special_defense == 0
+            && self.speed == 0
     }
-    
+
     fn format_showdown(&self) -> String {
         let mut parts = Vec::new();
-        if self.hp > 0 { parts.push(format!("{} HP", self.hp)); }
-        if self.attack > 0 { parts.push(format!("{} Atk", self.attack)); }
-        if self.defense > 0 { parts.push(format!("{} Def", self.defense)); }
-        if self.special_attack > 0 { parts.push(format!("{} SpA", self.special_attack)); }
-        if self.special_defense > 0 { parts.push(format!("{} SpD", self.special_defense)); }
-        if self.speed > 0 { parts.push(format!("{} Spe", self.speed)); }
+        if self.hp > 0 {
+            parts.push(format!("{} HP", self.hp));
+        }
+        if self.attack > 0 {
+            parts.push(format!("{} Atk", self.attack));
+        }
+        if self.defense > 0 {
+            parts.push(format!("{} Def", self.defense));
+        }
+        if self.special_attack > 0 {
+            parts.push(format!("{} SpA", self.special_attack));
+        }
+        if self.special_defense > 0 {
+            parts.push(format!("{} SpD", self.special_defense));
+        }
+        if self.speed > 0 {
+            parts.push(format!("{} Spe", self.speed));
+        }
         parts.join(" / ")
     }
 }
@@ -838,7 +859,7 @@ where
 {
     let num_battles = battle_states.len();
     let battle_states = Arc::new(battle_states);
-    
+
     let player_one_factory = Arc::new(player_one_factory);
     let player_two_factory = Arc::new(player_two_factory);
     let results = Arc::new(Mutex::new(ParallelBattleResults {
@@ -869,7 +890,7 @@ where
                 for i in 0..thread_battles {
                     let state_idx = thread_start + i;
                     let initial_state = states[state_idx].clone();
-                    
+
                     let env = BattleEnvironment::new(
                         p1_factory(),
                         p2_factory(),
@@ -898,7 +919,7 @@ where
     Arc::try_unwrap(results).unwrap().into_inner().unwrap()
 }
 
-/// Helper function to create a battle from a state and run it
+/// Helper function to create a battle environment and run it
 pub fn run_battle_from_state(
     initial_state: BattleState,
     player_one: Box<dyn Player>,
@@ -908,18 +929,6 @@ pub fn run_battle_from_state(
 ) -> BattleResult {
     let env = BattleEnvironment::new(player_one, player_two, max_turns, verbose);
     env.run_battle(initial_state)
-}
-
-/// Helper function to create a battle from a modern BattleState and run it
-pub fn run_battle_from_battle_state(
-    initial_battle_state: BattleState,
-    player_one: Box<dyn Player>,
-    player_two: Box<dyn Player>,
-    max_turns: usize,
-    verbose: bool,
-) -> BattleResult {
-    let env = BattleEnvironment::new(player_one, player_two, max_turns, verbose);
-    env.run_battle_modern(initial_battle_state)
 }
 
 #[cfg(test)]
@@ -937,8 +946,11 @@ mod tests {
     fn test_first_move_player() {
         let player = FirstMovePlayer::new("FirstBot".to_string());
         let state = BattleState::new(BattleFormat::gen9_ou());
-        let options = vec![MoveChoice::None, MoveChoice::Switch(crate::core::move_choice::PokemonIndex::P0)];
-        
+        let options = vec![
+            MoveChoice::None,
+            MoveChoice::Switch(crate::core::move_choice::PokemonIndex::P0),
+        ];
+
         let choice = player.choose_move(&state, SideReference::SideOne, &options);
         assert_eq!(choice, MoveChoice::None); // Always picks first option
     }
@@ -947,7 +959,7 @@ mod tests {
     fn test_battle_environment_creation() {
         let player_one = Box::new(RandomPlayer::new("P1".to_string()));
         let player_two = Box::new(RandomPlayer::new("P2".to_string()));
-        
+
         let env = BattleEnvironment::new(player_one, player_two, 100, false);
         assert_eq!(env.max_turns, 100);
         assert!(!env.verbose);
@@ -962,7 +974,7 @@ mod tests {
             draws: 0,
             total_battles: 50,
         };
-        
+
         assert_eq!(results.player_one_win_rate(), 0.6);
         assert_eq!(results.player_two_win_rate(), 0.4);
         assert_eq!(results.draw_rate(), 0.0);

@@ -5,11 +5,13 @@
 
 use crate::core::battle_format::{BattleFormat, BattlePosition};
 use crate::core::battle_state::{FieldConditions, WeatherState, TerrainState, GlobalEffects};
-use crate::core::instruction::{Weather, Terrain, Stat};
-use crate::core::battle_state::{Pokemon, MoveCategory};
+use crate::core::instructions::{Weather, Terrain, Stat};
+use crate::core::battle_state::Pokemon;
+use crate::core::instructions::MoveCategory;
 use crate::core::battle_state::BattleState;
-use crate::data::types::{EngineMoveData, Stats};
 use crate::types::identifiers::AbilityId;
+use crate::data::showdown_types::MoveData;
+use crate::data::types::Stats;
 use serde::{Deserialize, Serialize};
 
 /// Comprehensive context for damage calculation
@@ -61,7 +63,7 @@ pub struct DefenderContext {
 #[derive(Debug, Clone)]
 pub struct MoveContext {
     /// Move data from the engine
-    pub data: EngineMoveData,
+    pub data: MoveData,
     /// Name/ID of the move
     pub name: String,
     /// Base power after initial modifications
@@ -196,7 +198,7 @@ impl DamageContext {
         attacker_position: BattlePosition,
         defender_pokemon: &Pokemon,
         defender_position: BattlePosition,
-        move_data: &EngineMoveData,
+        move_data: &MoveData,
         field_conditions: &FieldConditions,
         battle_format: &BattleFormat,
         target_count: usize,
@@ -220,11 +222,11 @@ impl DamageContext {
 
         let move_info = MoveContext {
             name: move_data.name.clone(),
-            base_power: move_data.base_power.unwrap_or(0) as u8,
+            base_power: move_data.base_power as u8,
             is_critical,
-            is_contact: move_data.flags.contains(&"contact".to_string()),
+            is_contact: move_data.flags.contains_key("contact"),
             move_type: move_data.move_type.clone(),
-            category: move_data.category,
+            category: MoveCategory::from_str(&move_data.category),
             data: move_data.clone(),
         };
 
@@ -327,3 +329,100 @@ fn apply_stat_stage_multiplier(base_value: i16, stage: i8) -> i16 {
 }
 
 // Legacy DamageContext structure removed - use modern DamageContext instead
+
+// Default implementations for testing and compatibility
+impl Default for DamageContext {
+    fn default() -> Self {
+        Self {
+            attacker: AttackerContext::default(),
+            defender: DefenderContext::default(),
+            move_info: MoveContext::default(),
+            field: FieldContext::default(),
+            format: FormatContext::default(),
+        }
+    }
+}
+
+impl Default for AttackerContext {
+    fn default() -> Self {
+        Self {
+            pokemon: Pokemon::default(),
+            position: BattlePosition::new(crate::core::battle_format::SideReference::SideOne, 0),
+            effective_stats: EffectiveStats::default(),
+            ability_state: AbilityState::default(),
+            item_effects: ItemEffects::default(),
+        }
+    }
+}
+
+impl Default for DefenderContext {
+    fn default() -> Self {
+        Self {
+            pokemon: Pokemon::default(),
+            position: BattlePosition::new(crate::core::battle_format::SideReference::SideTwo, 0),
+            effective_stats: EffectiveStats::default(),
+            ability_state: AbilityState::default(),
+            item_effects: ItemEffects::default(),
+        }
+    }
+}
+
+impl Default for MoveContext {
+    fn default() -> Self {
+        Self {
+            data: MoveData::default(),
+            name: "tackle".to_string(),
+            base_power: 40,
+            is_critical: false,
+            is_contact: true,
+            move_type: "normal".to_string(),
+            category: MoveCategory::Physical,
+        }
+    }
+}
+
+impl Default for FieldContext {
+    fn default() -> Self {
+        Self {
+            weather: crate::core::battle_state::WeatherState {
+                condition: crate::core::instructions::Weather::None,
+                turns_remaining: None,
+                source: None,
+            },
+            terrain: crate::core::battle_state::TerrainState {
+                condition: crate::core::instructions::Terrain::None,
+                turns_remaining: None,
+                source: None,
+            },
+            global_effects: crate::core::battle_state::GlobalEffects {
+                gravity: None,
+                trick_room: None,
+            },
+        }
+    }
+}
+
+impl Default for FormatContext {
+    fn default() -> Self {
+        Self {
+            format: crate::core::battle_format::BattleFormat::gen9_ou(),
+            target_count: 1,
+        }
+    }
+}
+
+impl Default for EffectiveStats {
+    fn default() -> Self {
+        Self {
+            stats: crate::data::types::Stats {
+                hp: 100,
+                attack: 100,
+                defense: 100,
+                special_attack: 100,
+                special_defense: 100,
+                speed: 100,
+            },
+            stat_stages: StatStages::default(),
+        }
+    }
+}

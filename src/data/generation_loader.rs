@@ -76,6 +76,11 @@ pub struct FieldChange {
 }
 
 impl GenerationRepository {
+    /// Helper method to get generation ID string
+    fn gen_id(generation: u8) -> String {
+        format!("gen{}", generation)
+    }
+
     /// Load generation-specific data from directory
     pub fn load_from_directory(data_dir: &str) -> Result<Self, Box<dyn std::error::Error>> {
         let generations = vec![
@@ -235,56 +240,68 @@ impl GenerationRepository {
 
     /// Get move data for a specific generation
     pub fn get_move_for_generation(&self, move_name: &str, generation: u8) -> Option<&MoveData> {
-        let gen_id = format!("gen{}", generation);
+        let gen_id = Self::gen_id(generation);
         self.generation_move_data.get(&gen_id)?.moves.get(move_name)
     }
 
     /// Get item data for a specific generation
     pub fn get_item_for_generation(&self, item_name: &str, generation: u8) -> Option<&ItemData> {
-        let gen_id = format!("gen{}", generation);
+        let gen_id = Self::gen_id(generation);
         self.generation_item_data.get(&gen_id)?.items.get(item_name)
     }
 
-    /// Get current generation move data (Gen 9)
+    /// Get current generation move data (Gen 9) - convenience method
     pub fn get_move(&self, move_name: &str) -> Option<&MoveData> {
         self.get_move_for_generation(move_name, 9)
     }
 
-    /// Get current generation item data (Gen 9)
+    /// Get current generation item data (Gen 9) - convenience method
     pub fn get_item(&self, item_name: &str) -> Option<&ItemData> {
         self.get_item_for_generation(item_name, 9)
     }
 
-    /// Check if a move exists in a specific generation
-    pub fn move_exists_in_generation(&self, move_name: &str, generation: u8) -> bool {
-        self.get_move_for_generation(move_name, generation).is_some()
-    }
-
-    /// Check if an item exists in a specific generation
-    pub fn item_exists_in_generation(&self, item_name: &str, generation: u8) -> bool {
-        self.get_item_for_generation(item_name, generation).is_some()
-    }
-
-    /// Get all generations where a move exists
+    /// Get all generations where a move exists (optimized single pass)
     pub fn get_move_generations(&self, move_name: &str) -> Vec<u8> {
-        let mut generations = Vec::new();
-        for generation in &self.generations {
-            if self.move_exists_in_generation(move_name, generation.num) {
-                generations.push(generation.num);
-            }
-        }
-        generations
+        self.generations.iter()
+            .filter_map(|gen| {
+                let gen_id = Self::gen_id(gen.num);
+                if self.generation_move_data.get(&gen_id)?.moves.contains_key(move_name) {
+                    Some(gen.num)
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 
-    /// Get all generations where an item exists
+    /// Get all generations where an item exists (optimized single pass)
     pub fn get_item_generations(&self, item_name: &str) -> Vec<u8> {
-        let mut generations = Vec::new();
-        for generation in &self.generations {
-            if self.item_exists_in_generation(item_name, generation.num) {
-                generations.push(generation.num);
-            }
-        }
-        generations
+        self.generations.iter()
+            .filter_map(|gen| {
+                let gen_id = Self::gen_id(gen.num);
+                if self.generation_item_data.get(&gen_id)?.items.contains_key(item_name) {
+                    Some(gen.num)
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    /// Check if a move exists in a specific generation (optimized)
+    pub fn move_exists_in_generation(&self, move_name: &str, generation: u8) -> bool {
+        let gen_id = Self::gen_id(generation);
+        self.generation_move_data.get(&gen_id)
+            .map(|data| data.moves.contains_key(move_name))
+            .unwrap_or(false)
+    }
+
+    /// Check if an item exists in a specific generation (optimized)
+    pub fn item_exists_in_generation(&self, item_name: &str, generation: u8) -> bool {
+        let gen_id = Self::gen_id(generation);
+        self.generation_item_data.get(&gen_id)
+            .map(|data| data.items.contains_key(item_name))
+            .unwrap_or(false)
     }
 
     /// Get change history for a move
@@ -299,40 +316,22 @@ impl GenerationRepository {
 
     /// Get all moves for a specific generation
     pub fn get_all_moves_for_generation(&self, generation: u8) -> Option<&HashMap<String, MoveData>> {
-        let gen_id = format!("gen{}", generation);
+        let gen_id = Self::gen_id(generation);
         Some(&self.generation_move_data.get(&gen_id)?.moves)
     }
 
     /// Get all items for a specific generation
     pub fn get_all_items_for_generation(&self, generation: u8) -> Option<&HashMap<String, ItemData>> {
-        let gen_id = format!("gen{}", generation);
+        let gen_id = Self::gen_id(generation);
         Some(&self.generation_item_data.get(&gen_id)?.items)
     }
 
     /// Convert move data to engine move (with generation awareness)
     pub fn move_to_engine_move(&self, move_data: &MoveData) -> Move {
-        Move {
-            name: move_data.name.clone(),
-            base_power: move_data.base_power as u8,
-            accuracy: move_data.accuracy as u8,
-            move_type: move_data.move_type.clone(),
-            pp: move_data.pp,
-            max_pp: move_data.max_pp,
-            target: target_from_string(&move_data.target),
-            category: self.convert_category_to_engine(&move_data.category),
-            priority: move_data.priority,
-        }
+        // Use the MoveData's direct conversion method
+        move_data.to_engine_move()
     }
 
-    /// Convert category to engine category
-    fn convert_category_to_engine(&self, category: &str) -> MoveCategory {
-        match category {
-            "Physical" => MoveCategory::Physical,
-            "Special" => MoveCategory::Special,
-            "Status" => MoveCategory::Status,
-            _ => MoveCategory::Status,
-        }
-    }
 
     /// Get generation statistics
     pub fn get_generation_stats(&self) -> Vec<GenerationStats> {

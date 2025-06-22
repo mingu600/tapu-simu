@@ -3,84 +3,29 @@
 //! This module provides damage calculation for Pokemon moves with full
 //! generation-specific mechanics support.
 
-use crate::engine::mechanics::abilities::calculate_ability_modifiers;
-use crate::engine::mechanics::items::{apply_expert_belt_boost, calculate_item_modifiers, get_item_by_name};
 use super::type_effectiveness::{PokemonType, TypeChart};
 use super::damage_context::{DamageContext, DamageResult, DamageEffect};
-use crate::data::types::EngineMoveData;
-use crate::generation::{GenerationBattleMechanics, GenerationMechanics};
+use crate::generation::GenerationMechanics;
 use crate::core::battle_state::Pokemon;
 use crate::core::battle_state::BattleState;
+use crate::core::instructions::MoveCategory;
+use crate::data::showdown_types::MoveData;
 
-/// Calculate damage with generation-aware mechanics
-pub fn calculate_damage(
-    state: &BattleState,
-    attacker: &Pokemon,
-    defender: &Pokemon,
-    move_data: &EngineMoveData,
-    is_critical: bool,
-    damage_roll: f32,
-) -> i16 {
-    // Use placeholder positions for legacy compatibility
-    use crate::core::battle_format::{BattlePosition, SideReference};
-    let placeholder_attacker_pos = BattlePosition { side: SideReference::SideOne, slot: 0 };
-    let placeholder_defender_pos = BattlePosition { side: SideReference::SideTwo, slot: 0 };
-    
-    calculate_damage_with_positions(
-        state,
-        attacker,
-        defender,
-        move_data,
-        is_critical,
-        damage_roll,
-        1,
-        placeholder_attacker_pos,
-        placeholder_defender_pos,
-    )
-}
-
-/// Calculate damage with generation-aware mechanics and target count for spread moves
-pub fn calculate_damage_with_targets(
-    state: &BattleState,
-    attacker: &Pokemon,
-    defender: &Pokemon,
-    move_data: &EngineMoveData,
-    is_critical: bool,
-    damage_roll: f32,
-    target_count: usize,
-) -> i16 {
-    // Use placeholder positions for legacy compatibility
-    use crate::core::battle_format::{BattlePosition, SideReference};
-    let placeholder_attacker_pos = BattlePosition { side: SideReference::SideOne, slot: 0 };
-    let placeholder_defender_pos = BattlePosition { side: SideReference::SideTwo, slot: 0 };
-    
-    calculate_damage_with_positions(
-        state,
-        attacker,
-        defender,
-        move_data,
-        is_critical,
-        damage_roll,
-        target_count,
-        placeholder_attacker_pos,
-        placeholder_defender_pos,
-    )
-}
 
 /// Calculate damage with explicit battle positions 
 pub fn calculate_damage_with_positions(
     state: &BattleState,
     attacker: &Pokemon,
     defender: &Pokemon,
-    move_data: &EngineMoveData,
+    move_data: &MoveData,
     is_critical: bool,
     damage_roll: f32,
     target_count: usize,
     attacker_position: crate::core::battle_format::BattlePosition,
     defender_position: crate::core::battle_format::BattlePosition,
 ) -> i16 {
-    // Try to use modern DamageContext when possible
-    if let Ok(modern_result) = calculate_damage_with_modern_context(
+    // Use modern DamageContext system
+    calculate_damage_with_modern_context(
         state,
         attacker,
         defender,
@@ -88,43 +33,23 @@ pub fn calculate_damage_with_positions(
         is_critical,
         damage_roll,
         target_count,
-        attacker_position,
-        defender_position,
-    ) {
-        return modern_result;
-    }
-
-    // Fallback to legacy system
-    let generation_mechanics = state.get_generation_mechanics();
-    let type_chart = TypeChart::new(state.get_generation().number());
-
-    calculate_damage_with_generation(
-        state,
-        attacker,
-        defender,
-        move_data,
-        is_critical,
-        damage_roll,
-        target_count,
-        &type_chart,
-        &generation_mechanics,
         attacker_position,
         defender_position,
     )
 }
 
-/// Attempt to calculate damage using the modern DamageContext system
+/// Calculate damage using the modern DamageContext system
 fn calculate_damage_with_modern_context(
     state: &BattleState,
     attacker: &Pokemon,
     defender: &Pokemon,
-    move_data: &EngineMoveData,
+    move_data: &MoveData,
     is_critical: bool,
     damage_roll: f32,
     target_count: usize,
     attacker_position: crate::core::battle_format::BattlePosition,
     defender_position: crate::core::battle_format::BattlePosition,
-) -> Result<i16, &'static str> {
+) -> i16 {
     use super::damage_context::{DamageContext, AttackerContext, DefenderContext, MoveContext, FieldContext, FormatContext, EffectiveStats, AbilityState, ItemEffects};
 
     // Build modern DamageContext
@@ -146,11 +71,11 @@ fn calculate_damage_with_modern_context(
 
     let move_context = MoveContext {
         name: move_data.name.clone(),
-        base_power: move_data.base_power.unwrap_or(0) as u8,
+        base_power: move_data.base_power as u8,
         is_critical,
-        is_contact: move_data.flags.contains(&"contact".to_string()),
+        is_contact: move_data.flags.contains_key("contact"),
         move_type: move_data.move_type.clone(),
-        category: move_data.category,
+        category: MoveCategory::from_str(&move_data.category),
         data: move_data.clone(),
     };
 
@@ -175,225 +100,9 @@ fn calculate_damage_with_modern_context(
 
     // Use the modern damage calculation
     let result = calculate_damage_modern(&damage_context, damage_roll);
-    Ok(result.damage)
+    result.damage
 }
 
-/// Calculate damage with full generation-specific mechanics
-pub fn calculate_damage_with_generation(
-    state: &BattleState,
-    attacker: &Pokemon,
-    defender: &Pokemon,
-    move_data: &EngineMoveData,
-    is_critical: bool,
-    damage_roll: f32,
-    target_count: usize,
-    type_chart: &TypeChart,
-    generation_mechanics: &GenerationMechanics,
-    attacker_position: crate::core::battle_format::BattlePosition,
-    defender_position: crate::core::battle_format::BattlePosition,
-) -> i16 {
-    // Basic damage calculation formula
-    let level = attacker.level as f32;
-    let mut base_power = move_data.base_power.unwrap_or(0) as f32;
-
-    if base_power == 0.0 {
-        return 0; // Status moves don't deal damage
-    }
-
-    // Create modern damage context for ability calculations
-    let damage_context = DamageContext::from_battle_state(
-        attacker,
-        attacker_position,
-        defender,
-        defender_position,
-        move_data,
-        &state.field,
-        &state.format,
-        1, // target_count
-        is_critical,
-    );
-
-    // Apply base power modifications FIRST, like poke-engine does
-    base_power = apply_base_power_modifications(base_power, &damage_context, generation_mechanics);
-
-    if base_power == 0.0 {
-        return 0; // Move blocked or nullified
-    }
-
-    // Use modern ability modifier calculation
-    let ability_modifier = crate::engine::mechanics::abilities::calculate_ability_modifiers(&damage_context, state, generation_mechanics);
-    
-    // Calculate type effectiveness early for item modifiers that need it
-    let effective_move_type = ability_modifier.changed_move_type
-        .as_ref()
-        .unwrap_or(&move_data.move_type);
-    let move_type = PokemonType::from_str(effective_move_type).unwrap_or(PokemonType::Normal);
-    
-    let defender_type1 = PokemonType::from_str(&defender.types[0]).unwrap_or(PokemonType::Normal);
-    let defender_type2 = if defender.types.len() > 1 {
-        PokemonType::from_str(&defender.types[1]).unwrap_or(defender_type1)
-    } else {
-        defender_type1
-    };
-
-    // Type effectiveness (with generation-specific overrides and Tera type support)
-    let mut type_effectiveness = type_chart.calculate_damage_multiplier(
-        move_type,
-        (defender_type1, defender_type2),
-        get_tera_type(defender), // Tera type support
-        Some(&move_data.name.to_lowercase()),
-    );
-
-    // Apply generation-specific type effectiveness overrides
-    if let Some(override_mult) = generation_mechanics
-        .get_type_effectiveness_override(&move_data.move_type, &defender.types[0])
-    {
-        type_effectiveness = override_mult;
-    }
-    
-    let item_modifier = calculate_item_modifiers(&damage_context, type_effectiveness, generation_mechanics);
-
-    // Check for complete immunity early
-    if ability_modifier.blocks_move || item_modifier.blocks_move {
-        return 0;
-    }
-
-    let attack_stat = match move_data.category {
-        crate::core::battle_state::MoveCategory::Physical => {
-            attacker.get_effective_stat(crate::core::instruction::Stat::Attack) as f32
-                * ability_modifier.attack_multiplier
-                * item_modifier.attack_multiplier
-        }
-        crate::core::battle_state::MoveCategory::Special => {
-            attacker.get_effective_stat(crate::core::instruction::Stat::SpecialAttack) as f32
-                * ability_modifier.special_attack_multiplier
-                * item_modifier.special_attack_multiplier
-        }
-        crate::core::battle_state::MoveCategory::Status => return 0,
-    };
-
-    let base_defense_stat = match move_data.category {
-        crate::core::battle_state::MoveCategory::Physical => {
-            defender.get_effective_stat(crate::core::instruction::Stat::Defense)
-        }
-        crate::core::battle_state::MoveCategory::Special => {
-            defender.get_effective_stat(crate::core::instruction::Stat::SpecialDefense)
-        }
-        crate::core::battle_state::MoveCategory::Status => return 0,
-    } as f32;
-
-    // Apply weather-based stat boosts
-    let weather_defense_multiplier = get_weather_stat_multiplier(
-        &state,
-        &state.weather,
-        defender,
-        match move_data.category {
-            crate::core::battle_state::MoveCategory::Physical => crate::core::instruction::Stat::Defense,
-            crate::core::battle_state::MoveCategory::Special => crate::core::instruction::Stat::SpecialDefense,
-            crate::core::battle_state::MoveCategory::Status => return 0,
-        },
-    );
-
-    let defense_stat = base_defense_stat
-        * weather_defense_multiplier
-        * match move_data.category {
-            crate::core::battle_state::MoveCategory::Physical => ability_modifier.defense_multiplier,
-            crate::core::battle_state::MoveCategory::Special => ability_modifier.special_defense_multiplier,
-            crate::core::battle_state::MoveCategory::Status => 1.0,
-        }
-        * match move_data.category {
-            crate::core::battle_state::MoveCategory::Physical => item_modifier.defense_multiplier,
-            crate::core::battle_state::MoveCategory::Special => item_modifier.special_defense_multiplier,
-            crate::core::battle_state::MoveCategory::Status => 1.0,
-        };
-
-    // Apply ability power multipliers (items already applied to base_power)
-    let power = base_power * ability_modifier.power_multiplier;
-
-    // Base damage calculation with proper flooring like poke-engine
-    let mut damage = 2.0 * level;
-    damage = damage.floor() / 5.0;
-    damage = damage.floor() + 2.0;
-    damage = damage.floor() * power;
-    damage = damage * attack_stat / defense_stat;
-    damage = damage.floor() / 50.0;
-    let base_damage = damage.floor() + 2.0;
-
-    // Apply modifiers
-    let mut damage = base_damage;
-
-    // Critical hit multiplier (generation-specific)
-    if is_critical {
-        damage *= generation_mechanics.get_critical_multiplier();
-    }
-
-    // Type effectiveness already calculated earlier for item modifiers
-    damage *= type_effectiveness;
-
-    // Apply Expert Belt boost for super effective moves
-    damage *= apply_expert_belt_boost(&damage_context, type_effectiveness, generation_mechanics.generation.number());
-
-    // STAB (Same Type Attack Bonus)
-    let attacker_type1 = PokemonType::from_str(&attacker.types[0]).unwrap_or(PokemonType::Normal);
-    let attacker_type2 = if attacker.types.len() > 1 {
-        PokemonType::from_str(&attacker.types[1]).unwrap_or(attacker_type1)
-    } else {
-        attacker_type1
-    };
-
-    let stab_multiplier = type_chart.calculate_stab_multiplier(
-        move_type,
-        (attacker_type1, attacker_type2),
-        get_tera_type(attacker), // Tera type support
-        has_adaptability_ability(attacker),
-    );
-    
-    damage *= stab_multiplier;
-
-    // Apply burn modifier (generation-specific)
-    if attacker.status == crate::core::instruction::PokemonStatus::Burn
-        && move_data.category == crate::core::battle_state::MoveCategory::Physical
-    {
-        damage *= generation_mechanics.get_burn_reduction();
-    }
-
-    // Apply weather modifier
-    damage *= get_weather_damage_modifier(
-        &state,
-        &state.weather,
-        &move_data.move_type,
-        &generation_mechanics,
-    );
-
-    // Apply screen effects (Reflect, Light Screen, Aurora Veil)
-    damage *= get_screen_damage_modifier(
-        &state,
-        attacker,
-        defender,
-        &move_data.category,
-        &generation_mechanics,
-    );
-
-    // Apply terrain effects
-    damage *= get_terrain_damage_modifier(
-        &state.terrain,
-        &move_data.move_type,
-        attacker,
-        defender,
-        &generation_mechanics,
-    );
-
-    // Apply spread move damage reduction
-    damage *= get_spread_move_modifier(&state.format, target_count);
-
-    // Apply ability damage modifiers (already calculated above)
-    damage *= ability_modifier.damage_multiplier;
-
-    // Apply damage roll with floor() before multiplication like poke-engine
-    damage = damage.floor() * damage_roll;
-
-    damage as i16
-}
 
 /// Generate a random damage roll
 pub fn random_damage_roll() -> f32 {
@@ -403,7 +112,7 @@ pub fn random_damage_roll() -> f32 {
 }
 
 /// Calculate critical hit probability with move, ability, and item modifiers
-pub fn critical_hit_probability(attacker: &Pokemon, move_data: &EngineMoveData) -> f32 {
+pub fn critical_hit_probability(attacker: &Pokemon, move_data: &MoveData) -> f32 {
     // Base critical hit rate is 1/24 (about 4.17%)
     let mut crit_stage = 0;
 
@@ -481,15 +190,13 @@ pub fn critical_hit_probability(attacker: &Pokemon, move_data: &EngineMoveData) 
 
 /// Check if weather effects should be negated by any active Pokemon abilities
 pub fn is_weather_negated(state: &BattleState) -> bool {
-    use crate::engine::mechanics::abilities::get_ability_by_name;
+    use crate::engine::mechanics::abilities::ability_negates_weather;
 
     // Check all active Pokemon for weather negation abilities
-    for side in [&state.side_one, &state.side_two] {
+    for side in [&state.sides[0], &state.sides[1]] {
         for pokemon in &side.pokemon {
-            if let Some(ability) = get_ability_by_name(pokemon.ability.as_str()) {
-                if ability.negates_weather() {
-                    return true;
-                }
+            if ability_negates_weather(pokemon.ability.as_str()) {
+                return true;
             }
         }
     }
@@ -499,11 +206,11 @@ pub fn is_weather_negated(state: &BattleState) -> bool {
 /// Calculate weather-based stat multipliers (Sandstorm SpDef for Rock, Snow Def for Ice)
 pub fn get_weather_stat_multiplier(
     state: &BattleState,
-    weather: &crate::core::instruction::Weather,
+    weather: &crate::core::instructions::Weather,
     pokemon: &Pokemon,
-    stat: crate::core::instruction::Stat,
+    stat: crate::core::instructions::Stat,
 ) -> f32 {
-    use crate::core::instruction::Weather;
+    use crate::core::instructions::Weather;
 
     // Check if weather is negated by Cloud Nine or Air Lock
     if is_weather_negated(state) {
@@ -513,7 +220,7 @@ pub fn get_weather_stat_multiplier(
     match weather {
         Weather::Sand => {
             // Sandstorm boosts Special Defense of Rock types by 1.5x
-            if stat == crate::core::instruction::Stat::SpecialDefense
+            if stat == crate::core::instructions::Stat::SpecialDefense
                 && pokemon.types.iter().any(|t| t.to_lowercase() == "rock")
             {
                 1.5
@@ -523,7 +230,7 @@ pub fn get_weather_stat_multiplier(
         }
         Weather::Snow => {
             // Snow boosts Defense of Ice types by 1.5x
-            if stat == crate::core::instruction::Stat::Defense
+            if stat == crate::core::instructions::Stat::Defense
                 && pokemon.types.iter().any(|t| t.to_lowercase() == "ice")
             {
                 1.5
@@ -538,11 +245,11 @@ pub fn get_weather_stat_multiplier(
 /// Calculate weather damage modifier
 pub fn get_weather_damage_modifier(
     state: &BattleState,
-    weather: &crate::core::instruction::Weather,
+    weather: &crate::core::instructions::Weather,
     move_type: &str,
     _generation_mechanics: &GenerationMechanics,
 ) -> f32 {
-    use crate::core::instruction::Weather;
+    use crate::core::instructions::Weather;
 
     // Check if weather is negated by Cloud Nine or Air Lock
     if is_weather_negated(state) {
@@ -587,27 +294,25 @@ pub fn get_screen_damage_modifier(
     move_category: &crate::core::battle_state::MoveCategory,
     _generation_mechanics: &GenerationMechanics,
 ) -> f32 {
-    use crate::engine::mechanics::abilities::get_ability_by_name;
-    use crate::core::instruction::SideCondition;
+    use crate::engine::mechanics::abilities::ability_bypasses_screens;
+    use crate::core::instructions::SideCondition;
     use crate::core::battle_state::MoveCategory;
 
     // Check if attacker has Infiltrator ability to bypass screens
-    if let Some(ability) = get_ability_by_name(attacker.ability.as_str()) {
-        if ability.bypasses_screens() {
-            return 1.0;
-        }
+    if ability_bypasses_screens(attacker.ability.as_str()) {
+        return 1.0;
     }
 
     // Determine defending side by finding which side contains the defender
     let defending_side = if state
-        .side_one
+        .sides[0]
         .pokemon
         .iter()
         .any(|p| std::ptr::eq(p, defender))
     {
-        &state.side_one
+        &state.sides[0]
     } else {
-        &state.side_two
+        &state.sides[1]
     };
 
     // Check for Aurora Veil (affects both physical and special moves)
@@ -661,13 +366,13 @@ pub fn get_screen_damage_modifier(
 
 /// Calculate terrain damage modifier
 pub fn get_terrain_damage_modifier(
-    terrain: &crate::core::instruction::Terrain,
+    terrain: &crate::core::instructions::Terrain,
     move_type: &str,
     attacker: &Pokemon,
     defender: &Pokemon,
     generation_mechanics: &GenerationMechanics,
 ) -> f32 {
-    use crate::core::instruction::Terrain;
+    use crate::core::instructions::Terrain;
 
     match terrain {
         Terrain::Electric | Terrain::ElectricTerrain => {
@@ -728,18 +433,14 @@ fn has_adaptability_ability(pokemon: &Pokemon) -> bool {
 
 /// Check if a Pokemon is grounded (affected by terrain)
 pub fn is_grounded(pokemon: &Pokemon) -> bool {
-    use crate::engine::mechanics::abilities::get_ability_by_name;
-
     // Check for Flying type
     if pokemon.types.iter().any(|t| t.to_lowercase() == "flying") {
         return false;
     }
 
     // Check for Levitate ability
-    if let Some(ability) = get_ability_by_name(pokemon.ability.as_str()) {
-        if ability.name().to_lowercase() == "levitate" {
-            return false;
-        }
+    if pokemon.ability.to_lowercase() == "levitate" {
+        return false;
     }
 
     // Check for items that affect grounding
@@ -751,10 +452,10 @@ pub fn is_grounded(pokemon: &Pokemon) -> bool {
     }
 
     // Check for volatile statuses that affect grounding
-    if pokemon.volatile_statuses.contains(&crate::core::instruction::VolatileStatus::MagnetRise) {
+    if pokemon.volatile_statuses.contains(&crate::core::instructions::VolatileStatus::MagnetRise) {
         return false; // Magnet Rise makes Pokemon ungrounded
     }
-    if pokemon.volatile_statuses.contains(&crate::core::instruction::VolatileStatus::Telekinesis) {
+    if pokemon.volatile_statuses.contains(&crate::core::instructions::VolatileStatus::Telekinesis) {
         return false; // Telekinesis makes Pokemon ungrounded
     }
 
@@ -775,41 +476,6 @@ pub fn get_spread_move_modifier(
     }
 }
 
-/// Apply base power modifications from items, like poke-engine does
-/// This function modifies base power before damage calculation begins
-fn apply_base_power_modifications(
-    mut base_power: f32,
-    context: &DamageContext,
-    _generation_mechanics: &GenerationMechanics,
-) -> f32 {
-    // Apply attacker's item modifications to base power
-    if let Some(ref item_name) = context.attacker.pokemon.item {
-        if let Some(item) = get_item_by_name(item_name) {
-            // Only apply if this is actually an attacker item
-            if item.is_attacker_item() {
-                let item_modifier = item.modify_damage(context);
-                base_power *= item_modifier.power_multiplier;
-            }
-        }
-    }
-
-    // Apply defender's item modifications to base power (for berries and defensive items)
-    if let Some(ref item_name) = context.defender.pokemon.item {
-        if let Some(item) = get_item_by_name(item_name) {
-            // Only apply if this is actually a defender item
-            if item.is_defender_item() {
-                let item_modifier = item.modify_damage(context);
-                // Berries and defensive items can reduce base power
-                base_power *= item_modifier.power_multiplier;
-                if item_modifier.damage_multiplier != 1.0 {
-                    base_power *= item_modifier.damage_multiplier;
-                }
-            }
-        }
-    }
-
-    base_power
-}
 
 /// Get the Tera type of a Pokemon if it's Terastallized (Gen 9+ only)
 fn get_tera_type(pokemon: &Pokemon) -> Option<super::type_effectiveness::PokemonType> {
@@ -862,7 +528,7 @@ pub fn calculate_damage_modern(
     }
 
     let mut effects = Vec::new();
-    let mut base_power = context.move_info.base_power as f32;
+    let base_power = context.move_info.base_power as f32;
 
     // Early immunity checks would go here
     // (These would be extracted from ability/item logic)
@@ -873,10 +539,10 @@ pub fn calculate_damage_modern(
     // Get effective attack stat
     let attack_stat = match context.move_info.category {
         crate::core::battle_state::MoveCategory::Physical => {
-            context.attacker.effective_stats.get_effective_stat(crate::core::instruction::Stat::Attack) as f32
+            context.attacker.effective_stats.get_effective_stat(crate::core::instructions::Stat::Attack) as f32
         }
         crate::core::battle_state::MoveCategory::Special => {
-            context.attacker.effective_stats.get_effective_stat(crate::core::instruction::Stat::SpecialAttack) as f32
+            context.attacker.effective_stats.get_effective_stat(crate::core::instructions::Stat::SpecialAttack) as f32
         }
         crate::core::battle_state::MoveCategory::Status => {
             return DamageResult {
@@ -892,10 +558,10 @@ pub fn calculate_damage_modern(
     // Get effective defense stat
     let defense_stat = match context.move_info.category {
         crate::core::battle_state::MoveCategory::Physical => {
-            context.defender.effective_stats.get_effective_stat(crate::core::instruction::Stat::Defense) as f32
+            context.defender.effective_stats.get_effective_stat(crate::core::instructions::Stat::Defense) as f32
         }
         crate::core::battle_state::MoveCategory::Special => {
-            context.defender.effective_stats.get_effective_stat(crate::core::instruction::Stat::SpecialDefense) as f32
+            context.defender.effective_stats.get_effective_stat(crate::core::instructions::Stat::SpecialDefense) as f32
         }
         crate::core::battle_state::MoveCategory::Status => return DamageResult {
             damage: 0,
@@ -907,7 +573,7 @@ pub fn calculate_damage_modern(
     };
 
     // Calculate base damage
-    let base_damage = ((2.0 * level / 5.0 + 2.0) * base_power * attack_stat / defense_stat / 50.0 + 2.0);
+    let base_damage = (2.0 * level / 5.0 + 2.0) * base_power * attack_stat / defense_stat / 50.0 + 2.0;
     
     // Apply critical hit modifier
     let critical_modifier = if context.move_info.is_critical { 1.5 } else { 1.0 };
@@ -917,7 +583,7 @@ pub fn calculate_damage_modern(
     damage *= damage_roll;
     
     // Type effectiveness calculation
-    let type_chart = TypeChart::new(9); // TODO: Get generation from context
+    let type_chart = TypeChart::new(context.format.format.generation.number());
     let move_type = PokemonType::from_str(&context.move_info.move_type).unwrap_or(PokemonType::Normal);
     
     let defender_type1 = PokemonType::from_str(&context.defender.pokemon.types[0]).unwrap_or(PokemonType::Normal);
@@ -952,7 +618,7 @@ pub fn calculate_damage_modern(
     damage *= stab_multiplier;
     
     // Weather effects
-    if let crate::core::instruction::Weather::Sun = context.field.weather.condition {
+    if let crate::core::instructions::Weather::Sun = context.field.weather.condition {
         match context.move_info.move_type.to_lowercase().as_str() {
             "fire" => {
                 damage *= 1.5;
@@ -964,7 +630,7 @@ pub fn calculate_damage_modern(
             }
             _ => {}
         }
-    } else if let crate::core::instruction::Weather::Rain = context.field.weather.condition {
+    } else if let crate::core::instructions::Weather::Rain = context.field.weather.condition {
         match context.move_info.move_type.to_lowercase().as_str() {
             "water" => {
                 damage *= 1.5;
@@ -979,7 +645,7 @@ pub fn calculate_damage_modern(
     }
     
     // Status effects
-    if context.attacker.pokemon.status == crate::core::instruction::PokemonStatus::Burn
+    if context.attacker.pokemon.status == crate::core::instructions::PokemonStatus::Burn
         && context.move_info.category == crate::core::battle_state::MoveCategory::Physical
     {
         damage *= 0.5; // Burn halves physical attack

@@ -104,7 +104,7 @@ impl MoveChoice {
         
         // Get the user's side - this is a simplified approach
         // In a full implementation, we'd need to know which side is making the move
-        let user_side = &state.side_one;
+        let user_side = &state.sides[0];
         
         if let Some(pokemon) = user_side.get_active_pokemon_at_slot(0) {
             if let Some(move_data) = pokemon.get_move(move_index) {

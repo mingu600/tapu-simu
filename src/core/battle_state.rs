@@ -1,19 +1,18 @@
 //! # Modern Battle State System
-//! 
-//! This module defines the decomposed battle state representation that replaces
-//! the monolithic State struct. Designed for multi-format support and clean architecture.
 
 use crate::core::battle_format::{BattleFormat, BattlePosition, SideReference};
-use crate::core::instruction::{Weather, Terrain, PokemonStatus, VolatileStatus, SideCondition, BattleInstruction, Stat};
-use crate::core::instructions::{PokemonInstruction, FieldInstruction, StatusInstruction, StatsInstruction};
-use crate::core::move_choice::{MoveIndex, MoveChoice, PokemonIndex};
+use crate::core::instructions::{
+    BattleInstruction, FieldInstruction, PokemonInstruction, PokemonStatus, SideCondition, Stat,
+    StatsInstruction, StatusInstruction, Terrain, VolatileStatus, Weather,
+};
+use crate::core::move_choice::{MoveChoice, MoveIndex, PokemonIndex};
+use crate::data::types::Stats;
 use crate::generation::GenerationBattleMechanics;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
-use crate::data::types::Stats;
 
 // Re-export MoveCategory for compatibility
-pub use crate::core::instruction::MoveCategory;
+pub use crate::core::instructions::MoveCategory;
 
 /// Pokemon gender
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -88,7 +87,12 @@ pub struct DamageInfo {
 
 impl DamageInfo {
     /// Create new damage info
-    pub fn new(damage: i16, move_category: MoveCategory, attacker_position: BattlePosition, is_direct_damage: bool) -> Self {
+    pub fn new(
+        damage: i16,
+        move_category: MoveCategory,
+        attacker_position: BattlePosition,
+        is_direct_damage: bool,
+    ) -> Self {
         Self {
             damage,
             move_category,
@@ -122,16 +126,13 @@ pub struct Move {
 }
 
 impl Move {
-    /// Create a new move with default values
-    /// Note: This constructor should primarily be used for testing.
-    /// Production code should use PSMoveFactory to get accurate move data.
     pub fn new(name: String) -> Self {
         Self {
             name,
-            base_power: 60,  // More reasonable default than 80
+            base_power: 60,
             accuracy: 100,
             move_type: "Normal".to_string(),
-            pp: 15,          // More reasonable default than 20
+            pp: 15,
             max_pp: 15,
             target: crate::data::showdown_types::MoveTarget::Normal,
             category: MoveCategory::Physical,
@@ -187,7 +188,7 @@ pub struct Pokemon {
     /// Base stats
     pub stats: Stats,
     /// Current stat boosts (-6 to +6)
-    pub stat_boosts: HashMap<crate::core::instruction::Stat, i8>,
+    pub stat_boosts: HashMap<crate::core::instructions::Stat, i8>,
     /// Current status condition
     pub status: PokemonStatus,
     /// Status duration (for sleep/freeze)
@@ -220,6 +221,8 @@ pub struct Pokemon {
     pub ability_triggered_this_turn: bool,
     /// Whether the held item has been consumed this battle
     pub item_consumed: bool,
+    /// Weight in kilograms (for moves like Heavy Slam, Heat Crash)
+    pub weight_kg: f32,
 }
 
 impl Pokemon {
@@ -229,7 +232,14 @@ impl Pokemon {
             species,
             hp: 100,
             max_hp: 100,
-            stats: Stats { hp: 100, attack: 100, defense: 100, special_attack: 100, special_defense: 100, speed: 100 },
+            stats: Stats {
+                hp: 100,
+                attack: 100,
+                defense: 100,
+                special_attack: 100,
+                special_defense: 100,
+                speed: 100,
+            },
             stat_boosts: HashMap::new(),
             status: PokemonStatus::None,
             status_duration: None,
@@ -247,6 +257,7 @@ impl Pokemon {
             ability_suppressed: false,
             ability_triggered_this_turn: false,
             item_consumed: false,
+            weight_kg: 50.0, // Default weight for unknown Pokemon
         }
     }
 
@@ -266,16 +277,16 @@ impl Pokemon {
     }
 
     /// Get effective stat after boosts, items, abilities, etc.
-    pub fn get_effective_stat(&self, stat: crate::core::instruction::Stat) -> f64 {
+    pub fn get_effective_stat(&self, stat: crate::core::instructions::Stat) -> f64 {
         let base_stat = match stat {
-            crate::core::instruction::Stat::Hp => self.stats.hp as f64,
-            crate::core::instruction::Stat::Attack => self.stats.attack as f64,
-            crate::core::instruction::Stat::Defense => self.stats.defense as f64,
-            crate::core::instruction::Stat::SpecialAttack => self.stats.special_attack as f64,
-            crate::core::instruction::Stat::SpecialDefense => self.stats.special_defense as f64,
-            crate::core::instruction::Stat::Speed => self.stats.speed as f64,
-            crate::core::instruction::Stat::Accuracy => 100.0, // Base accuracy
-            crate::core::instruction::Stat::Evasion => 100.0,   // Base evasion
+            crate::core::instructions::Stat::Hp => self.stats.hp as f64,
+            crate::core::instructions::Stat::Attack => self.stats.attack as f64,
+            crate::core::instructions::Stat::Defense => self.stats.defense as f64,
+            crate::core::instructions::Stat::SpecialAttack => self.stats.special_attack as f64,
+            crate::core::instructions::Stat::SpecialDefense => self.stats.special_defense as f64,
+            crate::core::instructions::Stat::Speed => self.stats.speed as f64,
+            crate::core::instructions::Stat::Accuracy => 100.0, // Base accuracy
+            crate::core::instructions::Stat::Evasion => 100.0,  // Base evasion
         };
 
         // Apply stat boosts
@@ -292,6 +303,12 @@ impl Pokemon {
     /// Add a move to the Pokemon's moveset
     pub fn add_move(&mut self, move_index: MoveIndex, move_data: Move) {
         self.moves.insert(move_index, move_data);
+    }
+}
+
+impl Default for Pokemon {
+    fn default() -> Self {
+        Self::new("MissingNo".to_string())
     }
 }
 
@@ -330,19 +347,19 @@ impl BattleSide {
             tera_used: false,
         }
     }
-    
+
     /// Add a Pokemon to this side's team
     pub fn add_pokemon(&mut self, pokemon: Pokemon) {
         self.pokemon.push(pokemon);
     }
-    
+
     /// Set the active Pokemon at a specific slot
     pub fn set_active_pokemon_at_slot(&mut self, slot: usize, pokemon_index: Option<usize>) {
         if slot < self.active_pokemon_indices.len() {
             self.active_pokemon_indices[slot] = pokemon_index;
         }
     }
-    
+
     /// Get the active Pokemon at a specific slot
     pub fn get_active_pokemon_at_slot(&self, slot: usize) -> Option<&Pokemon> {
         if let Some(Some(pokemon_index)) = self.active_pokemon_indices.get(slot) {
@@ -351,7 +368,7 @@ impl BattleSide {
             None
         }
     }
-    
+
     /// Get the active Pokemon at a specific slot (mutable)
     pub fn get_active_pokemon_at_slot_mut(&mut self, slot: usize) -> Option<&mut Pokemon> {
         if let Some(Some(pokemon_index)) = self.active_pokemon_indices.get(slot).copied() {
@@ -373,30 +390,6 @@ pub struct BattleState {
     pub field: FieldConditions,
     /// Turn-related state information
     pub turn_info: TurnState,
-    
-    // Legacy compatibility fields
-    /// Current weather (compatibility field)
-    pub weather: Weather,
-    /// Current terrain (compatibility field)  
-    pub terrain: Terrain,
-    /// Current turn (compatibility field)
-    pub turn: u32,
-    /// Side one (compatibility field)
-    pub side_one: BattleSide,
-    /// Side two (compatibility field)
-    pub side_two: BattleSide,
-    /// Weather turns remaining (compatibility field)
-    pub weather_turns_remaining: Option<u8>,
-    /// Terrain turns remaining (compatibility field)
-    pub terrain_turns_remaining: Option<u8>,
-    /// Trick Room active (compatibility field)
-    pub trick_room_active: bool,
-    /// Trick Room turns remaining (compatibility field)
-    pub trick_room_turns_remaining: Option<u8>,
-    /// Gravity active (compatibility field)
-    pub gravity_active: bool,
-    /// Gravity turns remaining (compatibility field)
-    pub gravity_turns_remaining: Option<u8>,
 }
 
 /// Field conditions that affect the entire battlefield
@@ -496,21 +489,9 @@ impl BattleState {
         let side_two = BattleSide::new();
         Self {
             format,
-            sides: [side_one.clone(), side_two.clone()],
+            sides: [side_one, side_two],
             field: FieldConditions::default(),
             turn_info: TurnState::default(),
-            // Initialize compatibility fields
-            weather: Weather::None,
-            terrain: Terrain::None,
-            turn: 1,
-            side_one,
-            side_two,
-            weather_turns_remaining: None,
-            terrain_turns_remaining: None,
-            trick_room_active: false,
-            trick_room_turns_remaining: None,
-            gravity_active: false,
-            gravity_turns_remaining: None,
         }
     }
 
@@ -521,83 +502,33 @@ impl BattleState {
         team_two: Vec<crate::data::RandomPokemonSet>,
     ) -> Self {
         let mut state = Self::new(format.clone());
-        
+
         // Create PS repository for proper move and Pokemon data
-        let repository = match crate::data::ps::Repository::from_path("data/ps-extracted") {
-            Ok(repo) => repo,
-            Err(e) => {
-                eprintln!("Warning: Failed to create PS repository: {}. Using fallback data.", e);
-                // Create a basic repository that will use fallbacks
-                crate::data::ps::Repository::from_path("data/ps-extracted").unwrap_or_else(|_| {
-                    panic!("Could not create fallback repository")
-                })
-            }
-        };
-        
+        let repository = crate::data::ps::Repository::from_path("data/ps-extracted")
+            .expect("Failed to load Pokemon data from data/ps-extracted. Ensure the data directory exists and contains valid JSON files.");
+
         // Convert and add Pokemon to each side
         for pokemon_set in team_one {
             let pokemon = pokemon_set.to_battle_pokemon(&repository);
-            
-            // DEBUG: Check if Annihilape stats are correct after to_battle_pokemon
-            if pokemon_set.species == "Annihilape" {
-                println!("DEBUG: Annihilape stats after to_battle_pokemon: attack={}, defense={}, special_attack={}, special_defense={}, speed={}", 
-                         pokemon.stats.attack, pokemon.stats.defense, pokemon.stats.special_attack, 
-                         pokemon.stats.special_defense, pokemon.stats.speed);
-            }
-            
-            // DEBUG: Check stats before adding to side
-            if pokemon.species == "Annihilape" || pokemon.species == "Gothitelle" {
-                println!("DEBUG: {} stats before add_pokemon: ATK:{} DEF:{} SPA:{} SPD:{} SPE:{}", 
-                         pokemon.species, pokemon.stats.attack, pokemon.stats.defense, 
-                         pokemon.stats.special_attack, pokemon.stats.special_defense, pokemon.stats.speed);
-            }
-            
-            state.side_one.add_pokemon(pokemon);
-            
-            // DEBUG: Check stats after adding to side
-            if let Some(added_pokemon) = state.side_one.pokemon.last() {
-                if added_pokemon.species == "Annihilape" || added_pokemon.species == "Gothitelle" {
-                    println!("DEBUG: {} stats after add_pokemon: ATK:{} DEF:{} SPA:{} SPD:{} SPE:{}", 
-                             added_pokemon.species, added_pokemon.stats.attack, added_pokemon.stats.defense, 
-                             added_pokemon.stats.special_attack, added_pokemon.stats.special_defense, added_pokemon.stats.speed);
-                }
-            }
+            state.sides[0].add_pokemon(pokemon);
         }
-        
+
         for pokemon_set in team_two {
             let pokemon = pokemon_set.to_battle_pokemon(&repository);
-            state.side_two.add_pokemon(pokemon);
-        }
-        
-        // DEBUG: Check stats before setting active Pokemon
-        for (i, pokemon) in state.side_one.pokemon.iter().enumerate() {
-            if pokemon.species == "Annihilape" || pokemon.species == "Gothitelle" {
-                println!("DEBUG: {} stats before set_active (index {}): ATK:{} DEF:{} SPA:{} SPD:{} SPE:{}", 
-                         pokemon.species, i, pokemon.stats.attack, pokemon.stats.defense, 
-                         pokemon.stats.special_attack, pokemon.stats.special_defense, pokemon.stats.speed);
-            }
+            state.sides[1].add_pokemon(pokemon);
         }
 
         // Set initial active Pokemon based on format
         let active_count = format.active_pokemon_count();
         for slot in 0..active_count {
-            if slot < state.side_one.pokemon.len() {
-                state.side_one.set_active_pokemon_at_slot(slot, Some(slot));
-                
-                // DEBUG: Check stats after setting active
-                if let Some(active_pokemon) = state.side_one.get_active_pokemon_at_slot(slot) {
-                    if active_pokemon.species == "Annihilape" || active_pokemon.species == "Gothitelle" {
-                        println!("DEBUG: {} stats after set_active (slot {}): ATK:{} DEF:{} SPA:{} SPD:{} SPE:{}", 
-                                 active_pokemon.species, slot, active_pokemon.stats.attack, active_pokemon.stats.defense, 
-                                 active_pokemon.stats.special_attack, active_pokemon.stats.special_defense, active_pokemon.stats.speed);
-                    }
-                }
+            if slot < state.sides[0].pokemon.len() {
+                state.sides[0].set_active_pokemon_at_slot(slot, Some(slot));
             }
-            if slot < state.side_two.pokemon.len() {
-                state.side_two.set_active_pokemon_at_slot(slot, Some(slot));
+            if slot < state.sides[1].pokemon.len() {
+                state.sides[1].set_active_pokemon_at_slot(slot, Some(slot));
             }
         }
-        
+
         state
     }
 
@@ -621,7 +552,7 @@ impl BattleState {
         self.field.global_effects.gravity.is_some()
     }
 
-    /// Get the Pokemon at the specified position (compatibility with legacy State API)
+    /// Get the Pokemon at the specified position
     pub fn get_pokemon_at_position(&self, position: BattlePosition) -> Option<&Pokemon> {
         let side_index = match position.side {
             SideReference::SideOne => 0,
@@ -631,8 +562,11 @@ impl BattleState {
         side.get_active_pokemon_at_slot(position.slot)
     }
 
-    /// Get a mutable reference to the Pokemon at the specified position (compatibility with legacy State API)
-    pub fn get_pokemon_at_position_mut(&mut self, position: BattlePosition) -> Option<&mut Pokemon> {
+    /// Get a mutable reference to the Pokemon at the specified position
+    pub fn get_pokemon_at_position_mut(
+        &mut self,
+        position: BattlePosition,
+    ) -> Option<&mut Pokemon> {
         let side_index = match position.side {
             SideReference::SideOne => 0,
             SideReference::SideTwo => 1,
@@ -644,17 +578,17 @@ impl BattleState {
         side.get_active_pokemon_at_slot_mut(position.slot)
     }
 
-    /// Get current weather (compatibility with legacy State API)
+    /// Get current weather
     pub fn weather(&self) -> Weather {
         self.field.weather.condition
     }
 
-    /// Get current terrain (compatibility with legacy State API) 
+    /// Get current terrain
     pub fn terrain(&self) -> Terrain {
         self.field.terrain.condition
     }
 
-    /// Get a reference to a side by SideReference (compatibility with legacy State API)
+    /// Get a reference to a side by SideReference
     pub fn get_side_by_ref(&self, side_ref: SideReference) -> &BattleSide {
         match side_ref {
             SideReference::SideOne => &self.sides[0],
@@ -662,7 +596,7 @@ impl BattleState {
         }
     }
 
-    /// Get a mutable reference to a side by SideReference (compatibility with legacy State API)
+    /// Get a mutable reference to a side by SideReference
     pub fn get_side_by_ref_mut(&mut self, side_ref: SideReference) -> &mut BattleSide {
         match side_ref {
             SideReference::SideOne => &mut self.sides[0],
@@ -670,37 +604,17 @@ impl BattleState {
         }
     }
 
-    /// Access side_one directly (compatibility with legacy State API)
-    pub fn side_one(&self) -> &BattleSide {
-        &self.sides[0]
-    }
-
-    /// Access side_two directly (compatibility with legacy State API)
-    pub fn side_two(&self) -> &BattleSide {
-        &self.sides[1]
-    }
-
-    /// Access side_one mutably (compatibility with legacy State API)
-    pub fn side_one_mut(&mut self) -> &mut BattleSide {
-        &mut self.sides[0]
-    }
-
-    /// Access side_two mutably (compatibility with legacy State API)
-    pub fn side_two_mut(&mut self) -> &mut BattleSide {
-        &mut self.sides[1]
-    }
-
-    /// Get generation mechanics (compatibility with legacy State API)
+    /// Get generation mechanics
     pub fn get_generation_mechanics(&self) -> crate::generation::GenerationMechanics {
         self.format.generation.get_mechanics()
     }
 
-    /// Get the generation for this battle (compatibility with legacy State API)
+    /// Get the generation for this battle
     pub fn get_generation(&self) -> crate::generation::Generation {
         self.format.generation
     }
 
-    /// Check if a generation feature is available in this battle (compatibility with legacy State API)
+    /// Check if a generation feature is available in this battle
     pub fn has_generation_feature(&self, feature: crate::generation::GenerationFeature) -> bool {
         self.format.generation.get_mechanics().has_feature(feature)
     }
@@ -767,48 +681,75 @@ impl BattleState {
                     pokemon.volatile_status_durations.clear();
                 }
             }
-            PokemonInstruction::Switch { position, new_pokemon, .. } => {
+            PokemonInstruction::Switch {
+                position,
+                new_pokemon,
+                ..
+            } => {
                 let side_index = match position.side {
                     SideReference::SideOne => 0,
                     SideReference::SideTwo => 1,
                 };
                 if side_index < self.sides.len() {
-                    self.sides[side_index].set_active_pokemon_at_slot(position.slot, Some(*new_pokemon));
+                    self.sides[side_index]
+                        .set_active_pokemon_at_slot(position.slot, Some(*new_pokemon));
                 }
             }
-            PokemonInstruction::ChangeAbility { target, new_ability, .. } => {
+            PokemonInstruction::ChangeAbility {
+                target,
+                new_ability,
+                ..
+            } => {
                 if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
                     pokemon.ability = new_ability.to_string();
                 }
             }
-            PokemonInstruction::ChangeItem { target, new_item, .. } => {
+            PokemonInstruction::ChangeItem {
+                target, new_item, ..
+            } => {
                 if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
                     pokemon.item = new_item.clone();
                 }
             }
-            PokemonInstruction::ChangeType { target, new_types, .. } => {
+            PokemonInstruction::ChangeType {
+                target, new_types, ..
+            } => {
                 if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
                     pokemon.types = new_types.clone();
                 }
             }
-            PokemonInstruction::ToggleTerastallized { target, terastallized, tera_type, .. } => {
+            PokemonInstruction::ToggleTerastallized {
+                target,
+                terastallized,
+                tera_type,
+                ..
+            } => {
                 if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
                     pokemon.is_terastallized = *terastallized;
                     pokemon.tera_type = *tera_type;
                 }
             }
-            PokemonInstruction::ChangeSubstituteHealth { target, new_health, .. } => {
+            PokemonInstruction::ChangeSubstituteHealth {
+                target, new_health, ..
+            } => {
                 if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
                     pokemon.substitute_health = *new_health;
                 }
             }
-            PokemonInstruction::SetWish { target, heal_amount, turns_remaining, .. } => {
+            PokemonInstruction::SetWish {
+                target,
+                heal_amount,
+                turns_remaining,
+                ..
+            } => {
                 let side_index = match target.side {
                     SideReference::SideOne => 0,
                     SideReference::SideTwo => 1,
                 };
                 if side_index < self.sides.len() {
-                    self.sides[side_index].wish_healing.insert(target.slot, (*heal_amount, *turns_remaining));
+                    self.sides[side_index]
+                        .wish_healing
+                        .insert(target.slot, (*heal_amount, *turns_remaining));
                 }
             }
             PokemonInstruction::DecrementWish { target, .. } => {
@@ -820,8 +761,10 @@ impl BattleState {
                     // First, check and update wish turns, storing heal amount for later use
                     let mut should_heal = false;
                     let mut heal_amount = 0;
-                    
-                    if let Some((wish_heal_amount, turns)) = self.sides[side_index].wish_healing.get_mut(&target.slot) {
+
+                    if let Some((wish_heal_amount, turns)) =
+                        self.sides[side_index].wish_healing.get_mut(&target.slot)
+                    {
                         if *turns > 0 {
                             *turns -= 1;
                             if *turns == 0 {
@@ -830,7 +773,7 @@ impl BattleState {
                             }
                         }
                     }
-                    
+
                     // Apply healing and cleanup separately to avoid borrowing conflicts
                     if should_heal {
                         if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
@@ -851,31 +794,44 @@ impl BattleState {
     /// Apply Field instruction (weather, terrain, global effects, side conditions)
     fn apply_field_instruction(&mut self, instruction: &FieldInstruction) {
         match instruction {
-            FieldInstruction::Weather { new_weather, turns, source, .. } => {
+            FieldInstruction::Weather {
+                new_weather,
+                turns,
+                source,
+                ..
+            } => {
                 self.field.weather.set(*new_weather, *turns, *source);
-                // Update compatibility fields
-                self.weather = *new_weather;
-                self.weather_turns_remaining = *turns;
             }
-            FieldInstruction::Terrain { new_terrain, turns, source, .. } => {
+            FieldInstruction::Terrain {
+                new_terrain,
+                turns,
+                source,
+                ..
+            } => {
                 self.field.terrain.set(*new_terrain, *turns, *source);
-                // Update compatibility fields
-                self.terrain = *new_terrain;
-                self.terrain_turns_remaining = *turns;
             }
-            FieldInstruction::TrickRoom { active, turns, source, .. } => {
+            FieldInstruction::TrickRoom {
+                active,
+                turns,
+                source,
+                ..
+            } => {
                 if *active {
                     if let Some(turn_count) = turns {
-                        self.field.global_effects.set_trick_room(*turn_count, *source);
+                        self.field
+                            .global_effects
+                            .set_trick_room(*turn_count, *source);
                     }
                 } else {
                     self.field.global_effects.clear_trick_room();
                 }
-                // Update compatibility fields
-                self.trick_room_active = *active;
-                self.trick_room_turns_remaining = *turns;
             }
-            FieldInstruction::Gravity { active, turns, source, .. } => {
+            FieldInstruction::Gravity {
+                active,
+                turns,
+                source,
+                ..
+            } => {
                 if *active {
                     if let Some(turn_count) = turns {
                         self.field.global_effects.set_gravity(*turn_count, *source);
@@ -883,20 +839,26 @@ impl BattleState {
                 } else {
                     self.field.global_effects.clear_gravity();
                 }
-                // Update compatibility fields
-                self.gravity_active = *active;
-                self.gravity_turns_remaining = *turns;
             }
-            FieldInstruction::ApplySideCondition { side, condition, duration, .. } => {
+            FieldInstruction::ApplySideCondition {
+                side,
+                condition,
+                duration,
+                ..
+            } => {
                 let side_index = match side {
                     SideReference::SideOne => 0,
                     SideReference::SideTwo => 1,
                 };
                 if side_index < self.sides.len() {
-                    self.sides[side_index].side_conditions.insert(*condition, *duration);
+                    self.sides[side_index]
+                        .side_conditions
+                        .insert(*condition, *duration);
                 }
             }
-            FieldInstruction::RemoveSideCondition { side, condition, .. } => {
+            FieldInstruction::RemoveSideCondition {
+                side, condition, ..
+            } => {
                 let side_index = match side {
                     SideReference::SideOne => 0,
                     SideReference::SideTwo => 1,
@@ -905,13 +867,17 @@ impl BattleState {
                     self.sides[side_index].side_conditions.remove(condition);
                 }
             }
-            FieldInstruction::DecrementSideConditionDuration { side, condition, .. } => {
+            FieldInstruction::DecrementSideConditionDuration {
+                side, condition, ..
+            } => {
                 let side_index = match side {
                     SideReference::SideOne => 0,
                     SideReference::SideTwo => 1,
                 };
                 if side_index < self.sides.len() {
-                    if let Some(duration) = self.sides[side_index].side_conditions.get_mut(condition) {
+                    if let Some(duration) =
+                        self.sides[side_index].side_conditions.get_mut(condition)
+                    {
                         if *duration > 0 {
                             *duration -= 1;
                             if *duration == 0 {
@@ -923,23 +889,15 @@ impl BattleState {
             }
             FieldInstruction::DecrementWeatherTurns { .. } => {
                 self.field.weather.decrement_turn();
-                self.weather = self.field.weather.condition;
-                self.weather_turns_remaining = self.field.weather.turns_remaining;
             }
             FieldInstruction::DecrementTerrainTurns { .. } => {
                 self.field.terrain.decrement_turn();
-                self.terrain = self.field.terrain.condition;
-                self.terrain_turns_remaining = self.field.terrain.turns_remaining;
             }
             FieldInstruction::DecrementTrickRoomTurns { .. } => {
                 self.field.global_effects.decrement_turn();
-                self.trick_room_active = self.field.global_effects.trick_room.is_some();
-                self.trick_room_turns_remaining = self.field.global_effects.trick_room.as_ref().map(|tr| tr.turns_remaining);
             }
             FieldInstruction::DecrementGravityTurns { .. } => {
                 self.field.global_effects.decrement_turn();
-                self.gravity_active = self.field.global_effects.gravity.is_some();
-                self.gravity_turns_remaining = self.field.global_effects.gravity.as_ref().map(|g| g.turns_remaining);
             }
             FieldInstruction::ToggleForceSwitch { .. } => {
                 // Force switch logic would be handled at a higher level
@@ -955,7 +913,12 @@ impl BattleState {
     /// Apply Status instruction (status conditions, volatile statuses)
     fn apply_status_instruction(&mut self, instruction: &StatusInstruction) {
         match instruction {
-            StatusInstruction::Apply { target, status, duration, .. } => {
+            StatusInstruction::Apply {
+                target,
+                status,
+                duration,
+                ..
+            } => {
                 if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
                     pokemon.status = *status;
                     pokemon.status_duration = *duration;
@@ -967,7 +930,11 @@ impl BattleState {
                     pokemon.status_duration = None;
                 }
             }
-            StatusInstruction::ChangeDuration { target, new_duration, .. } => {
+            StatusInstruction::ChangeDuration {
+                target,
+                new_duration,
+                ..
+            } => {
                 if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
                     pokemon.status_duration = *new_duration;
                     if new_duration.is_none() || new_duration == &Some(0) {
@@ -975,7 +942,12 @@ impl BattleState {
                     }
                 }
             }
-            StatusInstruction::ApplyVolatile { target, status, duration, .. } => {
+            StatusInstruction::ApplyVolatile {
+                target,
+                status,
+                duration,
+                ..
+            } => {
                 if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
                     pokemon.volatile_statuses.insert(*status);
                     if let Some(dur) = duration {
@@ -989,7 +961,12 @@ impl BattleState {
                     pokemon.volatile_status_durations.remove(status);
                 }
             }
-            StatusInstruction::ChangeVolatileDuration { target, status, new_duration, .. } => {
+            StatusInstruction::ChangeVolatileDuration {
+                target,
+                status,
+                new_duration,
+                ..
+            } => {
                 if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
                     if let Some(new_dur) = new_duration {
                         pokemon.volatile_status_durations.insert(*status, *new_dur);
@@ -1029,7 +1006,12 @@ impl BattleState {
                     }
                 }
             }
-            StatusInstruction::DecrementPP { target, move_index, amount, .. } => {
+            StatusInstruction::DecrementPP {
+                target,
+                move_index,
+                amount,
+                ..
+            } => {
                 if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
                     if let Some(move_data) = pokemon.get_move_mut(*move_index) {
                         move_data.pp = move_data.pp.saturating_sub(*amount);
@@ -1046,7 +1028,11 @@ impl BattleState {
     /// Apply Stats instruction (stat boosts, raw stat changes)
     fn apply_stats_instruction(&mut self, instruction: &StatsInstruction) {
         match instruction {
-            StatsInstruction::BoostStats { target, stat_changes, .. } => {
+            StatsInstruction::BoostStats {
+                target,
+                stat_changes,
+                ..
+            } => {
                 if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
                     for (stat, change) in stat_changes {
                         let current_boost = pokemon.stat_boosts.get(stat).copied().unwrap_or(0);
@@ -1055,27 +1041,37 @@ impl BattleState {
                     }
                 }
             }
-            StatsInstruction::ChangeAttack { target, new_value, .. } => {
+            StatsInstruction::ChangeAttack {
+                target, new_value, ..
+            } => {
                 if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
                     pokemon.stats.attack = *new_value;
                 }
             }
-            StatsInstruction::ChangeDefense { target, new_value, .. } => {
+            StatsInstruction::ChangeDefense {
+                target, new_value, ..
+            } => {
                 if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
                     pokemon.stats.defense = *new_value;
                 }
             }
-            StatsInstruction::ChangeSpecialAttack { target, new_value, .. } => {
+            StatsInstruction::ChangeSpecialAttack {
+                target, new_value, ..
+            } => {
                 if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
                     pokemon.stats.special_attack = *new_value;
                 }
             }
-            StatsInstruction::ChangeSpecialDefense { target, new_value, .. } => {
+            StatsInstruction::ChangeSpecialDefense {
+                target, new_value, ..
+            } => {
                 if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
                     pokemon.stats.special_defense = *new_value;
                 }
             }
-            StatsInstruction::ChangeSpeed { target, new_value, .. } => {
+            StatsInstruction::ChangeSpeed {
+                target, new_value, ..
+            } => {
                 if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
                     pokemon.stats.speed = *new_value;
                 }
@@ -1085,7 +1081,12 @@ impl BattleState {
                     pokemon.stat_boosts.clear();
                 }
             }
-            StatsInstruction::CopyBoosts { target, source, stats_to_copy, .. } => {
+            StatsInstruction::CopyBoosts {
+                target,
+                source,
+                stats_to_copy,
+                ..
+            } => {
                 if let Some(source_pokemon) = self.get_pokemon_at_position(*source) {
                     // Copy the boosts to apply to target
                     let mut boosts_to_copy = HashMap::new();
@@ -1094,7 +1095,7 @@ impl BattleState {
                             boosts_to_copy.insert(*stat, *boost);
                         }
                     }
-                    
+
                     // Apply to target (need to get mutable reference after immutable one)
                     if let Some(target_pokemon) = self.get_pokemon_at_position_mut(*target) {
                         for (stat, boost) in boosts_to_copy {
@@ -1103,37 +1104,48 @@ impl BattleState {
                     }
                 }
             }
-            StatsInstruction::SwapBoosts { target1, target2, stats_to_swap, .. } => {
+            StatsInstruction::SwapBoosts {
+                target1,
+                target2,
+                stats_to_swap,
+                ..
+            } => {
                 // Collect boosts from both Pokemon
                 let mut target1_boosts = HashMap::new();
                 let mut target2_boosts = HashMap::new();
-                
+
                 if let Some(pokemon1) = self.get_pokemon_at_position(*target1) {
                     for stat in stats_to_swap {
-                        target1_boosts.insert(*stat, pokemon1.stat_boosts.get(stat).copied().unwrap_or(0));
+                        target1_boosts
+                            .insert(*stat, pokemon1.stat_boosts.get(stat).copied().unwrap_or(0));
                     }
                 }
-                
+
                 if let Some(pokemon2) = self.get_pokemon_at_position(*target2) {
                     for stat in stats_to_swap {
-                        target2_boosts.insert(*stat, pokemon2.stat_boosts.get(stat).copied().unwrap_or(0));
+                        target2_boosts
+                            .insert(*stat, pokemon2.stat_boosts.get(stat).copied().unwrap_or(0));
                     }
                 }
-                
+
                 // Apply swapped boosts
                 if let Some(pokemon1) = self.get_pokemon_at_position_mut(*target1) {
                     for (stat, boost) in &target2_boosts {
                         pokemon1.stat_boosts.insert(*stat, *boost);
                     }
                 }
-                
+
                 if let Some(pokemon2) = self.get_pokemon_at_position_mut(*target2) {
                     for (stat, boost) in &target1_boosts {
                         pokemon2.stat_boosts.insert(*stat, *boost);
                     }
                 }
             }
-            StatsInstruction::InvertBoosts { target, stats_to_invert, .. } => {
+            StatsInstruction::InvertBoosts {
+                target,
+                stats_to_invert,
+                ..
+            } => {
                 if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
                     for stat in stats_to_invert {
                         if let Some(boost) = pokemon.stat_boosts.get_mut(stat) {
@@ -1149,7 +1161,7 @@ impl BattleState {
     pub fn is_battle_over(&self) -> bool {
         let side_one_has_usable = self.sides[0].pokemon.iter().any(|p| p.hp > 0);
         let side_two_has_usable = self.sides[1].pokemon.iter().any(|p| p.hp > 0);
-        
+
         !side_one_has_usable || !side_two_has_usable
     }
 
@@ -1157,11 +1169,11 @@ impl BattleState {
     pub fn get_winner(&self) -> Option<usize> {
         let side_one_has_usable = self.sides[0].pokemon.iter().any(|p| p.hp > 0);
         let side_two_has_usable = self.sides[1].pokemon.iter().any(|p| p.hp > 0);
-        
+
         match (side_one_has_usable, side_two_has_usable) {
-            (false, true) => Some(1),  // Side two wins
-            (true, false) => Some(0),  // Side one wins
-            _ => None,                 // Battle ongoing or tie
+            (false, true) => Some(1), // Side two wins
+            (true, false) => Some(0), // Side one wins
+            _ => None,                // Battle ongoing or tie
         }
     }
 
@@ -1175,24 +1187,30 @@ impl BattleState {
     /// Get move options for a specific side
     fn get_side_options(&self, side_index: usize) -> Vec<MoveChoice> {
         let mut options = Vec::new();
-        
+
         if let Some(side) = self.get_side(side_index) {
             let active_count = self.format.active_pokemon_count();
-            
+
             for slot in 0..active_count {
                 if let Some(pokemon) = side.get_active_pokemon_at_slot(slot) {
                     if pokemon.hp > 0 {
                         // Add move options
                         for (move_index, move_data) in &pokemon.moves {
                             if move_data.pp > 0 {
-                                let targets = self.get_valid_targets_for_move(side_index, slot, &move_data.target);
+                                let targets = self.get_valid_targets_for_move(
+                                    side_index,
+                                    slot,
+                                    &move_data.target,
+                                );
                                 options.push(MoveChoice::new_move(*move_index, targets));
                             }
                         }
-                        
+
                         // Add switch options if there are benched Pokemon
                         for (i, bench_pokemon) in side.pokemon.iter().enumerate() {
-                            if bench_pokemon.hp > 0 && !side.active_pokemon_indices.contains(&Some(i)) {
+                            if bench_pokemon.hp > 0
+                                && !side.active_pokemon_indices.contains(&Some(i))
+                            {
                                 if let Some(pokemon_index) = PokemonIndex::from_index(i) {
                                     options.push(MoveChoice::new_switch(pokemon_index));
                                 }
@@ -1202,22 +1220,27 @@ impl BattleState {
                 }
             }
         }
-        
+
         options
     }
 
     /// Get valid targets for a move based on its target type and format
-    fn get_valid_targets_for_move(&self, user_side_index: usize, user_slot: usize, move_target: &crate::data::showdown_types::MoveTarget) -> Vec<BattlePosition> {
+    fn get_valid_targets_for_move(
+        &self,
+        user_side_index: usize,
+        user_slot: usize,
+        move_target: &crate::data::showdown_types::MoveTarget,
+    ) -> Vec<BattlePosition> {
         let mut targets = Vec::new();
         let active_count = self.format.active_pokemon_count();
         let opponent_side_index = 1 - user_side_index;
-        
+
         let user_side_ref = if user_side_index == 0 {
             SideReference::SideOne
         } else {
             SideReference::SideTwo
         };
-        
+
         let opponent_side_ref = if opponent_side_index == 0 {
             SideReference::SideOne
         } else {
@@ -1227,12 +1250,19 @@ impl BattleState {
         match move_target {
             crate::data::showdown_types::MoveTarget::Self_ => {
                 // Target the user
-                targets.push(BattlePosition { side: user_side_ref, slot: user_slot });
+                targets.push(BattlePosition {
+                    side: user_side_ref,
+                    slot: user_slot,
+                });
             }
-            crate::data::showdown_types::MoveTarget::Normal | crate::data::showdown_types::MoveTarget::AdjacentFoe => {
+            crate::data::showdown_types::MoveTarget::Normal
+            | crate::data::showdown_types::MoveTarget::AdjacentFoe => {
                 // Target adjacent opponents
                 for slot in 0..active_count {
-                    let position = BattlePosition { side: opponent_side_ref, slot };
+                    let position = BattlePosition {
+                        side: opponent_side_ref,
+                        slot,
+                    };
                     if self.is_position_active(position) {
                         targets.push(position);
                     }
@@ -1245,7 +1275,10 @@ impl BattleState {
             crate::data::showdown_types::MoveTarget::AllAdjacentFoes => {
                 // All adjacent opponents (spread move)
                 for slot in 0..active_count {
-                    let position = BattlePosition { side: opponent_side_ref, slot };
+                    let position = BattlePosition {
+                        side: opponent_side_ref,
+                        slot,
+                    };
                     if self.is_position_active(position) {
                         targets.push(position);
                     }
@@ -1255,12 +1288,18 @@ impl BattleState {
                 // All adjacent Pokemon (including allies)
                 for slot in 0..active_count {
                     if slot != user_slot {
-                        let ally_position = BattlePosition { side: user_side_ref, slot };
+                        let ally_position = BattlePosition {
+                            side: user_side_ref,
+                            slot,
+                        };
                         if self.is_position_active(ally_position) {
                             targets.push(ally_position);
                         }
                     }
-                    let opponent_position = BattlePosition { side: opponent_side_ref, slot };
+                    let opponent_position = BattlePosition {
+                        side: opponent_side_ref,
+                        slot,
+                    };
                     if self.is_position_active(opponent_position) {
                         targets.push(opponent_position);
                     }
@@ -1270,7 +1309,10 @@ impl BattleState {
                 // Adjacent allies only
                 for slot in 0..active_count {
                     if slot != user_slot {
-                        let position = BattlePosition { side: user_side_ref, slot };
+                        let position = BattlePosition {
+                            side: user_side_ref,
+                            slot,
+                        };
                         if self.is_position_active(position) {
                             targets.push(position);
                         }
@@ -1279,29 +1321,42 @@ impl BattleState {
             }
             crate::data::showdown_types::MoveTarget::AdjacentAllyOrSelf => {
                 // User or adjacent ally
-                targets.push(BattlePosition { side: user_side_ref, slot: user_slot });
+                targets.push(BattlePosition {
+                    side: user_side_ref,
+                    slot: user_slot,
+                });
                 for slot in 0..active_count {
                     if slot != user_slot {
-                        let position = BattlePosition { side: user_side_ref, slot };
+                        let position = BattlePosition {
+                            side: user_side_ref,
+                            slot,
+                        };
                         if self.is_position_active(position) {
                             targets.push(position);
                         }
                     }
                 }
             }
-            crate::data::showdown_types::MoveTarget::All | 
-            crate::data::showdown_types::MoveTarget::AllySide | 
-            crate::data::showdown_types::MoveTarget::FoeSide |
-            crate::data::showdown_types::MoveTarget::AllyTeam => {
+            crate::data::showdown_types::MoveTarget::All
+            | crate::data::showdown_types::MoveTarget::AllySide
+            | crate::data::showdown_types::MoveTarget::FoeSide
+            | crate::data::showdown_types::MoveTarget::AllyTeam => {
                 // Field-wide moves don't need specific targets
                 // Return empty vector as they affect the field/side itself
             }
             crate::data::showdown_types::MoveTarget::Any => {
                 // Can target any active Pokemon
                 for side_idx in 0..2 {
-                    let side_ref = if side_idx == 0 { SideReference::SideOne } else { SideReference::SideTwo };
+                    let side_ref = if side_idx == 0 {
+                        SideReference::SideOne
+                    } else {
+                        SideReference::SideTwo
+                    };
                     for slot in 0..active_count {
-                        let position = BattlePosition { side: side_ref, slot };
+                        let position = BattlePosition {
+                            side: side_ref,
+                            slot,
+                        };
                         if self.is_position_active(position) {
                             targets.push(position);
                         }
@@ -1311,7 +1366,10 @@ impl BattleState {
             crate::data::showdown_types::MoveTarget::RandomNormal => {
                 // Random opponent - collect all valid opponents
                 for slot in 0..active_count {
-                    let position = BattlePosition { side: opponent_side_ref, slot };
+                    let position = BattlePosition {
+                        side: opponent_side_ref,
+                        slot,
+                    };
                     if self.is_position_active(position) {
                         targets.push(position);
                     }
@@ -1320,187 +1378,23 @@ impl BattleState {
             _ => {
                 // For other target types, default to normal targeting
                 for slot in 0..active_count {
-                    let position = BattlePosition { side: opponent_side_ref, slot };
+                    let position = BattlePosition {
+                        side: opponent_side_ref,
+                        slot,
+                    };
                     if self.is_position_active(position) {
                         targets.push(position);
                     }
                 }
             }
         }
-        
+
         targets
-    }
-
-
-    /// Recalculate Pokemon stats (likely for stat boosts/drops)
-    pub fn calculate_stats(&self) {
-        // In the modern architecture, stats are calculated on-demand via get_effective_stat()
-        // This method exists for compatibility with poke-engine API but doesn't need to do
-        // anything since we use lazy evaluation of effective stats.
-        
-        // If we needed to pre-calculate stats for performance, we could iterate through
-        // all Pokemon and cache their effective stats here, but the current implementation
-        // calculates them dynamically when needed.
-        
-        // For debugging, we could validate that all stat boosts are within valid ranges
-        for side in &self.sides {
-            for pokemon in &side.pokemon {
-                for (_stat, boost) in &pokemon.stat_boosts {
-                    debug_assert!(*boost >= -6 && *boost <= 6, "Stat boost out of range: {}", boost);
-                }
-            }
-        }
     }
 
     /// Get damage tracking information for counter moves
     pub fn get_damage_dealt(&self, side_index: usize) -> &DamageDealt {
         &self.sides[side_index].damage_dealt
-    }
-
-    /// Check if a side is forced to switch
-    pub fn force_switch(&self, side_index: usize) -> bool {
-        if let Some(side) = self.get_side(side_index) {
-            let active_count = self.format.active_pokemon_count();
-            
-            for slot in 0..active_count {
-                if let Some(pokemon) = side.get_active_pokemon_at_slot(slot) {
-                    if pokemon.hp <= 0 {
-                        return true; // Fainted Pokemon forces switch
-                    }
-                }
-            }
-        }
-        false
-    }
-
-    /// Check if switching should happen before the next move
-    pub fn switch_out_moves_before_next_move(&self, side_index: usize) -> bool {
-        // Check if any Pokemon on this side used a pivoting move that forces them to switch
-        if let Some(side) = self.get_side(side_index) {
-            let active_count = self.format.active_pokemon_count();
-            
-            for slot in 0..active_count {
-                if let Some(pokemon) = side.get_active_pokemon_at_slot(slot) {
-                    // Check if this Pokemon has a volatile status indicating it must switch
-                    // Common switch-forcing volatile statuses/flags would be tracked here
-                    
-                    // Check for moves that force immediate switching after use
-                    // This would typically be tracked via volatile statuses or special flags
-                    if pokemon.volatile_statuses.contains(&VolatileStatus::TwoTurnMove) {
-                        // Some two-turn moves force switching after completion
-                        return true;
-                    }
-                    
-                    // Check for items that force switching (like Eject Button)
-                    if let Some(ref item) = pokemon.item {
-                        match item.as_str() {
-                            "ejectbutton" | "eject-button" => {
-                                // Eject Button activates when the holder takes direct damage
-                                // This would need to be tracked by damage tracking system
-                                if side.damage_dealt.damage > 0 && !side.damage_dealt.hit_substitute {
-                                    return true;
-                                }
-                            }
-                            "redcard" | "red-card" => {
-                                // Red Card forces the attacker to switch when holder takes direct damage
-                                // This is more complex as it affects the opponent
-                            }
-                            _ => {}
-                        }
-                    }
-                    
-                    // Check for ability-based forced switching (like Emergency Exit, Wimp Out)
-                    match pokemon.ability.as_str() {
-                        "emergencyexit" | "emergency-exit" | "wimpout" | "wimp-out" => {
-                            // These abilities trigger when HP drops below 50%
-                            if pokemon.hp < pokemon.max_hp / 2 {
-                                return true;
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-            }
-        }
-        
-        false
-    }
-
-    /// Get information about side one's switch timing
-    pub fn side_one_move_second_switch_out(&self) -> String {
-        // This method provides information about switch timing for side one
-        // It's used to determine if side one should switch out after their move
-        // but before the opponent's move in the same turn
-        
-        let side_one = &self.sides[0];
-        let mut switch_info = Vec::new();
-        
-        let active_count = self.format.active_pokemon_count();
-        for slot in 0..active_count {
-            if let Some(pokemon) = side_one.get_active_pokemon_at_slot(slot) {
-                let mut reasons = Vec::new();
-                
-                // Check for pivoting moves (U-turn, Volt Switch, etc.)
-                // This would typically be tracked by the move execution system
-                // For now, we check for specific volatile statuses that indicate pivoting
-                
-                // Check for forced switch conditions
-                if pokemon.hp <= 0 {
-                    reasons.push("fainted".to_string());
-                }
-                
-                // Check for ability-triggered switches
-                match pokemon.ability.as_str() {
-                    "emergencyexit" | "emergency-exit" | "wimpout" | "wimp-out" => {
-                        if pokemon.hp < pokemon.max_hp / 2 {
-                            reasons.push("ability_triggered".to_string());
-                        }
-                    }
-                    _ => {}
-                }
-                
-                // Check for item-triggered switches
-                if let Some(ref item) = pokemon.item {
-                    match item.as_str() {
-                        "ejectbutton" | "eject-button" => {
-                            if side_one.damage_dealt.damage > 0 && !side_one.damage_dealt.hit_substitute {
-                                reasons.push("eject_button".to_string());
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-                
-                // Check for move-based switching (like from U-turn, Volt Switch)
-                // This would need to be tracked by the move execution system
-                // We could check for specific volatile statuses that indicate recent pivoting move use
-                
-                if !reasons.is_empty() {
-                    switch_info.push(format!("slot_{}:{}", slot, reasons.join(",")));
-                }
-            }
-        }
-        
-        if switch_info.is_empty() {
-            "none".to_string()
-        } else {
-            switch_info.join(";")
-        }
-    }
-
-    /// Get damage amounts for all Pokemon
-    pub fn damage_amounts(&self) -> HashMap<String, i16> {
-        let mut damage_map = HashMap::new();
-        
-        for (side_idx, side) in self.sides.iter().enumerate() {
-            for (pokemon_idx, pokemon) in side.pokemon.iter().enumerate() {
-                let key = format!("side{}pokemon{}", side_idx, pokemon_idx);
-                let damage = pokemon.max_hp - pokemon.hp;
-                damage_map.insert(key, damage);
-            }
-        }
-        
-        damage_map
     }
 
     /// Reset damage tracking at turn start
@@ -1513,70 +1407,66 @@ impl BattleState {
     /// Advance turn counter and handle turn-based effects
     pub fn update_turn(&mut self) {
         self.turn_info.next_turn();
-        self.turn += 1; // Update compatibility field
-        
+
         // Reset ability triggered flags for all Pokemon
         for side in &mut self.sides {
             for pokemon in &mut side.pokemon {
                 pokemon.ability_triggered_this_turn = false;
             }
         }
-        
+
         // Decrement field effect durations
         self.field.weather.decrement_turn();
         self.field.terrain.decrement_turn();
         self.field.global_effects.decrement_turn();
-        
-        // Update compatibility fields
-        self.weather = self.field.weather.condition;
-        self.terrain = self.field.terrain.condition;
-        self.weather_turns_remaining = self.field.weather.turns_remaining;
-        self.terrain_turns_remaining = self.field.terrain.turns_remaining;
-        self.trick_room_active = self.field.global_effects.trick_room.is_some();
-        self.trick_room_turns_remaining = self.field.global_effects.trick_room.as_ref().map(|tr| tr.turns_remaining);
-        self.gravity_active = self.field.global_effects.gravity.is_some();
-        self.gravity_turns_remaining = self.field.global_effects.gravity.as_ref().map(|g| g.turns_remaining);
     }
-    
+
     /// Track that a position has used a move this turn
     pub fn track_move_used(&mut self, position: BattlePosition) {
         self.turn_info.mark_moved(position);
     }
-    
+
     /// Track that a position has taken damage this turn
-    pub fn track_damage_taken(&mut self, target: BattlePosition, attacker: BattlePosition, damage: i16, move_category: MoveCategory, is_direct: bool) {
+    pub fn track_damage_taken(
+        &mut self,
+        target: BattlePosition,
+        attacker: BattlePosition,
+        damage: i16,
+        move_category: MoveCategory,
+        is_direct: bool,
+    ) {
         let damage_info = DamageInfo::new(damage, move_category, attacker, is_direct);
         self.turn_info.mark_damaged(target, damage_info);
     }
-    
+
     /// Check if user took damage from a physical/special move and moved second this turn
     pub fn user_moved_after_taking_damage(&self, user_position: BattlePosition) -> bool {
-        self.turn_info.took_damage_from_attack(user_position) && 
-        self.turn_info.has_moved(user_position)
+        self.turn_info.took_damage_from_attack(user_position)
+            && self.turn_info.has_moved(user_position)
     }
 
     /// Generate a human-readable string representation of the battle state
     pub fn pretty_print(&self) -> String {
         let mut output = String::new();
-        
+
         output.push_str(&format!("=== Battle Turn {} ===\n", self.turn_info.number));
         output.push_str(&format!("Format: {}\n", self.format.name));
         output.push_str(&format!("Weather: {:?}\n", self.field.weather.condition));
         output.push_str(&format!("Terrain: {:?}\n", self.field.terrain.condition));
-        
+
         if self.is_trick_room_active() {
             output.push_str("Trick Room is active\n");
         }
         if self.is_gravity_active() {
             output.push_str("Gravity is active\n");
         }
-        
+
         output.push_str("\n--- Side One ---\n");
         output.push_str(&self.format_side(&self.sides[0], 0));
-        
+
         output.push_str("\n--- Side Two ---\n");
         output.push_str(&self.format_side(&self.sides[1], 1));
-        
+
         output
     }
 
@@ -1584,17 +1474,19 @@ impl BattleState {
     fn format_side(&self, side: &BattleSide, side_index: usize) -> String {
         let mut output = String::new();
         let active_count = self.format.active_pokemon_count();
-        
+
         output.push_str("Active Pokemon:\n");
         for slot in 0..active_count {
             if let Some(pokemon) = side.get_active_pokemon_at_slot(slot) {
-                output.push_str(&format!("  Slot {}: {} ({}/{} HP)\n", 
-                    slot, pokemon.species, pokemon.hp, pokemon.max_hp));
-                
+                output.push_str(&format!(
+                    "  Slot {}: {} ({}/{} HP)\n",
+                    slot, pokemon.species, pokemon.hp, pokemon.max_hp
+                ));
+
                 if pokemon.status != PokemonStatus::None {
                     output.push_str(&format!("    Status: {:?}\n", pokemon.status));
                 }
-                
+
                 if !pokemon.volatile_statuses.is_empty() {
                     output.push_str(&format!("    Volatile: {:?}\n", pokemon.volatile_statuses));
                 }
@@ -1602,11 +1494,11 @@ impl BattleState {
                 output.push_str(&format!("  Slot {}: Empty\n", slot));
             }
         }
-        
+
         if !side.side_conditions.is_empty() {
             output.push_str(&format!("Side Conditions: {:?}\n", side.side_conditions));
         }
-        
+
         output
     }
 }
@@ -1779,44 +1671,54 @@ impl TurnState {
     pub fn set_phase(&mut self, phase: TurnPhase) {
         self.phase = phase;
     }
-    
+
     /// Mark a position as having moved this turn
     pub fn mark_moved(&mut self, position: BattlePosition) {
         if !self.moved_this_turn.contains(&position) {
             self.moved_this_turn.push(position);
         }
     }
-    
+
     /// Mark a position as having taken damage this turn
     pub fn mark_damaged(&mut self, position: BattlePosition, damage_info: DamageInfo) {
         self.damaged_this_turn.insert(position, damage_info);
     }
-    
+
     /// Check if a position has moved this turn
     pub fn has_moved(&self, position: BattlePosition) -> bool {
         self.moved_this_turn.contains(&position)
     }
-    
+
     /// Check if a position took damage this turn from a physical or special move
     pub fn took_damage_from_attack(&self, position: BattlePosition) -> bool {
         if let Some(damage_info) = self.damaged_this_turn.get(&position) {
-            damage_info.is_direct_damage && 
-            (damage_info.move_category == MoveCategory::Physical || 
-             damage_info.move_category == MoveCategory::Special)
+            damage_info.is_direct_damage
+                && (damage_info.move_category == MoveCategory::Physical
+                    || damage_info.move_category == MoveCategory::Special)
         } else {
             false
         }
     }
-    
+
     /// Check if user moved after taking damage (for Avalanche mechanics)
-    pub fn moved_after_damage(&self, user_position: BattlePosition, attacker_position: BattlePosition) -> bool {
+    pub fn moved_after_damage(
+        &self,
+        user_position: BattlePosition,
+        attacker_position: BattlePosition,
+    ) -> bool {
         // If user took damage from the attacker, check if user moved after attacker
         if let Some(damage_info) = self.damaged_this_turn.get(&user_position) {
             if damage_info.attacker_position == attacker_position {
                 // Check if user moved after the attacker by looking at move order
-                let user_move_index = self.moved_this_turn.iter().position(|&pos| pos == user_position);
-                let attacker_move_index = self.moved_this_turn.iter().position(|&pos| pos == attacker_position);
-                
+                let user_move_index = self
+                    .moved_this_turn
+                    .iter()
+                    .position(|&pos| pos == user_position);
+                let attacker_move_index = self
+                    .moved_this_turn
+                    .iter()
+                    .position(|&pos| pos == attacker_position);
+
                 match (user_move_index, attacker_move_index) {
                     (Some(user_idx), Some(attacker_idx)) => user_idx > attacker_idx,
                     _ => false,
@@ -1829,4 +1731,3 @@ impl TurnState {
         }
     }
 }
-

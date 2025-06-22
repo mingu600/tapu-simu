@@ -20,6 +20,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             verbose,
             log_file,
             team_index,
+            config,
+            seed,
         } => {
             let battle_format = parse_battle_format(&format)?;
             run_battle(
@@ -31,6 +33,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 verbose,
                 log_file,
                 team_index,
+                config,
+                seed,
             )?;
         }
 
@@ -57,8 +61,29 @@ fn run_battle(
     verbose: bool,
     log_file: Option<String>,
     team_index: Option<usize>,
+    config_file: Option<String>,
+    seed: Option<u64>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use tapu_simu::{BattleEnvironment, DamageMaximizer, FirstMovePlayer, RandomPlayer};
+    use rand::{SeedableRng, thread_rng};
+    use rand::rngs::StdRng;
+
+    // Set random seed if provided
+    if let Some(seed_value) = seed {
+        let mut rng = StdRng::seed_from_u64(seed_value);
+        if verbose {
+            println!("Using random seed: {}", seed_value);
+        }
+    }
+
+    // Load configuration if provided
+    if let Some(config_path) = config_file {
+        if verbose {
+            println!("Loading configuration from: {}", config_path);
+        }
+        // TODO: Add configuration loading when Config::load is available
+        // let _config = tapu_simu::Config::load(&config_path)?;
+    }
 
     println!("Running {} battle(s) in {} format", runs, format);
 
@@ -117,12 +142,24 @@ fn run_battle(
             let team_one = team_loader
                 .get_team_by_index(&format, team_one_index)
                 .map_err(|e| {
-                    format!("Failed to load team one at index {}: {}", team_one_index, e)
+                    format!(
+                        "Failed to load team one at index {} for format {}: {}\nTry using --team-index with a value between 0 and {}",
+                        team_one_index, 
+                        format,
+                        e,
+                        team_loader.get_team_count(&format).unwrap_or(0).saturating_sub(1)
+                    )
                 })?;
             let team_two = team_loader
                 .get_team_by_index(&format, team_two_index)
                 .map_err(|e| {
-                    format!("Failed to load team two at index {}: {}", team_two_index, e)
+                    format!(
+                        "Failed to load team two at index {} for format {}: {}\nTry using --team-index with a value between 0 and {}",
+                        team_two_index,
+                        format, 
+                        e,
+                        team_loader.get_team_count(&format).unwrap_or(0).saturating_sub(1)
+                    )
                 })?;
 
             (team_one, team_two)
@@ -130,29 +167,36 @@ fn run_battle(
             // Use random team selection as before
             let team_one = team_loader
                 .get_random_team(&format)
-                .map_err(|e| format!("Failed to load team one: {}", e))?;
+                .map_err(|e| format!("Failed to load random team one for format {}: {}\nMake sure the data files for this format are available", format, e))?;
             let team_two = team_loader
                 .get_random_team(&format)
-                .map_err(|e| format!("Failed to load team two: {}", e))?;
+                .map_err(|e| format!("Failed to load random team two for format {}: {}\nMake sure the data files for this format are available", format, e))?;
 
             (team_one, team_two)
         };
 
-        println!("{:?}", team_one);
+        if verbose && run == 1 {
+            println!("Team One:");
+            for (i, pokemon) in team_one.iter().enumerate() {
+                println!("  {}: {} (Level {})", i + 1, pokemon.species, pokemon.level);
+            }
+            println!("Team Two:");
+            for (i, pokemon) in team_two.iter().enumerate() {
+                println!("  {}: {} (Level {})", i + 1, pokemon.species, pokemon.level);
+            }
+            println!();
+        }
 
-        // Create initial battle state with the format and teams
-        let mut battle_state = BattleState::new(format.clone());
-        // Initialize with teams using the builders pattern
-        // Use modern BattleState
+        // Create battle state using modern API
         let mut state = BattleState::new_with_teams(format.clone(), team_one, team_two);
 
         if verbose && run == 1 {
             println!("Initialized battle state with format: {}", state.format);
-            println!("Turn: {}", state.turn);
-            println!("Weather: {:?}", state.weather);
-            println!("Terrain: {:?}", state.terrain);
-            println!("Side one team: {} Pokemon", state.side_one.pokemon.len());
-            println!("Side two team: {} Pokemon", state.side_two.pokemon.len());
+            println!("Turn: {}", state.turn_info.number);
+            println!("Weather: {:?}", state.weather());
+            println!("Terrain: {:?}", state.terrain());
+            println!("Side one team: {} Pokemon", state.get_side(0).map(|s| s.pokemon.len()).unwrap_or(0));
+            println!("Side two team: {} Pokemon", state.get_side(1).map(|s| s.pokemon.len()).unwrap_or(0));
             println!();
         }
 
@@ -160,7 +204,7 @@ fn run_battle(
         let p1 = create_player(player_one, format!("Player1_{}", run));
         let p2 = create_player(player_two, format!("Player2_{}", run));
 
-        // Create battle environment with log file support
+        // Create battle environment with log file support using modern pattern
         let mut env = BattleEnvironment::new(p1, p2, max_turns as usize, verbose && runs == 1);
         if let Some(ref log_path) = log_file {
             let battle_log_path = if runs > 1 {
@@ -168,7 +212,7 @@ fn run_battle(
             } else {
                 log_path.clone()
             };
-            env.log_file = Some(battle_log_path);
+            env = env.with_log_file(battle_log_path);
         }
 
         // Run the battle

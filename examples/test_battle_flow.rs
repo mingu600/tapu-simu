@@ -1,4 +1,4 @@
-use tapu_simu::{State, BattleFormat};
+use tapu_simu::{BattleState, BattleFormat};
 use tapu_simu::data::{RandomPokemonSet, random_team_loader::RandomStats};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -61,7 +61,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Use the exact same flow as the battle
     let format = BattleFormat::gen9_random_battle();
     println!("Creating battle state...");
-    let state = State::new_with_teams(format, team_one, team_two);
+    let state = BattleState::new_with_teams(format, team_one, team_two);
     println!("Battle state created.");
     
     // Check the Annihilape stats in the battle state
@@ -75,16 +75,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     // Test the serialization to see if that's where corruption happens
     println!("\nTesting serialization...");
-    let serialized = state.serialize();
+    let serialized = serde_json::to_string_pretty(&state)?;
     println!("Serialized battle state (truncated): {}...", &serialized[..200]);
     
     // Extract just the Pokemon serialization  
-    let pokemon_serialized = annihilape.serialize();
+    let pokemon_serialized = serde_json::to_string_pretty(&annihilape)?;
     println!("Pokemon serialized: {}", pokemon_serialized);
     
     // Test deserialization
     println!("\nTesting deserialization...");
-    let deserialized_state = State::deserialize(&serialized)?;
+    let deserialized_state: BattleState = serde_json::from_str(&serialized)?;
     let deserialized_annihilape = &deserialized_state.side_one.pokemon[0];
     println!("Deserialized Annihilape stats:");
     println!("Attack: {}", deserialized_annihilape.stats.attack);

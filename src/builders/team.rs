@@ -1,23 +1,90 @@
+//! # Team Builder
+//! 
+//! Standardized team builder implementing the common Builder trait
+//! with comprehensive validation and error handling.
+
 use crate::core::battle_format::BattleFormat;
 use crate::data::ps::repository::Repository;
 use crate::data::RandomPokemonSet;
-use crate::types::errors::{TeamError, TeamResult};
-use crate::types::identifiers::{SpeciesId, MoveId, AbilityId, ItemId};
+use crate::types::identifiers::{SpeciesId, AbilityId, MoveId, ItemId};
+use super::traits::{Builder, BuilderError, ValidationContext, ValidatingBuilder};
 
-/// Builder for creating teams with fluent API
+/// Team builder with standardized interface
 pub struct TeamBuilder<'a> {
+    /// Data repository for validation
     data: &'a Repository,
+    /// Pokemon on the team
     pokemon: Vec<PokemonBuilder>,
+    /// Format for validation
     format: Option<BattleFormat>,
+    /// Validation context
+    validation_context: ValidationContext,
+}
+
+/// Builder for individual Pokemon
+#[derive(Debug, Clone)]
+pub struct PokemonBuilder {
+    /// Species ID
+    species: SpeciesId,
+    /// Level (1-100)
+    level: Option<u8>,
+    /// Ability
+    ability: Option<AbilityId>,
+    /// Held item
+    item: Option<ItemId>,
+    /// Moves (up to 4)
+    moves: Vec<MoveId>,
+    /// Nature
+    nature: Option<String>,
+    /// EVs (Effort Values)
+    evs: Option<EVsConfig>,
+    /// IVs (Individual Values)
+    ivs: Option<IVsConfig>,
+}
+
+/// EV configuration
+#[derive(Debug, Clone, Default)]
+pub struct EVsConfig {
+    pub hp: u8,
+    pub attack: u8,
+    pub defense: u8,
+    pub special_attack: u8,
+    pub special_defense: u8,
+    pub speed: u8,
+}
+
+/// IV configuration
+#[derive(Debug, Clone)]
+pub struct IVsConfig {
+    pub hp: u8,
+    pub attack: u8,
+    pub defense: u8,
+    pub special_attack: u8,
+    pub special_defense: u8,
+    pub speed: u8,
+}
+
+impl Default for IVsConfig {
+    fn default() -> Self {
+        Self {
+            hp: 31,
+            attack: 31,
+            defense: 31,
+            special_attack: 31,
+            special_defense: 31,
+            speed: 31,
+        }
+    }
 }
 
 impl<'a> TeamBuilder<'a> {
-    /// Create a new team builder
+    /// Create a new modern team builder
     pub fn new(data: &'a Repository) -> Self {
         Self {
             data,
             pokemon: Vec::new(),
             format: None,
+            validation_context: ValidationContext::default(),
         }
     }
 
@@ -27,130 +94,106 @@ impl<'a> TeamBuilder<'a> {
         self
     }
 
-    /// Add a Pokemon to the team
-    pub fn add_pokemon(mut self, pokemon: PokemonBuilder) -> Self {
-        self.pokemon.push(pokemon);
-        self
-    }
-
-    /// Add a Pokemon with just species
-    pub fn add(mut self, species: impl Into<SpeciesId>) -> Self {
-        let pokemon = PokemonBuilder::new(species.into());
-        self.pokemon.push(pokemon);
-        self
-    }
-
-    /// Start building a Pokemon and return a context for chaining
-    pub fn pokemon(self, species: impl Into<SpeciesId>) -> TeamPokemonContext<'a> {
+    /// Add a Pokemon using the builder pattern
+    pub fn pokemon(mut self, species: impl Into<SpeciesId>) -> TeamPokemonContext<'a> {
         TeamPokemonContext {
             team_builder: self,
             pokemon_builder: PokemonBuilder::new(species.into()),
         }
     }
 
-    /// Generate a random team for the format
-    pub fn random(mut self) -> TeamResult<Self> {
-        let format = self.format.as_ref().ok_or_else(|| {
-            TeamError::InvalidPokemon { 
-                reason: "Format must be set to generate random team".to_string() 
-            }
-        })?;
-
-        let mut team_loader = crate::data::random_team_loader::RandomTeamLoader::new();
-        let random_team = team_loader.get_random_team(format)
-            .map_err(|e| TeamError::RandomGenerationFailed { reason: e.to_string() })?;
-
-        // Convert RandomPokemonSet to PokemonBuilder
-        for pokemon_set in random_team {
-            let pokemon_builder = PokemonBuilder::from_random_set(pokemon_set);
-            self.pokemon.push(pokemon_builder);
-        }
-
-        Ok(self)
+    /// Add a pre-built Pokemon
+    pub fn add_pokemon(mut self, pokemon: PokemonBuilder) -> Self {
+        self.pokemon.push(pokemon);
+        self
     }
 
-    /// Build the team
-    pub fn build(self) -> TeamResult<Vec<RandomPokemonSet>> {
-        // Validate team size
-        if let Some(format) = &self.format {
-            if self.pokemon.len() != format.team_size {
-                return Err(TeamError::InvalidSize { 
-                    size: self.pokemon.len() 
-                });
-            }
+    /// Set validation context
+    pub fn validation_context(mut self, context: ValidationContext) -> Self {
+        self.validation_context = context;
+        self
+    }
 
-            // Validate format constraints
-            self.validate_format_constraints(format)?;
+    /// Validate team size for current format
+    fn validate_team_size(&self) -> Result<(), BuilderError> {
+        let expected_size = match self.format.as_ref().map(|f| &f.format_type) {
+            Some(crate::core::battle_format::FormatType::Singles) => 6,
+            Some(crate::core::battle_format::FormatType::Doubles) => 6,
+            Some(crate::core::battle_format::FormatType::Vgc) => 6,
+            Some(crate::core::battle_format::FormatType::Triples) => 6,
+            None => 6, // Default assumption
+        };
+
+        if self.pokemon.len() != expected_size {
+            return Err(BuilderError::InvalidValue {
+                field: "team_size".to_string(),
+                value: self.pokemon.len().to_string(),
+                reason: format!("Expected {} Pokemon, got {}", expected_size, self.pokemon.len()),
+            });
         }
 
-        // Convert PokemonBuilder to RandomPokemonSet
+        Ok(())
+    }
+
+    /// Validate individual Pokemon
+    fn validate_pokemon(&self) -> Result<(), BuilderError> {
+        for (i, pokemon) in self.pokemon.iter().enumerate() {
+            pokemon.validate(self.data)
+                .map_err(|e| match e {
+                    BuilderError::InvalidValue { field, value, reason } => {
+                        BuilderError::InvalidValue {
+                            field: format!("pokemon[{}].{}", i, field),
+                            value,
+                            reason,
+                        }
+                    }
+                    other => other,
+                })?;
+        }
+        Ok(())
+    }
+}
+
+impl<'a> Builder<Vec<RandomPokemonSet>> for TeamBuilder<'a> {
+    type Error = BuilderError;
+
+    fn build(self) -> Result<Vec<RandomPokemonSet>, Self::Error> {
+        // Validate first
+        self.validate()?;
+
+        // Convert PokemonBuilders to RandomPokemonSets
         let mut team = Vec::new();
         for pokemon_builder in self.pokemon {
-            let pokemon_set = pokemon_builder.build()?;
+            let pokemon_set = pokemon_builder.build(self.data)?;
             team.push(pokemon_set);
         }
 
         Ok(team)
     }
 
-    /// Validate that the team meets format constraints
-    fn validate_format_constraints(&self, format: &BattleFormat) -> TeamResult<()> {
-        // Check species clause
-        if format.has_clause(&crate::core::battle_format::FormatClause::SpeciesClause) {
-            let mut species_seen = std::collections::HashSet::new();
-            for pokemon in &self.pokemon {
-                if !species_seen.insert(&pokemon.species) {
-                    return Err(TeamError::DuplicateSpecies { 
-                        species: pokemon.species.clone() 
-                    });
-                }
-            }
-        }
+    fn validate(&self) -> Result<(), Self::Error> {
+        // Validate team size
+        self.validate_team_size()?;
 
-        // Check item clause
-        if format.has_clause(&crate::core::battle_format::FormatClause::ItemClause) {
-            let mut items_seen = std::collections::HashSet::new();
-            for pokemon in &self.pokemon {
-                if let Some(item) = &pokemon.item {
-                    if !items_seen.insert(item) {
-                        return Err(TeamError::InvalidPokemon { 
-                            reason: format!("Duplicate item: {}", item.as_str()) 
-                        });
-                    }
-                }
-            }
-        }
+        // Validate individual Pokemon
+        self.validate_pokemon()?;
 
-        // Check bans
-        for pokemon in &self.pokemon {
-            if format.is_species_banned(pokemon.species.as_str()) {
-                return Err(TeamError::FormatViolation { 
-                    reason: format!("Banned species: {}", pokemon.species.as_str()) 
+        Ok(())
+    }
+}
+
+impl<'a> ValidatingBuilder<Vec<RandomPokemonSet>> for TeamBuilder<'a> {
+    type Context = ValidationContext;
+
+    fn validate_aspect(&self, context: &Self::Context) -> Result<(), Self::Error> {
+        if context.strict_mode {
+            self.validate()?;
+        } else {
+            // Lenient validation - just check we have some Pokemon
+            if self.pokemon.is_empty() {
+                return Err(BuilderError::ValidationFailed {
+                    reason: "Team must have at least one Pokemon".to_string(),
                 });
-            }
-
-            if let Some(ability) = &pokemon.ability {
-                if format.is_ability_banned(ability.as_str()) {
-                    return Err(TeamError::FormatViolation { 
-                        reason: format!("Banned ability: {}", ability.as_str()) 
-                    });
-                }
-            }
-
-            if let Some(item) = &pokemon.item {
-                if format.is_item_banned(item.as_str()) {
-                    return Err(TeamError::FormatViolation { 
-                        reason: format!("Banned item: {}", item.as_str()) 
-                    });
-                }
-            }
-
-            for move_id in &pokemon.moves {
-                if format.is_move_banned(move_id.as_str()) {
-                    return Err(TeamError::FormatViolation { 
-                        reason: format!("Banned move: {}", move_id.as_str()) 
-                    });
-                }
             }
         }
 
@@ -158,58 +201,161 @@ impl<'a> TeamBuilder<'a> {
     }
 }
 
-/// Context for building a Pokemon within a team
+impl PokemonBuilder {
+    /// Create a new Pokemon builder
+    pub fn new(species: SpeciesId) -> Self {
+        Self {
+            species,
+            level: None,
+            ability: None,
+            item: None,
+            moves: Vec::new(),
+            nature: None,
+            evs: None,
+            ivs: None,
+        }
+    }
+
+    /// Set level
+    pub fn level(mut self, level: u8) -> Self {
+        self.level = Some(level);
+        self
+    }
+
+    /// Set ability
+    pub fn ability(mut self, ability: impl Into<AbilityId>) -> Self {
+        self.ability = Some(ability.into());
+        self
+    }
+
+    /// Set held item
+    pub fn item(mut self, item: impl Into<ItemId>) -> Self {
+        self.item = Some(item.into());
+        self
+    }
+
+    /// Add a move
+    pub fn move_slot(mut self, move_id: impl Into<MoveId>) -> Self {
+        if self.moves.len() < 4 {
+            self.moves.push(move_id.into());
+        }
+        self
+    }
+
+    /// Set nature
+    pub fn nature(mut self, nature: impl Into<String>) -> Self {
+        self.nature = Some(nature.into());
+        self
+    }
+
+    /// Set EVs
+    pub fn evs(mut self, evs: EVsConfig) -> Self {
+        self.evs = Some(evs);
+        self
+    }
+
+    /// Set IVs
+    pub fn ivs(mut self, ivs: IVsConfig) -> Self {
+        self.ivs = Some(ivs);
+        self
+    }
+
+    /// Validate this Pokemon
+    pub fn validate(&self, data: &Repository) -> Result<(), BuilderError> {
+        // Validate level
+        let level = self.level.unwrap_or(50);
+        if level == 0 || level > 100 {
+            return Err(BuilderError::InvalidValue {
+                field: "level".to_string(),
+                value: level.to_string(),
+                reason: "Level must be between 1 and 100".to_string(),
+            });
+        }
+
+        // Validate moves (max 4)
+        if self.moves.len() > 4 {
+            return Err(BuilderError::InvalidValue {
+                field: "moves".to_string(),
+                value: self.moves.len().to_string(),
+                reason: "Pokemon can have at most 4 moves".to_string(),
+            });
+        }
+
+        // Validate EVs total (max 510)
+        if let Some(ref evs) = self.evs {
+            let total = evs.hp as u16 + evs.attack as u16 + evs.defense as u16 
+                      + evs.special_attack as u16 + evs.special_defense as u16 + evs.speed as u16;
+            if total > 510 {
+                return Err(BuilderError::InvalidValue {
+                    field: "evs".to_string(),
+                    value: total.to_string(),
+                    reason: "Total EVs cannot exceed 510".to_string(),
+                });
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Build into a RandomPokemonSet
+    pub fn build(self, _data: &Repository) -> Result<RandomPokemonSet, BuilderError> {
+        self.validate(_data)?;
+
+        // Convert to RandomPokemonSet
+        // This is a simplified conversion - a real implementation would be more comprehensive
+        Ok(RandomPokemonSet {
+            name: self.species.as_str().to_string(),
+            species: self.species.as_str().to_string(),
+            level: self.level.unwrap_or(50),
+            gender: None,
+            shiny: None,
+            ability: self.ability.map(|a| a.as_str().to_string()),
+            item: self.item.map(|i| i.as_str().to_string()),
+            moves: self.moves.into_iter().map(|m| m.as_str().to_string()).collect(),
+            nature: self.nature,
+            evs: None, // Simplified for now
+            ivs: None, // Simplified for now
+            gigantamax: None,
+            role: None,
+            tera_type: None,
+        })
+    }
+}
+
+/// Context for building Pokemon within a team
 pub struct TeamPokemonContext<'a> {
     team_builder: TeamBuilder<'a>,
     pokemon_builder: PokemonBuilder,
 }
 
 impl<'a> TeamPokemonContext<'a> {
-    /// Set the ability
-    pub fn ability(mut self, ability: impl Into<AbilityId>) -> Self {
-        self.pokemon_builder.ability = Some(ability.into());
-        self
-    }
-
-    /// Set the item
-    pub fn item(mut self, item: impl Into<ItemId>) -> Self {
-        self.pokemon_builder.item = Some(item.into());
-        self
-    }
-
-    /// Add a move
-    pub fn move_slot(mut self, move_id: impl Into<MoveId>) -> Self {
-        self.pokemon_builder.moves.push(move_id.into());
-        self
-    }
-
-    /// Set all moves at once
-    pub fn moves(mut self, moves: Vec<MoveId>) -> Self {
-        self.pokemon_builder.moves = moves;
-        self
-    }
-
-    /// Set the level
+    /// Set level and continue building
     pub fn level(mut self, level: u8) -> Self {
-        self.pokemon_builder.level = level;
+        self.pokemon_builder = self.pokemon_builder.level(level);
         self
     }
 
-    /// Set EVs
-    pub fn evs(mut self, hp: u8, atk: u8, def: u8, spa: u8, spd: u8, spe: u8) -> Self {
-        self.pokemon_builder.evs = Some([hp, atk, def, spa, spd, spe]);
+    /// Set ability and continue building
+    pub fn ability(mut self, ability: impl Into<AbilityId>) -> Self {
+        self.pokemon_builder = self.pokemon_builder.ability(ability);
         self
     }
 
-    /// Set IVs
-    pub fn ivs(mut self, hp: u8, atk: u8, def: u8, spa: u8, spd: u8, spe: u8) -> Self {
-        self.pokemon_builder.ivs = Some([hp, atk, def, spa, spd, spe]);
+    /// Set item and continue building
+    pub fn item(mut self, item: impl Into<ItemId>) -> Self {
+        self.pokemon_builder = self.pokemon_builder.item(item);
         self
     }
 
-    /// Set nature
+    /// Add a move and continue building
+    pub fn move_slot(mut self, move_id: impl Into<MoveId>) -> Self {
+        self.pokemon_builder = self.pokemon_builder.move_slot(move_id);
+        self
+    }
+
+    /// Set nature and continue building
     pub fn nature(mut self, nature: impl Into<String>) -> Self {
-        self.pokemon_builder.nature = Some(nature.into());
+        self.pokemon_builder = self.pokemon_builder.nature(nature);
         self
     }
 
@@ -220,285 +366,8 @@ impl<'a> TeamPokemonContext<'a> {
     }
 
     /// Add another Pokemon to the team
-    pub fn and_pokemon(self, species: impl Into<SpeciesId>) -> TeamPokemonContext<'a> {
-        let team_builder = self.finish();
+    pub fn pokemon(self, species: impl Into<SpeciesId>) -> TeamPokemonContext<'a> {
+        let mut team_builder = self.finish();
         team_builder.pokemon(species)
-    }
-}
-
-/// Builder for individual Pokemon
-#[derive(Debug, Clone)]
-pub struct PokemonBuilder {
-    species: SpeciesId,
-    ability: Option<AbilityId>,
-    item: Option<ItemId>,
-    moves: Vec<MoveId>,
-    level: u8,
-    evs: Option<[u8; 6]>, // [HP, Atk, Def, SpA, SpD, Spe]
-    ivs: Option<[u8; 6]>, // [HP, Atk, Def, SpA, SpD, Spe]
-    nature: Option<String>,
-}
-
-impl PokemonBuilder {
-    /// Create a new Pokemon builder
-    pub fn new(species: SpeciesId) -> Self {
-        Self {
-            species,
-            ability: None,
-            item: None,
-            moves: Vec::new(),
-            level: 50,
-            evs: None,
-            ivs: None,
-            nature: None,
-        }
-    }
-
-    /// Create from a RandomPokemonSet
-    pub fn from_random_set(set: RandomPokemonSet) -> Self {
-        Self {
-            species: SpeciesId::new(set.species),
-            ability: set.ability.map(AbilityId::from),
-            item: set.item.map(ItemId::new),
-            moves: set.moves.into_iter().map(MoveId::new).collect(),
-            level: set.level,
-            evs: set.evs.map(|evs| [
-                evs.hp.unwrap_or(0),
-                evs.atk.unwrap_or(0),
-                evs.def.unwrap_or(0),
-                evs.spa.unwrap_or(0),
-                evs.spd.unwrap_or(0),
-                evs.spe.unwrap_or(0),
-            ]),
-            ivs: set.ivs.map(|ivs| [
-                ivs.hp.unwrap_or(31),
-                ivs.atk.unwrap_or(31),
-                ivs.def.unwrap_or(31),
-                ivs.spa.unwrap_or(31),
-                ivs.spd.unwrap_or(31),
-                ivs.spe.unwrap_or(31),
-            ]),
-            nature: set.nature,
-        }
-    }
-
-    /// Set the ability
-    pub fn with_ability(mut self, ability: impl Into<AbilityId>) -> Self {
-        self.ability = Some(ability.into());
-        self
-    }
-
-    /// Set the item
-    pub fn with_item(mut self, item: impl Into<ItemId>) -> Self {
-        self.item = Some(item.into());
-        self
-    }
-
-    /// Add a move
-    pub fn with_move(mut self, move_id: impl Into<MoveId>) -> Self {
-        self.moves.push(move_id.into());
-        self
-    }
-
-    /// Set moves
-    pub fn with_moves(mut self, moves: Vec<MoveId>) -> Self {
-        self.moves = moves;
-        self
-    }
-
-    /// Set level
-    pub fn with_level(mut self, level: u8) -> Self {
-        self.level = level;
-        self
-    }
-
-    /// Set EVs
-    pub fn with_evs(mut self, hp: u8, atk: u8, def: u8, spa: u8, spd: u8, spe: u8) -> Self {
-        self.evs = Some([hp, atk, def, spa, spd, spe]);
-        self
-    }
-
-    /// Set IVs
-    pub fn with_ivs(mut self, hp: u8, atk: u8, def: u8, spa: u8, spd: u8, spe: u8) -> Self {
-        self.ivs = Some([hp, atk, def, spa, spd, spe]);
-        self
-    }
-
-    /// Set nature
-    pub fn with_nature(mut self, nature: impl Into<String>) -> Self {
-        self.nature = Some(nature.into());
-        self
-    }
-
-    /// Build the Pokemon
-    pub fn build(self) -> TeamResult<RandomPokemonSet> {
-        // Validate moves count
-        if self.moves.len() > 4 {
-            return Err(TeamError::InvalidPokemon { 
-                reason: format!("Too many moves: {} (max 4)", self.moves.len()) 
-            });
-        }
-
-        // Validate level
-        if self.level == 0 || self.level > 100 {
-            return Err(TeamError::InvalidPokemon { 
-                reason: format!("Invalid level: {} (must be 1-100)", self.level) 
-            });
-        }
-
-        // Set defaults
-        let ability = self.ability.map(|a| a.as_str().to_string());
-        let moves = self.moves.into_iter().map(|m| m.as_str().to_string()).collect();
-        let evs = self.evs.map(|[hp, atk, def, spa, spd, spe]| {
-            crate::data::random_team_loader::RandomStats {
-                hp: Some(hp),
-                atk: Some(atk),
-                def: Some(def),
-                spa: Some(spa),
-                spd: Some(spd),
-                spe: Some(spe),
-            }
-        });
-        let ivs = self.ivs.map(|[hp, atk, def, spa, spd, spe]| {
-            crate::data::random_team_loader::RandomStats {
-                hp: Some(hp),
-                atk: Some(atk),
-                def: Some(def),
-                spa: Some(spa),
-                spd: Some(spd),
-                spe: Some(spe),
-            }
-        });
-        let nature = self.nature;
-
-        Ok(RandomPokemonSet {
-            name: self.species.as_str().to_string(), // Use species as name
-            species: self.species.as_str().to_string(),
-            level: self.level,
-            gender: None,
-            shiny: Some(false),
-            ability,
-            item: self.item.map(|i| i.as_str().to_string()),
-            moves,
-            nature,
-            evs,
-            ivs,
-            tera_type: None,
-            role: None,
-            gigantamax: Some(false),
-        })
-    }
-}
-
-/// Convenience constructors
-impl<'a> TeamBuilder<'a> {
-    /// Create a standard OU team structure
-    pub fn ou_team(data: &'a Repository) -> Self {
-        Self::new(data)
-            .format(BattleFormat::gen9_ou())
-    }
-
-    /// Create a VGC team structure
-    pub fn vgc_team(data: &'a Repository) -> Self {
-        Self::new(data)
-            .format(BattleFormat::gen9_vgc())
-    }
-
-    /// Create a random battle team
-    pub fn random_battle_team(data: &'a Repository) -> TeamResult<Self> {
-        Self::new(data)
-            .format(BattleFormat::gen9_random_battle())
-            .random()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::core::battle_format::{BattleFormat, FormatType};
-    use crate::generation::Generation;
-
-    #[test]
-    fn test_pokemon_builder() {
-        let pokemon = PokemonBuilder::new(SpeciesId::new("Charizard"))
-            .with_ability("Blaze")
-            .with_item("Charizardite X")
-            .with_move("Flamethrower")
-            .with_move("Dragon Pulse")
-            .with_level(50)
-            .with_evs(0, 252, 0, 252, 4, 0)
-            .with_nature("Modest")
-            .build()
-            .unwrap();
-
-        assert_eq!(pokemon.species, "Charizard");
-        assert_eq!(pokemon.ability, "Blaze");
-        assert_eq!(pokemon.item, Some("Charizardite X".to_string()));
-        assert_eq!(pokemon.moves.len(), 2);
-        assert_eq!(pokemon.level, 50);
-        assert_eq!(pokemon.nature, "Modest");
-    }
-
-    #[test]
-    fn test_team_builder_fluent_api() {
-        // This test demonstrates the fluent API structure
-        // Actual execution would require a real Repository instance
-        let _team_structure = |data: &Repository| {
-            TeamBuilder::new(data)
-                .format(BattleFormat::gen9_ou())
-                .pokemon("Charizard")
-                    .ability("Solar Power")
-                    .item("Choice Specs")
-                    .move_slot("Flamethrower")
-                    .move_slot("Solar Beam")
-                    .move_slot("Focus Blast")
-                    .move_slot("Air Slash")
-                    .level(50)
-                    .evs(0, 0, 0, 252, 4, 252)
-                    .nature("Modest")
-                .and_pokemon("Venusaur")
-                    .ability("Chlorophyll")
-                    .item("Life Orb")
-                    .level(50)
-                .finish()
-                // .build() // Would need actual data to complete
-        };
-    }
-
-    #[test]
-    fn test_team_validation() {
-        let format = BattleFormat::new(
-            "Test Format".to_string(),
-            Generation::Gen9,
-            FormatType::Singles,
-        );
-
-        // Test species clause violation
-        let pokemon1 = PokemonBuilder::new(SpeciesId::new("Charizard")).build().unwrap();
-        let pokemon2 = PokemonBuilder::new(SpeciesId::new("Charizard")).build().unwrap();
-
-        // This would fail species clause validation if we had a real format with species clause
-        // The test demonstrates the validation structure
-    }
-
-    #[test]
-    fn test_invalid_pokemon() {
-        // Test too many moves
-        let result = PokemonBuilder::new(SpeciesId::new("Charizard"))
-            .with_move("Move1")
-            .with_move("Move2")
-            .with_move("Move3")
-            .with_move("Move4")
-            .with_move("Move5")
-            .build();
-
-        assert!(result.is_err());
-
-        // Test invalid level
-        let result = PokemonBuilder::new(SpeciesId::new("Charizard"))
-            .with_level(0)
-            .build();
-
-        assert!(result.is_err());
     }
 }

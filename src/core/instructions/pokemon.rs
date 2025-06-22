@@ -4,10 +4,29 @@
 //! switching, ability changes, item changes, type changes, etc.
 
 use crate::core::battle_format::BattlePosition;
-use crate::core::instruction::{PokemonStatus, MoveCategory};
+use crate::core::instructions::status::PokemonStatus;
 use crate::core::move_choice::PokemonType;
 use crate::types::identifiers::AbilityId;
 use serde::{Deserialize, Serialize};
+
+/// Move categories for damage tracking
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum MoveCategory {
+    Physical,
+    Special,
+    Status,
+}
+
+impl MoveCategory {
+    /// Convert from string representation
+    pub fn from_str(category: &str) -> Self {
+        match category {
+            "Physical" => MoveCategory::Physical,
+            "Special" => MoveCategory::Special,
+            _ => MoveCategory::Status,
+        }
+    }
+}
 
 /// Pokemon-related instruction types
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

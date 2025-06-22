@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with Ta
 ### Project Philosophy
 Tapu Simu is a **completely independent** Pokemon battle simulator designed from the ground up for multi-format support. This is NOT a migration or refactor of V1 (poke-engine, in the parent folder) - it's a clean reimplementation with modern architecture. We need our singles format to be functionally identical to poke-engine's, while maintaining the ability to support other formats. Do NOT make placeholders or compromises. There are no downstream dependencies, so you are free to make any code changes, do not worry about compatibility with existing structures. Any tests that skip are considered failures. All tests considered failures need to be fixed.
 
-**CRITICAL**: Read READ_ME.md carefully. All tests should use the test_framework laid out by test_framework.rs.
+**CRITICAL**: Read READ_ME.md carefully.
 
 ### Core Principles
 

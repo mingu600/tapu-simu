@@ -8,7 +8,7 @@
 //! to match official game mechanics.
 
 use crate::core::battle_format::BattlePosition;
-use crate::core::instruction::{SideCondition, PokemonStatus, Stat};
+use crate::core::instructions::{SideCondition, PokemonStatus, Stat};
 use crate::core::instructions::{BattleInstruction, BattleInstructions, FieldInstruction, PokemonInstruction, StatusInstruction, StatsInstruction};
 use crate::core::battle_state::Pokemon;
 use crate::core::battle_state::BattleState;
@@ -173,10 +173,10 @@ fn process_switch_in_abilities(
         "drought" => {
             instructions.push(BattleInstructions::new(100.0, vec![
                 BattleInstruction::Field(FieldInstruction::Weather {
-                    new_weather: crate::core::instruction::Weather::Sun,
-                    previous_weather: state.weather,
+                    new_weather: crate::core::instructions::Weather::Sun,
+                    previous_weather: state.weather(),
                     turns: Some(5),
-                    previous_turns: state.weather_turns_remaining,
+                    previous_turns: state.field.weather.turns_remaining,
                     source: Some(switching_position),
                 })
             ]));
@@ -184,10 +184,10 @@ fn process_switch_in_abilities(
         "drizzle" => {
             instructions.push(BattleInstructions::new(100.0, vec![
                 BattleInstruction::Field(FieldInstruction::Weather {
-                    new_weather: crate::core::instruction::Weather::Rain,
-                    previous_weather: state.weather,
+                    new_weather: crate::core::instructions::Weather::Rain,
+                    previous_weather: state.weather(),
                     turns: Some(5),
-                    previous_turns: state.weather_turns_remaining,
+                    previous_turns: state.field.weather.turns_remaining,
                     source: Some(switching_position),
                 })
             ]));
@@ -195,26 +195,26 @@ fn process_switch_in_abilities(
         "sand stream" | "sandstream" => {
             instructions.push(BattleInstructions::new(100.0, vec![
                 BattleInstruction::Field(FieldInstruction::Weather {
-                    new_weather: crate::core::instruction::Weather::Sand,
-                    previous_weather: state.weather,
+                    new_weather: crate::core::instructions::Weather::Sand,
+                    previous_weather: state.weather(),
                     turns: Some(5),
-                    previous_turns: state.weather_turns_remaining,
+                    previous_turns: state.field.weather.turns_remaining,
                     source: Some(switching_position),
                 })
             ]));
         }
         "snow warning" | "snowwarning" => {
             let weather = if generation.generation.number() >= 9 {
-                crate::core::instruction::Weather::Snow
+                crate::core::instructions::Weather::Snow
             } else {
-                crate::core::instruction::Weather::Hail
+                crate::core::instructions::Weather::Hail
             };
             instructions.push(BattleInstructions::new(100.0, vec![
                 BattleInstruction::Field(FieldInstruction::Weather {
                     new_weather: weather,
-                    previous_weather: state.weather,
+                    previous_weather: state.weather(),
                     turns: Some(5),
-                    previous_turns: state.weather_turns_remaining,
+                    previous_turns: state.field.weather.turns_remaining,
                     source: Some(switching_position),
                 })
             ]));
@@ -224,10 +224,10 @@ fn process_switch_in_abilities(
         "electric surge" | "electricsurge" => {
             instructions.push(BattleInstructions::new(100.0, vec![
                 BattleInstruction::Field(FieldInstruction::Terrain {
-                    new_terrain: crate::core::instruction::Terrain::ElectricTerrain,
-                    previous_terrain: state.terrain,
+                    new_terrain: crate::core::instructions::Terrain::ElectricTerrain,
+                    previous_terrain: state.terrain(),
                     turns: Some(5),
-                    previous_turns: state.terrain_turns_remaining,
+                    previous_turns: state.field.terrain.turns_remaining,
                     source: Some(switching_position),
                 })
             ]));
@@ -235,10 +235,10 @@ fn process_switch_in_abilities(
         "grassy surge" | "grassysurge" => {
             instructions.push(BattleInstructions::new(100.0, vec![
                 BattleInstruction::Field(FieldInstruction::Terrain {
-                    new_terrain: crate::core::instruction::Terrain::GrassyTerrain,
-                    previous_terrain: state.terrain,
+                    new_terrain: crate::core::instructions::Terrain::GrassyTerrain,
+                    previous_terrain: state.terrain(),
                     turns: Some(5),
-                    previous_turns: state.terrain_turns_remaining,
+                    previous_turns: state.field.terrain.turns_remaining,
                     source: Some(switching_position),
                 })
             ]));
@@ -246,10 +246,10 @@ fn process_switch_in_abilities(
         "misty surge" | "mistysurge" => {
             instructions.push(BattleInstructions::new(100.0, vec![
                 BattleInstruction::Field(FieldInstruction::Terrain {
-                    new_terrain: crate::core::instruction::Terrain::MistyTerrain,
-                    previous_terrain: state.terrain,
+                    new_terrain: crate::core::instructions::Terrain::MistyTerrain,
+                    previous_terrain: state.terrain(),
                     turns: Some(5),
-                    previous_turns: state.terrain_turns_remaining,
+                    previous_turns: state.field.terrain.turns_remaining,
                     source: Some(switching_position),
                 })
             ]));
@@ -257,10 +257,10 @@ fn process_switch_in_abilities(
         "psychic surge" | "psychicsurge" => {
             instructions.push(BattleInstructions::new(100.0, vec![
                 BattleInstruction::Field(FieldInstruction::Terrain {
-                    new_terrain: crate::core::instruction::Terrain::PsychicTerrain,
-                    previous_terrain: state.terrain,
+                    new_terrain: crate::core::instructions::Terrain::PsychicTerrain,
+                    previous_terrain: state.terrain(),
                     turns: Some(5),
-                    previous_turns: state.terrain_turns_remaining,
+                    previous_turns: state.field.terrain.turns_remaining,
                     source: Some(switching_position),
                 })
             ]));
@@ -458,7 +458,7 @@ fn process_switch_in_items(
                 instructions.push(BattleInstructions::new(100.0, vec![
                     BattleInstruction::Status(StatusInstruction::ApplyVolatile {
                         target: switching_position,
-                        status: crate::core::instruction::VolatileStatus::MagnetRise,
+                        status: crate::core::instructions::VolatileStatus::MagnetRise,
                         duration: None, // Lasts until popped by damage
                         previous_had_status: false,
                         previous_duration: None,
@@ -471,7 +471,7 @@ fn process_switch_in_items(
                 instructions.push(BattleInstructions::new(100.0, vec![
                     BattleInstruction::Status(StatusInstruction::ApplyVolatile {
                         target: switching_position,
-                        status: crate::core::instruction::VolatileStatus::LockedMove,
+                        status: crate::core::instructions::VolatileStatus::LockedMove,
                         duration: None, // Lasts until switch out
                         previous_had_status: false,
                         previous_duration: None,
@@ -483,7 +483,7 @@ fn process_switch_in_items(
                 instructions.push(BattleInstructions::new(100.0, vec![
                     BattleInstruction::Status(StatusInstruction::ApplyVolatile {
                         target: switching_position,
-                        status: crate::core::instruction::VolatileStatus::LockedMove,
+                        status: crate::core::instructions::VolatileStatus::LockedMove,
                         duration: None, // Lasts until switch out
                         previous_had_status: false,
                         previous_duration: None,
@@ -495,7 +495,7 @@ fn process_switch_in_items(
                 instructions.push(BattleInstructions::new(100.0, vec![
                     BattleInstruction::Status(StatusInstruction::ApplyVolatile {
                         target: switching_position,
-                        status: crate::core::instruction::VolatileStatus::LockedMove,
+                        status: crate::core::instructions::VolatileStatus::LockedMove,
                         duration: None, // Lasts until switch out
                         previous_had_status: false,
                         previous_duration: None,
@@ -508,7 +508,7 @@ fn process_switch_in_items(
                 instructions.push(BattleInstructions::new(100.0, vec![
                     BattleInstruction::Status(StatusInstruction::ApplyVolatile {
                         target: switching_position,
-                        status: crate::core::instruction::VolatileStatus::SmackDown,
+                        status: crate::core::instructions::VolatileStatus::SmackDown,
                         duration: None, // Lasts while holding item
                         previous_had_status: false,
                         previous_duration: None,
@@ -521,7 +521,7 @@ fn process_switch_in_items(
                 instructions.push(BattleInstructions::new(100.0, vec![
                     BattleInstruction::Status(StatusInstruction::ApplyVolatile {
                         target: switching_position,
-                        status: crate::core::instruction::VolatileStatus::HealBlock,
+                        status: crate::core::instructions::VolatileStatus::HealBlock,
                         duration: Some(1), // Activates at end of first turn
                         previous_had_status: false,
                         previous_duration: None,
@@ -534,7 +534,7 @@ fn process_switch_in_items(
                 instructions.push(BattleInstructions::new(100.0, vec![
                     BattleInstruction::Status(StatusInstruction::ApplyVolatile {
                         target: switching_position,
-                        status: crate::core::instruction::VolatileStatus::HealBlock,
+                        status: crate::core::instructions::VolatileStatus::HealBlock,
                         duration: Some(1), // Activates at end of first turn
                         previous_had_status: false,
                         previous_duration: None,
@@ -548,7 +548,7 @@ fn process_switch_in_items(
                 instructions.push(BattleInstructions::new(100.0, vec![
                     BattleInstruction::Status(StatusInstruction::ApplyVolatile {
                         target: switching_position,
-                        status: crate::core::instruction::VolatileStatus::HelpingHand,
+                        status: crate::core::instructions::VolatileStatus::HelpingHand,
                         duration: None, // Lasts until consumed
                         previous_had_status: false,
                         previous_duration: None,
@@ -561,7 +561,7 @@ fn process_switch_in_items(
                 instructions.push(BattleInstructions::new(100.0, vec![
                     BattleInstruction::Status(StatusInstruction::ApplyVolatile {
                         target: switching_position,
-                        status: crate::core::instruction::VolatileStatus::Charge,
+                        status: crate::core::instructions::VolatileStatus::Charge,
                         duration: None, // Lasts until consumed
                         previous_had_status: false,
                         previous_duration: None,
@@ -571,7 +571,7 @@ fn process_switch_in_items(
             
             // Room Service - Lowers Speed when Trick Room is active
             "room service" | "roomservice" => {
-                if state.trick_room_active {
+                if state.field.global_effects.trick_room.is_some() {
                     let mut stat_boosts = HashMap::new();
                     stat_boosts.insert(Stat::Speed, -1);
                     
@@ -663,7 +663,7 @@ fn process_switch_out_abilities(
     match pokemon.ability.to_lowercase().as_str() {
         "natural cure" | "naturalcure" => {
             // Remove status conditions when switching out
-            if pokemon.status != crate::core::instruction::PokemonStatus::None {
+            if pokemon.status != crate::core::instructions::PokemonStatus::None {
                 instructions.push(BattleInstructions::new(100.0, vec![
                     BattleInstruction::Status(StatusInstruction::Remove {
                         target: switching_position,
@@ -777,12 +777,12 @@ fn process_switch_out_items(
                 
                 for volatile_status in &pokemon.volatile_statuses {
                     match volatile_status {
-                        crate::core::instruction::VolatileStatus::PartiallyTrapped |
-                        crate::core::instruction::VolatileStatus::PartiallyTrapped |
-                        crate::core::instruction::VolatileStatus::PartiallyTrapped |
-                        crate::core::instruction::VolatileStatus::PartiallyTrapped |
-                        crate::core::instruction::VolatileStatus::PartiallyTrapped |
-                        crate::core::instruction::VolatileStatus::SkyDrop => {
+                        crate::core::instructions::VolatileStatus::PartiallyTrapped |
+                        crate::core::instructions::VolatileStatus::PartiallyTrapped |
+                        crate::core::instructions::VolatileStatus::PartiallyTrapped |
+                        crate::core::instructions::VolatileStatus::PartiallyTrapped |
+                        crate::core::instructions::VolatileStatus::PartiallyTrapped |
+                        crate::core::instructions::VolatileStatus::SkyDrop => {
                             remove_instructions.push(BattleInstruction::Status(StatusInstruction::RemoveVolatile {
                                 target: switching_position,
                                 status: *volatile_status,
@@ -806,11 +806,11 @@ fn process_switch_out_items(
             // Toxic Orb / Flame Orb - remove their volatile status markers
             "toxic orb" | "toxicorb" => {
                 // Remove the ToxicOrb volatile status
-                if pokemon.volatile_statuses.contains(&crate::core::instruction::VolatileStatus::HealBlock) {
+                if pokemon.volatile_statuses.contains(&crate::core::instructions::VolatileStatus::HealBlock) {
                     instructions.push(BattleInstructions::new(100.0, vec![
                         BattleInstruction::Status(StatusInstruction::RemoveVolatile {
                             target: switching_position,
-                            status: crate::core::instruction::VolatileStatus::HealBlock,
+                            status: crate::core::instructions::VolatileStatus::HealBlock,
                             previous_duration: None,
                         })
                     ]));
@@ -819,11 +819,11 @@ fn process_switch_out_items(
             
             "flame orb" | "flameorb" => {
                 // Remove the FlameOrb volatile status
-                if pokemon.volatile_statuses.contains(&crate::core::instruction::VolatileStatus::HealBlock) {
+                if pokemon.volatile_statuses.contains(&crate::core::instructions::VolatileStatus::HealBlock) {
                     instructions.push(BattleInstructions::new(100.0, vec![
                         BattleInstruction::Status(StatusInstruction::RemoveVolatile {
                             target: switching_position,
-                            status: crate::core::instruction::VolatileStatus::HealBlock,
+                            status: crate::core::instructions::VolatileStatus::HealBlock,
                             previous_duration: None,
                         })
                     ]));
@@ -832,11 +832,11 @@ fn process_switch_out_items(
             
             // Air Balloon - remove when switching out
             "air balloon" | "airballoon" => {
-                if pokemon.volatile_statuses.contains(&crate::core::instruction::VolatileStatus::MagnetRise) {
+                if pokemon.volatile_statuses.contains(&crate::core::instructions::VolatileStatus::MagnetRise) {
                     instructions.push(BattleInstructions::new(100.0, vec![
                         BattleInstruction::Status(StatusInstruction::RemoveVolatile {
                             target: switching_position,
-                            status: crate::core::instruction::VolatileStatus::MagnetRise,
+                            status: crate::core::instructions::VolatileStatus::MagnetRise,
                             previous_duration: None,
                         })
                     ]));
@@ -845,11 +845,11 @@ fn process_switch_out_items(
             
             // Choice items - remove choice lock when switching out
             "choice band" | "choiceband" | "choice scarf" | "choicescarf" | "choice specs" | "choicespecs" => {
-                if pokemon.volatile_statuses.contains(&crate::core::instruction::VolatileStatus::LockedMove) {
+                if pokemon.volatile_statuses.contains(&crate::core::instructions::VolatileStatus::LockedMove) {
                     instructions.push(BattleInstructions::new(100.0, vec![
                         BattleInstruction::Status(StatusInstruction::RemoveVolatile {
                             target: switching_position,
-                            status: crate::core::instruction::VolatileStatus::LockedMove,
+                            status: crate::core::instructions::VolatileStatus::LockedMove,
                             previous_duration: None,
                         })
                     ]));
@@ -879,7 +879,7 @@ fn process_switch_out_volatile_cleanup(
         for volatile_status in &pokemon.volatile_statuses {
             match volatile_status {
                 // Statuses that persist through switching
-                crate::core::instruction::VolatileStatus::Substitute => {
+                crate::core::instructions::VolatileStatus::Substitute => {
                     // Substitute is usually lost when switching, but there are exceptions
                     // For now, remove it on switch
                     instruction_list.push(BattleInstruction::Status(StatusInstruction::RemoveVolatile {
@@ -890,30 +890,30 @@ fn process_switch_out_volatile_cleanup(
                 }
                 
                 // Statuses that are always cleared on switch
-                crate::core::instruction::VolatileStatus::Confusion |
-                crate::core::instruction::VolatileStatus::Flinch |
-                crate::core::instruction::VolatileStatus::Attract |
-                crate::core::instruction::VolatileStatus::Torment |
-                crate::core::instruction::VolatileStatus::Disable |
-                crate::core::instruction::VolatileStatus::Encore |
-                crate::core::instruction::VolatileStatus::Taunt |
-                crate::core::instruction::VolatileStatus::HelpingHand |
-                crate::core::instruction::VolatileStatus::MagicCoat |
-                crate::core::instruction::VolatileStatus::FollowMe |
-                crate::core::instruction::VolatileStatus::Protect |
-                crate::core::instruction::VolatileStatus::Endure |
-                crate::core::instruction::VolatileStatus::FocusEnergy |
-                crate::core::instruction::VolatileStatus::LaserFocus |
-                crate::core::instruction::VolatileStatus::Rage |
-                crate::core::instruction::VolatileStatus::Charge |
-                crate::core::instruction::VolatileStatus::DefenseCurl |
-                crate::core::instruction::VolatileStatus::Stockpile1 |
-                crate::core::instruction::VolatileStatus::PowerTrick |
-                crate::core::instruction::VolatileStatus::Electrify |
-                crate::core::instruction::VolatileStatus::Embargo |
-                crate::core::instruction::VolatileStatus::GastroAcid |
-                crate::core::instruction::VolatileStatus::Foresight |
-                crate::core::instruction::VolatileStatus::MiracleEye => {
+                crate::core::instructions::VolatileStatus::Confusion |
+                crate::core::instructions::VolatileStatus::Flinch |
+                crate::core::instructions::VolatileStatus::Attract |
+                crate::core::instructions::VolatileStatus::Torment |
+                crate::core::instructions::VolatileStatus::Disable |
+                crate::core::instructions::VolatileStatus::Encore |
+                crate::core::instructions::VolatileStatus::Taunt |
+                crate::core::instructions::VolatileStatus::HelpingHand |
+                crate::core::instructions::VolatileStatus::MagicCoat |
+                crate::core::instructions::VolatileStatus::FollowMe |
+                crate::core::instructions::VolatileStatus::Protect |
+                crate::core::instructions::VolatileStatus::Endure |
+                crate::core::instructions::VolatileStatus::FocusEnergy |
+                crate::core::instructions::VolatileStatus::LaserFocus |
+                crate::core::instructions::VolatileStatus::Rage |
+                crate::core::instructions::VolatileStatus::Charge |
+                crate::core::instructions::VolatileStatus::DefenseCurl |
+                crate::core::instructions::VolatileStatus::Stockpile1 |
+                crate::core::instructions::VolatileStatus::PowerTrick |
+                crate::core::instructions::VolatileStatus::Electrify |
+                crate::core::instructions::VolatileStatus::Embargo |
+                crate::core::instructions::VolatileStatus::GastroAcid |
+                crate::core::instructions::VolatileStatus::Foresight |
+                crate::core::instructions::VolatileStatus::MiracleEye => {
                     instruction_list.push(BattleInstruction::Status(StatusInstruction::RemoveVolatile {
                         target: switching_position,
                         status: *volatile_status,
@@ -922,20 +922,20 @@ fn process_switch_out_volatile_cleanup(
                 }
                 
                 // Some statuses persist through switching
-                crate::core::instruction::VolatileStatus::LeechSeed |
-                crate::core::instruction::VolatileStatus::Curse |
-                crate::core::instruction::VolatileStatus::Nightmare |
-                crate::core::instruction::VolatileStatus::AquaRing |
-                crate::core::instruction::VolatileStatus::Ingrain => {
+                crate::core::instructions::VolatileStatus::LeechSeed |
+                crate::core::instructions::VolatileStatus::Curse |
+                crate::core::instructions::VolatileStatus::Nightmare |
+                crate::core::instructions::VolatileStatus::AquaRing |
+                crate::core::instructions::VolatileStatus::Ingrain => {
                     // These typically persist through switching in most circumstances
                     // Some may have special rules based on generation or other factors
                     // For now, keep them
                 }
                 
                 // Position-based statuses that are removed on switch
-                crate::core::instruction::VolatileStatus::MagnetRise |
-                crate::core::instruction::VolatileStatus::Telekinesis |
-                crate::core::instruction::VolatileStatus::Roost => {
+                crate::core::instructions::VolatileStatus::MagnetRise |
+                crate::core::instructions::VolatileStatus::Telekinesis |
+                crate::core::instructions::VolatileStatus::Roost => {
                     instruction_list.push(BattleInstruction::Status(StatusInstruction::RemoveVolatile {
                         target: switching_position,
                         status: *volatile_status,
@@ -944,15 +944,15 @@ fn process_switch_out_volatile_cleanup(
                 }
                 
                 // Two-turn moves that are interrupted by switching
-                crate::core::instruction::VolatileStatus::Fly |
-                crate::core::instruction::VolatileStatus::Dig |
-                crate::core::instruction::VolatileStatus::Dive |
-                crate::core::instruction::VolatileStatus::Bounce |
-                crate::core::instruction::VolatileStatus::SkyDrop |
-                crate::core::instruction::VolatileStatus::FreezeeShock |
-                crate::core::instruction::VolatileStatus::IceBurn |
-                crate::core::instruction::VolatileStatus::Geomancy |
-                crate::core::instruction::VolatileStatus::Electroshot => {
+                crate::core::instructions::VolatileStatus::Fly |
+                crate::core::instructions::VolatileStatus::Dig |
+                crate::core::instructions::VolatileStatus::Dive |
+                crate::core::instructions::VolatileStatus::Bounce |
+                crate::core::instructions::VolatileStatus::SkyDrop |
+                crate::core::instructions::VolatileStatus::FreezeeShock |
+                crate::core::instructions::VolatileStatus::IceBurn |
+                crate::core::instructions::VolatileStatus::Geomancy |
+                crate::core::instructions::VolatileStatus::Electroshot => {
                     instruction_list.push(BattleInstruction::Status(StatusInstruction::RemoveVolatile {
                         target: switching_position,
                         status: *volatile_status,
@@ -1209,7 +1209,7 @@ fn apply_protosynthesis_effect(
     let mut instructions = Vec::new();
     
     // Check if conditions are met for Protosynthesis activation
-    let should_activate = matches!(state.weather, crate::core::instruction::Weather::Sun | crate::core::instruction::Weather::HarshSun);
+    let should_activate = matches!(state.weather(), crate::core::instructions::Weather::Sun | crate::core::instructions::Weather::HarshSun);
     
     if should_activate {
         let user_side = state.get_side_by_ref(user_position.side);
@@ -1230,12 +1230,12 @@ fn apply_protosynthesis_effect(
             
             // Apply Protosynthesis volatile status to track that it's active
             let protosynthesis_status = match highest_stat {
-                Stat::Attack => crate::core::instruction::VolatileStatus::FlashFire,
-                Stat::Defense => crate::core::instruction::VolatileStatus::Stockpile1,
-                Stat::SpecialAttack => crate::core::instruction::VolatileStatus::Stockpile2,
-                Stat::SpecialDefense => crate::core::instruction::VolatileStatus::Stockpile3,
-                Stat::Speed => crate::core::instruction::VolatileStatus::Autotomize,
-                _ => crate::core::instruction::VolatileStatus::FlashFire, // Fallback
+                Stat::Attack => crate::core::instructions::VolatileStatus::FlashFire,
+                Stat::Defense => crate::core::instructions::VolatileStatus::Stockpile1,
+                Stat::SpecialAttack => crate::core::instructions::VolatileStatus::Stockpile2,
+                Stat::SpecialDefense => crate::core::instructions::VolatileStatus::Stockpile3,
+                Stat::Speed => crate::core::instructions::VolatileStatus::Autotomize,
+                _ => crate::core::instructions::VolatileStatus::FlashFire, // Fallback
             };
             
             instructions.push(BattleInstructions::new(100.0, vec![
@@ -1262,7 +1262,7 @@ fn apply_quark_drive_effect(
     let mut instructions = Vec::new();
     
     // Check if conditions are met for Quark Drive activation
-    let should_activate = state.terrain == crate::core::instruction::Terrain::ElectricTerrain;
+    let should_activate = state.terrain() == crate::core::instructions::Terrain::ElectricTerrain;
     
     if should_activate {
         let user_side = state.get_side_by_ref(user_position.side);
@@ -1283,12 +1283,12 @@ fn apply_quark_drive_effect(
             
             // Apply Quark Drive volatile status to track that it's active
             let quark_drive_status = match highest_stat {
-                Stat::Attack => crate::core::instruction::VolatileStatus::Rage,
-                Stat::Defense => crate::core::instruction::VolatileStatus::DefenseCurl,
-                Stat::SpecialAttack => crate::core::instruction::VolatileStatus::Charge,
-                Stat::SpecialDefense => crate::core::instruction::VolatileStatus::Safeguard,
-                Stat::Speed => crate::core::instruction::VolatileStatus::Electrify,
-                _ => crate::core::instruction::VolatileStatus::Rage, // Fallback
+                Stat::Attack => crate::core::instructions::VolatileStatus::Rage,
+                Stat::Defense => crate::core::instructions::VolatileStatus::DefenseCurl,
+                Stat::SpecialAttack => crate::core::instructions::VolatileStatus::Charge,
+                Stat::SpecialDefense => crate::core::instructions::VolatileStatus::Safeguard,
+                Stat::Speed => crate::core::instructions::VolatileStatus::Electrify,
+                _ => crate::core::instructions::VolatileStatus::Rage, // Fallback
             };
             
             instructions.push(BattleInstructions::new(100.0, vec![
@@ -1359,9 +1359,9 @@ fn apply_screen_cleaner_effect(
     // Remove Reflect, Light Screen, and Aurora Veil from both sides
     for side_ref in [crate::core::battle_format::SideReference::SideOne, crate::core::battle_format::SideReference::SideTwo] {
         for screen in [
-            crate::core::instruction::SideCondition::Reflect,
-            crate::core::instruction::SideCondition::LightScreen,
-            crate::core::instruction::SideCondition::AuroraVeil,
+            crate::core::instructions::SideCondition::Reflect,
+            crate::core::instructions::SideCondition::LightScreen,
+            crate::core::instructions::SideCondition::AuroraVeil,
         ] {
             instructions.push(BattleInstructions::new(100.0, vec![
                 BattleInstruction::Field(FieldInstruction::RemoveSideCondition {
@@ -1388,7 +1388,7 @@ fn apply_slow_start_effect(
     instructions.push(BattleInstructions::new(100.0, vec![
         BattleInstruction::Status(StatusInstruction::ApplyVolatile {
             target: user_position,
-            status: crate::core::instruction::VolatileStatus::Curse,
+            status: crate::core::instructions::VolatileStatus::Curse,
             duration: Some(5),
             previous_had_status: false,
             previous_duration: None,

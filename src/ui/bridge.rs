@@ -14,7 +14,7 @@ use crate::core::move_choice::{MoveIndex, PokemonIndex};
 use crate::data::showdown_types::MoveTarget;
 use crate::generation::Generation;
 use crate::core::battle_format::FormatType;
-use crate::engine::turn::instruction_generator::GenerationXInstructionGenerator;
+use crate::engine::turn;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -165,10 +165,6 @@ impl EngineBridge {
         }
     }
 
-    /// Get a generator for this bridge's format
-    fn get_generator(&self) -> GenerationXInstructionGenerator {
-        GenerationXInstructionGenerator::new(self.format.clone())
-    }
 
     /// Convert internal state to UI state
     pub fn state_to_ui(&self, state: &BattleState) -> UIBattleState {
@@ -179,15 +175,15 @@ impl EngineBridge {
                 generation: format!("{:?}", state.format.generation),
                 active_pokemon_count: state.format.active_pokemon_count(),
             },
-            side_one: self.battle_side_to_ui(&state.side_one),
-            side_two: self.battle_side_to_ui(&state.side_two),
-            weather: format!("{:?}", state.weather),
-            weather_turns_remaining: state.weather_turns_remaining,
-            terrain: format!("{:?}", state.terrain),
-            terrain_turns_remaining: state.terrain_turns_remaining,
-            turn: state.turn,
-            trick_room_active: state.trick_room_active,
-            trick_room_turns_remaining: state.trick_room_turns_remaining,
+            side_one: self.battle_side_to_ui(&state.sides[0]),
+            side_two: self.battle_side_to_ui(&state.sides[1]),
+            weather: format!("{:?}", state.weather()),
+            weather_turns_remaining: state.field.weather.turns_remaining,
+            terrain: format!("{:?}", state.terrain()),
+            terrain_turns_remaining: state.field.terrain.turns_remaining,
+            turn: state.turn_info.number,
+            trick_room_active: state.is_trick_room_active(),
+            trick_room_turns_remaining: state.field.global_effects.trick_room.as_ref().map(|tr| tr.turns_remaining),
         }
     }
 
@@ -416,8 +412,10 @@ impl EngineBridge {
         };
 
         // Generate instructions using the engine
-        let generator = self.get_generator();
-        let instructions = generator.generate_modern_instructions(state, &internal_choice_one, &internal_choice_two);
+        let instructions = turn::generate_instructions(
+            state,
+            (&internal_choice_one, &internal_choice_two),
+        ).unwrap_or_else(|_| vec![]);
 
         // Store instructions for later application
         self.last_instructions = Some(instructions.clone());
@@ -456,9 +454,9 @@ impl EngineBridge {
 
         // Set turn number based on expected turn or increment by 1
         if let Some(expected_turn) = expected_turn_number {
-            state.turn = expected_turn;
+            state.turn_info.number = expected_turn;
         } else {
-            state.turn += 1;
+            state.turn_info.number += 1;
         }
 
         // Return the updated state
@@ -599,8 +597,8 @@ impl EngineBridge {
     /// Get the move name for a specific side and move index
     fn get_move_name_for_side(&self, state: &BattleState, side: SideReference, move_index: MoveIndex) -> Option<String> {
         let battle_side = match side {
-            SideReference::SideOne => &state.side_one,
-            SideReference::SideTwo => &state.side_two,
+            SideReference::SideOne => &state.sides[0],
+            SideReference::SideTwo => &state.sides[1],
         };
         
         // Get the active Pokemon for this side
@@ -620,8 +618,8 @@ impl EngineBridge {
     /// Get the Pokemon name for a specific side and Pokemon index
     fn get_pokemon_name_for_side(&self, state: &BattleState, side: SideReference, pokemon_index: PokemonIndex) -> Option<String> {
         let battle_side = match side {
-            SideReference::SideOne => &state.side_one,
-            SideReference::SideTwo => &state.side_two,
+            SideReference::SideOne => &state.sides[0],
+            SideReference::SideTwo => &state.sides[1],
         };
         
         let index = pokemon_index.to_index();
@@ -764,17 +762,17 @@ impl EngineBridge {
         // Add Pokemon to sides
         for (i, ui_pokemon) in side_one.pokemon.iter().enumerate() {
             let pokemon = self.ui_pokemon_to_internal(ui_pokemon);
-            state.side_one.add_pokemon(pokemon);
+            state.sides[0].add_pokemon(pokemon);
         }
 
         for (i, ui_pokemon) in side_two.pokemon.iter().enumerate() {
             let pokemon = self.ui_pokemon_to_internal(ui_pokemon);
-            state.side_two.add_pokemon(pokemon);
+            state.sides[1].add_pokemon(pokemon);
         }
 
         // Set active Pokemon
-        state.side_one.active_pokemon_indices = side_one.active_pokemon_indices.clone();
-        state.side_two.active_pokemon_indices = side_two.active_pokemon_indices.clone();
+        state.sides[0].active_pokemon_indices = side_one.active_pokemon_indices.clone();
+        state.sides[1].active_pokemon_indices = side_two.active_pokemon_indices.clone();
 
         Ok(state)
     }
@@ -785,34 +783,39 @@ impl EngineBridge {
         let mut state = self.create_battle_state(&ui_state.format, &ui_state.side_one, &ui_state.side_two)?;
         
         // Convert and set weather
-        state.weather = match ui_state.weather.as_str() {
-            "None" => crate::core::instruction::Weather::None,
-            "Sun" => crate::core::instruction::Weather::Sun,
-            "Rain" => crate::core::instruction::Weather::Rain,
-            "Sandstorm" => crate::core::instruction::Weather::Sand,
-            "Hail" => crate::core::instruction::Weather::Hail,
-            "Snow" => crate::core::instruction::Weather::Snow,
-            _ => crate::core::instruction::Weather::None,
+        let weather = match ui_state.weather.as_str() {
+            "None" => crate::core::instructions::Weather::None,
+            "Sun" => crate::core::instructions::Weather::Sun,
+            "Rain" => crate::core::instructions::Weather::Rain,
+            "Sandstorm" => crate::core::instructions::Weather::Sand,
+            "Hail" => crate::core::instructions::Weather::Hail,
+            "Snow" => crate::core::instructions::Weather::Snow,
+            _ => crate::core::instructions::Weather::None,
         };
-        state.weather_turns_remaining = ui_state.weather_turns_remaining;
+        state.field.weather.set(weather, ui_state.weather_turns_remaining, None);
         
         // Convert and set terrain
-        state.terrain = match ui_state.terrain.as_str() {
-            "None" => crate::core::instruction::Terrain::None,
-            "Electric" => crate::core::instruction::Terrain::ElectricTerrain,
-            "Grassy" => crate::core::instruction::Terrain::GrassyTerrain,
-            "Misty" => crate::core::instruction::Terrain::MistyTerrain,
-            "Psychic" => crate::core::instruction::Terrain::PsychicTerrain,
-            _ => crate::core::instruction::Terrain::None,
+        let terrain = match ui_state.terrain.as_str() {
+            "None" => crate::core::instructions::Terrain::None,
+            "Electric" => crate::core::instructions::Terrain::ElectricTerrain,
+            "Grassy" => crate::core::instructions::Terrain::GrassyTerrain,
+            "Misty" => crate::core::instructions::Terrain::MistyTerrain,
+            "Psychic" => crate::core::instructions::Terrain::PsychicTerrain,
+            _ => crate::core::instructions::Terrain::None,
         };
-        state.terrain_turns_remaining = ui_state.terrain_turns_remaining;
+        state.field.terrain.set(terrain, ui_state.terrain_turns_remaining, None);
         
         // Set turn counter
-        state.turn = ui_state.turn;
+        state.turn_info.number = ui_state.turn;
         
         // Set Trick Room status
-        state.trick_room_active = ui_state.trick_room_active;
-        state.trick_room_turns_remaining = ui_state.trick_room_turns_remaining;
+        if ui_state.trick_room_active {
+            if let Some(turns) = ui_state.trick_room_turns_remaining {
+                state.field.global_effects.set_trick_room(turns, None);
+            }
+        } else {
+            state.field.global_effects.clear_trick_room();
+        }
         
         Ok(state)
     }

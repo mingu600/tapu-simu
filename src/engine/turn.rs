@@ -8,91 +8,38 @@ use crate::core::instructions::{BattleInstruction, BattleInstructions, PokemonIn
 use crate::core::move_choice::MoveChoice;
 use crate::core::battle_state::BattleState;
 use crate::core::targeting::resolve_targets;
+use crate::core::instructions::Weather;
+use crate::engine::combat::moves::{MoveContext, OpponentMoveInfo};
 use crate::types::{BattleError, BattleResult};
+use std::collections::HashMap;
+use crate::data::showdown_types::MoveTarget;
 
-// Compatibility layer for existing code
-pub mod instruction_generator {
-    use super::*;
-    
-    /// Compatibility wrapper for the old GenerationXInstructionGenerator
-    pub struct GenerationXInstructionGenerator {
-        format: BattleFormat,
-    }
-    
-    impl GenerationXInstructionGenerator {
-        pub fn new(format: BattleFormat) -> Self {
-            Self { format }
-        }
-        
-        pub fn generate_instructions(
-            &self,
-            state: &mut BattleState,
-            side_one_choice: &MoveChoice,
-            side_two_choice: &MoveChoice,
-        ) -> Vec<BattleInstructions> {
-            // Use the new simplified function
-            super::generate_instructions(state, (side_one_choice, side_two_choice))
-                .unwrap_or_else(|_| vec![BattleInstructions::new(100.0, vec![])])
-        }
-        
-        pub fn generate_instructions_from_move_pair(
-            &self,
-            state: &mut BattleState,
-            side_one_choice: &MoveChoice,
-            side_two_choice: &MoveChoice,
-        ) -> Vec<BattleInstructions> {
-            // Alias for compatibility
-            self.generate_instructions(state, side_one_choice, side_two_choice)
-        }
-        
-        /// Generate modern battle instructions
-        pub fn generate_modern_instructions(
-            &self,
-            state: &mut BattleState,
-            side_one_choice: &MoveChoice,
-            side_two_choice: &MoveChoice,
-        ) -> Vec<BattleInstructions> {
-            // Generate legacy instructions first, then convert
-            let legacy_instructions = self.generate_instructions(state, side_one_choice, side_two_choice);
-            
-            // Convert to modern instructions
-            legacy_instructions.into_iter().map(|legacy| {
-                let modern_instructions: Vec<BattleInstruction> = legacy.instruction_list
-                    .into_iter()
-                    .map(|instr| instr.into())
-                    .collect();
-                
-                BattleInstructions::new(legacy.percentage, modern_instructions)
-            }).collect()
-        }
-        
-        pub fn get_format(&self) -> &BattleFormat {
-            &self.format
-        }
-        
-        pub fn supports_format(&self, format: &BattleFormat) -> bool {
-            use crate::core::battle_format::FormatType;
-            matches!(format.format_type, 
-                FormatType::Singles | 
-                FormatType::Doubles | 
-                FormatType::Vgc | 
-                FormatType::Triples
-            )
-        }
+/// Parse move target string to MoveTarget enum
+fn parse_move_target(target_str: &str) -> MoveTarget {
+    match target_str.to_lowercase().as_str() {
+        "normal" => MoveTarget::Normal,
+        "self" => MoveTarget::Self_,
+        "adjacentally" => MoveTarget::AdjacentAlly,
+        "adjacentallyorself" => MoveTarget::AdjacentAllyOrSelf,
+        "adjacentfoe" => MoveTarget::AdjacentFoe,
+        "alladjacentfoes" => MoveTarget::AllAdjacentFoes,
+        "alladjacent" => MoveTarget::AllAdjacent,
+        "all" => MoveTarget::All,
+        "allyside" => MoveTarget::AllySide,
+        "foeside" => MoveTarget::FoeSide,
+        "allyteam" => MoveTarget::AllyTeam,
+        "any" => MoveTarget::Any,
+        _ => MoveTarget::Normal, // Default fallback
     }
 }
 
 // Compatibility for end_of_turn module  
 pub mod end_of_turn {
-    use crate::core::instruction::{PokemonStatus, Weather};
+    use crate::core::instructions::{PokemonStatus, Weather};
     use crate::core::instructions::{BattleInstruction, BattleInstructions, PokemonInstruction};
     use crate::core::battle_state::BattleState;
     use crate::core::battle_format::BattlePosition;
 
-    pub fn generate_end_of_turn_instructions() -> Vec<BattleInstructions> {
-        // Simplified - just return empty for now
-        vec![BattleInstructions::new(100.0, vec![])]
-    }
 
     /// Generate end-of-turn effects for a given state (simplified implementation)
     pub fn process_end_of_turn_effects(state: &BattleState) -> Vec<BattleInstructions> {
@@ -186,7 +133,7 @@ pub mod end_of_turn {
     fn process_weather_damage(state: &BattleState) -> Vec<BattleInstructions> {
         let mut weather_instructions = Vec::new();
         
-        match state.weather {
+        match state.weather() {
             Weather::Sand => {
                 // Sandstorm damages non-Ground/Rock/Steel types
                 for slot in 0..state.format.active_pokemon_count() {
@@ -276,13 +223,33 @@ pub fn generate_instructions(
     let (first_side, first_choice, second_side, second_choice) = 
         determine_move_order_advanced(state, &side_one_choice, &side_two_choice);
     
-    // Generate instructions for first move
-    let first_instructions = generate_move_instructions(
+    // Create comprehensive move contexts with opponent information
+    let first_context = create_move_context_with_opponents(
+        &first_choice,
+        &second_choice,
+        first_side,
+        second_side,
+        state,
+        true, // This move goes first
+    );
+    
+    let second_context = create_move_context_with_opponents(
+        &second_choice,
+        &first_choice,
+        second_side,
+        first_side,
+        state,
+        false, // This move goes second
+    );
+    
+    // Generate instructions for first move (with context indicating it goes first)
+    let first_instructions = generate_move_instructions_with_enhanced_context(
         &first_choice, 
         first_side, 
         0, 
         &state.format, 
-        state
+        state,
+        &first_context,
     )?;
     
     // Handle switch-attack interactions
@@ -296,23 +263,25 @@ pub fn generate_instructions(
             temp_state.apply_instructions(&first_instructions[0].instruction_list);
         }
         
-        // Generate second move instructions using the updated state
-        generate_move_instructions(
+        // Generate second move instructions using the updated state (goes second)
+        generate_move_instructions_with_enhanced_context(
             &second_choice, 
             second_side, 
             0, 
             &state.format, 
-            &temp_state
+            &temp_state,
+            &second_context,
         )?
     } else {
         // Either both are switches, first is not a switch, or second is a switch
-        // In these cases, use the original state
-        generate_move_instructions(
+        // In these cases, use the original state (goes second)
+        generate_move_instructions_with_enhanced_context(
             &second_choice, 
             second_side, 
             0, 
             &state.format, 
-            state
+            state,
+            &second_context,
         )?
     };
     
@@ -334,6 +303,19 @@ pub fn generate_move_instructions(
     format: &BattleFormat,
     state: &BattleState,
 ) -> BattleResult<Vec<BattleInstructions>> {
+    // Default to no specific turn order context
+    generate_move_instructions_with_context(choice, user_side, user_slot, format, state, false)
+}
+
+/// Generate instructions for a single move choice with turn order context
+pub fn generate_move_instructions_with_context(
+    choice: &MoveChoice,
+    user_side: SideReference,
+    user_slot: usize,
+    format: &BattleFormat,
+    state: &BattleState,
+    going_first: bool,
+) -> BattleResult<Vec<BattleInstructions>> {
     let user_pos = BattlePosition::new(user_side, user_slot);
     
     match choice {
@@ -341,11 +323,11 @@ pub fn generate_move_instructions(
             generate_switch_instructions(pokemon_index.to_index(), user_pos, state)
         }
         MoveChoice::Move { move_index, target_positions } => {
-            generate_attack_instructions(*move_index, target_positions, user_pos, format, state)
+            generate_attack_instructions_with_context(*move_index, target_positions, user_pos, format, state, going_first)
         }
         MoveChoice::MoveTera { move_index, target_positions, .. } => {
             // For now, treat Tera moves the same as regular moves (simplified)
-            generate_attack_instructions(*move_index, target_positions, user_pos, format, state)
+            generate_attack_instructions_with_context(*move_index, target_positions, user_pos, format, state, going_first)
         }
         MoveChoice::None => {
             Ok(vec![BattleInstructions::new(100.0, vec![])])
@@ -387,6 +369,19 @@ fn generate_attack_instructions(
     format: &BattleFormat,
     state: &BattleState,
 ) -> BattleResult<Vec<BattleInstructions>> {
+    // Default to no specific turn order context
+    generate_attack_instructions_with_context(move_index, explicit_targets, user_pos, format, state, false)
+}
+
+/// Generate instructions for an attack move with turn order context
+fn generate_attack_instructions_with_context(
+    move_index: crate::core::move_choice::MoveIndex,
+    explicit_targets: &[BattlePosition],
+    user_pos: BattlePosition,
+    format: &BattleFormat,
+    state: &BattleState,
+    going_first: bool,
+) -> BattleResult<Vec<BattleInstructions>> {
     // Get the move data
     let pokemon = state.get_side(user_pos.side.to_index())
         .and_then(|side| side.get_active_pokemon_at_slot(user_pos.slot))
@@ -406,34 +401,49 @@ fn generate_attack_instructions(
         explicit_targets.to_vec()
     };
     
-    // Generate different instruction sets based on critical hit probability
+    // Check move accuracy
+    let accuracy_percentage = calculate_move_accuracy(move_data, user_pos, &targets, state, going_first);
+    
     let mut instruction_sets = Vec::new();
     
-    // Non-critical hit (93.75% chance for most moves)
-    let normal_instructions = generate_damage_instructions(
-        move_data, 
-        &targets, 
-        user_pos, 
-        state, 
-        false
-    )?;
-    instruction_sets.push(BattleInstructions::new(
-        93.75,
-        normal_instructions,
-    ));
+    // If move can miss, create miss instruction set
+    if accuracy_percentage < 100.0 {
+        let miss_percentage = 100.0 - accuracy_percentage;
+        instruction_sets.push(BattleInstructions::new(
+            miss_percentage,
+            vec![], // Move misses - no damage/effects
+        ));
+    }
     
-    // Critical hit (6.25% chance for most moves)
-    let crit_instructions = generate_damage_instructions(
-        move_data, 
-        &targets, 
-        user_pos, 
-        state, 
-        true
-    )?;
-    instruction_sets.push(BattleInstructions::new(
-        6.25,
-        crit_instructions,
-    ));
+    // Only generate hit instructions if move can hit
+    if accuracy_percentage > 0.0 {
+        // Generate different instruction sets based on critical hit probability
+        // Non-critical hit (93.75% chance for most moves)
+        let normal_instructions = generate_damage_instructions(
+            move_data, 
+            &targets, 
+            user_pos, 
+            state, 
+            false
+        )?;
+        instruction_sets.push(BattleInstructions::new(
+            accuracy_percentage * 0.9375, // 93.75% of hit chance
+            normal_instructions,
+        ));
+        
+        // Critical hit (6.25% chance for most moves)
+        let crit_instructions = generate_damage_instructions(
+            move_data, 
+            &targets, 
+            user_pos, 
+            state, 
+            true
+        )?;
+        instruction_sets.push(BattleInstructions::new(
+            accuracy_percentage * 0.0625, // 6.25% of hit chance
+            crit_instructions,
+        ));
+    }
     
     Ok(instruction_sets)
 }
@@ -722,10 +732,409 @@ fn get_move_priority(state: &BattleState, choice: &MoveChoice, side: SideReferen
 /// Get effective speed for a side
 fn get_effective_speed(state: &BattleState, side: SideReference) -> i16 {
     if let Some(pokemon) = state.get_side(side.to_index()).and_then(|s| s.get_active_pokemon_at_slot(0)) {
-        pokemon.get_effective_stat(crate::core::instruction::Stat::Speed) as i16
+        pokemon.get_effective_stat(crate::core::instructions::Stat::Speed) as i16
     } else {
         0
     }
+}
+
+/// Calculate move accuracy including weather, ability, and item modifiers
+fn calculate_move_accuracy(
+    move_data: &crate::core::battle_state::Move,
+    user_pos: BattlePosition,
+    _targets: &[BattlePosition],
+    state: &BattleState,
+    going_first: bool,
+) -> f32 {
+    // Start with base move accuracy (0 means always hit, like status moves)
+    let base_accuracy = if move_data.accuracy == 0 {
+        100.0 // Always hit moves (status moves, etc.)
+    } else {
+        move_data.accuracy as f32 // Convert u8 to f32
+    };
+    
+    let mut final_accuracy = base_accuracy;
+    
+    // Apply weather-based accuracy modifications
+    final_accuracy = apply_weather_accuracy_modifiers(
+        final_accuracy,
+        &move_data.name,
+        state.weather(),
+    );
+    
+    // Apply ability modifiers (e.g., Compound Eyes, No Guard)
+    final_accuracy = apply_ability_accuracy_modifiers(
+        final_accuracy,
+        user_pos,
+        _targets,
+        state,
+    );
+    
+    // Apply item modifiers (e.g., Wide Lens, Zoom Lens)
+    final_accuracy = apply_item_accuracy_modifiers(
+        final_accuracy,
+        user_pos,
+        _targets,
+        state,
+        going_first,
+    );
+    
+    // Apply stat stage modifiers (accuracy/evasion)
+    final_accuracy = apply_stat_stage_accuracy_modifiers(
+        final_accuracy,
+        user_pos,
+        _targets,
+        state,
+    );
+    
+    // Clamp to valid range
+    final_accuracy.max(0.0).min(100.0)
+}
+
+/// Apply weather-specific accuracy modifications for certain moves
+fn apply_weather_accuracy_modifiers(
+    base_accuracy: f32,
+    move_name: &str,
+    weather: Weather,
+) -> f32 {
+    match move_name {
+        "Blizzard" => {
+            match weather {
+                Weather::Hail | Weather::Snow => 100.0, // Perfect accuracy in hail/snow
+                _ => base_accuracy,
+            }
+        }
+        "Hurricane" => {
+            match weather {
+                Weather::Rain | Weather::HeavyRain => 100.0, // Perfect accuracy in rain
+                Weather::Sun | Weather::HarshSun | Weather::HarshSunlight => 50.0, // Reduced accuracy in sun
+                _ => base_accuracy,
+            }
+        }
+        "Thunder" => {
+            match weather {
+                Weather::Rain | Weather::HeavyRain => 100.0, // Perfect accuracy in rain
+                Weather::Sun | Weather::HarshSun | Weather::HarshSunlight => 50.0, // Reduced accuracy in sun
+                _ => base_accuracy,
+            }
+        }
+        _ => base_accuracy, // No weather modification for other moves
+    }
+}
+
+/// Apply ability-based accuracy modifiers
+fn apply_ability_accuracy_modifiers(
+    base_accuracy: f32,
+    user_pos: BattlePosition,
+    _targets: &[BattlePosition],
+    state: &BattleState,
+) -> f32 {
+    if let Some(user) = state.get_pokemon_at_position(user_pos) {
+        match user.ability.to_lowercase().as_str() {
+            "compoundeyes" | "compound-eyes" => {
+                // Compound Eyes increases accuracy by 30% (1.3x multiplier)
+                base_accuracy * 1.3
+            }
+            "noguard" | "no-guard" => {
+                // No Guard makes all moves hit regardless of accuracy
+                100.0
+            }
+            _ => base_accuracy,
+        }
+    } else {
+        base_accuracy
+    }
+}
+
+/// Apply item-based accuracy modifiers
+fn apply_item_accuracy_modifiers(
+    base_accuracy: f32,
+    user_pos: BattlePosition,
+    _targets: &[BattlePosition],
+    state: &BattleState,
+    going_first: bool,
+) -> f32 {
+    if let Some(user) = state.get_pokemon_at_position(user_pos) {
+        if let Some(ref item) = user.item {
+            match item.to_lowercase().replace(" ", "").replace("-", "").as_str() {
+                "widelens" => {
+                    // Wide Lens increases accuracy by 10% (1.1x multiplier)
+                    base_accuracy * 1.1
+                }
+                "zoomlens" => {
+                    // Zoom Lens increases accuracy by 20% when moving after target
+                    let moves_after_target = check_moves_after_target(user_pos, _targets, state, going_first);
+                    if moves_after_target {
+                        base_accuracy * 1.2 // 20% boost when moving after target
+                    } else {
+                        base_accuracy
+                    }
+                }
+                _ => base_accuracy,
+            }
+        } else {
+            base_accuracy
+        }
+    } else {
+        base_accuracy
+    }
+}
+
+/// Apply stat stage accuracy/evasion modifiers
+fn apply_stat_stage_accuracy_modifiers(
+    base_accuracy: f32,
+    user_pos: BattlePosition,
+    targets: &[BattlePosition],
+    state: &BattleState,
+) -> f32 {
+    let mut final_accuracy = base_accuracy;
+    
+    // Apply user's accuracy stage
+    if let Some(user) = state.get_pokemon_at_position(user_pos) {
+        if let Some(&accuracy_stage) = user.stat_boosts.get(&crate::core::instructions::Stat::Accuracy) {
+            let accuracy_multiplier = match accuracy_stage {
+                -6 => 3.0 / 9.0,   // 33%
+                -5 => 3.0 / 8.0,   // 37.5%
+                -4 => 3.0 / 7.0,   // 43%
+                -3 => 3.0 / 6.0,   // 50%
+                -2 => 3.0 / 5.0,   // 60%
+                -1 => 3.0 / 4.0,   // 75%
+                0 => 1.0,          // 100%
+                1 => 4.0 / 3.0,    // 133%
+                2 => 5.0 / 3.0,    // 167%
+                3 => 6.0 / 3.0,    // 200%
+                4 => 7.0 / 3.0,    // 233%
+                5 => 8.0 / 3.0,    // 267%
+                6 => 9.0 / 3.0,    // 300%
+                _ => 1.0,
+            };
+            final_accuracy *= accuracy_multiplier;
+        }
+    }
+    
+    // Apply target's evasion stage (if single target)
+    if targets.len() == 1 {
+        if let Some(target) = state.get_pokemon_at_position(targets[0]) {
+            if let Some(&evasion_stage) = target.stat_boosts.get(&crate::core::instructions::Stat::Evasion) {
+                let evasion_multiplier = match evasion_stage {
+                    -6 => 9.0 / 3.0,   // 300% (easier to hit)
+                    -5 => 8.0 / 3.0,   // 267%
+                    -4 => 7.0 / 3.0,   // 233%
+                    -3 => 6.0 / 3.0,   // 200%
+                    -2 => 5.0 / 3.0,   // 167%
+                    -1 => 4.0 / 3.0,   // 133%
+                    0 => 1.0,          // 100%
+                    1 => 3.0 / 4.0,    // 75% (harder to hit)
+                    2 => 3.0 / 5.0,    // 60%
+                    3 => 3.0 / 6.0,    // 50%
+                    4 => 3.0 / 7.0,    // 43%
+                    5 => 3.0 / 8.0,    // 37.5%
+                    6 => 3.0 / 9.0,    // 33%
+                    _ => 1.0,
+                };
+                final_accuracy *= evasion_multiplier;
+            }
+        }
+    }
+    
+    final_accuracy
+}
+
+/// Check if the user moves after the target (for items like Zoom Lens)
+fn check_moves_after_target(
+    user_pos: BattlePosition,
+    targets: &[BattlePosition],
+    state: &BattleState,
+    going_first: bool,
+) -> bool {
+    // If we're going first in turn order, we don't move after target
+    if going_first {
+        return false;
+    }
+    
+    // If no targets or single-target move, check if we move after the target
+    if targets.len() == 1 {
+        let target_pos = targets[0];
+        
+        // Get user and target Pokemon
+        let user = state.get_pokemon_at_position(user_pos);
+        let target = state.get_pokemon_at_position(target_pos);
+        
+        if let (Some(user_pokemon), Some(target_pokemon)) = (user, target) {
+            // Compare effective speeds to determine turn order
+            let user_speed = user_pokemon.get_effective_stat(crate::core::instructions::Stat::Speed);
+            let target_speed = target_pokemon.get_effective_stat(crate::core::instructions::Stat::Speed);
+            
+            // User moves after target if target is faster
+            return target_speed > user_speed;
+        }
+    }
+    
+    // For multi-target moves or unclear situations, assume no boost
+    false
+}
+
+/// Create a MoveContext with opponent move information
+fn create_move_context_with_opponents(
+    own_choice: &MoveChoice,
+    opponent_choice: &MoveChoice,
+    own_side: SideReference,
+    opponent_side: SideReference,
+    state: &BattleState,
+    going_first: bool,
+) -> MoveContext {
+    let mut context = MoveContext::new();
+    context.going_first = going_first;
+    
+    // Create opponent position (assuming single slot for now, can be enhanced for doubles)
+    let opponent_position = BattlePosition::new(opponent_side, 0);
+    
+    // Build opponent move info if it's an attack move
+    if let MoveChoice::Move { move_index, target_positions } = opponent_choice {
+        if let Some(opponent_pokemon) = state.get_pokemon_at_position(opponent_position) {
+            if let Some(move_data) = opponent_pokemon.get_move(*move_index) {
+                let opponent_info = OpponentMoveInfo {
+                    move_name: move_data.name.clone(),
+                    move_category: move_data.category,
+                    is_switching: false,
+                    priority: move_data.priority,
+                    targets: target_positions.clone(),
+                };
+                context.opponent_moves.insert(opponent_position, opponent_info);
+            }
+        }
+    } else if matches!(opponent_choice, MoveChoice::Switch(_)) {
+        // Opponent is switching
+        let opponent_info = OpponentMoveInfo {
+            move_name: "Switch".to_string(),
+            move_category: crate::core::battle_state::MoveCategory::Status, // Switches are treated as status for Sucker Punch purposes
+            is_switching: true,
+            priority: 6, // Switches have highest priority
+            targets: vec![],
+        };
+        context.opponent_moves.insert(opponent_position, opponent_info);
+    }
+    
+    // Build turn order information
+    context.turn_order = vec![
+        (BattlePosition::new(own_side, 0), own_choice.clone()),
+        (opponent_position, opponent_choice.clone()),
+    ];
+    
+    context
+}
+
+/// Generate move instructions with enhanced context containing opponent information
+fn generate_move_instructions_with_enhanced_context(
+    choice: &MoveChoice,
+    user_side: SideReference,
+    user_slot: usize,
+    format: &BattleFormat,
+    state: &BattleState,
+    context: &MoveContext,
+) -> BattleResult<Vec<BattleInstructions>> {
+    let user_pos = BattlePosition::new(user_side, user_slot);
+    
+    match choice {
+        MoveChoice::Switch(pokemon_index) => {
+            generate_switch_instructions(pokemon_index.to_index(), user_pos, state)
+        }
+        MoveChoice::Move { move_index, target_positions } => {
+            generate_attack_instructions_with_enhanced_context(*move_index, target_positions, user_pos, format, state, context)
+        }
+        MoveChoice::MoveTera { move_index, target_positions, .. } => {
+            // For now, treat Tera moves the same as regular moves (simplified)
+            generate_attack_instructions_with_enhanced_context(*move_index, target_positions, user_pos, format, state, context)
+        }
+        MoveChoice::None => {
+            Ok(vec![BattleInstructions::new(100.0, vec![])])
+        }
+    }
+}
+
+/// Generate attack instructions with enhanced context
+fn generate_attack_instructions_with_enhanced_context(
+    move_index: crate::core::move_choice::MoveIndex,
+    explicit_targets: &[BattlePosition],
+    user_pos: BattlePosition,
+    format: &BattleFormat,
+    state: &BattleState,
+    context: &MoveContext,
+) -> BattleResult<Vec<BattleInstructions>> {
+    use crate::engine::combat::moves::apply_move_effects;
+    use crate::generation::GenerationMechanics;
+    
+    // Get user Pokemon and move data
+    let user_pokemon = state.get_pokemon_at_position(user_pos)
+        .ok_or_else(|| BattleError::InvalidState { 
+            reason: "No Pokemon at user position".to_string() 
+        })?;
+    
+    let move_data_raw = user_pokemon.get_move(move_index)
+        .ok_or_else(|| BattleError::InvalidMoveChoice { 
+            reason: format!("Move index {:?} not found", move_index) 
+        })?;
+    
+    // Convert Move to MoveData via repository lookup
+    let repository = crate::data::ps::repository::Repository::from_path("data/ps-extracted")
+        .expect("Failed to load Pokemon data from data/ps-extracted");
+    let move_data = if let Some(repo_move_data) = repository.find_move_by_name(&move_data_raw.name) {
+        // Convert repository::MoveData to showdown_types::MoveData
+        crate::data::showdown_types::MoveData {
+            name: repo_move_data.name.clone(),
+            base_power: repo_move_data.base_power as u16,
+            accuracy: repo_move_data.accuracy as u16,
+            pp: repo_move_data.pp,
+            max_pp: repo_move_data.max_pp,
+            move_type: repo_move_data.move_type.to_string(),
+            category: repo_move_data.category.clone(),
+            priority: repo_move_data.priority,
+            target: repo_move_data.target.clone(),
+            flags: repo_move_data.flags.iter().map(|f| (f.clone(), 1)).collect(),
+            drain: repo_move_data.drain,
+            recoil: repo_move_data.recoil,
+            ..crate::data::showdown_types::MoveData::default()
+        }
+    } else {
+        // Fallback: create a basic MoveData from the Move
+        crate::data::showdown_types::MoveData {
+            name: move_data_raw.name.clone(),
+            base_power: move_data_raw.base_power as u16,
+            accuracy: move_data_raw.accuracy as u16,
+            pp: move_data_raw.pp,
+            max_pp: move_data_raw.max_pp,
+            move_type: move_data_raw.move_type.clone(),
+            category: format!("{:?}", move_data_raw.category),
+            priority: move_data_raw.priority,
+            target: format!("{:?}", move_data_raw.target),
+            ..crate::data::showdown_types::MoveData::default()
+        }
+    };
+    
+    // Determine targets using the same logic as before
+    let targets = if explicit_targets.is_empty() {
+        resolve_targets(parse_move_target(&move_data.target), user_pos, format, state)
+    } else {
+        explicit_targets.to_vec()
+    };
+    
+    // Get generation mechanics
+    let generation = state.get_generation_mechanics();
+    
+    // Apply move effects with enhanced context
+    let repository = crate::data::ps::repository::Repository::from_path("data/ps-extracted")
+        .expect("Failed to load Pokemon data from data/ps-extracted");
+    let instructions = apply_move_effects(
+        state,
+        &move_data,
+        user_pos,
+        &targets,
+        &generation,
+        context,
+        &repository,
+    )?;
+    
+    Ok(instructions)
 }
 
 #[cfg(test)]
@@ -740,29 +1149,52 @@ mod tests {
     fn create_test_state() -> BattleState {
         let mut state = BattleState::new(BattleFormat::new("Singles".to_string(), Generation::Gen9, FormatType::Singles));
         
-        // Add Pokemon to both sides
+        // Add Pokemon to both sides using the new sides array
         let mut pokemon1 = Pokemon::new("Attacker".to_string());
         let pokemon2 = Pokemon::new("Defender".to_string());
         
-        // Add a basic attack move
-        let tackle = Move::new_with_details(
-            "Tackle".to_string(),
-            40,
-            100,
-            "Normal".to_string(),
-            35,
-            MoveTarget::Normal,
-            MoveCategory::Physical,
-            0,
-        );
+        // Add a basic attack move using proper repository-based construction
+        // For testing, try to load from repository first, fallback to manual construction
+        let tackle_move = if let Ok(repository) = crate::data::ps::repository::Repository::from_path("data/ps-extracted") {
+            if let Ok(tackle) = repository.create_move(&crate::types::identifiers::MoveId::from("tackle")) {
+                tackle
+            } else {
+                // Fallback to manual construction for tests
+                Move::new_with_details(
+                    "Tackle".to_string(),
+                    40,
+                    100,
+                    "Normal".to_string(),
+                    35,
+                    35,
+                    MoveTarget::Normal,
+                    MoveCategory::Physical,
+                    0,
+                )
+            }
+        } else {
+            // Fallback to manual construction for tests
+            Move::new_with_details(
+                "Tackle".to_string(),
+                40,
+                100,
+                "Normal".to_string(),
+                35,
+                35,
+                MoveTarget::Normal,
+                MoveCategory::Physical,
+                0,
+            )
+        };
         
-        pokemon1.add_move(MoveIndex::M0, tackle);
+        pokemon1.add_move(MoveIndex::M0, tackle_move);
         
-        state.side_one.add_pokemon(pokemon1);
-        state.side_one.set_active_pokemon_at_slot(0, Some(0));
+        // Use the new sides array instead of side_one/side_two
+        state.get_side_mut(0).add_pokemon(pokemon1);
+        state.get_side_mut(0).set_active_pokemon_at_slot(0, Some(0));
         
-        state.side_two.add_pokemon(pokemon2);
-        state.side_two.set_active_pokemon_at_slot(0, Some(0));
+        state.get_side_mut(1).add_pokemon(pokemon2);
+        state.get_side_mut(1).set_active_pokemon_at_slot(0, Some(0));
         
         state
     }
@@ -778,7 +1210,6 @@ mod tests {
         let no_move = MoveChoice::None;
         
         let instructions = generate_instructions(&state, (&move_choice, &no_move));
-        
         assert!(instructions.is_ok());
         let instructions = instructions.unwrap();
         assert!(!instructions.is_empty());
@@ -793,7 +1224,7 @@ mod tests {
         
         // Add a second Pokemon to switch to
         let pokemon3 = Pokemon::new("Switcher".to_string());
-        state.side_one.add_pokemon(pokemon3);
+        state.sides[0].add_pokemon(pokemon3);
         
         let switch_choice = MoveChoice::Switch(crate::core::move_choice::PokemonIndex::P1);
         let no_move = MoveChoice::None;

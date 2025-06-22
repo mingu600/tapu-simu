@@ -4,9 +4,37 @@
 //! raw stat modifications, etc.
 
 use crate::core::battle_format::BattlePosition;
-use crate::core::instruction::Stat;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+
+/// Pokemon stats that can be boosted/lowered
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum Stat {
+    Hp,
+    Attack,
+    Defense,
+    SpecialAttack,
+    SpecialDefense,
+    Speed,
+    Accuracy,
+    Evasion,
+}
+
+impl From<u8> for Stat {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => Stat::Hp,
+            1 => Stat::Attack,
+            2 => Stat::Defense,
+            3 => Stat::SpecialAttack,
+            4 => Stat::SpecialDefense,
+            5 => Stat::Speed,
+            6 => Stat::Accuracy,
+            7 => Stat::Evasion,
+            _ => Stat::Hp, // Default fallback
+        }
+    }
+}
 
 /// Stats-related instruction types
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

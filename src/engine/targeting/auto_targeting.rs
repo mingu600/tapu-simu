@@ -115,8 +115,16 @@ impl AutoTargetingEngine {
             
             // Scripted moves need special handling (Counter, Mirror Coat)
             MoveTarget::Scripted => {
-                // Would need to track last attacker
-                vec![]
+                // Target the last Pokemon that damaged this Pokemon with a direct attack
+                if let Some(damage_info) = state.turn_info.damaged_this_turn.get(&user_position) {
+                    if damage_info.is_direct_damage {
+                        vec![damage_info.attacker_position]
+                    } else {
+                        vec![]
+                    }
+                } else {
+                    vec![]
+                }
             }
         }
     }
@@ -328,24 +336,24 @@ mod tests {
     fn create_test_state_doubles() -> BattleState {
         let mut state = BattleState::new(BattleFormat::doubles());
         
-        // Set up active Pokemon on both sides
-        state.side_one.active_pokemon_indices = vec![Some(0), Some(1)];
-        state.side_two.active_pokemon_indices = vec![Some(0), Some(1)];
+        // Set up active Pokemon on both sides (use the proper sides array)
+        state.get_side_mut(0).active_pokemon_indices = vec![Some(0), Some(1)];
+        state.get_side_mut(1).active_pokemon_indices = vec![Some(0), Some(1)];
         
         // Add some Pokemon to teams
         for _ in 0..2 {
             let mut pokemon_one = Pokemon::new("Test".to_string());
-            pokemon_one.ability = crate::types::identifiers::AbilityId::from("Test".to_string());
+            pokemon_one.ability = "Test".to_string();
             pokemon_one.hp = 100;
             pokemon_one.max_hp = 100;
             
             let mut pokemon_two = Pokemon::new("Test".to_string());
-            pokemon_two.ability = crate::types::identifiers::AbilityId::from("Test".to_string());
+            pokemon_two.ability = "Test".to_string();
             pokemon_two.hp = 100;
             pokemon_two.max_hp = 100;
             
-            state.side_one.pokemon.push(pokemon_one);
-            state.side_two.pokemon.push(pokemon_two);
+            state.get_side_mut(0).pokemon.push(pokemon_one);
+            state.get_side_mut(1).pokemon.push(pokemon_two);
         }
         
         state

@@ -8,10 +8,10 @@ pub mod field;
 pub mod status;
 pub mod stats;
 
-pub use pokemon::PokemonInstruction;
-pub use field::FieldInstruction;
-pub use status::StatusInstruction;
-pub use stats::StatsInstruction;
+pub use pokemon::{PokemonInstruction, MoveCategory};
+pub use field::{FieldInstruction, Weather, Terrain, SideCondition};
+pub use status::{StatusInstruction, PokemonStatus, VolatileStatus};
+pub use stats::{StatsInstruction, Stat};
 
 use crate::core::battle_format::BattlePosition;
 use serde::{Deserialize, Serialize};

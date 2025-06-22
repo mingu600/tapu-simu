@@ -34,6 +34,9 @@ pub enum BattleError {
     
     #[error("Battle execution failed: {reason}")]
     ExecutionFailed { reason: String },
+
+    #[error("Builder error")]
+    BuilderError(#[from] crate::builders::BuilderError),
 }
 
 /// Errors related to data loading and access

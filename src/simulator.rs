@@ -3,7 +3,7 @@ use crate::core::battle_state::BattleState;
 use crate::data::ps::repository::Repository;
 use crate::types::errors::{BattleError, DataError, SimulatorError};
 use crate::config::Config;
-use crate::builders::battle::BattleBuilder;
+use crate::builders::{BattleBuilder, TeamBuilder};
 use std::path::Path;
 
 /// Main facade for the Tapu Simu battle simulator
@@ -117,8 +117,8 @@ impl Simulator {
     }
 
     /// Create a team builder for the current data
-    pub fn team(&self) -> crate::builders::team::TeamBuilder<'_> {
-        crate::builders::team::TeamBuilder::new(&self.data)
+    pub fn team(&self) -> TeamBuilder<'_> {
+        TeamBuilder::new(&self.data)
     }
 
     /// Create a format builder

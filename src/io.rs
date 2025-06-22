@@ -51,6 +51,14 @@ pub enum Commands {
         /// Team index for consistent team selection (0-based)
         #[arg(long)]
         team_index: Option<usize>,
+
+        /// Configuration file path
+        #[arg(short, long)]
+        config: Option<String>,
+
+        /// Random seed for reproducible battles
+        #[arg(long)]
+        seed: Option<u64>,
     },
 
     /// Validate battle format configuration
@@ -102,7 +110,26 @@ pub fn parse_battle_format(format_str: &str) -> Result<BattleFormat, String> {
         "gen7randombattle" | "gen7random" | "gen 7 random battle" => {
             Ok(BattleFormat::gen7_random_battle())
         }
-        _ => Err(format!("Unknown format: {}", format_str)),
+        _ => {
+            // Provide helpful suggestions for invalid formats
+            let suggestions = vec![
+                "singles", "doubles", "triples", "vgc",
+                "gen9ou", "gen4ou", 
+                "gen9randombattle", "gen9randomdoubles",
+                "gen8randombattle", "gen8randomdoubles",
+                "gen7randombattle"
+            ];
+            
+            let error_msg = format!(
+                "Unknown format: '{}'\n\nAvailable formats:\n{}",
+                format_str,
+                suggestions.iter()
+                    .map(|s| format!("  - {}", s))
+                    .collect::<Vec<_>>()
+                    .join("\n")
+            );
+            Err(error_msg)
+        }
     }
 }
 

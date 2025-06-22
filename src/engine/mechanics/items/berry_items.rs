@@ -1,0 +1,723 @@
+//! # Berry Items
+//!
+//! All berry implementations including damage reduction, healing, and stat boost berries.
+//! Berries typically activate under specific conditions and are consumed after use.
+
+use super::{ItemModifier, StatBoosts};
+use crate::engine::combat::damage_context::DamageContext;
+use crate::generation::{GenerationBattleMechanics, Generation};
+use crate::engine::combat::type_effectiveness::{TypeChart, PokemonType};
+use crate::core::battle_state::{MoveCategory, Pokemon};
+use crate::core::battle_format::BattlePosition;
+use crate::core::instructions::{Stat, PokemonStatus};
+use crate::core::instructions::{BattleInstruction, BattleInstructions, StatusInstruction, PokemonInstruction, StatsInstruction};
+use std::collections::HashMap;
+
+/// Get berry item effect if the item is a berry
+pub fn get_berry_item_effect(
+    item_name: &str,
+    generation: &dyn GenerationBattleMechanics,
+    attacker: &Pokemon,
+    defender: Option<&Pokemon>,
+    move_name: &str,
+    move_type: &str,
+    move_category: MoveCategory,
+    context: &DamageContext,
+) -> Option<ItemModifier> {
+    let normalized_name = item_name.to_lowercase().replace(&[' ', '-', '\''][..], "");
+    
+    match normalized_name.as_str() {
+        // Damage Reduction Berries (18 items)
+        "chopleberry" => Some(damage_reduction_berry_effect("fighting", move_type, context)),
+        "cobaberry" => Some(damage_reduction_berry_effect("flying", move_type, context)),
+        "kebiaberry" => Some(damage_reduction_berry_effect("poison", move_type, context)),
+        "shucaberry" => Some(damage_reduction_berry_effect("ground", move_type, context)),
+        "chartiberry" => Some(damage_reduction_berry_effect("rock", move_type, context)),
+        "tangaberry" => Some(damage_reduction_berry_effect("bug", move_type, context)),
+        "kasibberry" => Some(damage_reduction_berry_effect("ghost", move_type, context)),
+        "babiriberry" => Some(damage_reduction_berry_effect("steel", move_type, context)),
+        "occaberry" => Some(damage_reduction_berry_effect("fire", move_type, context)),
+        "passhoberry" => Some(damage_reduction_berry_effect("water", move_type, context)),
+        "rindoberry" => Some(damage_reduction_berry_effect("grass", move_type, context)),
+        "wacanberry" => Some(damage_reduction_berry_effect("electric", move_type, context)),
+        "payapaberry" => Some(damage_reduction_berry_effect("psychic", move_type, context)),
+        "yacheberry" => Some(damage_reduction_berry_effect("ice", move_type, context)),
+        "habanberry" => Some(damage_reduction_berry_effect("dragon", move_type, context)),
+        "colburberry" => Some(damage_reduction_berry_effect("dark", move_type, context)),
+        "roseliberry" => Some(damage_reduction_berry_effect("fairy", move_type, context)),
+        "chilanberry" => Some(chilan_berry_effect(move_type)), // Special case for Normal
+        
+        // Healing/Status Berries (5 items)
+        "lumberry" => Some(lum_berry_effect(defender)),
+        "sitrusberry" => Some(sitrus_berry_effect(defender, generation)),
+        "chestoberry" => Some(chesto_berry_effect(defender)),
+        "miracleberry" => Some(miracle_berry_effect(defender, generation)),
+        "mintberry" => Some(mint_berry_effect(defender, generation)),
+        
+        // Stat Boost Berries (4 items)
+        "liechiberry" => Some(liechi_berry_effect(defender)),
+        "petayaberry" => Some(petaya_berry_effect(defender)),
+        "salacberry" => Some(salac_berry_effect(defender)),
+        "custapberry" => Some(custap_berry_effect(attacker)),
+        
+        _ => None,
+    }
+}
+
+// =============================================================================
+// DAMAGE REDUCTION BERRIES (18 items)
+// =============================================================================
+
+/// Standard damage reduction berry that halves super effective damage
+fn damage_reduction_berry_effect(
+    resisted_type: &str,
+    move_type: &str,
+    context: &DamageContext,
+) -> ItemModifier {
+    // Check if this move is the resisted type
+    if move_type.to_lowercase() != resisted_type.to_lowercase() {
+        return ItemModifier::default();
+    }
+    
+    // Check if move is super effective
+    let type_chart = TypeChart::new(9); // Gen 9 type chart
+    let attacking_type = PokemonType::from_str(&context.move_info.move_type).unwrap_or(PokemonType::Normal);
+    let defender_type1 = PokemonType::from_str(context.defender.pokemon.types.get(0).unwrap_or(&"Normal".to_string())).unwrap_or(PokemonType::Normal);
+    let defender_type2 = PokemonType::from_str(context.defender.pokemon.types.get(1).unwrap_or(&"Normal".to_string())).unwrap_or(defender_type1);
+    let type_effectiveness = type_chart.calculate_damage_multiplier(
+        attacking_type,
+        (defender_type1, defender_type2),
+        None, // No tera type
+        None, // No special move name
+    );
+    if type_effectiveness > 1.0 {
+        ItemModifier::new()
+            .with_damage_multiplier(0.5)
+            .with_consumed()
+    } else {
+        ItemModifier::default()
+    }
+}
+
+/// Chilan Berry - Special case that reduces Normal-type damage regardless of effectiveness
+fn chilan_berry_effect(move_type: &str) -> ItemModifier {
+    if move_type.to_lowercase() == "normal" {
+        ItemModifier::new()
+            .with_damage_multiplier(0.5)
+            .with_consumed()
+    } else {
+        ItemModifier::default()
+    }
+}
+
+// =============================================================================
+// HEALING/STATUS BERRIES (5 items)
+// =============================================================================
+
+/// Lum Berry - Cures all status conditions
+fn lum_berry_effect(defender: Option<&Pokemon>) -> ItemModifier {
+    if let Some(pokemon) = defender {
+        if pokemon.status != PokemonStatus::None {
+            ItemModifier::new().with_consumed()
+        } else {
+            ItemModifier::default()
+        }
+    } else {
+        ItemModifier::default()
+    }
+}
+
+/// Sitrus Berry - Heals HP when below threshold (generation-dependent)
+fn sitrus_berry_effect(defender: Option<&Pokemon>, generation: &dyn GenerationBattleMechanics) -> ItemModifier {
+    if let Some(pokemon) = defender {
+        // Threshold based on generation: Gen 3 = 50%, Gen 4+ = 25%
+        let threshold = match generation.generation() {
+            Generation::Gen3 => 0.5,
+            _ => 0.25,
+        };
+        
+        let hp_percentage = pokemon.hp as f32 / pokemon.max_hp as f32;
+        if hp_percentage <= threshold {
+            ItemModifier::new().with_consumed()
+        } else {
+            ItemModifier::default()
+        }
+    } else {
+        ItemModifier::default()
+    }
+}
+
+/// Chesto Berry - Cures sleep status
+fn chesto_berry_effect(defender: Option<&Pokemon>) -> ItemModifier {
+    if let Some(pokemon) = defender {
+        if pokemon.status == PokemonStatus::Sleep {
+            ItemModifier::new().with_consumed()
+        } else {
+            ItemModifier::default()
+        }
+    } else {
+        ItemModifier::default()
+    }
+}
+
+/// Miracle Berry - Gen 2 exclusive, cures all status conditions
+fn miracle_berry_effect(defender: Option<&Pokemon>, generation: &dyn GenerationBattleMechanics) -> ItemModifier {
+    // Only available in Gen 2
+    if generation.generation() != Generation::Gen2 {
+        return ItemModifier::default();
+    }
+    
+    if let Some(pokemon) = defender {
+        if pokemon.status != PokemonStatus::None {
+            ItemModifier::new().with_consumed()
+        } else {
+            ItemModifier::default()
+        }
+    } else {
+        ItemModifier::default()
+    }
+}
+
+/// Mint Berry - Gen 2 exclusive, cures sleep status
+fn mint_berry_effect(defender: Option<&Pokemon>, generation: &dyn GenerationBattleMechanics) -> ItemModifier {
+    // Only available in Gen 2
+    if generation.generation() != Generation::Gen2 {
+        return ItemModifier::default();
+    }
+    
+    if let Some(pokemon) = defender {
+        if pokemon.status == PokemonStatus::Sleep {
+            ItemModifier::new().with_consumed()
+        } else {
+            ItemModifier::default()
+        }
+    } else {
+        ItemModifier::default()
+    }
+}
+
+// =============================================================================
+// STAT BOOST BERRIES (4 items)
+// =============================================================================
+
+/// Liechi Berry - +1 Attack when HP ≤ 25%
+fn liechi_berry_effect(pokemon: Option<&Pokemon>) -> ItemModifier {
+    if let Some(poke) = pokemon {
+        let hp_percentage = poke.hp as f32 / poke.max_hp as f32;
+        if hp_percentage <= 0.25 {
+            ItemModifier::new()
+                .with_stat_boosts(StatBoosts::attack(1))
+                .with_consumed()
+        } else {
+            ItemModifier::default()
+        }
+    } else {
+        ItemModifier::default()
+    }
+}
+
+/// Petaya Berry - +1 Special Attack when HP ≤ 25%
+fn petaya_berry_effect(pokemon: Option<&Pokemon>) -> ItemModifier {
+    if let Some(poke) = pokemon {
+        let hp_percentage = poke.hp as f32 / poke.max_hp as f32;
+        if hp_percentage <= 0.25 {
+            ItemModifier::new()
+                .with_stat_boosts(StatBoosts::special_attack(1))
+                .with_consumed()
+        } else {
+            ItemModifier::default()
+        }
+    } else {
+        ItemModifier::default()
+    }
+}
+
+/// Salac Berry - +1 Speed when HP ≤ 25%
+fn salac_berry_effect(pokemon: Option<&Pokemon>) -> ItemModifier {
+    if let Some(poke) = pokemon {
+        let hp_percentage = poke.hp as f32 / poke.max_hp as f32;
+        if hp_percentage <= 0.25 {
+            ItemModifier::new()
+                .with_stat_boosts(StatBoosts {
+                    attack: 0,
+                    defense: 0,
+                    special_attack: 0,
+                    special_defense: 0,
+                    speed: 1,
+                    accuracy: 0,
+                })
+                .with_consumed()
+        } else {
+            ItemModifier::default()
+        }
+    } else {
+        ItemModifier::default()
+    }
+}
+
+/// Custap Berry - Provides +1 priority when HP ≤ 25%
+fn custap_berry_effect(pokemon: &Pokemon) -> ItemModifier {
+    let hp_percentage = pokemon.hp as f32 / pokemon.max_hp as f32;
+    if hp_percentage <= 0.25 {
+        ItemModifier::new()
+            .with_priority_modifier(1)
+            .with_consumed()
+    } else {
+        ItemModifier::default()
+    }
+}
+
+/// Generate berry activation instructions for reactive berries
+pub fn generate_berry_activation_instructions(
+    item_name: &str,
+    pokemon: &Pokemon,
+    position: BattlePosition,
+    generation: &dyn GenerationBattleMechanics,
+) -> Option<BattleInstructions> {
+    let normalized_name = item_name.to_lowercase().replace(&[' ', '-', '\''][..], "");
+    
+    match normalized_name.as_str() {
+        "lumberry" => {
+            if pokemon.status != PokemonStatus::None {
+                let instructions = vec![
+                    BattleInstruction::Status(StatusInstruction::Remove {
+                        target: position,
+                        status: pokemon.status,
+                        previous_duration: None,
+                    }),
+                    BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+                        target: position,
+                        new_item: None,
+                        previous_item: Some("Lum Berry".to_string()),
+                    })
+                ];
+                Some(BattleInstructions::new(100.0, instructions))
+            } else {
+                None
+            }
+        },
+        
+        "sitrusberry" => {
+            let threshold = match generation.generation() {
+                Generation::Gen3 => 0.5,
+                _ => 0.25,
+            };
+            
+            let hp_percentage = pokemon.hp as f32 / pokemon.max_hp as f32;
+            if hp_percentage <= threshold {
+                // Heal 1/4 of max HP
+                let heal_amount = pokemon.max_hp / 4;
+                
+                let instructions = vec![
+                    BattleInstruction::Pokemon(PokemonInstruction::Heal {
+                        target: position,
+                        amount: heal_amount,
+                        previous_hp: Some(pokemon.hp),
+                    }),
+                    BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+                        target: position,
+                        new_item: None,
+                        previous_item: Some("Sitrus Berry".to_string()),
+                    })
+                ];
+                Some(BattleInstructions::new(100.0, instructions))
+            } else {
+                None
+            }
+        },
+        
+        "chestoberry" => {
+            if pokemon.status == PokemonStatus::Sleep {
+                let instructions = vec![
+                    BattleInstruction::Status(StatusInstruction::Remove {
+                        target: position,
+                        status: PokemonStatus::Sleep,
+                        previous_duration: None,
+                    }),
+                    BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+                        target: position,
+                        new_item: None,
+                        previous_item: Some("Chesto Berry".to_string()),
+                    })
+                ];
+                Some(BattleInstructions::new(100.0, instructions))
+            } else {
+                None
+            }
+        },
+        
+        "liechiberry" | "petayaberry" | "salacberry" | "ganlonberry" | "apicotberry" => {
+            let hp_percentage = pokemon.hp as f32 / pokemon.max_hp as f32;
+            if hp_percentage <= 0.25 {
+                let stat = match normalized_name.as_str() {
+                    "liechiberry" => Stat::Attack,
+                    "petayaberry" => Stat::SpecialAttack,
+                    "salacberry" => Stat::Speed,
+                    "ganlonberry" => Stat::Defense,
+                    "apicotberry" => Stat::SpecialDefense,
+                    _ => return None, // Should not happen, but return None instead of panicking
+                };
+                
+                let mut stat_changes = HashMap::new();
+                stat_changes.insert(stat, 1);
+                
+                let instructions = vec![
+                    BattleInstruction::Stats(StatsInstruction::BoostStats {
+                        target: position,
+                        stat_changes,
+                        previous_boosts: HashMap::new(),
+                    }),
+                    BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+                        target: position,
+                        new_item: None,
+                        previous_item: Some(item_name.to_string()),
+                    })
+                ];
+                Some(BattleInstructions::new(100.0, instructions))
+            } else {
+                None
+            }
+        },
+        
+        "lansatberry" => {
+            let hp_percentage = pokemon.hp as f32 / pokemon.max_hp as f32;
+            if hp_percentage <= 0.25 {
+                // Lansat Berry applies Focus Energy effect (increases critical hit ratio)
+                let instructions = vec![
+                    BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                        target: position,
+                        status: crate::core::instructions::VolatileStatus::FocusEnergy,
+                        duration: None,
+                        previous_had_status: false,
+                        previous_duration: None,
+                    }),
+                    BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+                        target: position,
+                        new_item: None,
+                        previous_item: Some("Lansat Berry".to_string()),
+                    })
+                ];
+                Some(BattleInstructions::new(100.0, instructions))
+            } else {
+                None
+            }
+        },
+        
+        "starfberry" => {
+            let hp_percentage = pokemon.hp as f32 / pokemon.max_hp as f32;
+            if hp_percentage <= 0.25 {
+                // Starf Berry boosts a random stat by 2 stages (excluding HP)
+                use rand::seq::SliceRandom;
+                use rand::thread_rng;
+                
+                let boostable_stats = vec![
+                    Stat::Attack, 
+                    Stat::Defense, 
+                    Stat::SpecialAttack, 
+                    Stat::SpecialDefense, 
+                    Stat::Speed, 
+                    Stat::Accuracy, 
+                    Stat::Evasion
+                ];
+                
+                let mut rng = thread_rng();
+                let random_stat = *boostable_stats.choose(&mut rng)
+                    .expect("Boostable stats vec should not be empty");
+                let mut stat_changes = HashMap::new();
+                stat_changes.insert(random_stat, 2);
+                
+                let instructions = vec![
+                    BattleInstruction::Stats(StatsInstruction::BoostStats {
+                        target: position,
+                        stat_changes,
+                        previous_boosts: HashMap::new(),
+                    }),
+                    BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+                        target: position,
+                        new_item: None,
+                        previous_item: Some("Starf Berry".to_string()),
+                    })
+                ];
+                Some(BattleInstructions::new(100.0, instructions))
+            } else {
+                None
+            }
+        },
+        
+        "micleberry" => {
+            let hp_percentage = pokemon.hp as f32 / pokemon.max_hp as f32;
+            if hp_percentage <= 0.25 {
+                // Micle Berry increases accuracy of next move
+                let instructions = vec![
+                    BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                        target: position,
+                        status: crate::core::instructions::VolatileStatus::MicleBoost,
+                        duration: Some(1), // Lasts for one move
+                        previous_had_status: false,
+                        previous_duration: None,
+                    }),
+                    BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+                        target: position,
+                        new_item: None,
+                        previous_item: Some("Micle Berry".to_string()),
+                    })
+                ];
+                Some(BattleInstructions::new(100.0, instructions))
+            } else {
+                None
+            }
+        },
+        
+        "custapberry" => {
+            let hp_percentage = pokemon.hp as f32 / pokemon.max_hp as f32;
+            if hp_percentage <= 0.25 {
+                // Custap Berry increases priority of next move
+                let instructions = vec![
+                    BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+                        target: position,
+                        status: crate::core::instructions::VolatileStatus::CustapBoost,
+                        duration: Some(1), // Lasts for one move
+                        previous_had_status: false,
+                        previous_duration: None,
+                    }),
+                    BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+                        target: position,
+                        new_item: None,
+                        previous_item: Some("Custap Berry".to_string()),
+                    })
+                ];
+                Some(BattleInstructions::new(100.0, instructions))
+            } else {
+                None
+            }
+        },
+        
+        _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::generation::{Generation, GenerationMechanics};
+
+    #[test]
+    fn test_chople_berry_fighting_move() {
+        let generation = GenerationMechanics::new(Generation::Gen9);
+        let pokemon = Pokemon::default();
+        
+        // Create a context with a Steel-type Pokemon (weak to Fighting)
+        let mut context = DamageContext::default();
+        context.defender.pokemon.types = vec!["Steel".to_string()];
+        context.move_info.move_type = "Fighting".to_string();
+        
+        let modifier = get_berry_item_effect(
+            "chopleberry",
+            &generation,
+            &pokemon,
+            Some(&pokemon),
+            "closecombat",
+            "fighting",
+            MoveCategory::Physical,
+            &context,
+        ).unwrap();
+        
+        // Fighting is super effective against Steel, so berry should activate
+        assert_eq!(modifier.damage_multiplier, 0.5);
+        assert!(modifier.is_consumed);
+    }
+
+    #[test]
+    fn test_chople_berry_non_fighting_move() {
+        let generation = GenerationMechanics::new(Generation::Gen9);
+        let pokemon = Pokemon::default();
+        let context = DamageContext::default();
+        
+        let modifier = get_berry_item_effect(
+            "chopleberry",
+            &generation,
+            &pokemon,
+            Some(&pokemon),
+            "tackle",
+            "normal",
+            MoveCategory::Physical,
+            &context,
+        ).unwrap();
+        
+        assert_eq!(modifier.damage_multiplier, 1.0);
+        assert!(!modifier.is_consumed);
+    }
+
+    #[test]
+    fn test_chilan_berry_normal_move() {
+        let generation = GenerationMechanics::new(Generation::Gen9);
+        let pokemon = Pokemon::default();
+        let context = DamageContext::default();
+        
+        let modifier = get_berry_item_effect(
+            "chilanberry",
+            &generation,
+            &pokemon,
+            Some(&pokemon),
+            "tackle",
+            "normal",
+            MoveCategory::Physical,
+            &context,
+        ).unwrap();
+        
+        assert_eq!(modifier.damage_multiplier, 0.5);
+        assert!(modifier.is_consumed);
+    }
+
+    #[test]
+    fn test_lum_berry_with_status() {
+        let generation = GenerationMechanics::new(Generation::Gen9);
+        let mut pokemon = Pokemon::default();
+        pokemon.status = PokemonStatus::Burn;
+        let context = DamageContext::default();
+        
+        let modifier = get_berry_item_effect(
+            "lumberry",
+            &generation,
+            &pokemon,
+            Some(&pokemon),
+            "tackle",
+            "normal",
+            MoveCategory::Physical,
+            &context,
+        ).unwrap();
+        
+        assert!(modifier.is_consumed);
+    }
+
+    #[test]
+    fn test_lum_berry_no_status() {
+        let generation = GenerationMechanics::new(Generation::Gen9);
+        let pokemon = Pokemon::default();
+        let context = DamageContext::default();
+        
+        let modifier = get_berry_item_effect(
+            "lumberry",
+            &generation,
+            &pokemon,
+            Some(&pokemon),
+            "tackle",
+            "normal",
+            MoveCategory::Physical,
+            &context,
+        ).unwrap();
+        
+        assert!(!modifier.is_consumed);
+    }
+
+    #[test]
+    fn test_chesto_berry_sleep() {
+        let generation = GenerationMechanics::new(Generation::Gen9);
+        let mut pokemon = Pokemon::default();
+        pokemon.status = PokemonStatus::Sleep;
+        let context = DamageContext::default();
+        
+        let modifier = get_berry_item_effect(
+            "chestoberry",
+            &generation,
+            &pokemon,
+            Some(&pokemon),
+            "tackle",
+            "normal",
+            MoveCategory::Physical,
+            &context,
+        ).unwrap();
+        
+        assert!(modifier.is_consumed);
+    }
+
+    #[test]
+    fn test_liechi_berry_low_hp() {
+        let generation = GenerationMechanics::new(Generation::Gen9);
+        let mut pokemon = Pokemon::default();
+        pokemon.hp = 20; // 20% of 100 max HP
+        pokemon.max_hp = 100;
+        let context = DamageContext::default();
+        
+        let modifier = get_berry_item_effect(
+            "liechiberry",
+            &generation,
+            &pokemon,
+            Some(&pokemon),
+            "tackle",
+            "normal",
+            MoveCategory::Physical,
+            &context,
+        ).unwrap();
+        
+        assert!(modifier.stat_boosts.is_some());
+        assert_eq!(modifier.stat_boosts.unwrap().attack, 1);
+        assert!(modifier.is_consumed);
+    }
+
+    #[test]
+    fn test_liechi_berry_high_hp() {
+        let generation = GenerationMechanics::new(Generation::Gen9);
+        let mut pokemon = Pokemon::default();
+        pokemon.hp = 50; // 50% of 100 max HP
+        pokemon.max_hp = 100;
+        let context = DamageContext::default();
+        
+        let modifier = get_berry_item_effect(
+            "liechiberry",
+            &generation,
+            &pokemon,
+            Some(&pokemon),
+            "tackle",
+            "normal",
+            MoveCategory::Physical,
+            &context,
+        ).unwrap();
+        
+        assert!(modifier.stat_boosts.is_none());
+        assert!(!modifier.is_consumed);
+    }
+
+    #[test]
+    fn test_custap_berry_low_hp() {
+        let generation = GenerationMechanics::new(Generation::Gen9);
+        let mut pokemon = Pokemon::default();
+        pokemon.hp = 20; // 20% of 100 max HP
+        pokemon.max_hp = 100;
+        let context = DamageContext::default();
+        
+        let modifier = get_berry_item_effect(
+            "custapberry",
+            &generation,
+            &pokemon,
+            Some(&pokemon),
+            "tackle",
+            "normal",
+            MoveCategory::Physical,
+            &context,
+        ).unwrap();
+        
+        assert_eq!(modifier.priority_modifier, 1);
+        assert!(modifier.is_consumed);
+    }
+
+    #[test]
+    fn test_non_berry_item() {
+        let generation = GenerationMechanics::new(Generation::Gen9);
+        let pokemon = Pokemon::default();
+        let context = DamageContext::default();
+        
+        let modifier = get_berry_item_effect(
+            "leftovers",
+            &generation,
+            &pokemon,
+            Some(&pokemon),
+            "tackle",
+            "normal",
+            MoveCategory::Physical,
+            &context,
+        );
+        
+        assert!(modifier.is_none());
+    }
+}

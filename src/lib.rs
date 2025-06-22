@@ -59,7 +59,7 @@ pub use core::battle_format::{BattleFormat, BattlePosition, SideReference, Forma
 pub use core::battle_environment::{
     Player, RandomPlayer, FirstMovePlayer, DamageMaximizer,
     BattleEnvironment, BattleResult, TurnInfo, ParallelBattleResults,
-    run_parallel_battles_with_states, run_battle_from_state, run_battle_from_battle_state
+    run_parallel_battles_with_states, run_battle_from_state
 };
 pub use core::instructions::{BattleInstruction, BattleInstructions, PokemonInstruction, FieldInstruction, StatusInstruction, StatsInstruction};
 pub use core::move_choice::MoveChoice;

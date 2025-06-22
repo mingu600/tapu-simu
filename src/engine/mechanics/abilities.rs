@@ -2,7 +2,6 @@ use crate::types::identifiers::{AbilityId, TypeId};
 use crate::core::battle_state::Pokemon;
 use crate::core::battle_state::BattleState;
 use crate::core::battle_format::BattlePosition;
-use crate::data::types::EngineMoveData;
 use crate::engine::combat::damage_context::DamageContext;
 
 // Legacy DamageContext type alias removed - using modern DamageContext directly
@@ -263,9 +262,57 @@ fn apply_dry_skin(context: AbilityContext) -> AbilityEffectResult {
 
 fn apply_wonder_guard(context: AbilityContext) -> AbilityEffectResult {
     // Wonder Guard only allows super effective moves to hit
-    // This would need access to type effectiveness calculation
-    // For now, return none - implementation depends on type effectiveness system
-    AbilityEffectResult::none()
+    use crate::engine::combat::type_effectiveness::{TypeChart, PokemonType};
+    
+    // If no move type or target position, can't check effectiveness
+    let move_type_id = match context.move_type {
+        Some(type_id) => type_id,
+        None => return AbilityEffectResult::none(),
+    };
+    
+    let target_position = match context.target_position {
+        Some(pos) => pos,
+        None => return AbilityEffectResult::none(),
+    };
+    
+    // Get the defending Pokemon's types
+    let defender = match context.state.get_pokemon_at_position(target_position) {
+        Some(pokemon) => pokemon,
+        None => return AbilityEffectResult::none(),
+    };
+    
+    // Convert type string to PokemonType enum
+    let defender_type1 = PokemonType::from_str(&defender.types[0])
+        .unwrap_or(PokemonType::Normal);
+    let defender_type2 = if defender.types.len() > 1 {
+        PokemonType::from_str(&defender.types[1])
+            .unwrap_or(defender_type1)
+    } else {
+        defender_type1
+    };
+    
+    // Convert TypeId to string and then to PokemonType
+    let move_type_str = format!("{:?}", move_type_id).to_lowercase();
+    let move_type = PokemonType::from_str(&move_type_str)
+        .unwrap_or(PokemonType::Normal);
+    
+    // Check type effectiveness
+    let type_chart = TypeChart::default();
+    let effectiveness1 = type_chart.get_effectiveness(move_type, defender_type1);
+    let effectiveness2 = if defender_type1 != defender_type2 {
+        type_chart.get_effectiveness(move_type, defender_type2)
+    } else {
+        1.0
+    };
+    
+    let total_effectiveness = effectiveness1 * effectiveness2;
+    
+    // Wonder Guard grants immunity unless the move is super effective (>1.0)
+    if total_effectiveness <= 1.0 {
+        AbilityEffectResult::immunity()
+    } else {
+        AbilityEffectResult::none()
+    }
 }
 
 // Damage reduction abilities
@@ -295,14 +342,112 @@ fn apply_thick_fat(context: AbilityContext) -> AbilityEffectResult {
 // Damage boost abilities
 fn apply_neuroforce(context: AbilityContext) -> AbilityEffectResult {
     // Boosts super effective moves by 25%
-    // Implementation depends on type effectiveness calculation
-    AbilityEffectResult::none()
+    use crate::engine::combat::type_effectiveness::{TypeChart, PokemonType};
+    
+    // If no move type or target position, can't check effectiveness
+    let move_type_id = match context.move_type {
+        Some(type_id) => type_id,
+        None => return AbilityEffectResult::none(),
+    };
+    
+    let target_position = match context.target_position {
+        Some(pos) => pos,
+        None => return AbilityEffectResult::none(),
+    };
+    
+    // Get the defending Pokemon's types
+    let defender = match context.state.get_pokemon_at_position(target_position) {
+        Some(pokemon) => pokemon,
+        None => return AbilityEffectResult::none(),
+    };
+    
+    // Convert type string to PokemonType enum
+    let defender_type1 = PokemonType::from_str(&defender.types[0])
+        .unwrap_or(PokemonType::Normal);
+    let defender_type2 = if defender.types.len() > 1 {
+        PokemonType::from_str(&defender.types[1])
+            .unwrap_or(defender_type1)
+    } else {
+        defender_type1
+    };
+    
+    // Convert TypeId to string and then to PokemonType
+    let move_type_str = format!("{:?}", move_type_id).to_lowercase();
+    let move_type = PokemonType::from_str(&move_type_str)
+        .unwrap_or(PokemonType::Normal);
+    
+    // Check type effectiveness
+    let type_chart = TypeChart::default();
+    let effectiveness1 = type_chart.get_effectiveness(move_type, defender_type1);
+    let effectiveness2 = if defender_type1 != defender_type2 {
+        type_chart.get_effectiveness(move_type, defender_type2)
+    } else {
+        1.0
+    };
+    
+    let total_effectiveness = effectiveness1 * effectiveness2;
+    
+    // Neuroforce boosts super effective moves by 25% (1.25x multiplier)
+    if total_effectiveness > 1.0 {
+        AbilityEffectResult::damage_multiplier(1.25)
+    } else {
+        AbilityEffectResult::none()
+    }
 }
 
 fn apply_tinted_lens(context: AbilityContext) -> AbilityEffectResult {
     // Doubles damage of not very effective moves
-    // Implementation depends on type effectiveness calculation
-    AbilityEffectResult::none()
+    use crate::engine::combat::type_effectiveness::{TypeChart, PokemonType};
+    
+    // If no move type or target position, can't check effectiveness
+    let move_type_id = match context.move_type {
+        Some(type_id) => type_id,
+        None => return AbilityEffectResult::none(),
+    };
+    
+    let target_position = match context.target_position {
+        Some(pos) => pos,
+        None => return AbilityEffectResult::none(),
+    };
+    
+    // Get the defending Pokemon's types
+    let defender = match context.state.get_pokemon_at_position(target_position) {
+        Some(pokemon) => pokemon,
+        None => return AbilityEffectResult::none(),
+    };
+    
+    // Convert type string to PokemonType enum
+    let defender_type1 = PokemonType::from_str(&defender.types[0])
+        .unwrap_or(PokemonType::Normal);
+    let defender_type2 = if defender.types.len() > 1 {
+        PokemonType::from_str(&defender.types[1])
+            .unwrap_or(defender_type1)
+    } else {
+        defender_type1
+    };
+    
+    // Convert TypeId to string and then to PokemonType
+    let move_type_str = format!("{:?}", move_type_id).to_lowercase();
+    let move_type = PokemonType::from_str(&move_type_str)
+        .unwrap_or(PokemonType::Normal);
+    
+    // Check type effectiveness
+    let type_chart = TypeChart::default();
+    let effectiveness1 = type_chart.get_effectiveness(move_type, defender_type1);
+    let effectiveness2 = if defender_type1 != defender_type2 {
+        type_chart.get_effectiveness(move_type, defender_type2)
+    } else {
+        1.0
+    };
+    
+    let total_effectiveness = effectiveness1 * effectiveness2;
+    
+    // Tinted Lens doubles damage of not very effective moves (<1.0)
+    if total_effectiveness < 1.0 {
+        AbilityEffectResult::damage_multiplier(2.0)
+    } else {
+        AbilityEffectResult::none()
+    }
 }
 
 fn apply_steelworker(context: AbilityContext) -> AbilityEffectResult {
@@ -377,7 +522,7 @@ fn apply_stat_doubler(attack: f32, defense: f32, special_attack: f32, special_de
 fn apply_guts(context: AbilityContext) -> AbilityEffectResult {
     // Check if Pokemon has a status condition
     if let Some(pokemon) = context.state.get_pokemon_at_position(context.user_position) {
-        if pokemon.status != crate::core::instruction::PokemonStatus::None {
+        if pokemon.status != crate::core::instructions::PokemonStatus::None {
             return AbilityEffectResult::stat_multiplier(1.5, 1.0, 1.0, 1.0);
         }
     }
@@ -387,7 +532,7 @@ fn apply_guts(context: AbilityContext) -> AbilityEffectResult {
 fn apply_marvel_scale(context: AbilityContext) -> AbilityEffectResult {
     // Check if Pokemon has a status condition
     if let Some(pokemon) = context.state.get_pokemon_at_position(context.user_position) {
-        if pokemon.status != crate::core::instruction::PokemonStatus::None {
+        if pokemon.status != crate::core::instructions::PokemonStatus::None {
             return AbilityEffectResult::stat_multiplier(1.0, 1.5, 1.0, 1.0);
         }
     }
@@ -395,8 +540,32 @@ fn apply_marvel_scale(context: AbilityContext) -> AbilityEffectResult {
 }
 
 fn apply_plus_minus(context: AbilityContext) -> AbilityEffectResult {
-    // Check if ally has Plus or Minus ability
-    // Implementation depends on checking ally abilities
+    // Plus and Minus boost Special Attack by 50% when an ally has Plus or Minus
+    use crate::core::battle_format::BattlePosition;
+    
+    // Only works in doubles/multi battles where there can be allies
+    if context.state.format.active_pokemon_count() <= 1 {
+        return AbilityEffectResult::none();
+    }
+    
+    // Get ally position (other slot on same side)
+    let ally_slot = 1 - context.user_position.slot;
+    let ally_position = BattlePosition::new(context.user_position.side, ally_slot);
+    
+    // Check if ally position is active and has Plus or Minus
+    if context.state.is_position_active(ally_position) {
+        if let Some(ally_pokemon) = context.state.get_pokemon_at_position(ally_position) {
+            let ally_ability = ally_pokemon.ability.as_str();
+            if ally_ability == "plus" || ally_ability == "minus" {
+                // Boost Special Attack by 50% (1.5x multiplier)
+                return AbilityEffectResult {
+                    special_attack_multiplier: 1.5,
+                    ..Default::default()
+                };
+            }
+        }
+    }
+    
     AbilityEffectResult::none()
 }
 
@@ -591,22 +760,59 @@ pub fn calculate_ability_modifiers_modern(
     combined_modifier
 }
 
-/// Legacy compatibility function for old ability system
-pub fn get_ability_by_name(ability_name: &str) -> Option<Box<dyn AbilityEffect>> {
-    // This function is kept for compatibility but is deprecated
-    // The new system uses apply_ability_effect directly
-    None
+// Simple helper functions to replace legacy system usage
+/// Check if an ability provides immunity to a move type
+pub fn ability_provides_immunity(ability_name: &str, move_type: &str) -> bool {
+    let ability_id = AbilityId::from(ability_name);
+    let context = AbilityContext {
+        user_position: BattlePosition::new(crate::core::battle_format::SideReference::SideOne, 0),
+        target_position: None,
+        move_type: Some(TypeId::from(move_type)),
+        move_id: None,
+        base_power: None,
+        is_critical: false,
+        is_contact: false,
+        state: &BattleState::default(),
+    };
+    
+    apply_ability_effect(&ability_id, context).immunity
 }
 
-/// Trait for legacy ability system compatibility
-pub trait AbilityEffect {
-    fn name(&self) -> &str;
-    fn modify_damage(&self, context: &DamageContext) -> AbilityModifier;
-    fn provides_immunity(&self, move_type: &str) -> bool;
-    fn modify_stab(&self, context: &DamageContext) -> f32;
-    fn negates_weather(&self) -> bool;
-    fn bypasses_screens(&self) -> bool;
+/// Check if an ability negates weather
+pub fn ability_negates_weather(ability_name: &str) -> bool {
+    let ability_id = AbilityId::from(ability_name);
+    let context = AbilityContext {
+        user_position: BattlePosition::new(crate::core::battle_format::SideReference::SideOne, 0),
+        target_position: None,
+        move_type: None,
+        move_id: None,
+        base_power: None,
+        is_critical: false,
+        is_contact: false,
+        state: &BattleState::default(),
+    };
+    
+    apply_ability_effect(&ability_id, context).negates_weather
 }
+
+/// Check if an ability bypasses screens
+pub fn ability_bypasses_screens(ability_name: &str) -> bool {
+    let ability_id = AbilityId::from(ability_name);
+    let context = AbilityContext {
+        user_position: BattlePosition::new(crate::core::battle_format::SideReference::SideOne, 0),
+        target_position: None,
+        move_type: None,
+        move_id: None,
+        base_power: None,
+        is_critical: false,
+        is_contact: false,
+        state: &BattleState::default(),
+    };
+    
+    apply_ability_effect(&ability_id, context).bypasses_screens
+}
+
+
 
 #[cfg(test)]
 mod tests {
@@ -687,3 +893,4 @@ mod tests {
         assert_eq!(effect, AbilityEffectResult::none());
     }
 }
+

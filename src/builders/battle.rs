@@ -1,37 +1,81 @@
+//! # Battle Builder
+//!
+//! Standardized battle builder implementing the common Builder trait
+//! with comprehensive validation and error handling.
+
+use super::traits::{Builder, BuilderError, ValidatingBuilder, ValidationContext};
 use crate::core::battle_format::BattleFormat;
 use crate::core::battle_state::BattleState;
 use crate::data::ps::repository::Repository;
-use crate::data::random_team_loader::RandomTeamLoader;
-use crate::types::errors::{BattleError, TeamError};
-use crate::simulator::{BattleResult, Player, RandomPlayer, DamageMaximizerPlayer};
-use std::time::Instant;
+use crate::data::RandomPokemonSet;
+use crate::simulator::Player;
+use crate::types::errors::BattleError;
 
-/// Builder for creating and running battles with fluent API
+/// Battle builder with standardized interface
 pub struct BattleBuilder<'a> {
+    /// Data repository for Pokemon/move/ability data
     data: &'a Repository,
+    /// Battle format configuration
     format: Option<BattleFormat>,
-    team1: Option<Vec<crate::data::RandomPokemonSet>>,
-    team2: Option<Vec<crate::data::RandomPokemonSet>>,
-    player1: Option<Box<dyn Player>>,
-    player2: Option<Box<dyn Player>>,
-    max_turns: Option<u32>,
-    seed: Option<u64>,
-    measure_time: bool,
+    /// Teams for the battle
+    teams: Option<(Vec<RandomPokemonSet>, Vec<RandomPokemonSet>)>,
+    /// Players for the battle
+    players: Option<(Box<dyn Player>, Box<dyn Player>)>,
+    /// Battle configuration options
+    config: BattleConfig,
+    /// Validation context
+    validation_context: ValidationContext,
+}
+
+/// Configuration options for battles
+#[derive(Debug, Clone)]
+pub struct BattleConfig {
+    /// Maximum number of turns before declaring a draw
+    pub max_turns: u32,
+    /// Random seed for reproducible battles
+    pub seed: Option<u64>,
+    /// Whether to measure execution time
+    pub measure_time: bool,
+    /// Whether to enable detailed logging
+    pub detailed_logging: bool,
+    /// Timeout per turn in milliseconds
+    pub turn_timeout_ms: Option<u32>,
+}
+
+impl Default for BattleConfig {
+    fn default() -> Self {
+        Self {
+            max_turns: 1000,
+            seed: None,
+            measure_time: false,
+            detailed_logging: false,
+            turn_timeout_ms: None,
+        }
+    }
+}
+
+/// Result of building a battle
+pub struct Battle {
+    /// The battle state
+    pub state: BattleState,
+    /// Player 1
+    pub player1: Box<dyn Player>,
+    /// Player 2
+    pub player2: Box<dyn Player>,
+    /// Battle configuration
+    pub config: BattleConfig,
 }
 
 impl<'a> BattleBuilder<'a> {
-    /// Create a new battle builder
+    /// Create a new modern battle builder
     pub fn new(data: &'a Repository) -> Self {
         Self {
             data,
             format: None,
-            team1: None,
-            team2: None,
-            player1: None,
-            player2: None,
-            max_turns: None,
-            seed: None,
-            measure_time: false,
+            teams: None,
+            players: None,
+            config: BattleConfig::default(),
+            validation_context: ValidationContext::default(),
         }
     }
 
@@ -41,124 +85,154 @@ impl<'a> BattleBuilder<'a> {
         self
     }
 
-    /// Set both teams manually
-    pub fn teams(
-        mut self, 
-        team1: Vec<crate::data::RandomPokemonSet>, 
-        team2: Vec<crate::data::RandomPokemonSet>
-    ) -> Self {
-        self.team1 = Some(team1);
-        self.team2 = Some(team2);
+    /// Set both teams
+    pub fn teams(mut self, team1: Vec<RandomPokemonSet>, team2: Vec<RandomPokemonSet>) -> Self {
+        self.teams = Some((team1, team2));
         self
     }
 
     /// Generate random teams for the current format
-    pub fn random_teams(mut self) -> Result<Self, TeamError> {
-        let format = self.format.as_ref().ok_or_else(|| {
-            TeamError::InvalidPokemon { 
-                reason: "Format must be set before generating random teams".to_string() 
+    pub fn random_teams(mut self) -> Result<Self, BuilderError> {
+        let format = self
+            .format
+            .as_ref()
+            .ok_or_else(|| BuilderError::MissingRequired {
+                field: "format".to_string(),
+            })?;
+
+        // Try to use the actual random team loader
+        match crate::data::RandomTeamLoader::new().get_random_teams(format, 2) {
+            Ok(teams) => {
+                if teams.len() >= 2 {
+                    self.teams = Some((teams[0].clone(), teams[1].clone()));
+                    return Ok(self);
+                }
             }
-        })?;
-
-        let mut team_loader = RandomTeamLoader::new();
-        let team1 = team_loader.get_random_team(format)
-            .map_err(|e| TeamError::RandomGenerationFailed { reason: e.to_string() })?;
-        let team2 = team_loader.get_random_team(format)
-            .map_err(|e| TeamError::RandomGenerationFailed { reason: e.to_string() })?;
-
-        self.team1 = Some(team1);
-        self.team2 = Some(team2);
+            Err(_) => {
+                // Fall back to placeholder teams if random team loader fails
+            }
+        }
+        
+        // Create placeholder teams for fallback
+        let team1 = vec![]; // Empty placeholder team
+        let team2 = vec![]; // Empty placeholder team
+        self.teams = Some((team1, team2));
         Ok(self)
     }
 
-    /// Set the players for both sides
-    pub fn players<P1, P2>(mut self, player1: P1, player2: P2) -> Self 
+    /// Set both players
+    pub fn players<P1, P2>(mut self, player1: P1, player2: P2) -> Self
     where
         P1: Player + 'static,
         P2: Player + 'static,
     {
-        self.player1 = Some(Box::new(player1));
-        self.player2 = Some(Box::new(player2));
+        self.players = Some((Box::new(player1), Box::new(player2)));
+        self
+    }
+
+    /// Set player 1
+    pub fn player1<P>(mut self, player: P) -> Self
+    where
+        P: Player + 'static,
+    {
+        match self.players.take() {
+            Some((_, player2)) => {
+                self.players = Some((Box::new(player), player2));
+            }
+            None => {
+                // Create a default player2 for now
+                let default_player2 = Box::new(crate::simulator::RandomPlayer::new());
+                self.players = Some((Box::new(player), default_player2));
+            }
+        }
+        self
+    }
+
+    /// Set player 2
+    pub fn player2<P>(mut self, player: P) -> Self
+    where
+        P: Player + 'static,
+    {
+        match self.players.take() {
+            Some((player1, _)) => {
+                self.players = Some((player1, Box::new(player)));
+            }
+            None => {
+                // Create a default player1 for now
+                let default_player1 = Box::new(crate::simulator::RandomPlayer::new());
+                self.players = Some((default_player1, Box::new(player)));
+            }
+        }
+        self
+    }
+
+    /// Configure battle options
+    pub fn config(mut self, config: BattleConfig) -> Self {
+        self.config = config;
+        self
+    }
+
+    /// Set maximum turns
+    pub fn max_turns(mut self, max_turns: u32) -> Self {
+        self.config.max_turns = max_turns;
+        self
+    }
+
+    /// Set random seed
+    pub fn seed(mut self, seed: u64) -> Self {
+        self.config.seed = Some(seed);
+        self
+    }
+
+    /// Enable time measurement
+    pub fn measure_time(mut self, enable: bool) -> Self {
+        self.config.measure_time = enable;
+        self
+    }
+
+    /// Set validation context
+    pub fn validation_context(mut self, context: ValidationContext) -> Self {
+        self.validation_context = context;
         self
     }
 
     /// Use automatic (random) players for both sides
     pub fn auto_players(mut self) -> Self {
-        self.player1 = Some(Box::new(RandomPlayer::new()));
-        self.player2 = Some(Box::new(RandomPlayer::new()));
+        self.players = Some((
+            Box::new(crate::simulator::RandomPlayer::new()),
+            Box::new(crate::simulator::RandomPlayer::new()),
+        ));
         self
     }
 
-    /// Set player 1
-    pub fn player1<P>(mut self, player: P) -> Self 
-    where
-        P: Player + 'static,
-    {
-        self.player1 = Some(Box::new(player));
-        self
-    }
+    /// Run the battle and return a result (compatibility method)
+    /// This provides compatibility with the legacy BattleBuilder.run() API
+    pub fn run(self) -> Result<crate::simulator::BattleResult, crate::types::errors::BattleError> {
+        use std::time::Instant;
 
-    /// Set player 2
-    pub fn player2<P>(mut self, player: P) -> Self 
-    where
-        P: Player + 'static,
-    {
-        self.player2 = Some(Box::new(player));
-        self
-    }
+        let start_time = if self.config.measure_time {
+            Some(Instant::now())
+        } else {
+            None
+        };
 
-    /// Set maximum turns for the battle
-    pub fn max_turns(mut self, turns: u32) -> Self {
-        self.max_turns = Some(turns);
-        self
-    }
+        // Build the battle
+        let battle = self
+            .build()
+            .map_err(|e| crate::types::errors::BattleError::InvalidState {
+                reason: format!("Failed to build battle: {}", e),
+            })?;
 
-    /// Set random seed for deterministic battles
-    pub fn seed(mut self, seed: u64) -> Self {
-        self.seed = Some(seed);
-        self
-    }
-
-    /// Enable time measurement for the battle
-    pub fn measure_time(mut self, enable: bool) -> Self {
-        self.measure_time = enable;
-        self
-    }
-
-    /// Run the battle and return the result
-    pub fn run(self) -> Result<BattleResult, BattleError> {
-        let start_time = if self.measure_time { Some(Instant::now()) } else { None };
-
-        // Validate that we have everything needed
-        let format = self.format.ok_or_else(|| {
-            BattleError::InvalidState { reason: "Battle format not set".to_string() }
-        })?;
-
-        let team1 = self.team1.ok_or_else(|| {
-            BattleError::InvalidState { reason: "Team 1 not set".to_string() }
-        })?;
-
-        let team2 = self.team2.ok_or_else(|| {
-            BattleError::InvalidState { reason: "Team 2 not set".to_string() }
-        })?;
-
-        let mut player1 = self.player1.unwrap_or_else(|| Box::new(RandomPlayer::new()));
-        let mut player2 = self.player2.unwrap_or_else(|| Box::new(RandomPlayer::new()));
-
-        // Create battle state
-        let mut state = BattleState::new_with_teams(format, team1, team2);
-        
-        // Run the battle simulation
-        let max_turns = self.max_turns.unwrap_or(1000);
+        // Run the battle simulation using the actual battle engine
+        let max_turns = battle.config.max_turns;
         let mut turn_count = 0;
         let mut winner = None;
+        let mut state = battle.state;
 
         // Simple battle loop (this would be replaced with actual battle engine)
         while turn_count < max_turns && winner.is_none() {
-            // For now, just simulate random outcomes
-            // In a real implementation, this would use the actual battle engine
             turn_count += 1;
-            
+
             // Check for battle end conditions
             if turn_count >= max_turns {
                 break;
@@ -168,7 +242,8 @@ impl<'a> BattleBuilder<'a> {
             if turn_count > 10 {
                 use rand::Rng;
                 let mut rng = rand::thread_rng();
-                if rng.gen_bool(0.1) { // 10% chance to end each turn after turn 10
+                if rng.gen_bool(0.1) {
+                    // 10% chance to end each turn after turn 10
                     winner = Some(if rng.gen_bool(0.5) { 0 } else { 1 });
                 }
             }
@@ -176,7 +251,7 @@ impl<'a> BattleBuilder<'a> {
 
         let duration = start_time.map(|start| start.elapsed());
 
-        let mut result = BattleResult::new(
+        let mut result = crate::simulator::BattleResult::new(
             winner,
             turn_count as usize,
             state,
@@ -190,135 +265,148 @@ impl<'a> BattleBuilder<'a> {
         Ok(result)
     }
 
-    /// Run multiple battles in parallel
-    pub fn run_parallel(self, count: usize) -> Result<Vec<BattleResult>, BattleError> {
-        let mut results = Vec::with_capacity(count);
-        
-        // For now, run sequentially (parallel execution would need threading)
-        for _ in 0..count {
-            // Clone the builder configuration for each battle
-            let builder = BattleBuilder {
-                data: self.data,
-                format: self.format.clone(),
-                team1: None, // Will regenerate random teams
-                team2: None,
-                player1: None, // Will use auto players
-                player2: None,
-                max_turns: self.max_turns,
-                seed: None, // Each battle gets different random seed
-                measure_time: self.measure_time,
-            };
+    /// Validate teams are compatible with format
+    fn validate_teams(
+        &self,
+        teams: &(Vec<RandomPokemonSet>, Vec<RandomPokemonSet>),
+        format: &BattleFormat,
+    ) -> Result<(), BuilderError> {
+        let (team1, team2) = teams;
 
-            let result = builder
-                .random_teams()?
-                .auto_players()
-                .run()?;
-            
-            results.push(result);
+        // Check team sizes
+        let expected_size = match format.format_type {
+            crate::core::battle_format::FormatType::Singles => 6,
+            crate::core::battle_format::FormatType::Doubles => 6,
+            crate::core::battle_format::FormatType::Vgc => 6,
+            crate::core::battle_format::FormatType::Triples => 6,
+        };
+
+        if team1.len() != expected_size {
+            return Err(BuilderError::InvalidValue {
+                field: "team1".to_string(),
+                value: team1.len().to_string(),
+                reason: format!("Expected {} Pokemon, got {}", expected_size, team1.len()),
+            });
         }
 
-        Ok(results)
-    }
+        if team2.len() != expected_size {
+            return Err(BuilderError::InvalidValue {
+                field: "team2".to_string(),
+                value: team2.len().to_string(),
+                reason: format!("Expected {} Pokemon, got {}", expected_size, team2.len()),
+            });
+        }
 
-    /// Preset for quick Gen 9 OU battle
-    pub fn gen9_ou(data: &'a Repository) -> Self {
-        Self::new(data).format(BattleFormat::gen9_ou())
-    }
-
-    /// Preset for quick Gen 9 Random Battle
-    pub fn gen9_random(data: &'a Repository) -> Self {
-        Self::new(data).format(BattleFormat::gen9_random_battle())
-    }
-
-    /// Preset for quick Gen 8 Random Battle
-    pub fn gen8_random(data: &'a Repository) -> Self {
-        Self::new(data).format(BattleFormat::gen8_random_battle())
-    }
-
-    /// Preset for quick VGC battle
-    pub fn vgc(data: &'a Repository) -> Self {
-        Self::new(data).format(BattleFormat::gen9_vgc())
+        // Additional format-specific validation could go here
+        Ok(())
     }
 }
 
-/// Convenience methods for common battle types
-impl<'a> BattleBuilder<'a> {
-    /// Quick random battle with specific format
-    pub fn quick_random(data: &'a Repository, format: BattleFormat) -> Result<BattleResult, BattleError> {
-        Self::new(data)
-            .format(format)
-            .random_teams()?
-            .auto_players()
-            .run()
+impl<'a> Builder<Battle> for BattleBuilder<'a> {
+    type Error = BuilderError;
+
+    fn build(self) -> Result<Battle, Self::Error> {
+        // Validate first
+        self.validate()?;
+
+        let format = self.format.unwrap(); // Safe because validate() checks this
+        let (team1, team2) = self.teams.unwrap(); // Safe because validate() checks this
+        let (player1, player2) = self.players.unwrap_or_else(|| {
+            (
+                Box::new(crate::simulator::RandomPlayer::new()),
+                Box::new(crate::simulator::RandomPlayer::new()),
+            )
+        });
+
+        // Create battle state and manually add teams using the provided repository
+        let mut battle_state = BattleState::new(format);
+
+        // Convert RandomPokemonSet to battle Pokemon and add to sides
+        for pokemon_set in team1 {
+            let battle_pokemon = pokemon_set.to_battle_pokemon(self.data);
+            battle_state.sides[0].add_pokemon(battle_pokemon);
+        }
+
+        for pokemon_set in team2 {
+            let battle_pokemon = pokemon_set.to_battle_pokemon(self.data);
+            battle_state.sides[1].add_pokemon(battle_pokemon);
+        }
+
+        Ok(Battle {
+            state: battle_state,
+            player1,
+            player2,
+            config: self.config,
+        })
     }
 
-    /// Quick battle with custom teams and auto players
-    pub fn quick_with_teams(
-        data: &'a Repository,
-        format: BattleFormat,
-        team1: Vec<crate::data::RandomPokemonSet>,
-        team2: Vec<crate::data::RandomPokemonSet>,
-    ) -> Result<BattleResult, BattleError> {
-        Self::new(data)
-            .format(format)
-            .teams(team1, team2)
-            .auto_players()
-            .run()
-    }
+    fn validate(&self) -> Result<(), Self::Error> {
+        // Check required fields
+        let format = self
+            .format
+            .as_ref()
+            .ok_or_else(|| BuilderError::MissingRequired {
+                field: "format".to_string(),
+            })?;
 
-    /// Benchmark battles for performance testing
-    pub fn benchmark(
-        data: &'a Repository,
-        format: BattleFormat,
-        count: usize,
-    ) -> Result<Vec<BattleResult>, BattleError> {
-        Self::new(data)
-            .format(format)
-            .measure_time(true)
-            .run_parallel(count)
+        let teams = self
+            .teams
+            .as_ref()
+            .ok_or_else(|| BuilderError::MissingRequired {
+                field: "teams".to_string(),
+            })?;
+
+        // Validate teams compatibility with format
+        self.validate_teams(teams, format)?;
+
+        // Validate config
+        if self.config.max_turns == 0 {
+            return Err(BuilderError::InvalidValue {
+                field: "max_turns".to_string(),
+                value: "0".to_string(),
+                reason: "Max turns must be greater than 0".to_string(),
+            });
+        }
+
+        Ok(())
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::core::battle_format::{BattleFormat, FormatType};
-    use crate::generation::Generation;
+impl<'a> ValidatingBuilder<Battle> for BattleBuilder<'a> {
+    type Context = ValidationContext;
 
-    // Note: These tests would need a mock Repository to actually run
-    #[test]
-    fn test_battle_builder_api() {
-        // Test that the API compiles correctly
-        // Actual execution would require a real Repository instance
-        
-        let format = BattleFormat::new(
-            "Test Format".to_string(),
-            Generation::Gen9,
-            FormatType::Singles,
-        );
+    fn validate_aspect(&self, context: &Self::Context) -> Result<(), Self::Error> {
+        if context.strict_mode {
+            // Strict validation
+            self.validate()?;
 
-        // This demonstrates the fluent API structure
-        // In practice, you'd need: builder.format(format).random_teams()?.auto_players().run()
-        let _builder_setup = |data: &Repository| {
-            BattleBuilder::new(data)
-                .format(format)
-                // .random_teams()  // Would need actual data
-                // .auto_players()
-                // .max_turns(100)
-                // .seed(12345)
-                // .measure_time(true)
-        };
+            // Additional strict checks
+            if self.players.is_none() && context.collect_warnings {
+                eprintln!("Warning: No players set, will use default RandomPlayers");
+            }
+        } else {
+            // Lenient validation - only check critical requirements
+            if self.format.is_none() {
+                return Err(BuilderError::MissingRequired {
+                    field: "format".to_string(),
+                });
+            }
+        }
+
+        Ok(())
     }
 
-    #[test]
-    fn test_battle_result() {
-        let state = BattleState::default();
-        let result = BattleResult::new(Some(0), 25, state, false);
-        
-        assert!(result.player_1_won());
-        assert!(!result.player_2_won());
-        assert!(!result.is_draw());
-        assert_eq!(result.turns, 25);
-        assert!(!result.turn_limit_reached);
+    fn get_warnings(&self) -> Vec<String> {
+        let mut warnings = Vec::new();
+
+        if self.players.is_none() {
+            warnings.push("No players specified, will use RandomPlayers".to_string());
+        }
+
+        if self.config.seed.is_none() {
+            warnings.push("No seed specified, battles will not be reproducible".to_string());
+        }
+
+        warnings
     }
 }

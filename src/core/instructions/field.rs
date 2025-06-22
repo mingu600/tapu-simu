@@ -4,8 +4,136 @@
 //! global effects like Trick Room and Gravity, side conditions, etc.
 
 use crate::core::battle_format::{BattlePosition, SideReference};
-use crate::core::instruction::{Weather, Terrain, SideCondition};
 use serde::{Deserialize, Serialize};
+
+/// Weather conditions
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum Weather {
+    None,
+    Hail,
+    Rain,
+    Sandstorm,
+    Sand, // Alias for Sandstorm
+    Snow,
+    Sun,
+    HarshSunlight,
+    HarshSun, // Alias for HarshSunlight
+    HeavyRain,
+    StrongWinds,
+}
+
+impl From<u8> for Weather {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => Weather::None,
+            1 => Weather::Hail,
+            2 => Weather::Rain,
+            3 => Weather::Sandstorm,
+            4 => Weather::Sand,
+            5 => Weather::Snow,
+            6 => Weather::Sun,
+            7 => Weather::HarshSunlight,
+            8 => Weather::HarshSun,
+            9 => Weather::HeavyRain,
+            10 => Weather::StrongWinds,
+            _ => Weather::None, // Default fallback
+        }
+    }
+}
+
+impl Default for Weather {
+    fn default() -> Self {
+        Weather::None
+    }
+}
+
+/// Terrain conditions
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum Terrain {
+    None,
+    Electric,
+    ElectricTerrain, // Alias for Electric
+    Grassy,
+    GrassyTerrain, // Alias for Grassy
+    Misty,
+    MistyTerrain, // Alias for Misty
+    Psychic,
+    PsychicTerrain, // Alias for Psychic
+}
+
+impl From<u8> for Terrain {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => Terrain::None,
+            1 => Terrain::Electric,
+            2 => Terrain::ElectricTerrain,
+            3 => Terrain::Grassy,
+            4 => Terrain::GrassyTerrain,
+            5 => Terrain::Misty,
+            6 => Terrain::MistyTerrain,
+            7 => Terrain::Psychic,
+            8 => Terrain::PsychicTerrain,
+            _ => Terrain::None, // Default fallback
+        }
+    }
+}
+
+impl Default for Terrain {
+    fn default() -> Self {
+        Terrain::None
+    }
+}
+
+/// Side conditions
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum SideCondition {
+    Reflect,
+    LightScreen,
+    AuroraVeil,
+    Mist,
+    Safeguard,
+    Tailwind,
+    Spikes,
+    ToxicSpikes,
+    StealthRock,
+    StickyWeb,
+    Wish,
+    FutureSight,
+    DoomDesire,
+    HealingWish,
+    LunarDance,
+    CraftyShield,
+    MatBlock,
+    QuickGuard,
+    WideGuard,
+}
+
+impl From<u8> for SideCondition {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => SideCondition::Reflect,
+            1 => SideCondition::LightScreen,
+            2 => SideCondition::AuroraVeil,
+            3 => SideCondition::Mist,
+            4 => SideCondition::Safeguard,
+            5 => SideCondition::Tailwind,
+            6 => SideCondition::Spikes,
+            7 => SideCondition::ToxicSpikes,
+            8 => SideCondition::StealthRock,
+            9 => SideCondition::StickyWeb,
+            10 => SideCondition::Wish,
+            11 => SideCondition::FutureSight,
+            12 => SideCondition::DoomDesire,
+            13 => SideCondition::HealingWish,
+            14 => SideCondition::LunarDance,
+            15 => SideCondition::CraftyShield,
+            16 => SideCondition::MatBlock,
+            17 => SideCondition::QuickGuard,
+            18 => SideCondition::WideGuard,
+            _ => SideCondition::Reflect, // Default fallback
+        }
+    }
+}
 
 /// Field-related instruction types
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

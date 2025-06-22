@@ -30,22 +30,6 @@ pub struct EngineBaseStats {
     pub speed: i16,
 }
 
-/// Engine-optimized move data
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EngineMoveData {
-    pub id: i32,
-    pub name: String,
-    pub base_power: Option<i16>,
-    pub accuracy: Option<i16>,
-    pub pp: i16,
-    pub move_type: String,
-    pub category: MoveCategory,
-    pub priority: i8,
-    pub target: crate::data::showdown_types::MoveTarget,
-    pub effect_chance: Option<i16>,
-    pub effect_description: String,
-    pub flags: Vec<String>,
-}
 
 
 /// Type effectiveness multiplier

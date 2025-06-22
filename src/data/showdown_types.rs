@@ -298,6 +298,52 @@ pub struct MoveData {
     pub is_nonstandard: Option<String>,
 }
 
+impl Default for MoveData {
+    fn default() -> Self {
+        Self {
+            id: "0".to_string(),
+            num: 0,
+            name: "tackle".to_string(),
+            base_power: 40,
+            accuracy: 100,
+            pp: 35,
+            max_pp: 35,
+            move_type: "normal".to_string(),
+            category: "Physical".to_string(),
+            priority: 0,
+            target: "normal".to_string(),
+            flags: std::collections::HashMap::new(),
+            drain: None,
+            recoil: None,
+            heal: None,
+            status: None,
+            volatile_status: None,
+            secondary: None,
+            self_: None,
+            is_z: ZMoveData::None(false),
+            is_max: MaxMoveData::None(false),
+            ohko: OHKOData::None(false),
+            thaws_target: false,
+            force_switch: false,
+            self_switch: SelfSwitchData::None(false),
+            breaks_protect: false,
+            ignore_defensive: false,
+            ignore_evasion: false,
+            ignore_immunity: IgnoreImmunityData::None(false),
+            multiaccuracy: false,
+            multihit: None,
+            no_damage_variance: false,
+            crit_ratio: 0,
+            will_crit: false,
+            terrain: None,
+            weather: None,
+            desc: "Default move for testing".to_string(),
+            short_desc: "Default move".to_string(),
+            is_nonstandard: None,
+        }
+    }
+}
+
 impl MoveData {
     /// Check if a move has a specific flag
     pub fn has_flag(&self, flag: &str) -> bool {
@@ -311,6 +357,29 @@ impl MoveData {
             .filter(|(_, &value)| value != 0)
             .map(|(key, _)| key.clone())
             .collect()
+    }
+    
+    /// Convert to engine Move type directly
+    pub fn to_engine_move(&self) -> crate::core::battle_state::Move {
+        use crate::core::battle_state::{Move, MoveCategory};
+        use crate::data::conversion::target_from_string;
+        
+        Move {
+            name: self.name.clone(),
+            base_power: (self.base_power as u8).min(255), // Clamp u16 to u8 range
+            accuracy: (self.accuracy as u8).min(255),     // Clamp u16 to u8 range  
+            move_type: self.move_type.clone(),
+            pp: self.pp,
+            max_pp: self.max_pp,
+            target: target_from_string(&self.target),
+            category: match self.category.as_str() {
+                "Physical" => MoveCategory::Physical,
+                "Special" => MoveCategory::Special,
+                "Status" => MoveCategory::Status,
+                _ => MoveCategory::Status,
+            },
+            priority: self.priority,
+        }
     }
 }
 

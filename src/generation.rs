@@ -253,6 +253,7 @@ pub trait GenerationBattleMechanics {
     fn get_burn_reduction(&self) -> f32;
     fn has_feature(&self, feature: GenerationFeature) -> bool;
     fn get_type_effectiveness_override(&self, attacking: &str, defending: &str) -> Option<f32>;
+    fn generation(&self) -> Generation;
 }
 
 /// Features that vary by generation
@@ -310,6 +311,10 @@ impl GenerationBattleMechanics for GenerationMechanics {
             ("ice", "fire") => Some(self.ice_vs_fire),
             _ => None,
         }
+    }
+
+    fn generation(&self) -> Generation {
+        self.generation
     }
 }
 
