@@ -43,7 +43,7 @@ pub fn apply_aura_wheel(
         };
         
         // Apply move effects with boosted Speed (Aura Wheel always boosts Speed by 1 stage)
-        let mut instructions = apply_generic_effects(state, &modified_move_data, user_position, target_positions, generation);
+        let mut instructions = apply_generic_effects(state, &modified_move_data, user_position, target_positions, generation, true);
         
         // Add Speed boost
         let mut speed_boost = HashMap::new();
@@ -59,7 +59,7 @@ pub fn apply_aura_wheel(
         
         instructions
     } else {
-        apply_generic_effects(state, move_data, user_position, target_positions, generation)
+        apply_generic_effects(state, move_data, user_position, target_positions, generation, true)
     }
 }
 
@@ -107,7 +107,7 @@ pub fn apply_raging_bull(
         }
         
         // Apply move effects
-        let mut instructions = apply_generic_effects(state, &modified_move_data, user_position, target_positions, generation);
+        let mut instructions = apply_generic_effects(state, &modified_move_data, user_position, target_positions, generation, true);
         
         // Remove screens after hitting (screen-breaking effect)
         if !target_positions.is_empty() {
@@ -139,6 +139,6 @@ pub fn apply_raging_bull(
         
         instructions
     } else {
-        apply_generic_effects(state, move_data, user_position, target_positions, generation)
+        apply_generic_effects(state, move_data, user_position, target_positions, generation, true)
     }
 }

@@ -504,7 +504,7 @@ impl BattleState {
         let mut state = Self::new(format.clone());
 
         // Create PS repository for proper move and Pokemon data
-        let repository = crate::data::ps::Repository::from_path("data/ps-extracted")
+        let repository = crate::data::Repository::from_path("data/ps-extracted")
             .expect("Failed to load Pokemon data from data/ps-extracted. Ensure the data directory exists and contains valid JSON files.");
 
         // Convert and add Pokemon to each side

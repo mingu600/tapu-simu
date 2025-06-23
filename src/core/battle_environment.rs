@@ -222,7 +222,7 @@ impl BattleEnvironment {
         let no_move_s1 = MoveChoice::None;
         let no_move_s2 = MoveChoice::None;
 
-        turn::generate_instructions(state, (&no_move_s1, &no_move_s2))
+        turn::generate_instructions(state, (&no_move_s1, &no_move_s2), false)
             .unwrap_or_else(|_| vec![BattleInstructions::new(100.0, vec![])])
     }
 
@@ -379,7 +379,7 @@ impl BattleEnvironment {
 
             // Generate instructions from the move pair
             let instructions =
-                turn::generate_instructions(&state, (&side_one_choice, &side_two_choice))
+                turn::generate_instructions(&state, (&side_one_choice, &side_two_choice), false)
                     .unwrap_or_else(|_| vec![BattleInstructions::new(100.0, vec![])]);
 
             // Log generated instructions if verbose

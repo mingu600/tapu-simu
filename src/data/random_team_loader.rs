@@ -298,7 +298,7 @@ impl RandomPokemonSet {
     }
 
     /// Get EVs with Smogon Random Battle optimization rules
-    pub fn get_evs(&self, repository: &crate::data::ps::Repository) -> Stats {
+    pub fn get_evs(&self, repository: &crate::data::Repository) -> Stats {
         // Start with default Random Battle EVs
         let mut evs = match &self.evs {
             Some(evs) => evs.to_stats(85),
@@ -342,7 +342,7 @@ impl RandomPokemonSet {
     }
 
     /// Get IVs with Smogon Random Battle optimization rules
-    pub fn get_ivs(&self, repository: &crate::data::ps::Repository) -> Stats {
+    pub fn get_ivs(&self, repository: &crate::data::Repository) -> Stats {
         // Start with default Random Battle IVs (perfect)
         let mut ivs = match &self.ivs {
             Some(ivs) => ivs.to_stats(31),
@@ -398,7 +398,7 @@ impl RandomPokemonSet {
     /// Convert to battle engine Pokemon
     pub fn to_battle_pokemon(
         &self,
-        repository: &crate::data::ps::Repository,
+        repository: &crate::data::Repository,
     ) -> Pokemon {
         let mut pokemon = Pokemon::new(self.species.clone());
 

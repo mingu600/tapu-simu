@@ -245,7 +245,8 @@ pub fn apply_move_effects(
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
     context: &MoveContext,
-    repository: &crate::data::ps::repository::Repository,
+    repository: &crate::data::Repository,
+    branch_on_damage: bool,
 ) -> BattleResult<Vec<BattleInstructions>> {
     let move_name = move_data.name.to_lowercase();
     
@@ -340,8 +341,8 @@ pub fn apply_move_effects(
         _ => {
             // For moves that don't have special implementations, just do basic damage
             if move_data.base_power > 0 {
-                // This is a damaging move without special effects
-                Ok(vec![BattleInstructions::new(100.0, generate_damage_instructions(state, move_data, user_position, target_positions, false, generation))])
+                // This is a damaging move without special effects - use generic damage with configurable crit branching
+                Ok(apply_generic_damage_effects(state, move_data, user_position, target_positions, generation, branch_on_damage))
             } else {
                 // This is a status move or zero-power move without implementation
                 Ok(apply_generic_secondary_effects(state, move_data, user_position, target_positions, generation))
@@ -357,10 +358,11 @@ pub fn apply_move_effects_simple(
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-    repository: &crate::data::ps::repository::Repository,
+    repository: &crate::data::Repository,
+    branch_on_damage: bool,
 ) -> Vec<BattleInstructions> {
     let context = MoveContext::new();
-    apply_move_effects(state, move_data, user_position, target_positions, generation, &context, repository)
+    apply_move_effects(state, move_data, user_position, target_positions, generation, &context, repository, branch_on_damage)
         .unwrap_or_else(|_| vec![BattleInstructions::new(100.0, vec![])])
 }
 
@@ -376,11 +378,12 @@ pub fn apply_generic_effects(
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
+    branch_on_damage: bool,
 ) -> Vec<BattleInstructions> {
     // Check if this is a damaging move
     if move_data.base_power > 0 {
         // Use damage calculation for attacking moves
-        apply_generic_damage_effects(state, move_data, user_position, target_positions, generation)
+        apply_generic_damage_effects(state, move_data, user_position, target_positions, generation, branch_on_damage)
     } else {
         // Use secondary effects for status moves
         apply_generic_secondary_effects(state, move_data, user_position, target_positions, generation)
@@ -394,6 +397,7 @@ fn apply_generic_damage_effects(
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
+    branch_on_damage: bool,
 ) -> Vec<BattleInstructions> {
     use crate::engine::combat::damage_calc::{calculate_damage_with_positions, critical_hit_probability, DamageRolls};
     
@@ -414,25 +418,35 @@ fn apply_generic_damage_effects(
     }
     
     if accuracy > 0.0 {
-        // Critical hit probability
-        let crit_chance = critical_hit_probability(user, move_data) * 100.0;
-        let normal_hit_chance = accuracy * (1.0 - crit_chance / 100.0);
-        let crit_hit_chance = accuracy * (crit_chance / 100.0);
-        
-        // Normal hit
-        if normal_hit_chance > 0.0 {
+        if branch_on_damage {
+            // Use advanced probability branching that combines identical outcomes
+            instruction_sets.extend(generate_advanced_damage_branching(
+                state, move_data, user_position, target_positions, generation, accuracy
+            ));
+        } else {
+            // No branching - single hit with average/expected damage
+            // But check for guaranteed critical hit moves
+            let crit_probability = if target_positions.is_empty() {
+                0.0
+            } else {
+                // For multi-target moves, check if any target lacks critical hit immunity
+                target_positions.iter()
+                    .map(|&target_pos| {
+                        if let Some(target) = state.get_pokemon_at_position(target_pos) {
+                            critical_hit_probability(user, target, move_data, generation.generation)
+                        } else {
+                            0.0
+                        }
+                    })
+                    .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
+                    .unwrap_or(0.0)
+            };
+            let is_guaranteed_crit = crit_probability >= 1.0;
+            
             let damage_instructions = generate_damage_instructions(
-                state, move_data, user_position, target_positions, false, generation
+                state, move_data, user_position, target_positions, is_guaranteed_crit, generation
             );
-            instruction_sets.push(BattleInstructions::new(normal_hit_chance, damage_instructions));
-        }
-        
-        // Critical hit
-        if crit_hit_chance > 0.0 {
-            let damage_instructions = generate_damage_instructions(
-                state, move_data, user_position, target_positions, true, generation
-            );
-            instruction_sets.push(BattleInstructions::new(crit_hit_chance, damage_instructions));
+            instruction_sets.push(BattleInstructions::new(accuracy, damage_instructions));
         }
     }
     
@@ -441,6 +455,229 @@ fn apply_generic_damage_effects(
     } else {
         instruction_sets
     }
+}
+
+/// Generate advanced damage branching that combines identical outcomes
+fn generate_advanced_damage_branching(
+    state: &BattleState,
+    move_data: &MoveData,
+    user_position: BattlePosition,
+    target_positions: &[BattlePosition],
+    generation: &GenerationMechanics,
+    accuracy: f32,
+) -> Vec<BattleInstructions> {
+    use crate::engine::combat::damage_calc::{calculate_damage_with_positions, critical_hit_probability, DamageRolls};
+    
+    let user = match state.get_pokemon_at_position(user_position) {
+        Some(pokemon) => pokemon,
+        None => return vec![],
+    };
+    
+    // For simplicity, handle single target first (most common case)
+    if target_positions.len() != 1 {
+        // Fall back to simple critical hit branching for multi-target moves
+        return generate_simple_crit_branching(state, move_data, user_position, target_positions, generation, accuracy);
+    }
+    
+    let target_position = target_positions[0];
+    let target = match state.get_pokemon_at_position(target_position) {
+        Some(pokemon) => pokemon,
+        None => return vec![],
+    };
+    
+    let crit_chance = critical_hit_probability(user, target, move_data, generation.generation);
+    
+    // Calculate base damage for normal hits (use max damage as base for variance calculation)
+    let normal_min = calculate_damage_with_positions(
+        state, user, target, move_data, false, DamageRolls::Min, 1, user_position, target_position
+    );
+    let normal_max = calculate_damage_with_positions(
+        state, user, target, move_data, false, DamageRolls::Max, 1, user_position, target_position
+    );
+    let crit_min = calculate_damage_with_positions(
+        state, user, target, move_data, true, DamageRolls::Min, 1, user_position, target_position
+    );
+    let crit_max = calculate_damage_with_positions(
+        state, user, target, move_data, true, DamageRolls::Max, 1, user_position, target_position
+    );
+    
+    // Check if we actually need advanced branching (some rolls kill, others don't)
+    // If minimum damage from normal hits guarantees a kill, no branching needed
+    let min_possible_damage = normal_min.min(crit_min);
+    if min_possible_damage >= target.hp {
+        // All possible damage rolls kill - just deal remaining HP without branching
+        let damage = target.hp;
+        let instructions = vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
+            target: target_position,
+            amount: damage,
+            previous_hp: Some(target.hp),
+        })];
+        return vec![BattleInstructions::new(accuracy, instructions)];
+    }
+    
+    // Check for mixed scenarios where some rolls kill and others don't
+    let normal_range_kills = normal_max >= target.hp;
+    let crit_range_kills = crit_max >= target.hp;
+    let has_killing_scenario = normal_range_kills || crit_range_kills;
+    let has_non_killing_scenario = normal_min < target.hp || crit_min < target.hp;
+    let needs_advanced_branching = has_killing_scenario && has_non_killing_scenario;
+    
+    if !needs_advanced_branching {
+        // Fall back to simple critical hit branching
+        return generate_simple_crit_branching(state, move_data, user_position, target_positions, generation, accuracy);
+    }
+    
+    
+    // Track outcomes by kill vs non-kill, not by exact damage
+    let mut non_kill_probability = 0.0;
+    let mut kill_probability = 0.0;
+    let mut total_non_kill_damage = 0i32; // Sum of all non-killing damage
+    let mut non_kill_count = 0i32; // Count of non-killing rolls
+    let kill_damage = target.hp; // Killing damage is always capped at target HP
+    
+    // Calculate probabilities for all possible outcomes
+    // Pokemon damage variance: 85%-100% in 16 equal steps
+    
+    // Process normal (non-critical) hits
+    let normal_hit_prob = (1.0 - crit_chance);
+    let mut normal_non_kill_rolls = 0;
+    let mut normal_kill_rolls = 0;
+    for roll in 0..16 {
+        let damage_multiplier = 0.85 + (roll as f32 * 0.01); // 85% to 100% in 1% increments
+        let damage = ((normal_max as f32) * damage_multiplier) as i16;
+        
+        let roll_probability = 1.0 / 16.0;
+        if damage >= target.hp {
+            // This roll kills the target
+            normal_kill_rolls += 1;
+            kill_probability += normal_hit_prob * roll_probability;
+        } else {
+            // This roll doesn't kill the target
+            normal_non_kill_rolls += 1;
+            non_kill_probability += normal_hit_prob * roll_probability;
+            total_non_kill_damage += damage as i32;
+            non_kill_count += 1;
+        }
+        
+    }
+    
+    // Process critical hits (these almost always kill)
+    let crit_hit_prob = crit_chance;
+    for roll in 0..16 {
+        let damage_multiplier = 0.85 + (roll as f32 * 0.01); // 85% to 100% in 1% increments
+        let damage = ((crit_max as f32) * damage_multiplier) as i16;
+        
+        let roll_probability = 1.0 / 16.0;
+        if damage >= target.hp {
+            // This crit kills the target (almost always)
+            kill_probability += crit_hit_prob * roll_probability;
+        } else {
+            // This crit doesn't kill (very rare)
+            non_kill_probability += crit_hit_prob * roll_probability;
+            total_non_kill_damage += damage as i32;
+            non_kill_count += 1;
+        }
+    }
+    
+    // Calculate average non-kill damage
+    let non_kill_damage = if non_kill_count > 0 {
+        (total_non_kill_damage / non_kill_count) as i16
+    } else {
+        0
+    };
+    
+    
+    // Convert outcomes to BattleInstructions
+    let mut instruction_sets = Vec::new();
+    
+    // Add non-kill outcome if it has meaningful probability
+    if non_kill_probability > 0.001 {
+        let percentage = non_kill_probability * accuracy; // accuracy is already in percentage (100.0)
+        let instructions = vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
+            target: target_position,
+            amount: non_kill_damage,
+            previous_hp: Some(target.hp),
+        })];
+        instruction_sets.push(BattleInstructions::new(percentage, instructions));
+    }
+    
+    // Add kill outcome if it has meaningful probability
+    if kill_probability > 0.001 {
+        let percentage = kill_probability * accuracy; // accuracy is already in percentage (100.0)
+        let instructions = vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
+            target: target_position,
+            amount: kill_damage,
+            previous_hp: Some(target.hp),
+        })];
+        instruction_sets.push(BattleInstructions::new(percentage, instructions));
+    }
+    
+    // Sort by damage amount for consistent ordering
+    instruction_sets.sort_by(|a, b| {
+        if let (Some(BattleInstruction::Pokemon(PokemonInstruction::Damage { amount: a_dmg, .. })),
+                Some(BattleInstruction::Pokemon(PokemonInstruction::Damage { amount: b_dmg, .. }))) = 
+            (a.instruction_list.first(), b.instruction_list.first()) {
+            a_dmg.cmp(b_dmg)
+        } else {
+            std::cmp::Ordering::Equal
+        }
+    });
+    
+    instruction_sets
+}
+
+/// Generate simple critical hit branching (fallback for complex cases)
+fn generate_simple_crit_branching(
+    state: &BattleState,
+    move_data: &MoveData,
+    user_position: BattlePosition,
+    target_positions: &[BattlePosition],
+    generation: &GenerationMechanics,
+    accuracy: f32,
+) -> Vec<BattleInstructions> {
+    use crate::engine::combat::damage_calc::critical_hit_probability;
+    
+    let user = match state.get_pokemon_at_position(user_position) {
+        Some(pokemon) => pokemon,
+        None => return vec![],
+    };
+    
+    let mut instruction_sets = Vec::new();
+    let crit_probability = if target_positions.is_empty() {
+        0.0
+    } else {
+        // For multi-target moves, check if any target lacks critical hit immunity
+        target_positions.iter()
+            .map(|&target_pos| {
+                if let Some(target) = state.get_pokemon_at_position(target_pos) {
+                    critical_hit_probability(user, target, move_data, generation.generation)
+                } else {
+                    0.0
+                }
+            })
+            .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
+            .unwrap_or(0.0)
+    };
+    let normal_hit_chance = accuracy * (1.0 - crit_probability);
+    let crit_hit_chance = accuracy * crit_probability;
+    
+    // Normal hit
+    if normal_hit_chance > 0.0 {
+        let damage_instructions = generate_damage_instructions(
+            state, move_data, user_position, target_positions, false, generation
+        );
+        instruction_sets.push(BattleInstructions::new(normal_hit_chance, damage_instructions));
+    }
+    
+    // Critical hit
+    if crit_hit_chance > 0.0 {
+        let damage_instructions = generate_damage_instructions(
+            state, move_data, user_position, target_positions, true, generation
+        );
+        instruction_sets.push(BattleInstructions::new(crit_hit_chance, damage_instructions));
+    }
+    
+    instruction_sets
 }
 
 /// Apply generic secondary effects for status moves

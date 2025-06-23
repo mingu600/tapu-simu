@@ -360,6 +360,173 @@ async function extractGenerationItems() {
     return { generationData, itemChanges };
 }
 
+async function extractPokemonForGeneration(genDex, pokemonId) {
+    const pokemon = genDex.species.get(pokemonId);
+    
+    // Skip if Pokemon doesn't exist in this generation
+    if (!pokemon.exists || (pokemon.isNonstandard && pokemon.isNonstandard !== 'Past')) {
+        return null;
+    }
+
+    return {
+        id: pokemon.id,
+        num: pokemon.num,
+        name: pokemon.name,
+        types: pokemon.types,
+        baseStats: {
+            hp: pokemon.baseStats.hp,
+            attack: pokemon.baseStats.atk,
+            defense: pokemon.baseStats.def,
+            special_attack: pokemon.baseStats.spa,
+            special_defense: pokemon.baseStats.spd,
+            speed: pokemon.baseStats.spe,
+        },
+        abilities: pokemon.abilities,
+        heightm: pokemon.heightm,
+        weightkg: pokemon.weightkg,
+        color: pokemon.color,
+        evos: pokemon.evos || null,
+        prevo: pokemon.prevo || null,
+        evoType: pokemon.evoType || null,
+        evoCondition: pokemon.evoCondition || null,
+        eggGroups: pokemon.eggGroups,
+        tier: pokemon.tier || null,
+        doublesTier: pokemon.doublesTier || null,
+        natDexTier: pokemon.natDexTier || null,
+        
+        // Form data
+        baseSpecies: pokemon.baseSpecies,
+        forme: pokemon.forme || null,
+        baseForme: pokemon.baseForme || null,
+        cosmeticFormes: pokemon.cosmeticFormes || null,
+        otherFormes: pokemon.otherFormes || null,
+        formeOrder: pokemon.formeOrder || null,
+        
+        // Special properties
+        gender: pokemon.gender || null,
+        genderRatio: pokemon.genderRatio || null,
+        maleOnlyHidden: pokemon.maleOnlyHidden || false,
+        gmaxUnreleased: pokemon.gmaxUnreleased || false,
+        cannotDynamax: pokemon.cannotDynamax || false,
+        
+        // Mega Evolution
+        isMega: pokemon.isMega || false,
+        requiredItem: pokemon.requiredItem || null,
+        requiredItems: pokemon.requiredItems || null,
+        
+        // Battle properties
+        unreleasedHidden: pokemon.unreleasedHidden || false,
+        battleOnly: pokemon.battleOnly || null,
+        isNonstandard: pokemon.isNonstandard || null,
+        
+        // Regional variants
+        canHatch: pokemon.canHatch !== false,
+        
+        // Tags for filtering
+        tags: pokemon.tags || [],
+    };
+}
+
+async function extractGenerationPokemon() {
+    const generationData = {};
+    const pokemonChanges = {};
+    
+    // Get all unique Pokemon IDs from Gen 9 (most comprehensive)
+    const allPokemonIds = Object.keys(Dex.data.Species);
+    
+    console.log(`Found ${allPokemonIds.length} Pokemon to check across generations`);
+    
+    // Extract Pokemon for each generation
+    for (const generation of GENERATIONS) {
+        console.log(`Extracting Gen ${generation.num} (${generation.name})...`);
+        
+        const genDex = Dex.forFormat(`gen${generation.num}ou`);
+        const genPokemon = {};
+        let pokemonCount = 0;
+        
+        for (const pokemonId of allPokemonIds) {
+            const pokemonData = await extractPokemonForGeneration(genDex, pokemonId);
+            if (pokemonData) {
+                genPokemon[pokemonId] = pokemonData;
+                pokemonCount++;
+            }
+        }
+        
+        generationData[generation.id] = {
+            generation: generation.num,
+            name: generation.name,
+            pokemonCount,
+            pokemon: genPokemon,
+        };
+        
+        console.log(`  ${pokemonCount} Pokemon available in Gen ${generation.num}`);
+    }
+    
+    // Analyze Pokemon changes across generations
+    console.log('\nAnalyzing Pokemon changes across generations...');
+    
+    for (const pokemonId of allPokemonIds) {
+        const changes = [];
+        let previousData = null;
+        
+        for (const generation of GENERATIONS) {
+            const currentData = generationData[generation.id].pokemon[pokemonId];
+            
+            if (currentData && previousData) {
+                const changedFields = [];
+                
+                // Check for changes in base stats
+                const statsToCheck = ['hp', 'attack', 'defense', 'special_attack', 'special_defense', 'speed'];
+                for (const stat of statsToCheck) {
+                    if (currentData.baseStats[stat] !== previousData.baseStats[stat]) {
+                        changedFields.push({
+                            field: `baseStats.${stat}`,
+                            from: previousData.baseStats[stat],
+                            to: currentData.baseStats[stat],
+                        });
+                    }
+                }
+                
+                // Check for other important changes
+                const fieldsToCheck = [
+                    'types', 'abilities', 'tier', 'doublesTier', 'natDexTier',
+                    'isNonstandard', 'unreleasedHidden'
+                ];
+                
+                for (const field of fieldsToCheck) {
+                    if (JSON.stringify(currentData[field]) !== JSON.stringify(previousData[field])) {
+                        changedFields.push({
+                            field,
+                            from: previousData[field],
+                            to: currentData[field],
+                        });
+                    }
+                }
+                
+                if (changedFields.length > 0) {
+                    changes.push({
+                        generation: generation.num,
+                        changes: changedFields,
+                    });
+                }
+            }
+            
+            if (currentData) {
+                previousData = currentData;
+            }
+        }
+        
+        if (changes.length > 0) {
+            pokemonChanges[pokemonId] = {
+                name: previousData?.name || pokemonId,
+                changes,
+            };
+        }
+    }
+    
+    return { generationData, pokemonChanges };
+}
+
 async function main() {
     const args = process.argv.slice(2);
     const command = args[0] || 'all';
@@ -455,6 +622,54 @@ async function main() {
                 for (const genChange of changeData.changes.slice(0, 2)) {
                     for (const change of genChange.changes.slice(0, 2)) {
                         console.log(`    Gen ${genChange.generation}: ${change.field} ${JSON.stringify(change.from)} → ${JSON.stringify(change.to)}`);
+                    }
+                }
+                notableCount++;
+            }
+        }
+    }
+    
+    if (command === 'pokemon' || command === 'all') {
+        console.log('🚀 Extracting generation-specific Pokemon data...\n');
+        const { generationData, pokemonChanges } = await extractGenerationPokemon();
+        
+        // Save generation data
+        const genDataPath = path.join(outputDir, 'pokemon-by-generation.json');
+        await fs.writeFile(genDataPath, JSON.stringify(generationData, null, 2));
+        console.log(`\n✅ Generation data saved to ${genDataPath}`);
+        
+        // Save Pokemon changes analysis
+        const changesPath = path.join(outputDir, 'pokemon-changes.json');
+        await fs.writeFile(changesPath, JSON.stringify(pokemonChanges, null, 2));
+        
+        const changesCount = Object.keys(pokemonChanges).length;
+        console.log(`✅ Pokemon changes analysis saved to ${changesPath}`);
+        console.log(`📊 Found ${changesCount} Pokemon with changes across generations`);
+        
+        // Print some interesting statistics
+        console.log('\n📈 Generation Statistics:');
+        for (const generation of GENERATIONS) {
+            const genData = generationData[generation.id];
+            console.log(`  Gen ${generation.num} (${generation.name}): ${genData.pokemonCount} Pokemon`);
+        }
+        
+        // Print some notable stat changes
+        console.log('\n🔥 Notable Pokemon Stat Changes:');
+        let notableCount = 0;
+        for (const [pokemonId, changeData] of Object.entries(pokemonChanges)) {
+            if (notableCount >= 10) break;
+            
+            const hasStatChange = changeData.changes.some(change => 
+                change.changes.some(c => c.field.startsWith('baseStats.'))
+            );
+            
+            if (hasStatChange) {
+                console.log(`  ${changeData.name}:`);
+                for (const genChange of changeData.changes.slice(0, 3)) {
+                    const statChanges = genChange.changes.filter(c => c.field.startsWith('baseStats.'));
+                    for (const change of statChanges.slice(0, 3)) {
+                        const statName = change.field.replace('baseStats.', '');
+                        console.log(`    Gen ${genChange.generation}: ${statName} ${change.from} → ${change.to}`);
                     }
                 }
                 notableCount++;

@@ -195,6 +195,7 @@ pub mod end_of_turn {
 pub fn generate_instructions(
     state: &BattleState,
     move_choices: (&MoveChoice, &MoveChoice),
+    branch_on_damage: bool,
 ) -> BattleResult<Vec<BattleInstructions>> {
     let (choice1, choice2) = move_choices;
     
@@ -250,6 +251,7 @@ pub fn generate_instructions(
         &state.format, 
         state,
         &first_context,
+        branch_on_damage,
     )?;
     
     // Handle switch-attack interactions
@@ -271,6 +273,7 @@ pub fn generate_instructions(
             &state.format, 
             &temp_state,
             &second_context,
+            branch_on_damage,
         )?
     } else {
         // Either both are switches, first is not a switch, or second is a switch
@@ -282,6 +285,7 @@ pub fn generate_instructions(
             &state.format, 
             state,
             &second_context,
+            branch_on_damage,
         )?
     };
     
@@ -1023,6 +1027,7 @@ fn generate_move_instructions_with_enhanced_context(
     format: &BattleFormat,
     state: &BattleState,
     context: &MoveContext,
+    branch_on_damage: bool,
 ) -> BattleResult<Vec<BattleInstructions>> {
     let user_pos = BattlePosition::new(user_side, user_slot);
     
@@ -1031,11 +1036,11 @@ fn generate_move_instructions_with_enhanced_context(
             generate_switch_instructions(pokemon_index.to_index(), user_pos, state)
         }
         MoveChoice::Move { move_index, target_positions } => {
-            generate_attack_instructions_with_enhanced_context(*move_index, target_positions, user_pos, format, state, context)
+            generate_attack_instructions_with_enhanced_context(*move_index, target_positions, user_pos, format, state, context, branch_on_damage)
         }
         MoveChoice::MoveTera { move_index, target_positions, .. } => {
             // For now, treat Tera moves the same as regular moves (simplified)
-            generate_attack_instructions_with_enhanced_context(*move_index, target_positions, user_pos, format, state, context)
+            generate_attack_instructions_with_enhanced_context(*move_index, target_positions, user_pos, format, state, context, branch_on_damage)
         }
         MoveChoice::None => {
             Ok(vec![BattleInstructions::new(100.0, vec![])])
@@ -1051,6 +1056,7 @@ fn generate_attack_instructions_with_enhanced_context(
     format: &BattleFormat,
     state: &BattleState,
     context: &MoveContext,
+    branch_on_damage: bool,
 ) -> BattleResult<Vec<BattleInstructions>> {
     use crate::engine::combat::moves::apply_move_effects;
     use crate::generation::GenerationMechanics;
@@ -1066,27 +1072,34 @@ fn generate_attack_instructions_with_enhanced_context(
             reason: format!("Move index {:?} not found", move_index) 
         })?;
     
-    // Convert Move to MoveData via repository lookup
-    let repository = crate::data::ps::repository::Repository::from_path("data/ps-extracted")
-        .expect("Failed to load Pokemon data from data/ps-extracted");
-    let move_data = if let Some(repo_move_data) = repository.find_move_by_name(&move_data_raw.name) {
-        // Convert repository::MoveData to showdown_types::MoveData
-        crate::data::showdown_types::MoveData {
-            name: repo_move_data.name.clone(),
-            base_power: repo_move_data.base_power as u16,
-            accuracy: repo_move_data.accuracy as u16,
-            pp: repo_move_data.pp,
-            max_pp: repo_move_data.max_pp,
-            move_type: repo_move_data.move_type.to_string(),
-            category: repo_move_data.category.clone(),
-            priority: repo_move_data.priority,
-            target: repo_move_data.target.clone(),
-            flags: repo_move_data.flags.clone(),
-            drain: repo_move_data.drain,
-            recoil: repo_move_data.recoil,
-            ..crate::data::showdown_types::MoveData::default()
-        }
+    // Convert Move to MoveData via generation-specific repository lookup
+    let generation_repository = crate::data::generation_loader::GenerationRepository::load_from_directory("data/ps-extracted")
+        .expect("Failed to load generation-specific Pokemon data from data/ps-extracted");
+    let move_data = if let Some(gen_move_data) = generation_repository.find_move_by_name_for_generation(&move_data_raw.name, state.format.generation.number()) {
+        // Use generation-specific move data directly (already in showdown_types::MoveData format)
+        gen_move_data.clone()
     } else {
+        // Fallback to standard repository for moves not found in generation-specific data
+        let repository = crate::data::Repository::from_path("data/ps-extracted")
+            .expect("Failed to load Pokemon data from data/ps-extracted");
+        if let Some(repo_move_data) = repository.find_move_by_name(&move_data_raw.name) {
+            // Convert repository::MoveData to showdown_types::MoveData
+            crate::data::showdown_types::MoveData {
+                name: repo_move_data.name.clone(),
+                base_power: repo_move_data.base_power as u16,
+                accuracy: repo_move_data.accuracy as u16,
+                pp: repo_move_data.pp,
+                max_pp: repo_move_data.max_pp,
+                move_type: repo_move_data.move_type.to_string(),
+                category: repo_move_data.category.clone(),
+                priority: repo_move_data.priority,
+                target: repo_move_data.target.clone(),
+                flags: repo_move_data.flags.clone(),
+                drain: repo_move_data.drain,
+                recoil: repo_move_data.recoil,
+                ..crate::data::showdown_types::MoveData::default()
+            }
+        } else {
         // Fallback: create a basic MoveData from the Move
         crate::data::showdown_types::MoveData {
             name: move_data_raw.name.clone(),
@@ -1100,6 +1113,7 @@ fn generate_attack_instructions_with_enhanced_context(
             target: format!("{:?}", move_data_raw.target),
             ..crate::data::showdown_types::MoveData::default()
         }
+        }
     };
     
     // Determine targets using the same logic as before
@@ -1112,9 +1126,8 @@ fn generate_attack_instructions_with_enhanced_context(
     // Get generation mechanics
     let generation = state.get_generation_mechanics();
     
-    // Apply move effects with enhanced context
-    let repository = crate::data::ps::repository::Repository::from_path("data/ps-extracted")
-        .expect("Failed to load Pokemon data from data/ps-extracted");
+    // Apply move effects with enhanced context - use generation-specific repository
+    let repository = create_generation_repository(&generation)?;
     let instructions = apply_move_effects(
         state,
         &move_data,
@@ -1123,8 +1136,25 @@ fn generate_attack_instructions_with_enhanced_context(
         &generation,
         context,
         &repository,
+        branch_on_damage,
     )?;
     
     Ok(instructions)
+}
+
+/// Create a generation-specific repository for move effects
+fn create_generation_repository(generation: &crate::generation::GenerationMechanics) -> crate::types::BattleResult<crate::data::Repository> {
+    use crate::types::BattleError;
+    
+    // For now, fall back to standard repository since creating a generation-specific Repository
+    // would require significant changes to the Repository structure. The main fix for generation
+    // awareness is in the move data loading, which we've already implemented.
+    // 
+    // TODO: Implement a proper generation-aware Repository that loads generation-specific
+    // item data and move data for moves like Me First and Fling
+    let repository = crate::data::Repository::from_path("data/ps-extracted")
+        .map_err(|e| BattleError::DataLoad(e))?;
+    
+    Ok(repository)
 }
 

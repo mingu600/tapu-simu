@@ -39,9 +39,9 @@ pub fn apply_photon_geyser(
             ..move_data.clone()
         };
         
-        apply_generic_effects(state, &modified_move_data, user_position, target_positions, generation)
+        apply_generic_effects(state, &modified_move_data, user_position, target_positions, generation, true)
     } else {
-        apply_generic_effects(state, move_data, user_position, target_positions, generation)
+        apply_generic_effects(state, move_data, user_position, target_positions, generation, true)
     }
 }
 
@@ -57,7 +57,7 @@ pub fn apply_sky_drop(
         // Check if user is already in the Sky Drop charging state
         if user_pokemon.volatile_statuses.contains(&VolatileStatus::SkyDrop) {
             // Second turn - attack and remove both Pokemon from sky
-            let mut instructions = apply_generic_effects(state, move_data, user_position, target_positions, generation);
+            let mut instructions = apply_generic_effects(state, move_data, user_position, target_positions, generation, true);
             
             // Remove Sky Drop status from user
             instructions.push(BattleInstructions::new(100.0, vec![

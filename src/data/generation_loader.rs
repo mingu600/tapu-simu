@@ -7,9 +7,17 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use serde_json;
-use crate::data::showdown_types::{MoveData, ItemData};
+use crate::data::showdown_types::{MoveData, ItemData, PokemonData};
 use crate::data::conversion::target_from_string;
 use crate::core::battle_state::{Move, MoveCategory};
+use crate::utils::normalize_name;
+
+/// Apply generation-specific stat changes to Pokemon data
+/// This function is now replaced by the proper generation-specific data extraction
+/// but kept as a placeholder for any manual overrides if needed
+fn apply_generation_stat_changes(_pokemon_data: &mut PokemonData, _generation: u8) {
+    // No longer needed - the data extractor handles all stat changes properly
+}
 
 /// Generation configuration
 #[derive(Debug, Clone)]
@@ -24,8 +32,10 @@ pub struct GenerationRepository {
     generations: Vec<Generation>,
     generation_move_data: HashMap<String, GenerationMoveData>,
     generation_item_data: HashMap<String, GenerationItemData>,
+    generation_pokemon_data: HashMap<String, GenerationPokemonData>,
     move_changes: HashMap<String, MoveChangeHistory>,
     item_changes: HashMap<String, ItemChangeHistory>,
+    pokemon_changes: HashMap<String, PokemonChangeHistory>,
 }
 
 /// Move data for a specific generation
@@ -46,6 +56,15 @@ pub struct GenerationItemData {
     pub items: HashMap<String, ItemData>,
 }
 
+/// Pokemon data for a specific generation
+#[derive(Debug)]
+pub struct GenerationPokemonData {
+    pub generation: u8,
+    pub name: String,
+    pub pokemon_count: usize,
+    pub pokemon: HashMap<String, PokemonData>,
+}
+
 /// History of changes to a move across generations
 #[derive(Debug)]
 pub struct MoveChangeHistory {
@@ -56,6 +75,13 @@ pub struct MoveChangeHistory {
 /// History of changes to an item across generations
 #[derive(Debug)]
 pub struct ItemChangeHistory {
+    pub name: String,
+    pub changes: Vec<GenerationChange>,
+}
+
+/// History of changes to a Pokemon across generations
+#[derive(Debug)]
+pub struct PokemonChangeHistory {
     pub name: String,
     pub changes: Vec<GenerationChange>,
 }
@@ -188,6 +214,61 @@ impl GenerationRepository {
             }
         }
 
+        // Load generation Pokemon data (if available)
+        let generation_pokemon_data_path = Path::new(data_dir).join("pokemon-by-generation.json");
+        let mut generation_pokemon_data = HashMap::new();
+        
+        if generation_pokemon_data_path.exists() {
+            let generation_pokemon_data_content = fs::read_to_string(&generation_pokemon_data_path)?;
+            let raw_generation_pokemon_data: serde_json::Value = serde_json::from_str(&generation_pokemon_data_content)?;
+            
+            for generation in &generations {
+                if let Some(gen_data) = raw_generation_pokemon_data.get(&generation.id) {
+                    let gen_pokemon_raw = gen_data.get("pokemon").unwrap().as_object().unwrap();
+                    let mut gen_pokemon = HashMap::new();
+
+                    for (pokemon_id, pokemon_value) in gen_pokemon_raw {
+                        let pokemon_data: PokemonData = serde_json::from_value(pokemon_value.clone())?;
+                        gen_pokemon.insert(pokemon_id.clone(), pokemon_data);
+                    }
+
+                    generation_pokemon_data.insert(generation.id.clone(), GenerationPokemonData {
+                        generation: generation.num,
+                        name: generation.name.clone(),
+                        pokemon_count: gen_pokemon.len(),
+                        pokemon: gen_pokemon,
+                    });
+                }
+            }
+        } else {
+            // If no generation-specific Pokemon data exists, create from base data with known stat changes
+            let base_pokemon_path = Path::new(data_dir).join("pokemon.json");
+            if base_pokemon_path.exists() {
+                let base_pokemon_content = fs::read_to_string(&base_pokemon_path)?;
+                let base_pokemon: HashMap<String, PokemonData> = serde_json::from_str(&base_pokemon_content)?;
+                
+                for generation in &generations {
+                    let mut gen_pokemon = HashMap::new();
+                    
+                    for (pokemon_id, base_data) in &base_pokemon {
+                        let mut pokemon_data = base_data.clone();
+                        
+                        // Apply generation-specific stat changes
+                        apply_generation_stat_changes(&mut pokemon_data, generation.num);
+                        
+                        gen_pokemon.insert(pokemon_id.clone(), pokemon_data);
+                    }
+                    
+                    generation_pokemon_data.insert(generation.id.clone(), GenerationPokemonData {
+                        generation: generation.num,
+                        name: generation.name.clone(),
+                        pokemon_count: gen_pokemon.len(),
+                        pokemon: gen_pokemon,
+                    });
+                }
+            }
+        }
+
         // Load item changes data
         let item_changes_path = Path::new(data_dir).join("item-changes.json");
         let mut item_changes = HashMap::new();
@@ -229,12 +310,17 @@ impl GenerationRepository {
             }
         }
 
+        // Load Pokemon changes data (placeholder - can be expanded if needed)
+        let pokemon_changes = HashMap::new();
+
         Ok(Self {
             generations,
             generation_move_data,
             generation_item_data,
+            generation_pokemon_data,
             move_changes,
             item_changes,
+            pokemon_changes,
         })
     }
 
@@ -244,10 +330,97 @@ impl GenerationRepository {
         self.generation_move_data.get(&gen_id)?.moves.get(move_name)
     }
 
+    /// Find move data by name (handles both display names and IDs) for a specific generation
+    /// Falls back to earlier generations if move doesn't exist in target generation
+    pub fn find_move_by_name_for_generation(&self, move_name: &str, generation: u8) -> Option<&MoveData> {
+        // Normalize the search name
+        let normalized_name = crate::utils::normalize_name(move_name);
+        
+        // Search from target generation backward to gen 1
+        for gen in (1..=generation).rev() {
+            let gen_id = Self::gen_id(gen);
+            if let Some(generation_data) = self.generation_move_data.get(&gen_id) {
+                // First try direct ID lookup
+                if let Some(move_data) = generation_data.moves.get(&normalized_name) {
+                    return Some(move_data);
+                }
+                
+                // Fallback to searching by normalized display name
+                if let Some(move_data) = generation_data.moves.values().find(|move_data| {
+                    crate::utils::normalize_name(&move_data.name) == normalized_name
+                }) {
+                    return Some(move_data);
+                }
+            }
+        }
+        
+        None
+    }
+
     /// Get item data for a specific generation
     pub fn get_item_for_generation(&self, item_name: &str, generation: u8) -> Option<&ItemData> {
         let gen_id = Self::gen_id(generation);
         self.generation_item_data.get(&gen_id)?.items.get(item_name)
+    }
+
+    /// Find item data by name (handles both display names and IDs) for a specific generation
+    /// Falls back to earlier generations if item doesn't exist in target generation
+    pub fn find_item_by_name_for_generation(&self, item_name: &str, generation: u8) -> Option<&ItemData> {
+        // Normalize the search name
+        let normalized_name = normalize_name(item_name);
+        
+        // Search from target generation backward to gen 1
+        for gen in (1..=generation).rev() {
+            let gen_id = Self::gen_id(gen);
+            if let Some(generation_data) = self.generation_item_data.get(&gen_id) {
+                // First try direct ID lookup
+                if let Some(item_data) = generation_data.items.get(&normalized_name) {
+                    return Some(item_data);
+                }
+                
+                // Fallback to searching by normalized display name
+                if let Some(item_data) = generation_data.items.values().find(|item_data| {
+                    normalize_name(&item_data.name) == normalized_name
+                }) {
+                    return Some(item_data);
+                }
+            }
+        }
+        
+        None
+    }
+
+    /// Get Pokemon data for a specific generation
+    pub fn get_pokemon_for_generation(&self, pokemon_name: &str, generation: u8) -> Option<&PokemonData> {
+        let gen_id = Self::gen_id(generation);
+        self.generation_pokemon_data.get(&gen_id)?.pokemon.get(pokemon_name)
+    }
+
+    /// Find Pokemon data by name (handles both display names and IDs) for a specific generation
+    /// Falls back to earlier generations if Pokemon doesn't exist in target generation
+    pub fn find_pokemon_by_name_for_generation(&self, pokemon_name: &str, generation: u8) -> Option<&PokemonData> {
+        // Normalize the search name
+        let normalized_name = normalize_name(pokemon_name);
+        
+        // Search from target generation backward to gen 1
+        for gen in (1..=generation).rev() {
+            let gen_id = Self::gen_id(gen);
+            if let Some(generation_data) = self.generation_pokemon_data.get(&gen_id) {
+                // First try direct ID lookup
+                if let Some(pokemon_data) = generation_data.pokemon.get(&normalized_name) {
+                    return Some(pokemon_data);
+                }
+                
+                // Fallback to searching by normalized display name
+                if let Some(pokemon_data) = generation_data.pokemon.values().find(|pokemon_data| {
+                    normalize_name(&pokemon_data.name) == normalized_name
+                }) {
+                    return Some(pokemon_data);
+                }
+            }
+        }
+        
+        None
     }
 
     /// Get current generation move data (Gen 9) - convenience method

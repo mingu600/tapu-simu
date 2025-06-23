@@ -28,7 +28,7 @@ pub fn apply_mortal_spin(
     let mut instructions = Vec::new();
     
     // Apply normal move damage first
-    instructions.extend(apply_generic_effects(state, move_data, user_position, target_positions, generation));
+    instructions.extend(apply_generic_effects(state, move_data, user_position, target_positions, generation, true));
     
     // Remove hazards from user's side (like Rapid Spin)
     let user_side_ref = user_position.side;

@@ -5,6 +5,8 @@
 
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use std::collections::HashMap;
+use crate::types::{TypeId, AbilityId};
 
 /// Pokemon Showdown move targets
 /// 
@@ -269,34 +271,36 @@ pub struct MoveData {
     pub self_: Option<SelfEffect>,
     
     // Special properties
-    #[serde(rename = "isZ")]
+    #[serde(rename = "isZ", default)]
     pub is_z: ZMoveData,
-    #[serde(rename = "isMax")]
+    #[serde(rename = "isMax", default)]
     pub is_max: MaxMoveData,
+    #[serde(default)]
     pub ohko: OHKOData,
-    #[serde(rename = "thawsTarget")]
+    #[serde(rename = "thawsTarget", default)]
     pub thaws_target: bool,
-    #[serde(rename = "forceSwitch")]
+    #[serde(rename = "forceSwitch", default)]
     pub force_switch: bool,
-    #[serde(rename = "selfSwitch")]
+    #[serde(rename = "selfSwitch", default)]
     pub self_switch: SelfSwitchData,
-    #[serde(rename = "breaksProtect")]
+    #[serde(rename = "breaksProtect", default)]
     pub breaks_protect: bool,
-    #[serde(rename = "ignoreDefensive")]
+    #[serde(rename = "ignoreDefensive", default)]
     pub ignore_defensive: bool,
-    #[serde(rename = "ignoreEvasion")]
+    #[serde(rename = "ignoreEvasion", default)]
     pub ignore_evasion: bool,
-    #[serde(rename = "ignoreImmunity")]
+    #[serde(rename = "ignoreImmunity", default)]
     pub ignore_immunity: IgnoreImmunityData,
+    #[serde(default)]
     pub multiaccuracy: bool,
     pub multihit: Option<serde_json::Value>, // Can be number or array
-    #[serde(rename = "noDamageVariance")]
+    #[serde(rename = "noDamageVariance", default)]
     pub no_damage_variance: bool,
     
     // Critical hit properties
-    #[serde(rename = "critRatio")]
+    #[serde(rename = "critRatio", default)]
     pub crit_ratio: u8,
-    #[serde(rename = "willCrit")]
+    #[serde(rename = "willCrit", default)]
     pub will_crit: bool,
     
     // Weather/terrain
@@ -421,6 +425,12 @@ pub enum ZMoveData {
     ZCrystal(String), // Z-crystal name when it is a Z-move
 }
 
+impl Default for ZMoveData {
+    fn default() -> Self {
+        ZMoveData::None(false)
+    }
+}
+
 impl ZMoveData {
     pub fn is_z_move(&self) -> bool {
         matches!(self, ZMoveData::ZCrystal(_))
@@ -441,6 +451,12 @@ pub enum MaxMoveData {
     None(bool), // false when not a Max move
     MaxMove(bool), // true when it is a Max move
     GMaxMove(String), // Pokemon name for G-Max moves
+}
+
+impl Default for MaxMoveData {
+    fn default() -> Self {
+        MaxMoveData::None(false)
+    }
 }
 
 impl MaxMoveData {
@@ -465,6 +481,12 @@ pub enum SelfSwitchData {
     Special(String), // Special switch type like "shedtail", "copyvolatile"
 }
 
+impl Default for SelfSwitchData {
+    fn default() -> Self {
+        SelfSwitchData::None(false)
+    }
+}
+
 impl SelfSwitchData {
     pub fn causes_switch(&self) -> bool {
         matches!(self, SelfSwitchData::Normal(true) | SelfSwitchData::Special(_))
@@ -487,6 +509,12 @@ pub enum OHKOData {
     TypeSpecific(String), // Type requirement like "Ice" for Sheer Cold
 }
 
+impl Default for OHKOData {
+    fn default() -> Self {
+        OHKOData::None(false)
+    }
+}
+
 /// Ignore immunity data - can be false, true, or a type-specific map
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
@@ -494,6 +522,12 @@ pub enum IgnoreImmunityData {
     None(bool), // false when no immunity ignored
     All(bool), // true when all immunities ignored
     TypeSpecific(std::collections::HashMap<String, bool>), // Per-type immunity ignoring
+}
+
+impl Default for IgnoreImmunityData {
+    fn default() -> Self {
+        IgnoreImmunityData::None(false)
+    }
 }
 
 impl OHKOData {
@@ -753,4 +787,128 @@ impl ItemData {
     pub fn is_consumed_on_use(&self) -> bool {
         self.is_berry || self.is_gem
     }
+}
+
+/// Pokemon Showdown pokemon data structure
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PokemonData {
+    #[serde(default)]
+    pub id: String,
+    #[serde(default)]
+    pub num: i32,
+    pub name: String,
+    pub types: Vec<TypeId>,
+    #[serde(rename = "baseStats")]
+    pub base_stats: BaseStats,
+    pub abilities: HashMap<String, AbilityId>, // slot -> ability
+    #[serde(default = "default_weight", rename = "weightkg")]
+    pub weight_kg: f32,  // Weight in kilograms
+    
+    // Optional fields that exist in PS data but we don't need
+    #[serde(default)]
+    pub heightm: Option<f32>,
+    #[serde(default)]
+    pub color: Option<String>,
+    #[serde(default)]
+    pub prevo: Option<String>,
+    #[serde(default)]
+    pub evos: Option<Vec<String>>,
+    #[serde(default, rename = "evoType")]
+    pub evo_type: Option<String>,
+    #[serde(default, rename = "evoCondition")]
+    pub evo_condition: Option<String>,
+    #[serde(default, rename = "evoItem")]
+    pub evo_item: Option<String>,
+    #[serde(default, rename = "evoLevel")]
+    pub evo_level: Option<i32>,
+    #[serde(default, rename = "baseForme")]
+    pub base_forme: Option<String>,
+    #[serde(default)]
+    pub forme: Option<String>,
+    #[serde(default, rename = "baseSpecies")]
+    pub base_species: Option<String>,
+    #[serde(default, rename = "otherFormes")]
+    pub other_formes: Option<Vec<String>>,
+    #[serde(default, rename = "formeOrder")]
+    pub forme_order: Option<Vec<String>>,
+    #[serde(default)]
+    pub gender: Option<String>,
+    #[serde(default, rename = "genderRatio")]
+    pub gender_ratio: Option<serde_json::Value>,
+    #[serde(default, rename = "maxHP")]
+    pub max_hp: Option<i32>,
+    #[serde(default)]
+    pub learnset: Option<serde_json::Value>,
+    #[serde(default)]
+    pub tags: Option<Vec<String>>,
+    #[serde(default)]
+    pub tier: Option<String>,
+    #[serde(default, rename = "doublesTier")]
+    pub doubles_tier: Option<String>,
+    #[serde(default, rename = "isMega")]
+    pub is_mega: Option<bool>,
+    #[serde(default, rename = "isPrimal")]
+    pub is_primal: Option<bool>,
+    #[serde(default, rename = "cannotDynamax")]
+    pub cannot_dynamax: Option<bool>,
+    #[serde(default, rename = "canGigantamax")]
+    pub can_gigantamax: Option<serde_json::Value>, // Can be string or boolean
+    #[serde(default)]
+    pub gigantamax: Option<String>,
+    #[serde(default, rename = "cosmeticFormes")]
+    pub cosmetic_formes: Option<Vec<String>>,
+    #[serde(default, rename = "requiredItem")]
+    pub required_item: Option<String>,
+    #[serde(default, rename = "requiredItems")]
+    pub required_items: Option<Vec<String>>,
+    #[serde(default, rename = "battleOnly")]
+    pub battle_only: Option<serde_json::Value>, // Can be String or Vec<String>
+    #[serde(default, rename = "unreleasedHidden")]
+    pub unreleased_hidden: Option<bool>,
+    #[serde(default, rename = "maleOnlyHidden")]
+    pub male_only_hidden: Option<bool>,
+    #[serde(default, rename = "changesFrom")]
+    pub changes_from: Option<String>,
+}
+
+fn default_weight() -> f32 {
+    50.0
+}
+
+/// Base stats structure
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BaseStats {
+    pub hp: u8,
+    #[serde(alias = "atk")]
+    pub attack: u8,
+    #[serde(alias = "def")]
+    pub defense: u8,
+    #[serde(alias = "spa")]
+    pub special_attack: u8,
+    #[serde(alias = "spd")]
+    pub special_defense: u8,
+    #[serde(alias = "spe")]
+    pub speed: u8,
+}
+
+impl BaseStats {
+    /// Convert to engine stats format
+    pub fn to_engine_stats(&self) -> crate::data::types::EngineBaseStats {
+        crate::data::types::EngineBaseStats {
+            hp: self.hp as i16,
+            attack: self.attack as i16,
+            defense: self.defense as i16,
+            special_attack: self.special_attack as i16,
+            special_defense: self.special_defense as i16,
+            speed: self.speed as i16,
+        }
+    }
+}
+
+/// Pokemon Showdown ability data structure
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AbilityData {
+    pub name: String,
+    pub description: String,
+    pub short_desc: String,
 }

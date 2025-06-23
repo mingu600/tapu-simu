@@ -358,6 +358,51 @@ impl BattleFormat {
         ])
     }
 
+    pub fn gen1_ou() -> Self {
+        Self::new(
+            "Gen 1 OU".to_string(),
+            Generation::Gen1,
+            FormatType::Singles,
+        )
+        .with_clauses(vec![
+            FormatClause::SleepClause,
+            FormatClause::FreezeClause,
+            FormatClause::SpeciesClause,
+            FormatClause::EvasionClause,
+            FormatClause::OhkoClause,
+        ])
+    }
+
+    pub fn gen2_ou() -> Self {
+        Self::new(
+            "Gen 2 OU".to_string(),
+            Generation::Gen2,
+            FormatType::Singles,
+        )
+        .with_clauses(vec![
+            FormatClause::SleepClause,
+            FormatClause::FreezeClause,
+            FormatClause::SpeciesClause,
+            FormatClause::EvasionClause,
+            FormatClause::OhkoClause,
+        ])
+    }
+
+    pub fn gen3_ou() -> Self {
+        Self::new(
+            "Gen 3 OU".to_string(),
+            Generation::Gen3,
+            FormatType::Singles,
+        )
+        .with_clauses(vec![
+            FormatClause::SleepClause,
+            FormatClause::FreezeClause,
+            FormatClause::SpeciesClause,
+            FormatClause::EvasionClause,
+            FormatClause::OhkoClause,
+        ])
+    }
+
     pub fn gen4_ou() -> Self {
         Self::new(
             "Gen 4 OU".to_string(),
@@ -370,6 +415,66 @@ impl BattleFormat {
             FormatClause::SpeciesClause,
             FormatClause::EvasionClause,
             FormatClause::OhkoClause,
+        ])
+    }
+
+    pub fn gen5_ou() -> Self {
+        Self::new(
+            "Gen 5 OU".to_string(),
+            Generation::Gen5,
+            FormatType::Singles,
+        )
+        .with_clauses(vec![
+            FormatClause::SleepClause,
+            FormatClause::FreezeClause,
+            FormatClause::SpeciesClause,
+            FormatClause::EvasionClause,
+            FormatClause::OhkoClause,
+        ])
+    }
+
+    pub fn gen6_ou() -> Self {
+        Self::new(
+            "Gen 6 OU".to_string(),
+            Generation::Gen6,
+            FormatType::Singles,
+        )
+        .with_clauses(vec![
+            FormatClause::SleepClause,
+            FormatClause::FreezeClause,
+            FormatClause::SpeciesClause,
+            FormatClause::EvasionClause,
+            FormatClause::OhkoClause,
+        ])
+    }
+
+    pub fn gen7_ou() -> Self {
+        Self::new(
+            "Gen 7 OU".to_string(),
+            Generation::Gen7,
+            FormatType::Singles,
+        )
+        .with_clauses(vec![
+            FormatClause::SleepClause,
+            FormatClause::SpeciesClause,
+            FormatClause::EvasionClause,
+            FormatClause::OhkoClause,
+            FormatClause::EndlessBattleClause,
+        ])
+    }
+
+    pub fn gen8_ou() -> Self {
+        Self::new(
+            "Gen 8 OU".to_string(),
+            Generation::Gen8,
+            FormatType::Singles,
+        )
+        .with_clauses(vec![
+            FormatClause::SleepClause,
+            FormatClause::SpeciesClause,
+            FormatClause::EvasionClause,
+            FormatClause::OhkoClause,
+            FormatClause::EndlessBattleClause,
         ])
     }
 

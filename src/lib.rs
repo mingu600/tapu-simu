@@ -51,6 +51,7 @@ pub mod types;
 pub mod config;
 pub mod simulator;
 pub mod builders;
+pub mod utils;
 
 // Modern API exports (primary interfaces)
 pub use core::battle_format::{BattleFormat, BattlePosition, SideReference, FormatType};
@@ -78,6 +79,9 @@ pub use engine::combat::damage_calc;
 pub use engine::combat::type_effectiveness;
 pub use engine::mechanics::items;
 pub use engine::turn::end_of_turn;
+
+// Utility re-exports
+pub use utils::normalize_name;
 
 // No compile-time feature restrictions - everything handled at runtime
 

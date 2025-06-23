@@ -5,6 +5,7 @@
 
 use std::collections::HashMap;
 use std::sync::Arc;
+use tapu_simu::builders::format::FormatBuilder;
 use tapu_simu::core::battle_format::{BattleFormat, BattlePosition, SideReference};
 use tapu_simu::core::battle_state::BattleState;
 use tapu_simu::core::instructions::{
@@ -12,15 +13,18 @@ use tapu_simu::core::instructions::{
     Terrain, Weather,
 };
 use tapu_simu::core::move_choice::MoveChoice;
-use tapu_simu::data::ps::repository::Repository;
+use tapu_simu::data::generation_loader::GenerationRepository;
 use tapu_simu::data::types::Stats;
+use tapu_simu::data::Repository;
 use tapu_simu::engine::turn;
 use tapu_simu::generation::Generation;
+use tapu_simu::types::identifiers::AbilityId;
 use tapu_simu::types::DataResult;
 
 /// Core test framework for tapu-simu battles
 pub struct TapuTestFramework {
     repository: Arc<Repository>,
+    generation_repository: Arc<GenerationRepository>,
     format: BattleFormat,
 }
 
@@ -28,8 +32,17 @@ impl TapuTestFramework {
     /// Create a new test framework with default Gen 9 Singles format
     pub fn new() -> DataResult<Self> {
         let repository = Arc::new(Repository::from_path("data/ps-extracted")?);
+        let generation_repository = Arc::new(
+            GenerationRepository::load_from_directory("data/ps-extracted").map_err(|e| {
+                use tapu_simu::types::DataError;
+                DataError::RequiredFileMissing {
+                    file: "generation-specific data".to_string(),
+                }
+            })?,
+        );
         Ok(Self {
             repository,
+            generation_repository,
             format: BattleFormat::gen9_ou(),
         })
     }
@@ -37,25 +50,49 @@ impl TapuTestFramework {
     /// Create a test framework for a specific generation
     pub fn with_generation(gen: Generation) -> DataResult<Self> {
         let repository = Arc::new(Repository::from_path("data/ps-extracted")?);
+        let generation_repository = Arc::new(
+            GenerationRepository::load_from_directory("data/ps-extracted").map_err(|e| {
+                use tapu_simu::types::DataError;
+                DataError::RequiredFileMissing {
+                    file: "generation-specific data".to_string(),
+                }
+            })?,
+        );
         let format = match gen {
-            Generation::Gen1 => BattleFormat::gen4_ou(), // Use gen4 as fallback
-            Generation::Gen2 => BattleFormat::gen4_ou(), // Use gen4 as fallback
-            Generation::Gen3 => BattleFormat::gen4_ou(), // Use gen4 as fallback
+            Generation::Gen1 => BattleFormat::gen1_ou(),
+            Generation::Gen2 => BattleFormat::gen2_ou(),
+            Generation::Gen3 => BattleFormat::gen3_ou(),
             Generation::Gen4 => BattleFormat::gen4_ou(),
-            Generation::Gen5 => BattleFormat::gen4_ou(), // Use gen4 as fallback
-            Generation::Gen6 => BattleFormat::gen4_ou(), // Use gen4 as fallback
-            Generation::Gen7 => BattleFormat::gen4_ou(), // Use gen4 as fallback
-            Generation::Gen8 => BattleFormat::gen4_ou(), // Use gen4 as fallback
+            Generation::Gen5 => BattleFormat::gen5_ou(),
+            Generation::Gen6 => BattleFormat::gen6_ou(),
+            Generation::Gen7 => BattleFormat::gen7_ou(),
+            Generation::Gen8 => BattleFormat::gen8_ou(),
             Generation::Gen9 => BattleFormat::gen9_ou(),
         };
 
-        Ok(Self { repository, format })
+        Ok(Self {
+            repository,
+            generation_repository,
+            format,
+        })
     }
 
     /// Create a test framework with a specific format
     pub fn with_format(format: BattleFormat) -> DataResult<Self> {
         let repository = Arc::new(Repository::from_path("data/ps-extracted")?);
-        Ok(Self { repository, format })
+        let generation_repository = Arc::new(
+            GenerationRepository::load_from_directory("data/ps-extracted").map_err(|e| {
+                use tapu_simu::types::DataError;
+                DataError::RequiredFileMissing {
+                    file: "generation-specific move data".to_string(),
+                }
+            })?,
+        );
+        Ok(Self {
+            repository,
+            generation_repository,
+            format,
+        })
     }
 
     /// Get a reference to the repository
@@ -125,7 +162,12 @@ impl TapuTestFramework {
         // Execute moves and validate outcomes
         for (turn_idx, (move_one, move_two)) in test.moves.iter().enumerate() {
             // Execute the turn
-            match self.execute_turn(&mut state, move_one.clone(), move_two.clone()) {
+            match self.execute_turn(
+                &mut state,
+                move_one.clone(),
+                move_two.clone(),
+                test.branch_on_damage,
+            ) {
                 Ok(instructions) => {
                     // Validate expected outcomes for this turn
                     if let Some(expected_instructions) = test.expected_instructions.get(turn_idx) {
@@ -211,10 +253,10 @@ impl TapuTestFramework {
 
         // Set level
         pokemon.level = spec.level;
-        // Get Pokemon data from repository - fail if not found
+        // Get generation-aware Pokemon data from generation repository - fail if not found
         let pokemon_data = self
-            .repository
-            .find_pokemon_by_name(spec.species)
+            .generation_repository
+            .find_pokemon_by_name_for_generation(spec.species, self.format.generation.number())
             .ok_or_else(|| {
                 use tapu_simu::types::{DataError, SpeciesId};
                 DataError::SpeciesNotFound {
@@ -241,7 +283,7 @@ impl TapuTestFramework {
             speed: 31,
         });
 
-        // Use actual base stats from Pokemon data
+        // Use generation-aware base stats from the generation repository
         let level = spec.level as i16;
         let base_hp = pokemon_data.base_stats.hp as i16;
         let base_attack = pokemon_data.base_stats.attack as i16;
@@ -250,23 +292,62 @@ impl TapuTestFramework {
         let base_special_defense = pokemon_data.base_stats.special_defense as i16;
         let base_speed = pokemon_data.base_stats.speed as i16;
 
-        pokemon.stats = Stats {
-            hp: (2 * base_hp + ivs.hp + evs.hp / 4) * level / 100 + level + 10,
-            attack: (2 * base_attack + ivs.attack + evs.attack / 4) * level / 100 + 5,
-            defense: (2 * base_defense + ivs.defense + evs.defense / 4) * level / 100 + 5,
-            special_attack: (2 * base_special_attack
-                + ivs.special_attack
-                + evs.special_attack / 4)
-                * level
-                / 100
-                + 5,
-            special_defense: (2 * base_special_defense
-                + ivs.special_defense
-                + evs.special_defense / 4)
-                * level
-                / 100
-                + 5,
-            speed: (2 * base_speed + ivs.speed + evs.speed / 4) * level / 100 + 5,
+        // Generation-aware stat calculation
+        pokemon.stats = match self.format.generation {
+            Generation::Gen1 | Generation::Gen2 => {
+                // Gen 1/2 use DVs (0-15) and Stat Experience
+                // Default to perfect DVs (15) and no Stat Experience (0)
+                let dv_hp = 15;
+                let dv_attack = 15;
+                let dv_defense = 15;
+                let dv_special = 15; // Gen 1/2 have single Special stat
+                let dv_speed = 15;
+                let stat_exp = 65535; // Max Stat Experience for consistent testing
+                let stat_exp_factor = (stat_exp as f64).sqrt() as i16 / 4;
+
+                if self.format.generation == Generation::Gen1 {
+                    // Gen 1: Special Attack and Special Defense are the same stat
+                    Stats {
+                        hp: (((base_hp + dv_hp) as i32 * 2 + stat_exp_factor as i32) * level as i32 / 100 + level as i32 + 10) as i16,
+                        attack: (((base_attack + dv_attack) as i32 * 2 + stat_exp_factor as i32) * level as i32 / 100 + 5) as i16,
+                        defense: (((base_defense + dv_defense) as i32 * 2 + stat_exp_factor as i32) * level as i32 / 100 + 5) as i16,
+                        special_attack: (((base_special_attack + dv_special) as i32 * 2 + stat_exp_factor as i32) * level as i32 / 100 + 5) as i16,
+                        special_defense: (((base_special_attack + dv_special) as i32 * 2 + stat_exp_factor as i32) * level as i32 / 100 + 5) as i16, // Same as Special Attack in Gen 1
+                        speed: (((base_speed + dv_speed) as i32 * 2 + stat_exp_factor as i32) * level as i32 / 100 + 5) as i16,
+                    }
+                } else {
+                    // Gen 2: Special Attack and Special Defense are separate
+                    Stats {
+                        hp: (((base_hp + dv_hp) as i32 * 2 + stat_exp_factor as i32) * level as i32 / 100 + level as i32 + 10) as i16,
+                        attack: (((base_attack + dv_attack) as i32 * 2 + stat_exp_factor as i32) * level as i32 / 100 + 5) as i16,
+                        defense: (((base_defense + dv_defense) as i32 * 2 + stat_exp_factor as i32) * level as i32 / 100 + 5) as i16,
+                        special_attack: (((base_special_attack + dv_special) as i32 * 2 + stat_exp_factor as i32) * level as i32 / 100 + 5) as i16,
+                        special_defense: (((base_special_defense + dv_special) as i32 * 2 + stat_exp_factor as i32) * level as i32 / 100 + 5) as i16,
+                        speed: (((base_speed + dv_speed) as i32 * 2 + stat_exp_factor as i32) * level as i32 / 100 + 5) as i16,
+                    }
+                }
+            }
+            _ => {
+                // Gen 3+ use IVs (0-31) and EVs
+                Stats {
+                    hp: (2 * base_hp + ivs.hp + evs.hp / 4) * level / 100 + level + 10,
+                    attack: (2 * base_attack + ivs.attack + evs.attack / 4) * level / 100 + 5,
+                    defense: (2 * base_defense + ivs.defense + evs.defense / 4) * level / 100 + 5,
+                    special_attack: (2 * base_special_attack
+                        + ivs.special_attack
+                        + evs.special_attack / 4)
+                        * level
+                        / 100
+                        + 5,
+                    special_defense: (2 * base_special_defense
+                        + ivs.special_defense
+                        + evs.special_defense / 4)
+                        * level
+                        / 100
+                        + 5,
+                    speed: (2 * base_speed + ivs.speed + evs.speed / 4) * level / 100 + 5,
+                }
+            }
         };
 
         pokemon.max_hp = pokemon.stats.hp;
@@ -282,9 +363,9 @@ impl TapuTestFramework {
         // Set weight
         pokemon.weight_kg = pokemon_data.weight_kg;
 
-        // Set ability if specified
+        // Set ability if specified (normalize using AbilityId)
         if let Some(ability) = spec.ability {
-            pokemon.ability = ability.to_string();
+            pokemon.ability = AbilityId::from(ability).as_str().to_string();
         }
 
         // Set item if specified
@@ -292,14 +373,23 @@ impl TapuTestFramework {
             pokemon.item = Some(item.to_string());
         }
 
-        // Add moves using repository data - fail if move not found
+        // Add moves using generation-specific repository data - fail if move not found
         let mut moves = HashMap::new();
         for (i, &move_name) in spec.moves.iter().enumerate() {
             if let Some(move_index) = MoveIndex::from_index(i) {
-                // Get move data from repository - fail if not found
-                let move_id = MoveId::from(move_name);
-                let move_data = self.repository.create_move(&move_id)?;
-                moves.insert(move_index, move_data);
+                // Find move data by name using generation-specific repository
+                let move_data = self
+                    .generation_repository
+                    .find_move_by_name_for_generation(move_name, self.format.generation.number())
+                    .ok_or_else(|| {
+                        use tapu_simu::types::{DataError, MoveId};
+                        DataError::MoveNotFound {
+                            move_id: MoveId::from(move_name),
+                        }
+                    })?;
+
+                let engine_move = self.generation_repository.move_to_engine_move(move_data);
+                moves.insert(move_index, engine_move);
             }
         }
         pokemon.moves = moves;
@@ -309,9 +399,9 @@ impl TapuTestFramework {
             pokemon.status = status;
         }
 
-        // Set HP percentage if specified
-        if let Some(hp_percentage) = spec.hp_percentage {
-            pokemon.hp = ((pokemon.max_hp as f32) * hp_percentage / 100.0) as i16;
+        // Set raw HP if specified
+        if let Some(hp) = spec.hp {
+            pokemon.hp = hp as i16;
         }
 
         Ok(pokemon)
@@ -330,8 +420,8 @@ impl TapuTestFramework {
                 pokemon.status = status;
             }
 
-            if let Some(hp_percentage) = spec.hp_percentage {
-                pokemon.hp = ((pokemon.max_hp as f32) * hp_percentage / 100.0) as i16;
+            if let Some(hp) = spec.hp {
+                pokemon.hp = hp as i16;
             }
         }
     }
@@ -388,10 +478,12 @@ impl TapuTestFramework {
         state: &mut BattleState,
         move_one: MoveChoice,
         move_two: MoveChoice,
+        branch_on_damage: bool,
     ) -> Result<Vec<BattleInstructions>, String> {
         // Use the actual battle engine to generate instructions
-        let instructions = turn::generate_instructions(state, (&move_one, &move_two))
-            .map_err(|e| format!("Battle engine error: {:?}", e))?;
+        let instructions =
+            turn::generate_instructions(state, (&move_one, &move_two), branch_on_damage)
+                .map_err(|e| format!("Battle engine error: {:?}", e))?;
 
         // Apply the generated instructions to update the battle state
         for instruction_set in &instructions {
@@ -600,7 +692,7 @@ pub struct PokemonSpec {
     pub evs: Option<Stats>,
     pub ivs: Option<Stats>,
     pub status: Option<PokemonStatus>,
-    pub hp_percentage: Option<f32>,
+    pub hp: Option<u16>,
 }
 
 impl Default for PokemonSpec {
@@ -615,7 +707,7 @@ impl Default for PokemonSpec {
             evs: None,
             ivs: None,
             status: None,
-            hp_percentage: None,
+            hp: None,
         }
     }
 }
@@ -656,6 +748,7 @@ pub struct BattleTest {
     pub moves: Vec<(MoveChoice, MoveChoice)>,
     pub expected_outcomes: Vec<ExpectedOutcome>,
     pub expected_instructions: Vec<Vec<BattleInstructions>>,
+    pub branch_on_damage: bool,
 }
 
 impl BattleTest {
@@ -669,6 +762,7 @@ impl BattleTest {
             moves: Vec::new(),
             expected_outcomes: Vec::new(),
             expected_instructions: Vec::new(),
+            branch_on_damage: false, // Default to no branching like poke-engine tests
         }
     }
 }

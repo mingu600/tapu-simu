@@ -191,6 +191,12 @@ impl TestBuilder {
         self
     }
 
+    /// Set whether to branch on damage (critical hits, damage rolls)
+    pub fn branch_on_damage(mut self, branch: bool) -> Self {
+        self.test.branch_on_damage = branch;
+        self
+    }
+
     /// Execute the test and return the result
     pub fn run(self) -> TestResult {
         self.framework.execute_test(self.test)
@@ -262,7 +268,7 @@ impl PokemonSpec {
             evs: None,
             ivs: None,
             status: None,
-            hp_percentage: None,
+            hp: None,
         }
     }
 
@@ -348,21 +354,9 @@ impl PokemonSpec {
         self
     }
 
-    /// Set the Pokemon's HP as a percentage of max HP
-    pub fn hp_percentage(mut self, percentage: f32) -> Self {
-        self.hp_percentage = Some(percentage);
-        self
-    }
-
-    /// Set the Pokemon to low HP (25% of max)
-    pub fn low_hp(mut self) -> Self {
-        self.hp_percentage = Some(25.0);
-        self
-    }
-
-    /// Set the Pokemon to critical HP (1% of max)
-    pub fn critical_hp(mut self) -> Self {
-        self.hp_percentage = Some(1.0);
+    /// Set the Pokemon's HP to a specific raw value
+    pub fn hp(mut self, hp: u16) -> Self {
+        self.hp = Some(hp);
         self
     }
 

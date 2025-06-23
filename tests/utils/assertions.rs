@@ -150,22 +150,21 @@ impl BattleAssertions {
         Ok(())
     }
     
-    /// Assert that a Pokemon has the expected HP percentage
-    pub fn assert_hp_percentage(
+    /// Assert that a Pokemon has the expected raw HP value
+    pub fn assert_hp(
         state: &BattleState,
         position: BattlePosition,
-        expected_percentage: f32,
-        tolerance: f32,
+        expected_hp: u16,
     ) -> Result<(), String> {
         let pokemon = state.get_pokemon_at_position(position)
             .ok_or_else(|| format!("No Pokemon at position {:?}", position))?;
         
-        let actual_percentage = (pokemon.hp as f32 / pokemon.max_hp as f32) * 100.0;
+        let actual_hp = pokemon.hp as u16;
         
-        if (actual_percentage - expected_percentage).abs() > tolerance {
+        if actual_hp != expected_hp {
             return Err(format!(
-                "HP percentage assertion failed at {:?}: expected {}% (±{}%), got {}%",
-                position, expected_percentage, tolerance, actual_percentage
+                "HP assertion failed at {:?}: expected {} HP, got {} HP (max: {})",
+                position, expected_hp, actual_hp, pokemon.max_hp
             ));
         }
         

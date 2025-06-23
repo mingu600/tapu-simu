@@ -1,6 +1,6 @@
 use crate::core::battle_format::BattleFormat;
 use crate::core::battle_state::BattleState;
-use crate::data::ps::repository::Repository;
+use crate::data::Repository;
 use crate::types::errors::{BattleError, DataError, SimulatorError};
 use crate::config::Config;
 use crate::builders::{BattleBuilder, TeamBuilder};

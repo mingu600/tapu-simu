@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use crate::utils::normalize_name;
 
 /// Type-safe wrapper for Pokemon species identifiers
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -71,27 +72,23 @@ pub struct AbilityId(String);
 
 impl AbilityId {
     pub fn new(ability: impl Into<String>) -> Self {
-        Self(ability.into())
+        Self(normalize_name(&ability.into()))
     }
     
     pub fn as_str(&self) -> &str {
         &self.0
     }
-
-    pub fn to_lowercase(&self) -> String {
-        self.0.to_lowercase()
-    }
 }
 
 impl From<String> for AbilityId {
     fn from(s: String) -> Self {
-        Self(s)
+        Self(normalize_name(&s))
     }
 }
 
 impl From<&str> for AbilityId {
     fn from(s: &str) -> Self {
-        Self(s.to_string())
+        Self(normalize_name(s))
     }
 }
 

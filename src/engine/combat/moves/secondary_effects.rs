@@ -407,7 +407,7 @@ where
     F: Fn(&BattleState, &[BattlePosition]) -> Vec<BattleInstruction>,
 {
     // Apply primary damage effect
-    let mut instructions = apply_generic_effects(state, move_data, user_position, target_positions, generation);
+    let mut instructions = apply_generic_effects(state, move_data, user_position, target_positions, generation, true);
     
     // Add secondary effect (typically with 10-30% chance, handled by PS data)
     let secondary_effects = effect_fn(state, target_positions);

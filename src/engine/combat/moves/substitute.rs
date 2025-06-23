@@ -9,7 +9,7 @@ use crate::core::instructions::{
     BattleInstruction, BattleInstructions, StatusInstruction, PokemonInstruction,
     FieldInstruction, StatsInstruction,
 };
-use crate::data::ps::repository::Repository;
+use crate::data::Repository;
 use crate::core::battle_format::{BattlePosition, SideReference};
 use crate::generation::GenerationMechanics;
 use crate::engine::combat::type_effectiveness::{TypeChart, PokemonType};

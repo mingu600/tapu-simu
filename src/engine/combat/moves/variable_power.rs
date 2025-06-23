@@ -7,7 +7,7 @@
 use crate::core::battle_state::{Pokemon, MoveCategory, BattleState};
 use crate::core::instructions::{PokemonStatus, VolatileStatus, Stat, Weather, SideCondition, Terrain};
 use crate::core::instructions::{BattleInstruction, BattleInstructions, StatusInstruction, PokemonInstruction, FieldInstruction, StatsInstruction};
-use crate::data::ps::repository::Repository;
+use crate::data::Repository;
 use crate::core::battle_format::{BattlePosition, SideReference};
 use crate::generation::GenerationMechanics;
 use crate::engine::combat::type_effectiveness::{TypeChart, PokemonType};
@@ -1091,7 +1091,7 @@ pub fn apply_me_first(
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
     context: &super::MoveContext,
-    repository: &crate::data::ps::repository::Repository,
+    repository: &crate::data::Repository,
 ) -> Vec<BattleInstructions> {
     // Me First only works if the user goes first
     if !context.going_first {

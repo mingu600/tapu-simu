@@ -8,7 +8,7 @@ use crate::core::instructions::{PokemonStatus, VolatileStatus};
 use crate::core::instructions::{
     BattleInstruction, BattleInstructions, PokemonInstruction, StatusInstruction,
 };
-use crate::data::ps::repository::Repository;
+use crate::data::Repository;
 use crate::core::battle_format::BattlePosition;
 use crate::generation::GenerationMechanics;
 use crate::data::showdown_types::MoveData;

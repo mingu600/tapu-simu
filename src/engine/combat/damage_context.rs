@@ -276,6 +276,99 @@ impl EffectiveStats {
 
         apply_stat_stage_multiplier(base_value, stage)
     }
+
+    /// Get the effective value of a stat with critical hit considerations
+    /// Critical hits ignore positive defensive boosts and negative offensive drops
+    pub fn get_effective_stat_with_crit(&self, stat: Stat, is_critical: bool, is_attacker: bool) -> i16 {
+        let base_value = match stat {
+            Stat::Attack => self.stats.attack,
+            Stat::Defense => self.stats.defense,
+            Stat::SpecialAttack => self.stats.special_attack,
+            Stat::SpecialDefense => self.stats.special_defense,
+            Stat::Speed => self.stats.speed,
+            _ => return 0, // HP doesn't use stages
+        };
+
+        let original_stage = match stat {
+            Stat::Attack => self.stat_stages.attack,
+            Stat::Defense => self.stat_stages.defense,
+            Stat::SpecialAttack => self.stat_stages.special_attack,
+            Stat::SpecialDefense => self.stat_stages.special_defense,
+            Stat::Speed => self.stat_stages.speed,
+            _ => 0,
+        };
+
+        // Apply critical hit stat boost rules
+        let effective_stage = if is_critical {
+            match (stat, is_attacker) {
+                // For attacker's offensive stats: ignore negative boosts (drops)
+                (Stat::Attack | Stat::SpecialAttack, true) => {
+                    if original_stage < 0 { 0 } else { original_stage }
+                }
+                // For defender's defensive stats: ignore positive boosts
+                (Stat::Defense | Stat::SpecialDefense, false) => {
+                    if original_stage > 0 { 0 } else { original_stage }
+                }
+                // All other cases: use original stage
+                _ => original_stage,
+            }
+        } else {
+            original_stage
+        };
+
+        apply_stat_stage_multiplier(base_value, effective_stage)
+    }
+
+    /// Get the effective value of a stat with critical hit considerations for a specific generation
+    /// Gen 1 critical hits ignore ALL stat boosts (positive and negative)
+    pub fn get_effective_stat_with_crit_gen(&self, stat: Stat, is_critical: bool, is_attacker: bool, generation: crate::generation::Generation) -> i16 {
+        let base_value = match stat {
+            Stat::Attack => self.stats.attack,
+            Stat::Defense => self.stats.defense,
+            Stat::SpecialAttack => self.stats.special_attack,
+            Stat::SpecialDefense => self.stats.special_defense,
+            Stat::Speed => self.stats.speed,
+            _ => return 0, // HP doesn't use stages
+        };
+
+        let original_stage = match stat {
+            Stat::Attack => self.stat_stages.attack,
+            Stat::Defense => self.stat_stages.defense,
+            Stat::SpecialAttack => self.stat_stages.special_attack,
+            Stat::SpecialDefense => self.stat_stages.special_defense,
+            Stat::Speed => self.stat_stages.speed,
+            _ => 0,
+        };
+
+        // Apply critical hit stat boost rules
+        let effective_stage = if is_critical {
+            match generation {
+                crate::generation::Generation::Gen1 => {
+                    // Gen 1: Critical hits ignore ALL stat boosts completely
+                    0
+                }
+                _ => {
+                    // Gen 2+: Modern critical hit rules
+                    match (stat, is_attacker) {
+                        // For attacker's offensive stats: ignore negative boosts (drops)
+                        (Stat::Attack | Stat::SpecialAttack, true) => {
+                            if original_stage < 0 { 0 } else { original_stage }
+                        }
+                        // For defender's defensive stats: ignore positive boosts
+                        (Stat::Defense | Stat::SpecialDefense, false) => {
+                            if original_stage > 0 { 0 } else { original_stage }
+                        }
+                        // All other cases: use original stage
+                        _ => original_stage,
+                    }
+                }
+            }
+        } else {
+            original_stage
+        };
+
+        apply_stat_stage_multiplier(base_value, effective_stage)
+    }
 }
 
 impl StatStages {

@@ -4,7 +4,7 @@
 //! with comprehensive validation and error handling.
 
 use crate::core::battle_format::BattleFormat;
-use crate::data::ps::repository::Repository;
+use crate::data::Repository;
 use crate::data::RandomPokemonSet;
 use crate::types::identifiers::{SpeciesId, AbilityId, MoveId, ItemId};
 use super::traits::{Builder, BuilderError, ValidationContext, ValidatingBuilder};

@@ -6,7 +6,7 @@
 use super::traits::{Builder, BuilderError, ValidatingBuilder, ValidationContext};
 use crate::core::battle_format::BattleFormat;
 use crate::core::battle_state::BattleState;
-use crate::data::ps::repository::Repository;
+use crate::data::Repository;
 use crate::data::RandomPokemonSet;
 use crate::simulator::Player;
 use crate::types::errors::BattleError;

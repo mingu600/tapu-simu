@@ -301,7 +301,7 @@ fn validate_format(format: BattleFormat) {
 }
 
 fn debug_stats() -> Result<(), Box<dyn std::error::Error>> {
-    use tapu_simu::data::ps::repository::Repository;
+    use tapu_simu::data::Repository;
     use tapu_simu::types::{SpeciesId, MoveId};
     
     let repository = Repository::from_path("data/ps-extracted")?;

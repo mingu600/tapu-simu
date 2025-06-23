@@ -10,7 +10,7 @@ use crate::core::instructions::{
     BattleInstruction, BattleInstructions, StatusInstruction, PokemonInstruction,
     FieldInstruction, StatsInstruction,
 };
-use crate::data::ps::repository::Repository;
+use crate::data::Repository;
 use crate::core::battle_format::{BattlePosition, SideReference};
 use crate::generation::GenerationMechanics;
 use crate::engine::combat::type_effectiveness::{TypeChart, PokemonType};
@@ -381,7 +381,7 @@ pub fn apply_generic_effects(
     generation: &GenerationMechanics,
 ) -> Vec<BattleInstructions> {
     // Use the shared implementation from the main moves module
-    super::apply_generic_effects(state, move_data, user_position, target_positions, generation)
+    super::apply_generic_effects(state, move_data, user_position, target_positions, generation, true)
 }
 
 // Fallback function removed - moves should either be implemented or return errors

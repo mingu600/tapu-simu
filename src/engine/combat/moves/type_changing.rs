@@ -223,5 +223,5 @@ fn apply_generic_effects(
     generation: &GenerationMechanics,
 ) -> Vec<BattleInstructions> {
     // Use the shared implementation from the main moves module
-    super::apply_generic_effects(state, move_data, user_position, target_positions, generation)
+    super::apply_generic_effects(state, move_data, user_position, target_positions, generation, true)
 }
