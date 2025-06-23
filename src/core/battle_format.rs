@@ -60,7 +60,7 @@ impl fmt::Display for FormatType {
 }
 
 /// Clauses that can be applied to a battle format
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum FormatClause {
     /// Sleep Clause: Only one Pokemon per team can be asleep at a time
     SleepClause,
@@ -85,7 +85,7 @@ pub enum FormatClause {
 }
 
 /// Specific Pokemon, moves, items, or abilities that are banned
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BanList {
     pub species: Vec<String>,
     pub moves: Vec<String>,
@@ -121,7 +121,7 @@ impl BanList {
 }
 
 /// Comprehensive battle format with generation, rules, and mechanics
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BattleFormat {
     /// Display name for the format (e.g., "Gen 9 OU", "Gen 4 Uber")
     pub name: String,

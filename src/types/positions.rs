@@ -3,7 +3,7 @@ use std::fmt;
 use std::num::NonZeroU32;
 
 /// Type-safe wrapper for team slot indices with validation
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct SlotIndex(u8);
 
 /// Maximum team size constant for validation
@@ -68,7 +68,7 @@ impl fmt::Display for SlotIndex {
 }
 
 /// Type-safe wrapper for turn numbers
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct TurnNumber(NonZeroU32);
 
 impl TurnNumber {

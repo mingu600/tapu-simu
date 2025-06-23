@@ -395,7 +395,7 @@ fn apply_generic_damage_effects(
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
 ) -> Vec<BattleInstructions> {
-    use crate::engine::combat::damage_calc::{calculate_damage_with_positions, critical_hit_probability, random_damage_roll};
+    use crate::engine::combat::damage_calc::{calculate_damage_with_positions, critical_hit_probability, DamageRolls};
     
     let user = match state.get_pokemon_at_position(user_position) {
         Some(pokemon) => pokemon,
@@ -479,7 +479,7 @@ fn generate_damage_instructions(
     is_critical: bool,
     generation: &GenerationMechanics,
 ) -> Vec<BattleInstruction> {
-    use crate::engine::combat::damage_calc::{calculate_damage_with_positions, random_damage_roll};
+    use crate::engine::combat::damage_calc::{calculate_damage_with_positions, DamageRolls};
     
     let mut instructions = Vec::new();
     
@@ -494,14 +494,13 @@ fn generate_damage_instructions(
             None => continue,
         };
         
-        let damage_roll = random_damage_roll();
         let damage = calculate_damage_with_positions(
             state,
             user,
             target,
             move_data,
             is_critical,
-            damage_roll,
+            DamageRolls::Average, // Use average damage for generic moves
             target_positions.len(),
             user_position,
             target_position,

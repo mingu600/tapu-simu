@@ -7,7 +7,7 @@ use crate::core::battle_format::{BattlePosition, SideReference};
 use serde::{Deserialize, Serialize};
 
 /// Weather conditions
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Weather {
     None,
     Hail,
@@ -48,7 +48,7 @@ impl Default for Weather {
 }
 
 /// Terrain conditions
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Terrain {
     None,
     Electric,

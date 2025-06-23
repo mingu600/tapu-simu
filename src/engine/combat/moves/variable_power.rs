@@ -1119,7 +1119,7 @@ pub fn apply_me_first(
                     category: repo_move_data.category.clone(),
                     priority: repo_move_data.priority,
                     target: repo_move_data.target.clone(),
-                    flags: repo_move_data.flags.iter().map(|f| (f.clone(), 1)).collect(),
+                    flags: repo_move_data.flags.clone(),
                     drain: repo_move_data.drain,
                     recoil: repo_move_data.recoil,
                     ..crate::data::showdown_types::MoveData::default()

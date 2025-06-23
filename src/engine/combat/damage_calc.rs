@@ -19,7 +19,7 @@ pub fn calculate_damage_with_positions(
     defender: &Pokemon,
     move_data: &MoveData,
     is_critical: bool,
-    damage_roll: f32,
+    damage_rolls: DamageRolls,
     target_count: usize,
     attacker_position: crate::core::battle_format::BattlePosition,
     defender_position: crate::core::battle_format::BattlePosition,
@@ -31,7 +31,7 @@ pub fn calculate_damage_with_positions(
         defender,
         move_data,
         is_critical,
-        damage_roll,
+        damage_rolls,
         target_count,
         attacker_position,
         defender_position,
@@ -45,7 +45,7 @@ fn calculate_damage_with_modern_context(
     defender: &Pokemon,
     move_data: &MoveData,
     is_critical: bool,
-    damage_roll: f32,
+    damage_rolls: DamageRolls,
     target_count: usize,
     attacker_position: crate::core::battle_format::BattlePosition,
     defender_position: crate::core::battle_format::BattlePosition,
@@ -99,16 +99,74 @@ fn calculate_damage_with_modern_context(
     );
 
     // Use the modern damage calculation
-    let result = calculate_damage_modern(&damage_context, damage_roll);
+    let result = calculate_damage_modern(&damage_context, damage_rolls);
     result.damage
 }
 
 
-/// Generate a random damage roll
+/// DamageRolls enum for consistent damage calculation
+/// Matches poke-engine's approach to deterministic damage calculation
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum DamageRolls {
+    Average, // Uses 0.925 multiplier (92.5% of max damage)
+    Min,     // Uses 0.85 multiplier (85% of max damage) 
+    Max,     // Uses 1.0 multiplier (100% of max damage)
+}
+
+impl DamageRolls {
+    /// Convert DamageRolls enum to damage multiplier
+    pub fn as_multiplier(self) -> f32 {
+        match self {
+            DamageRolls::Average => 0.925,
+            DamageRolls::Min => 0.85,
+            DamageRolls::Max => 1.0,
+        }
+    }
+}
+
+/// Generate a random damage roll (deprecated - use DamageRolls enum instead)
 pub fn random_damage_roll() -> f32 {
-    use rand::Rng;
-    let mut rng = rand::thread_rng();
-    rng.gen_range(0.85..=1.0)
+    // Use deterministic damage roll for tests
+    if std::env::var("TAPU_DETERMINISTIC_DAMAGE").is_ok() {
+        1.0 // Maximum damage roll for deterministic tests
+    } else {
+        use rand::Rng;
+        let mut rng = rand::thread_rng();
+        rng.gen_range(0.85..=1.0)
+    }
+}
+
+/// Compare health with damage multiples to determine kill/non-kill scenarios
+/// This implements the poke-engine 16-roll damage calculation logic
+pub fn compare_health_with_damage_multiples(max_damage: i16, health: i16) -> (i16, i16) {
+    let max_damage_f32 = max_damage as f32;
+    let health_f32 = health as f32;
+    let increment = max_damage_f32 * 0.01; // 1% increments
+    
+    let mut damage = max_damage_f32 * 0.85; // Start at 85%
+    let mut total_less_than = 0i16;
+    let mut num_less_than = 0i16;
+    let mut num_greater_than = 0i16;
+    
+    // Calculate 16 discrete damage rolls from 85% to 100%
+    for _ in 0..16 {
+        if damage < health_f32 {
+            total_less_than += damage as i16;
+            num_less_than += 1;
+        } else {
+            num_greater_than += 1;
+        }
+        damage += increment;
+    }
+    
+    // Return (average_non_kill_damage, num_kill_rolls)
+    let average_non_kill_damage = if num_less_than > 0 {
+        total_less_than / num_less_than
+    } else {
+        0
+    };
+    
+    (average_non_kill_damage, num_greater_than)
 }
 
 /// Calculate critical hit probability with move, ability, and item modifiers
@@ -514,7 +572,7 @@ fn get_tera_type(pokemon: &Pokemon) -> Option<super::type_effectiveness::Pokemon
 /// This replaces the legacy calculate_damage function that requires the entire State
 pub fn calculate_damage_modern(
     context: &DamageContext,
-    damage_roll: f32,
+    damage_rolls: DamageRolls,
 ) -> DamageResult {
     // Check if move deals damage at all
     if context.move_info.base_power == 0 {
@@ -533,7 +591,7 @@ pub fn calculate_damage_modern(
     // Early immunity checks would go here
     // (These would be extracted from ability/item logic)
 
-    // Basic damage formula: ((2 * level / 5 + 2) * base_power * attack / defense / 50 + 2) * modifiers
+    // Exact poke-engine damage formula with floor operations at each step
     let level = context.attacker.pokemon.level as f32;
     
     // Get effective attack stat
@@ -572,15 +630,37 @@ pub fn calculate_damage_modern(
         },
     };
 
-    // Calculate base damage
-    let base_damage = (2.0 * level / 5.0 + 2.0) * base_power * attack_stat / defense_stat / 50.0 + 2.0;
+    // Calculate base damage using exact poke-engine formula with floor operations
+    
+    // Debug: Print calculation values during tests
+    if std::env::var("TAPU_DETERMINISTIC_DAMAGE").is_ok() {
+        eprintln!("DEBUG DAMAGE CALC:");
+        eprintln!("  Attacker: {} (Level {})", context.attacker.pokemon.species, level);
+        eprintln!("  Defender: {} (Level {})", context.defender.pokemon.species, context.defender.pokemon.level);
+        eprintln!("  Move: {} (Base Power: {})", context.move_info.name, base_power);
+        eprintln!("  Attack stat: {}, Defense stat: {}", attack_stat, defense_stat);
+        eprintln!("  Attacker types: {:?}", context.attacker.pokemon.types);
+        eprintln!("  Move type: {}", context.move_info.move_type);
+    }
+    
+    let mut damage = 2.0 * level;
+    damage = damage.floor() / 5.0;
+    damage = damage.floor() + 2.0;
+    damage = damage.floor() * base_power;
+    damage = damage * attack_stat / defense_stat;
+    damage = damage.floor() / 50.0;
+    damage = damage.floor() + 2.0;
+    let base_damage = damage;
+    
+    // Debug: Print base damage
+    if std::env::var("TAPU_DETERMINISTIC_DAMAGE").is_ok() {
+        eprintln!("  Base damage calculation: {}", base_damage);
+    }
+    
     
     // Apply critical hit modifier
     let critical_modifier = if context.move_info.is_critical { 1.5 } else { 1.0 };
     let mut damage = base_damage * critical_modifier;
-    
-    // Apply random damage roll
-    damage *= damage_roll;
     
     // Type effectiveness calculation
     let type_chart = TypeChart::new(context.format.format.generation.number());
@@ -654,6 +734,21 @@ pub fn calculate_damage_modern(
     // Multi-target reduction
     if context.format.target_count > 1 {
         damage *= 0.75; // 25% reduction for spread moves
+    }
+    
+    // Apply final damage roll (poke-engine applies this last)
+    // Use deterministic damage rolls from enum
+    let damage_roll = damage_rolls.as_multiplier();
+    damage = damage.floor() * damage_roll;
+    
+    // Debug: Print final damage calculation
+    if std::env::var("TAPU_DETERMINISTIC_DAMAGE").is_ok() {
+        eprintln!("  STAB: {}x, Type effectiveness: {}x", 
+                  if context.attacker.pokemon.types.iter().any(|t| t == &context.move_info.move_type) { "1.5" } else { "1.0" },
+                  type_effectiveness);
+        eprintln!("  Damage roll: {:?} ({})", damage_rolls, damage_roll);
+        eprintln!("  FINAL DAMAGE: {}", damage.max(1.0) as i16);
+        eprintln!("");
     }
     
     DamageResult {

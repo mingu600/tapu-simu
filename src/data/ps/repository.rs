@@ -171,6 +171,19 @@ impl Repository {
         self.moves.values().find(|move_data| normalize_name(&move_data.name) == normalized_name)
     }
     
+    /// Find Pokemon data by name (case-insensitive) - optimized with index
+    pub fn find_pokemon_by_name(&self, name: &str) -> Option<&PokemonData> {
+        let normalized_name = normalize_name(name);
+        
+        // Try index lookup first
+        if let Some(species_id) = self.pokemon_name_index.get(&normalized_name) {
+            return self.pokemon.get(species_id);
+        }
+        
+        // Fallback to linear search for edge cases
+        self.pokemon.values().find(|pokemon_data| normalize_name(&pokemon_data.name) == normalized_name)
+    }
+    
     
     /// Get all available move IDs
     pub fn move_ids(&self) -> impl Iterator<Item = &MoveId> {
@@ -270,17 +283,21 @@ impl Repository {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MoveData {
     pub name: String,
+    #[serde(rename = "basePower")]
     pub base_power: u8,
     pub accuracy: u8,
+    #[serde(rename = "type")]
     pub move_type: TypeId,
     pub pp: u8,
+    #[serde(rename = "maxPP")]
     pub max_pp: u8,
     pub target: String,
     pub category: String,
     pub priority: i8,
     pub drain: Option<[u8; 2]>,  // [numerator, denominator]
     pub recoil: Option<[u8; 2]>, // [numerator, denominator]
-    pub flags: Vec<String>,
+    #[serde(default)]
+    pub flags: std::collections::HashMap<String, i32>,
 }
 
 impl MoveData {
@@ -333,12 +350,83 @@ impl MoveData {
 /// Simplified pokemon data structure
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PokemonData {
+    #[serde(default)]
+    pub id: String,
+    #[serde(default)]
+    pub num: i32,
     pub name: String,
-    pub base_stats: BaseStats,
     pub types: Vec<TypeId>,
+    #[serde(rename = "baseStats")]
+    pub base_stats: BaseStats,
     pub abilities: HashMap<String, AbilityId>, // slot -> ability
-    #[serde(default = "default_weight")]
+    #[serde(default = "default_weight", rename = "weightkg")]
     pub weight_kg: f32,  // Weight in kilograms
+    
+    // Optional fields that exist in PS data but we don't need
+    #[serde(default)]
+    pub heightm: Option<f32>,
+    #[serde(default)]
+    pub color: Option<String>,
+    #[serde(default)]
+    pub prevo: Option<String>,
+    #[serde(default)]
+    pub evos: Option<Vec<String>>,
+    #[serde(default, rename = "evoType")]
+    pub evo_type: Option<String>,
+    #[serde(default, rename = "evoCondition")]
+    pub evo_condition: Option<String>,
+    #[serde(default, rename = "evoItem")]
+    pub evo_item: Option<String>,
+    #[serde(default, rename = "evoLevel")]
+    pub evo_level: Option<i32>,
+    #[serde(default, rename = "baseForme")]
+    pub base_forme: Option<String>,
+    #[serde(default)]
+    pub forme: Option<String>,
+    #[serde(default, rename = "baseSpecies")]
+    pub base_species: Option<String>,
+    #[serde(default, rename = "otherFormes")]
+    pub other_formes: Option<Vec<String>>,
+    #[serde(default, rename = "formeOrder")]
+    pub forme_order: Option<Vec<String>>,
+    #[serde(default)]
+    pub gender: Option<String>,
+    #[serde(default, rename = "genderRatio")]
+    pub gender_ratio: Option<serde_json::Value>,
+    #[serde(default, rename = "maxHP")]
+    pub max_hp: Option<i32>,
+    #[serde(default)]
+    pub learnset: Option<serde_json::Value>,
+    #[serde(default)]
+    pub tags: Option<Vec<String>>,
+    #[serde(default)]
+    pub tier: Option<String>,
+    #[serde(default, rename = "doublesTier")]
+    pub doubles_tier: Option<String>,
+    #[serde(default, rename = "isMega")]
+    pub is_mega: Option<bool>,
+    #[serde(default, rename = "isPrimal")]
+    pub is_primal: Option<bool>,
+    #[serde(default, rename = "cannotDynamax")]
+    pub cannot_dynamax: Option<bool>,
+    #[serde(default, rename = "canGigantamax")]
+    pub can_gigantamax: Option<serde_json::Value>, // Can be string or boolean
+    #[serde(default)]
+    pub gigantamax: Option<String>,
+    #[serde(default, rename = "cosmeticFormes")]
+    pub cosmetic_formes: Option<Vec<String>>,
+    #[serde(default, rename = "requiredItem")]
+    pub required_item: Option<String>,
+    #[serde(default, rename = "requiredItems")]
+    pub required_items: Option<Vec<String>>,
+    #[serde(default, rename = "battleOnly")]
+    pub battle_only: Option<String>,
+    #[serde(default, rename = "unreleasedHidden")]
+    pub unreleased_hidden: Option<bool>,
+    #[serde(default, rename = "maleOnlyHidden")]
+    pub male_only_hidden: Option<bool>,
+    #[serde(default, rename = "changesFrom")]
+    pub changes_from: Option<String>,
 }
 
 fn default_weight() -> f32 {
@@ -349,10 +437,15 @@ fn default_weight() -> f32 {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BaseStats {
     pub hp: u8,
+    #[serde(rename = "atk")]
     pub attack: u8,
+    #[serde(rename = "def")]
     pub defense: u8,
+    #[serde(rename = "spa")]
     pub special_attack: u8,
+    #[serde(rename = "spd")]
     pub special_defense: u8,
+    #[serde(rename = "spe")]
     pub speed: u8,
 }
 
@@ -424,7 +517,10 @@ fn generate_consistent_id(input: &str) -> u32 {
 // Helper functions for loading data from JSON files
 fn load_moves_data(path: &Path) -> DataResult<HashMap<MoveId, MoveData>> {
     if !path.exists() {
-        return Ok(HashMap::new()); // Return empty if file doesn't exist
+        return Err(DataError::FileRead { 
+            path: path.to_path_buf(), 
+            source: std::io::Error::new(std::io::ErrorKind::NotFound, "Moves data file not found") 
+        });
     }
     
     let contents = std::fs::read_to_string(path)
@@ -461,6 +557,21 @@ fn load_moves_data(path: &Path) -> DataResult<HashMap<MoveId, MoveData>> {
         }
         if parse_errors.len() > 5 {
             eprintln!("  ... and {} more", parse_errors.len() - 5);
+        }
+        
+        // If more than 90% of moves failed to parse, this indicates a structural issue
+        let total_count = moves.len() + parse_errors.len();
+        if parse_errors.len() > (total_count * 9 / 10) {
+            return Err(DataError::JsonParse {
+                file: path.display().to_string(),
+                source: serde_json::Error::io(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    format!(
+                        "Too many parsing errors ({}/{}). This indicates a structural issue with the JSON format or struct definition.",
+                        parse_errors.len(), total_count
+                    )
+                ))
+            });
         }
     }
     

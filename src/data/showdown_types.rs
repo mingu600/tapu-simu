@@ -234,11 +234,11 @@ impl fmt::Display for MoveTarget {
 
 /// Pokemon Showdown move data structure
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct MoveData {
     pub id: String,
     pub num: i32,
     pub name: String,
+    #[serde(rename = "basePower")]
     pub base_power: u16,
     pub accuracy: u16,
     pub pp: u8,
@@ -258,6 +258,7 @@ pub struct MoveData {
     
     // Status effects
     pub status: Option<String>,
+    #[serde(rename = "volatileStatus")]
     pub volatile_status: Option<String>,
     
     // Secondary effects
@@ -268,22 +269,34 @@ pub struct MoveData {
     pub self_: Option<SelfEffect>,
     
     // Special properties
+    #[serde(rename = "isZ")]
     pub is_z: ZMoveData,
+    #[serde(rename = "isMax")]
     pub is_max: MaxMoveData,
     pub ohko: OHKOData,
+    #[serde(rename = "thawsTarget")]
     pub thaws_target: bool,
+    #[serde(rename = "forceSwitch")]
     pub force_switch: bool,
+    #[serde(rename = "selfSwitch")]
     pub self_switch: SelfSwitchData,
+    #[serde(rename = "breaksProtect")]
     pub breaks_protect: bool,
+    #[serde(rename = "ignoreDefensive")]
     pub ignore_defensive: bool,
+    #[serde(rename = "ignoreEvasion")]
     pub ignore_evasion: bool,
+    #[serde(rename = "ignoreImmunity")]
     pub ignore_immunity: IgnoreImmunityData,
     pub multiaccuracy: bool,
     pub multihit: Option<serde_json::Value>, // Can be number or array
+    #[serde(rename = "noDamageVariance")]
     pub no_damage_variance: bool,
     
     // Critical hit properties
+    #[serde(rename = "critRatio")]
     pub crit_ratio: u8,
+    #[serde(rename = "willCrit")]
     pub will_crit: bool,
     
     // Weather/terrain
@@ -292,9 +305,11 @@ pub struct MoveData {
     
     // Descriptions
     pub desc: String,
+    #[serde(rename = "shortDesc")]
     pub short_desc: String,
     
     // Nonstandard designation
+    #[serde(rename = "isNonstandard")]
     pub is_nonstandard: Option<String>,
 }
 
@@ -363,6 +378,7 @@ impl MoveData {
     pub fn to_engine_move(&self) -> crate::core::battle_state::Move {
         use crate::core::battle_state::{Move, MoveCategory};
         use crate::data::conversion::target_from_string;
+        
         
         Move {
             name: self.name.clone(),

@@ -42,7 +42,7 @@ pub enum TypeEffectiveness {
 }
 
 /// Pokemon natures that affect stat growth
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Nature {
     Hardy, Lonely, Brave, Adamant, Naughty,
     Bold, Docile, Relaxed, Impish, Lax,

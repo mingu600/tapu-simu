@@ -1,0 +1,5 @@
+# COMPREHENSIVE POKE-ENGINE TEST EXTRACTION
+
+## File: test_battle_mechanics.rs (663 tests)
+
+### Move Effects - Basic Damage/Mechanics

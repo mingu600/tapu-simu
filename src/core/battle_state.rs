@@ -15,7 +15,7 @@ use std::collections::{HashMap, HashSet};
 pub use crate::core::instructions::MoveCategory;
 
 /// Pokemon gender
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Gender {
     Male,
     Female,
@@ -529,6 +529,37 @@ impl BattleState {
             }
         }
 
+        state
+    }
+
+    /// Create a new battle state with pre-constructed Pokemon (for tests, direct team creation)
+    pub fn new_with_pokemon(
+        format: BattleFormat,
+        team_one: Vec<Pokemon>,
+        team_two: Vec<Pokemon>,
+    ) -> Self {
+        let mut state = Self::new(format);
+        
+        // Add Pokemon to each side
+        for pokemon in team_one {
+            state.sides[0].add_pokemon(pokemon);
+        }
+        
+        for pokemon in team_two {
+            state.sides[1].add_pokemon(pokemon);
+        }
+        
+        // Set initial active Pokemon based on format
+        let active_count = state.format.active_pokemon_count();
+        for slot in 0..active_count {
+            if slot < state.sides[0].pokemon.len() {
+                state.sides[0].set_active_pokemon_at_slot(slot, Some(slot));
+            }
+            if slot < state.sides[1].pokemon.len() {
+                state.sides[1].set_active_pokemon_at_slot(slot, Some(slot));
+            }
+        }
+        
         state
     }
 

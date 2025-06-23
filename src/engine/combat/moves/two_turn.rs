@@ -385,7 +385,7 @@ pub fn apply_future_sight(
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
 ) -> Vec<BattleInstructions> {
-    use crate::engine::combat::damage_calc::{calculate_damage_with_positions, random_damage_roll};
+    use crate::engine::combat::damage_calc::{calculate_damage_with_positions, DamageRolls};
     
     if target_positions.is_empty() {
         return vec![BattleInstructions::new(100.0, vec![])];
@@ -405,14 +405,13 @@ pub fn apply_future_sight(
         None => return vec![BattleInstructions::new(100.0, vec![])],
     };
     
-    let damage_roll = random_damage_roll();
     let damage = calculate_damage_with_positions(
         state,
         user,
         target,
         move_data,
         false, // Future Sight cannot crit
-        damage_roll,
+        DamageRolls::Average, // Use average damage for delayed attacks
         1, // Single target
         user_position,
         target_position,

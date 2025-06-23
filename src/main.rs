@@ -299,3 +299,72 @@ fn validate_format(format: BattleFormat) {
     println!("  Valid slots: {:?}", format.valid_slots());
     println!("Format validation: ✅ Valid");
 }
+
+fn debug_stats() -> Result<(), Box<dyn std::error::Error>> {
+    use tapu_simu::data::ps::repository::Repository;
+    use tapu_simu::types::{SpeciesId, MoveId};
+    
+    let repository = Repository::from_path("data/ps-extracted")?;
+    
+    // Get Pikachu data
+    let pikachu_id = SpeciesId::from("pikachu");
+    let pikachu_data = repository.pokemon_data(&pikachu_id)?;
+    
+    println!("=== PIKACHU (Level 50) ===");
+    println!("Base stats: {:?}", pikachu_data.base_stats);
+    println!("Types: {:?}", pikachu_data.types);
+    
+    // Calculate level 50 stats (default EVs/IVs)
+    let level = 50;
+    let evs = 85; // Default from our framework
+    let ivs = 31; // Default from our framework
+    
+    let hp = (2 * pikachu_data.base_stats.hp as u32 + ivs + evs / 4) * level / 100 + level + 10;
+    let attack = (2 * pikachu_data.base_stats.attack as u32 + ivs + evs / 4) * level / 100 + 5;
+    let defense = (2 * pikachu_data.base_stats.defense as u32 + ivs + evs / 4) * level / 100 + 5;
+    let sp_attack = (2 * pikachu_data.base_stats.special_attack as u32 + ivs + evs / 4) * level / 100 + 5;
+    let sp_defense = (2 * pikachu_data.base_stats.special_defense as u32 + ivs + evs / 4) * level / 100 + 5;
+    let speed = (2 * pikachu_data.base_stats.speed as u32 + ivs + evs / 4) * level / 100 + 5;
+    
+    println!("Calculated stats at level {}:", level);
+    println!("  HP: {}", hp);
+    println!("  Attack: {}", attack);
+    println!("  Defense: {}", defense);
+    println!("  Sp. Attack: {}", sp_attack);
+    println!("  Sp. Defense: {}", sp_defense);
+    println!("  Speed: {}", speed);
+    
+    // Get Charmander data
+    let charmander_id = SpeciesId::from("charmander");
+    let charmander_data = repository.pokemon_data(&charmander_id)?;
+    
+    println!("\n=== CHARMANDER (Level 50) ===");
+    println!("Base stats: {:?}", charmander_data.base_stats);
+    println!("Types: {:?}", charmander_data.types);
+    
+    let hp = (2 * charmander_data.base_stats.hp as u32 + ivs + evs / 4) * level / 100 + level + 10;
+    let attack = (2 * charmander_data.base_stats.attack as u32 + ivs + evs / 4) * level / 100 + 5;
+    let defense = (2 * charmander_data.base_stats.defense as u32 + ivs + evs / 4) * level / 100 + 5;
+    let sp_attack = (2 * charmander_data.base_stats.special_attack as u32 + ivs + evs / 4) * level / 100 + 5;
+    let sp_defense = (2 * charmander_data.base_stats.special_defense as u32 + ivs + evs / 4) * level / 100 + 5;
+    let speed = (2 * charmander_data.base_stats.speed as u32 + ivs + evs / 4) * level / 100 + 5;
+    
+    println!("Calculated stats at level {}:", level);
+    println!("  HP: {}", hp);
+    println!("  Attack: {}", attack);
+    println!("  Defense: {}", defense);
+    println!("  Sp. Attack: {}", sp_attack);
+    println!("  Sp. Defense: {}", sp_defense);
+    println!("  Speed: {}", speed);
+    
+    // Get Tackle data
+    let tackle_id = MoveId::from("tackle");
+    let tackle_move = repository.create_move(&tackle_id)?;
+    
+    println!("\n=== TACKLE MOVE ===");
+    println!("Base power: {}", tackle_move.base_power);
+    println!("Type: {}", tackle_move.move_type);
+    println!("Category: {:?}", tackle_move.category);
+    
+    Ok(())
+}

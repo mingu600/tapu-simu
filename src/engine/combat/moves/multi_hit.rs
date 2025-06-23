@@ -215,7 +215,7 @@ fn calculate_multi_hit_damage(
         defender,
         &modified_move_data,
         false, // Not a critical hit for base calculation
-        1.0,   // Full damage roll
+        super::super::damage_calc::DamageRolls::Average, // Use average damage roll
         1,     // Single target for each hit
         user_position,
         target_position,

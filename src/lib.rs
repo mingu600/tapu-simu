@@ -18,7 +18,6 @@
 //! - `engine`: Battle mechanics implementation
 //! - `data`: Pokemon data integration with Pokemon Showdown
 //! - `testing`: Testing utilities and framework
-//! - `ui`: Testing UI interface
 //! 
 //! ## Example Usage
 //! 
@@ -46,7 +45,6 @@ pub mod core;
 pub mod engine;
 pub mod data;
 pub mod testing;
-pub mod ui;
 pub mod generation;
 pub mod io;
 pub mod types;

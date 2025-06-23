@@ -8,7 +8,7 @@ use crate::core::move_choice::MoveIndex;
 use serde::{Deserialize, Serialize};
 
 /// Pokemon status conditions
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PokemonStatus {
     None,
     Burn,

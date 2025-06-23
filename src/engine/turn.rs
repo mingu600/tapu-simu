@@ -417,14 +417,19 @@ fn generate_attack_instructions_with_context(
     
     // Only generate hit instructions if move can hit
     if accuracy_percentage > 0.0 {
+        // Determine if we should branch on damage (following poke-engine logic)
+        // For now, we'll use false for simplicity - can be enhanced later
+        let branch_on_damage = false;
+        
         // Generate different instruction sets based on critical hit probability
         // Non-critical hit (93.75% chance for most moves)
-        let normal_instructions = generate_damage_instructions(
+        let normal_instructions = generate_damage_instructions_with_rolls(
             move_data, 
             &targets, 
             user_pos, 
             state, 
-            false
+            false,
+            branch_on_damage
         )?;
         instruction_sets.push(BattleInstructions::new(
             accuracy_percentage * 0.9375, // 93.75% of hit chance
@@ -432,12 +437,13 @@ fn generate_attack_instructions_with_context(
         ));
         
         // Critical hit (6.25% chance for most moves)
-        let crit_instructions = generate_damage_instructions(
+        let crit_instructions = generate_damage_instructions_with_rolls(
             move_data, 
             &targets, 
             user_pos, 
             state, 
-            true
+            true,
+            branch_on_damage
         )?;
         instruction_sets.push(BattleInstructions::new(
             accuracy_percentage * 0.0625, // 6.25% of hit chance
@@ -448,7 +454,7 @@ fn generate_attack_instructions_with_context(
     Ok(instruction_sets)
 }
 
-/// Generate damage instructions for a move
+/// Generate damage instructions for a move with poke-engine style damage calculation
 fn generate_damage_instructions(
     move_data: &crate::core::battle_state::Move,
     targets: &[BattlePosition],
@@ -456,7 +462,22 @@ fn generate_damage_instructions(
     state: &BattleState,
     is_critical: bool,
 ) -> BattleResult<Vec<BattleInstruction>> {
+    return generate_damage_instructions_with_rolls(
+        move_data, targets, user_pos, state, is_critical, false
+    );
+}
+
+/// Generate damage instructions with poke-engine damage roll logic
+fn generate_damage_instructions_with_rolls(
+    move_data: &crate::core::battle_state::Move,
+    targets: &[BattlePosition],
+    user_pos: BattlePosition,
+    state: &BattleState,
+    is_critical: bool,
+    branch_on_damage: bool,
+) -> BattleResult<Vec<BattleInstruction>> {
     use crate::core::instructions::{BattleInstruction, PokemonInstruction};
+    use crate::engine::combat::damage_calc::{calculate_damage_with_positions, DamageRolls, compare_health_with_damage_multiples};
     
     let mut instructions = Vec::new();
     
@@ -472,10 +493,7 @@ fn generate_damage_instructions(
             reason: "No attacker pokemon found".to_string(),
         })?;
     
-    if targets.len() == 1 {
-        // Single target move
-        let target = targets[0];
-        
+    for &target in targets {
         // Get defender pokemon
         let defender = state.get_side(target.side.to_index())
             .and_then(|side| side.get_active_pokemon_at_slot(target.slot))
@@ -483,87 +501,60 @@ fn generate_damage_instructions(
                 reason: "No defender pokemon found".to_string(),
             })?;
         
-        // Simple damage calculation (simplified for modernization)
-        let base_damage = if move_data.base_power > 0 {
-            let attack_stat = if move_data.category == crate::core::battle_state::MoveCategory::Physical {
-                attacker.stats.attack
-            } else {
-                attacker.stats.special_attack
-            };
+        // Convert legacy move data to modern MoveData for damage calculation
+        let move_data_modern = crate::data::showdown_types::MoveData {
+            name: move_data.name.clone(),
+            base_power: move_data.base_power as u16,
+            move_type: move_data.move_type.clone(),
+            category: format!("{:?}", move_data.category),
+            accuracy: 100, // Accuracy already handled in calling function
+            priority: move_data.priority,
+            pp: move_data.pp,
+            target: "normal".to_string(),
+            ..Default::default()
+        };
+        
+        // Calculate damage using modern damage system
+        let damage = if branch_on_damage {
+            // Check if we should use 16-roll branching logic
+            let max_damage = calculate_damage_with_positions(
+                state, attacker, defender, &move_data_modern,
+                is_critical, DamageRolls::Max, targets.len(),
+                user_pos, target
+            );
+            let min_damage = calculate_damage_with_positions(
+                state, attacker, defender, &move_data_modern,
+                is_critical, DamageRolls::Min, targets.len(),
+                user_pos, target
+            );
             
-            let defense_stat = if move_data.category == crate::core::battle_state::MoveCategory::Physical {
-                defender.stats.defense
+            // Check if damage range could result in different outcomes
+            if max_damage >= defender.hp && min_damage < defender.hp {
+                // Use 16-roll branching logic
+                let (average_non_kill_damage, _num_kill_rolls) = 
+                    compare_health_with_damage_multiples(max_damage, defender.hp);
+                average_non_kill_damage
             } else {
-                defender.stats.special_defense
-            };
-            
-            let level_factor = 2.0 * attacker.level as f32 / 5.0 + 2.0;
-            let damage = level_factor * move_data.base_power as f32 * attack_stat as f32 / defense_stat as f32 / 50.0 + 2.0;
-            
-            if is_critical {
-                (damage * 1.5) as i16
-            } else {
-                damage as i16
+                // No branching needed, use average
+                calculate_damage_with_positions(
+                    state, attacker, defender, &move_data_modern,
+                    is_critical, DamageRolls::Average, targets.len(),
+                    user_pos, target
+                )
             }
         } else {
-            0
+            // Use average damage for deterministic calculation
+            calculate_damage_with_positions(
+                state, attacker, defender, &move_data_modern,
+                is_critical, DamageRolls::Average, targets.len(),
+                user_pos, target
+            )
         };
         
         instructions.push(BattleInstruction::Pokemon(PokemonInstruction::Damage {
             target: target,
-            amount: base_damage,
+            amount: damage,
             previous_hp: None, // Will be filled in during execution
-        }));
-    } else if targets.len() > 1 {
-        // Multi-target move
-        let mut target_damages = Vec::new();
-        
-        for &target in targets {
-            // Get defender pokemon
-            let defender = state.get_side(target.side.to_index())
-                .and_then(|side| side.get_active_pokemon_at_slot(target.slot));
-            
-            if let Some(defender) = defender {
-                // Simple damage calculation
-                let base_damage = if move_data.base_power > 0 {
-                    let attack_stat = if move_data.category == crate::core::battle_state::MoveCategory::Physical {
-                        attacker.stats.attack
-                    } else {
-                        attacker.stats.special_attack
-                    };
-                    
-                    let defense_stat = if move_data.category == crate::core::battle_state::MoveCategory::Physical {
-                        defender.stats.defense
-                    } else {
-                        defender.stats.special_defense
-                    };
-                    
-                    let level_factor = 2.0 * attacker.level as f32 / 5.0 + 2.0;
-                    let damage = level_factor * move_data.base_power as f32 * attack_stat as f32 / defense_stat as f32 / 50.0 + 2.0;
-                    
-                    let mut final_damage = if is_critical {
-                        (damage * 1.5) as i16
-                    } else {
-                        damage as i16
-                    };
-                    
-                    // Apply spread move damage reduction in doubles/VGC
-                    if targets.len() > 1 && state.format.active_pokemon_count() > 1 {
-                        final_damage = (final_damage as f32 * 0.75) as i16;  // 25% reduction for spread moves
-                    }
-                    
-                    final_damage
-                } else {
-                    0
-                };
-                
-                target_damages.push((target, base_damage));
-            }
-        }
-        
-        instructions.push(BattleInstruction::Pokemon(PokemonInstruction::MultiTargetDamage {
-            target_damages,
-            previous_hps: vec![], // Will be filled in during execution
         }));
     }
     
@@ -1090,7 +1081,7 @@ fn generate_attack_instructions_with_enhanced_context(
             category: repo_move_data.category.clone(),
             priority: repo_move_data.priority,
             target: repo_move_data.target.clone(),
-            flags: repo_move_data.flags.iter().map(|f| (f.clone(), 1)).collect(),
+            flags: repo_move_data.flags.clone(),
             drain: repo_move_data.drain,
             recoil: repo_move_data.recoil,
             ..crate::data::showdown_types::MoveData::default()
