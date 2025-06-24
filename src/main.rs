@@ -5,9 +5,10 @@
 use clap::Parser;
 use tapu_simu::data::RandomTeamLoader;
 use tapu_simu::io::{parse_battle_format, print_engine_info, Cli, Commands};
+use tapu_simu::types::errors::{BattleError, BattleResult};
 use tapu_simu::{BattleFormat, BattleState};
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> BattleResult<()> {
     let cli = Cli::parse();
 
     match cli.command {
@@ -23,7 +24,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             config,
             seed,
         } => {
-            let battle_format = parse_battle_format(&format)?;
+            let battle_format = parse_battle_format(&format)
+                .map_err(|e| BattleError::InvalidState { reason: e })?;
             run_battle(
                 battle_format,
                 &player_one,
@@ -39,7 +41,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         Commands::ValidateFormat { format } => {
-            let battle_format = parse_battle_format(&format)?;
+            let battle_format = parse_battle_format(&format)
+                .map_err(|e| BattleError::InvalidState { reason: e })?;
             validate_format(battle_format);
         }
 
@@ -63,27 +66,65 @@ fn run_battle(
     team_index: Option<usize>,
     config_file: Option<String>,
     seed: Option<u64>,
-) -> Result<(), Box<dyn std::error::Error>> {
-    use tapu_simu::{BattleEnvironment, DamageMaximizer, FirstMovePlayer, RandomPlayer};
-    use rand::{SeedableRng, thread_rng};
+) -> BattleResult<()> {
+    setup_battle_config(seed, config_file, verbose)?;
+    let players = create_players(player_one, player_two)?;
+    let results = execute_battles(format, players, runs, max_turns, team_index, verbose, log_file)?;
+    print_battle_summary(results, runs, player_one, player_two);
+    Ok(())
+}
+
+/// Setup battle configuration including random seed and config loading
+fn setup_battle_config(
+    seed: Option<u64>,
+    config_file: Option<String>,
+    verbose: bool,
+) -> BattleResult<()> {
+    use rand::{SeedableRng};
     use rand::rngs::StdRng;
 
-    // Set random seed if provided
     if let Some(seed_value) = seed {
-        let mut rng = StdRng::seed_from_u64(seed_value);
+        let _rng = StdRng::seed_from_u64(seed_value);
         if verbose {
             println!("Using random seed: {}", seed_value);
         }
     }
 
-    // Load configuration if provided
     if let Some(config_path) = config_file {
         if verbose {
             println!("Loading configuration from: {}", config_path);
         }
-        // TODO: Add configuration loading when Config::load is available
-        // let _config = tapu_simu::Config::load(&config_path)?;
+        let _config = tapu_simu::Config::load(&config_path)
+            .map_err(|e| BattleError::InvalidState { 
+                reason: format!("Failed to load config: {}", e) 
+            })?;
+        if verbose {
+            println!("Configuration loaded successfully");
+        }
     }
+
+    Ok(())
+}
+
+/// Create player instances based on player type strings
+fn create_players(
+    player_one: &str,
+    player_two: &str,
+) -> BattleResult<(String, String)> {
+    Ok((player_one.to_string(), player_two.to_string()))
+}
+
+/// Execute multiple battles and collect results
+fn execute_battles(
+    format: BattleFormat,
+    players: (String, String),
+    runs: u32,
+    max_turns: u32,
+    team_index: Option<usize>,
+    verbose: bool,
+    log_file: Option<String>,
+) -> BattleResult<(usize, usize, usize)> {
+    use tapu_simu::{BattleEnvironment, DamageMaximizer, FirstMovePlayer, RandomPlayer};
 
     println!("Running {} battle(s) in {} format", runs, format);
 
@@ -101,7 +142,6 @@ fn run_battle(
         println!();
     }
 
-    // Create players based on type strings
     let create_player = |player_type: &str, name: String| -> Box<dyn tapu_simu::Player> {
         match player_type.to_lowercase().as_str() {
             "random" => Box::new(RandomPlayer::new(name)),
@@ -118,17 +158,16 @@ fn run_battle(
     };
 
     let mut results = (0usize, 0usize, 0usize); // (p1_wins, p2_wins, draws)
+    let (player_one, player_two) = players;
 
     for run in 1..=runs {
         if verbose {
             println!("=== Battle {} ===", run);
         }
 
-        // Load teams for the battle
         let mut team_loader = RandomTeamLoader::new();
 
         let (team_one, team_two) = if let Some(index) = team_index {
-            // Use specific team indices for consistent team selection
             let team_one_index = index;
             let team_two_index = (index + 1) % team_loader.get_team_count(&format).unwrap_or(1);
 
@@ -141,8 +180,8 @@ fn run_battle(
 
             let team_one = team_loader
                 .get_team_by_index(&format, team_one_index)
-                .map_err(|e| {
-                    format!(
+                .map_err(|e| BattleError::ExecutionFailed {
+                    reason: format!(
                         "Failed to load team one at index {} for format {}: {}\nTry using --team-index with a value between 0 and {}",
                         team_one_index, 
                         format,
@@ -152,8 +191,8 @@ fn run_battle(
                 })?;
             let team_two = team_loader
                 .get_team_by_index(&format, team_two_index)
-                .map_err(|e| {
-                    format!(
+                .map_err(|e| BattleError::ExecutionFailed {
+                    reason: format!(
                         "Failed to load team two at index {} for format {}: {}\nTry using --team-index with a value between 0 and {}",
                         team_two_index,
                         format, 
@@ -164,13 +203,16 @@ fn run_battle(
 
             (team_one, team_two)
         } else {
-            // Use random team selection as before
             let team_one = team_loader
                 .get_random_team(&format)
-                .map_err(|e| format!("Failed to load random team one for format {}: {}\nMake sure the data files for this format are available", format, e))?;
+                .map_err(|e| BattleError::ExecutionFailed {
+                    reason: format!("Failed to load random team one for format {}: {}\nMake sure the data files for this format are available", format, e)
+                })?;
             let team_two = team_loader
                 .get_random_team(&format)
-                .map_err(|e| format!("Failed to load random team two for format {}: {}\nMake sure the data files for this format are available", format, e))?;
+                .map_err(|e| BattleError::ExecutionFailed {
+                    reason: format!("Failed to load random team two for format {}: {}\nMake sure the data files for this format are available", format, e)
+                })?;
 
             (team_one, team_two)
         };
@@ -187,7 +229,6 @@ fn run_battle(
             println!();
         }
 
-        // Create battle state using modern API
         let mut state = BattleState::new_with_teams(format.clone(), team_one, team_two);
 
         if verbose && run == 1 {
@@ -200,11 +241,9 @@ fn run_battle(
             println!();
         }
 
-        // Create players for this battle
-        let p1 = create_player(player_one, format!("Player1_{}", run));
-        let p2 = create_player(player_two, format!("Player2_{}", run));
+        let p1 = create_player(&player_one, format!("Player1_{}", run));
+        let p2 = create_player(&player_two, format!("Player2_{}", run));
 
-        // Create battle environment with log file support using modern pattern
         let mut env = BattleEnvironment::new(p1, p2, max_turns as usize, verbose && runs == 1);
         if let Some(ref log_path) = log_file {
             let battle_log_path = if runs > 1 {
@@ -215,10 +254,8 @@ fn run_battle(
             env = env.with_log_file(battle_log_path);
         }
 
-        // Run the battle
         let result = env.run_battle(state);
 
-        // Track results
         match result.winner {
             Some(tapu_simu::SideReference::SideOne) => {
                 results.0 += 1;
@@ -254,7 +291,16 @@ fn run_battle(
         }
     }
 
-    // Print summary if multiple battles
+    Ok(results)
+}
+
+/// Print battle summary after multiple battles
+fn print_battle_summary(
+    results: (usize, usize, usize),
+    runs: u32,
+    player_one: &str,
+    player_two: &str,
+) {
     if runs > 1 {
         println!("\n=== Battle Summary ===");
         println!("Total battles: {}", runs);
@@ -276,8 +322,6 @@ fn run_battle(
             (results.2 as f64 / runs as f64) * 100.0
         );
     }
-
-    Ok(())
 }
 
 /// Validate a battle format
@@ -301,14 +345,14 @@ fn validate_format(format: BattleFormat) {
 }
 
 fn debug_stats() -> Result<(), Box<dyn std::error::Error>> {
-    use tapu_simu::data::Repository;
+    use tapu_simu::data::GameDataRepository;
     use tapu_simu::types::{SpeciesId, MoveId};
     
-    let repository = Repository::from_path("data/ps-extracted")?;
+    let repository = GameDataRepository::from_path("data/ps-extracted")?;
     
     // Get Pikachu data
     let pikachu_id = SpeciesId::from("pikachu");
-    let pikachu_data = repository.pokemon_data(&pikachu_id)?;
+    let pikachu_data = repository.pokemon.find_by_id(&pikachu_id)?;
     
     println!("=== PIKACHU (Level 50) ===");
     println!("Base stats: {:?}", pikachu_data.base_stats);
@@ -336,7 +380,7 @@ fn debug_stats() -> Result<(), Box<dyn std::error::Error>> {
     
     // Get Charmander data
     let charmander_id = SpeciesId::from("charmander");
-    let charmander_data = repository.pokemon_data(&charmander_id)?;
+    let charmander_data = repository.pokemon.find_by_id(&charmander_id)?;
     
     println!("\n=== CHARMANDER (Level 50) ===");
     println!("Base stats: {:?}", charmander_data.base_stats);
@@ -359,7 +403,7 @@ fn debug_stats() -> Result<(), Box<dyn std::error::Error>> {
     
     // Get Tackle data
     let tackle_id = MoveId::from("tackle");
-    let tackle_move = repository.create_move(&tackle_id)?;
+    let tackle_move = repository.moves.create_move(&tackle_id)?;
     
     println!("\n=== TACKLE MOVE ===");
     println!("Base power: {}", tackle_move.base_power);

@@ -1,6 +1,6 @@
 use crate::core::battle_format::BattleFormat;
 use crate::core::battle_state::BattleState;
-use crate::data::Repository;
+use crate::data::GameDataRepository;
 use crate::types::errors::{BattleError, DataError, SimulatorError};
 use crate::config::Config;
 use crate::builders::{BattleBuilder, TeamBuilder};
@@ -11,7 +11,7 @@ use std::path::Path;
 /// Provides a clean, ergonomic API for creating and running Pokemon battles
 /// with sensible defaults and fluent builder patterns.
 pub struct Simulator {
-    data: Repository,
+    data: GameDataRepository,
     config: Config,
 }
 
@@ -19,13 +19,13 @@ impl Simulator {
     /// Create a new simulator with default configuration
     pub fn new() -> Result<Self, SimulatorError> {
         let config = Config::default();
-        let data = Repository::from_path(&config.data_path)?;
+        let data = GameDataRepository::from_path(&config.data_path)?;
         Ok(Self { data, config })
     }
 
     /// Create a new simulator with custom configuration
     pub fn with_config(config: Config) -> Result<Self, SimulatorError> {
-        let data = Repository::from_path(&config.data_path)?;
+        let data = GameDataRepository::from_path(&config.data_path)?;
         Ok(Self { data, config })
     }
 
@@ -33,7 +33,7 @@ impl Simulator {
     pub fn with_data_path(path: impl AsRef<Path>) -> Result<Self, SimulatorError> {
         let mut config = Config::default();
         config.data_path = path.as_ref().to_path_buf();
-        let data = Repository::from_path(&config.data_path)?;
+        let data = GameDataRepository::from_path(&config.data_path)?;
         Ok(Self { data, config })
     }
 
@@ -107,7 +107,7 @@ impl Simulator {
     }
 
     /// Get access to the underlying data repository
-    pub fn data(&self) -> &Repository {
+    pub fn data(&self) -> &GameDataRepository {
         &self.data
     }
 

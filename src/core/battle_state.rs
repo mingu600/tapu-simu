@@ -504,7 +504,7 @@ impl BattleState {
         let mut state = Self::new(format.clone());
 
         // Create PS repository for proper move and Pokemon data
-        let repository = crate::data::Repository::from_path("data/ps-extracted")
+        let repository = crate::data::GameDataRepository::from_path("data/ps-extracted")
             .expect("Failed to load Pokemon data from data/ps-extracted. Ensure the data directory exists and contains valid JSON files.");
 
         // Convert and add Pokemon to each side
@@ -666,6 +666,11 @@ impl BattleState {
         }
     }
 
+    /// Apply a single battle instruction
+    pub fn apply_instruction(&mut self, instruction: &BattleInstruction) {
+        self.apply_single_instruction(instruction);
+    }
+
     /// Apply a single battle instruction (internal helper)
     fn apply_single_instruction(&mut self, instruction: &BattleInstruction) {
         match instruction {
@@ -689,7 +694,26 @@ impl BattleState {
         match instruction {
             PokemonInstruction::Damage { target, amount, .. } => {
                 if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
-                    pokemon.hp = (pokemon.hp - amount).max(0);
+                    // Check if Pokemon has a substitute
+                    if pokemon.volatile_statuses.contains(&VolatileStatus::Substitute) && pokemon.substitute_health > 0 {
+                        // Damage goes to substitute first
+                        let remaining_substitute_health = pokemon.substitute_health - amount;
+                        if remaining_substitute_health <= 0 {
+                            // Substitute is broken, apply excess damage to Pokemon
+                            pokemon.substitute_health = 0;
+                            pokemon.volatile_statuses.remove(&VolatileStatus::Substitute);
+                            let excess_damage = amount - pokemon.substitute_health;
+                            if excess_damage > 0 {
+                                pokemon.hp = (pokemon.hp - excess_damage).max(0);
+                            }
+                        } else {
+                            // Substitute absorbs all damage
+                            pokemon.substitute_health = remaining_substitute_health;
+                        }
+                    } else {
+                        // No substitute or substitute broken, damage goes to Pokemon directly
+                        pokemon.hp = (pokemon.hp - amount).max(0);
+                    }
                 }
             }
             PokemonInstruction::Heal { target, amount, .. } => {
@@ -700,6 +724,8 @@ impl BattleState {
             PokemonInstruction::MultiTargetDamage { target_damages, .. } => {
                 for (target, damage) in target_damages {
                     if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
+                        // Apply damage directly to Pokemon HP
+                        // Substitute handling should be done through explicit instructions
                         pokemon.hp = (pokemon.hp - damage).max(0);
                     }
                 }
@@ -937,6 +963,10 @@ impl BattleState {
             FieldInstruction::ToggleBatonPassing { .. } => {
                 // Baton passing logic would be handled at a higher level
                 // This is more of a metadata instruction for switch mechanics
+            }
+            FieldInstruction::Message { .. } => {
+                // Messages are for logging/debugging purposes and don't change state
+                // Could be logged to a battle log if needed
             }
         }
     }

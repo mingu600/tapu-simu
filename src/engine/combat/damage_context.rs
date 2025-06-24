@@ -150,6 +150,8 @@ pub struct DamageResult {
     pub was_critical: bool,
     /// Type effectiveness multiplier
     pub type_effectiveness: f32,
+    /// Whether the move hit a substitute instead of the Pokemon
+    pub hit_substitute: bool,
     /// Any special effects that occurred
     pub effects: Vec<DamageEffect>,
 }
@@ -157,6 +159,8 @@ pub struct DamageResult {
 /// Special effects that can occur during damage calculation
 #[derive(Debug, Clone)]
 pub enum DamageEffect {
+    /// Critical hit occurred
+    Critical,
     /// Ability activated during calculation
     AbilityActivated { ability: String, position: BattlePosition },
     /// Item was consumed or activated

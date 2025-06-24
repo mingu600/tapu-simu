@@ -117,6 +117,11 @@ impl Config {
     }
 
     /// Load configuration from a file
+    pub fn load(path: impl AsRef<Path>) -> ConfigResult<Self> {
+        Self::from_file(path)
+    }
+
+    /// Load configuration from a file
     pub fn from_file(path: impl AsRef<Path>) -> ConfigResult<Self> {
         let path = path.as_ref();
         let content = std::fs::read_to_string(path)

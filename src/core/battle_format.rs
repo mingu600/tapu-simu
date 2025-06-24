@@ -202,6 +202,20 @@ impl BattleFormat {
         )
     }
 
+    /// Check if this format allows switching during battle
+    pub fn allows_switching(&self) -> bool {
+        // Most formats allow switching, only specific rule sets might not
+        // For now, return true for all formats unless a specific clause forbids it
+        true
+    }
+
+    /// Check if this format allows switching for a specific clause
+    pub fn allows_switching_with_clauses(&self) -> bool {
+        // TODO: Check for specific clauses that might forbid switching
+        // For example, a theoretical "No Switch" clause
+        !self.clauses.iter().any(|clause| matches!(clause, FormatClause::EndlessBattleClause))
+    }
+
     /// Deserialize a battle format from a string
     pub fn deserialize(serialized: &str) -> Result<Self, String> {
         let parts: Vec<&str> = serialized.split('|').collect();

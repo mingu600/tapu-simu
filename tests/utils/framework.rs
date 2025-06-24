@@ -10,12 +10,12 @@ use tapu_simu::core::battle_format::{BattleFormat, BattlePosition, SideReference
 use tapu_simu::core::battle_state::BattleState;
 use tapu_simu::core::instructions::{
     BattleInstruction, BattleInstructions, PokemonInstruction, PokemonStatus, SideCondition, Stat,
-    Terrain, Weather,
+    StatusInstruction, Terrain, VolatileStatus, Weather,
 };
 use tapu_simu::core::move_choice::MoveChoice;
 use tapu_simu::data::generation_loader::GenerationRepository;
 use tapu_simu::data::types::Stats;
-use tapu_simu::data::Repository;
+use tapu_simu::data::GameDataRepository;
 use tapu_simu::engine::turn;
 use tapu_simu::generation::Generation;
 use tapu_simu::types::identifiers::AbilityId;
@@ -23,7 +23,7 @@ use tapu_simu::types::DataResult;
 
 /// Core test framework for tapu-simu battles
 pub struct TapuTestFramework {
-    repository: Arc<Repository>,
+    repository: Arc<GameDataRepository>,
     generation_repository: Arc<GenerationRepository>,
     format: BattleFormat,
 }
@@ -31,7 +31,7 @@ pub struct TapuTestFramework {
 impl TapuTestFramework {
     /// Create a new test framework with default Gen 9 Singles format
     pub fn new() -> DataResult<Self> {
-        let repository = Arc::new(Repository::from_path("data/ps-extracted")?);
+        let repository = Arc::new(GameDataRepository::from_path("data/ps-extracted")?);
         let generation_repository = Arc::new(
             GenerationRepository::load_from_directory("data/ps-extracted").map_err(|e| {
                 use tapu_simu::types::DataError;
@@ -49,7 +49,7 @@ impl TapuTestFramework {
 
     /// Create a test framework for a specific generation
     pub fn with_generation(gen: Generation) -> DataResult<Self> {
-        let repository = Arc::new(Repository::from_path("data/ps-extracted")?);
+        let repository = Arc::new(GameDataRepository::from_path("data/ps-extracted")?);
         let generation_repository = Arc::new(
             GenerationRepository::load_from_directory("data/ps-extracted").map_err(|e| {
                 use tapu_simu::types::DataError;
@@ -79,7 +79,7 @@ impl TapuTestFramework {
 
     /// Create a test framework with a specific format
     pub fn with_format(format: BattleFormat) -> DataResult<Self> {
-        let repository = Arc::new(Repository::from_path("data/ps-extracted")?);
+        let repository = Arc::new(GameDataRepository::from_path("data/ps-extracted")?);
         let generation_repository = Arc::new(
             GenerationRepository::load_from_directory("data/ps-extracted").map_err(|e| {
                 use tapu_simu::types::DataError;
@@ -96,7 +96,7 @@ impl TapuTestFramework {
     }
 
     /// Get a reference to the repository
-    pub fn repository(&self) -> &Repository {
+    pub fn repository(&self) -> &GameDataRepository {
         &self.repository
     }
 
@@ -308,44 +308,99 @@ impl TapuTestFramework {
                 if self.format.generation == Generation::Gen1 {
                     // Gen 1: Special Attack and Special Defense are the same stat
                     Stats {
-                        hp: (((base_hp + dv_hp) as i32 * 2 + stat_exp_factor as i32) * level as i32 / 100 + level as i32 + 10) as i16,
-                        attack: (((base_attack + dv_attack) as i32 * 2 + stat_exp_factor as i32) * level as i32 / 100 + 5) as i16,
-                        defense: (((base_defense + dv_defense) as i32 * 2 + stat_exp_factor as i32) * level as i32 / 100 + 5) as i16,
-                        special_attack: (((base_special_attack + dv_special) as i32 * 2 + stat_exp_factor as i32) * level as i32 / 100 + 5) as i16,
-                        special_defense: (((base_special_attack + dv_special) as i32 * 2 + stat_exp_factor as i32) * level as i32 / 100 + 5) as i16, // Same as Special Attack in Gen 1
-                        speed: (((base_speed + dv_speed) as i32 * 2 + stat_exp_factor as i32) * level as i32 / 100 + 5) as i16,
+                        hp: (((base_hp + dv_hp) as i32 * 2 + stat_exp_factor as i32) * level as i32
+                            / 100
+                            + level as i32
+                            + 10) as i16,
+                        attack: (((base_attack + dv_attack) as i32 * 2 + stat_exp_factor as i32)
+                            * level as i32
+                            / 100
+                            + 5) as i16,
+                        defense: (((base_defense + dv_defense) as i32 * 2 + stat_exp_factor as i32)
+                            * level as i32
+                            / 100
+                            + 5) as i16,
+                        special_attack: (((base_special_attack + dv_special) as i32 * 2
+                            + stat_exp_factor as i32)
+                            * level as i32
+                            / 100
+                            + 5) as i16,
+                        special_defense: (((base_special_attack + dv_special) as i32 * 2
+                            + stat_exp_factor as i32)
+                            * level as i32
+                            / 100
+                            + 5) as i16, // Same as Special Attack in Gen 1
+                        speed: (((base_speed + dv_speed) as i32 * 2 + stat_exp_factor as i32)
+                            * level as i32
+                            / 100
+                            + 5) as i16,
                     }
                 } else {
                     // Gen 2: Special Attack and Special Defense are separate
                     Stats {
-                        hp: (((base_hp + dv_hp) as i32 * 2 + stat_exp_factor as i32) * level as i32 / 100 + level as i32 + 10) as i16,
-                        attack: (((base_attack + dv_attack) as i32 * 2 + stat_exp_factor as i32) * level as i32 / 100 + 5) as i16,
-                        defense: (((base_defense + dv_defense) as i32 * 2 + stat_exp_factor as i32) * level as i32 / 100 + 5) as i16,
-                        special_attack: (((base_special_attack + dv_special) as i32 * 2 + stat_exp_factor as i32) * level as i32 / 100 + 5) as i16,
-                        special_defense: (((base_special_defense + dv_special) as i32 * 2 + stat_exp_factor as i32) * level as i32 / 100 + 5) as i16,
-                        speed: (((base_speed + dv_speed) as i32 * 2 + stat_exp_factor as i32) * level as i32 / 100 + 5) as i16,
+                        hp: (((base_hp + dv_hp) as i32 * 2 + stat_exp_factor as i32) * level as i32
+                            / 100
+                            + level as i32
+                            + 10) as i16,
+                        attack: (((base_attack + dv_attack) as i32 * 2 + stat_exp_factor as i32)
+                            * level as i32
+                            / 100
+                            + 5) as i16,
+                        defense: (((base_defense + dv_defense) as i32 * 2 + stat_exp_factor as i32)
+                            * level as i32
+                            / 100
+                            + 5) as i16,
+                        special_attack: (((base_special_attack + dv_special) as i32 * 2
+                            + stat_exp_factor as i32)
+                            * level as i32
+                            / 100
+                            + 5) as i16,
+                        special_defense: (((base_special_defense + dv_special) as i32 * 2
+                            + stat_exp_factor as i32)
+                            * level as i32
+                            / 100
+                            + 5) as i16,
+                        speed: (((base_speed + dv_speed) as i32 * 2 + stat_exp_factor as i32)
+                            * level as i32
+                            / 100
+                            + 5) as i16,
                     }
                 }
             }
             _ => {
                 // Gen 3+ use IVs (0-31) and EVs
+                // Use i32 for intermediate calculations to prevent overflow
                 Stats {
-                    hp: (2 * base_hp + ivs.hp + evs.hp / 4) * level / 100 + level + 10,
-                    attack: (2 * base_attack + ivs.attack + evs.attack / 4) * level / 100 + 5,
-                    defense: (2 * base_defense + ivs.defense + evs.defense / 4) * level / 100 + 5,
-                    special_attack: (2 * base_special_attack
-                        + ivs.special_attack
-                        + evs.special_attack / 4)
-                        * level
+                    hp: ((2 * base_hp as i32 + ivs.hp as i32 + evs.hp as i32 / 4) * level as i32
                         / 100
-                        + 5,
-                    special_defense: (2 * base_special_defense
-                        + ivs.special_defense
-                        + evs.special_defense / 4)
-                        * level
+                        + level as i32
+                        + 10) as i16,
+                    attack: ((2 * base_attack as i32 + ivs.attack as i32 + evs.attack as i32 / 4)
+                        * level as i32
                         / 100
-                        + 5,
-                    speed: (2 * base_speed + ivs.speed + evs.speed / 4) * level / 100 + 5,
+                        + 5) as i16,
+                    defense: ((2 * base_defense as i32
+                        + ivs.defense as i32
+                        + evs.defense as i32 / 4)
+                        * level as i32
+                        / 100
+                        + 5) as i16,
+                    special_attack: ((2 * base_special_attack as i32
+                        + ivs.special_attack as i32
+                        + evs.special_attack as i32 / 4)
+                        * level as i32
+                        / 100
+                        + 5) as i16,
+                    special_defense: ((2 * base_special_defense as i32
+                        + ivs.special_defense as i32
+                        + evs.special_defense as i32 / 4)
+                        * level as i32
+                        / 100
+                        + 5) as i16,
+                    speed: ((2 * base_speed as i32 + ivs.speed as i32 + evs.speed as i32 / 4)
+                        * level as i32
+                        / 100
+                        + 5) as i16,
                 }
             }
         };
@@ -467,6 +522,14 @@ impl TapuTestFramework {
             SetupAction::AddSideCondition(side, condition) => {
                 let side_state = state.get_side_by_ref_mut(*side);
                 side_state.side_conditions.insert(*condition, 1);
+            }
+            SetupAction::AddSubstitute(position, health) => {
+                if let Some(pokemon) = state.get_pokemon_at_position_mut(*position) {
+                    pokemon.volatile_statuses.insert(VolatileStatus::Substitute);
+                    pokemon.substitute_health = *health;
+                } else {
+                    return Err(format!("No Pokemon at position {:?}", position));
+                }
             }
         }
         Ok(())
@@ -667,6 +730,30 @@ impl TapuTestFramework {
             ExpectedOutcome::Instructions(_expected_instructions) => {
                 // This is handled in the turn execution validation
             }
+            ExpectedOutcome::SubstituteHealth(position, expected_health) => {
+                if let Some(pokemon) = state.get_pokemon_at_position(*position) {
+                    if pokemon.substitute_health != *expected_health {
+                        return Err(format!(
+                            "Substitute health mismatch at {:?}: expected {}, got {}",
+                            position, expected_health, pokemon.substitute_health
+                        ));
+                    }
+                } else {
+                    return Err(format!("No Pokemon at position {:?}", position));
+                }
+            }
+            ExpectedOutcome::VolatileStatus(position, expected_status) => {
+                if let Some(pokemon) = state.get_pokemon_at_position(*position) {
+                    if !pokemon.volatile_statuses.contains(expected_status) {
+                        return Err(format!(
+                            "Volatile status mismatch at {:?}: expected {:?}, but not present",
+                            position, expected_status
+                        ));
+                    }
+                } else {
+                    return Err(format!("No Pokemon at position {:?}", position));
+                }
+            }
         }
 
         Ok(())
@@ -721,6 +808,7 @@ pub enum SetupAction {
     ModifyStats(BattlePosition, HashMap<Stat, i8>),
     SetHP(BattlePosition, u16),
     AddSideCondition(SideReference, SideCondition),
+    AddSubstitute(BattlePosition, i16),
 }
 
 /// Expected outcomes for test validation
@@ -736,6 +824,8 @@ pub enum ExpectedOutcome {
     Switch(BattlePosition, usize),
     NoEffect(BattlePosition),
     Instructions(Vec<BattleInstructions>),
+    SubstituteHealth(BattlePosition, i16),
+    VolatileStatus(BattlePosition, VolatileStatus),
 }
 
 /// Complete battle test specification

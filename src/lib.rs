@@ -52,6 +52,7 @@ pub mod config;
 pub mod simulator;
 pub mod builders;
 pub mod utils;
+pub mod constants;
 
 // Modern API exports (primary interfaces)
 pub use core::battle_format::{BattleFormat, BattlePosition, SideReference, FormatType};

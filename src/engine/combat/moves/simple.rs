@@ -10,12 +10,60 @@ use crate::core::instructions::{
     BattleInstruction, BattleInstructions, StatusInstruction, PokemonInstruction,
     FieldInstruction, StatsInstruction,
 };
-use crate::data::Repository;
 use crate::core::battle_format::{BattlePosition, SideReference};
 use crate::generation::GenerationMechanics;
 use crate::engine::combat::type_effectiveness::{TypeChart, PokemonType};
 use std::collections::HashMap;
 use crate::data::showdown_types::MoveData;
+
+/// Generate damage instructions with substitute tracking
+/// Returns (damage_instructions, hit_substitute)
+pub fn generate_substitute_aware_damage_with_tracking(
+    state: &BattleState,
+    target_position: BattlePosition,
+    damage: i16,
+) -> (Vec<BattleInstruction>, bool) {
+    if let Some(target) = state.get_pokemon_at_position(target_position) {
+        // Check if target has a substitute
+        if target.volatile_statuses.contains(&VolatileStatus::Substitute) && target.substitute_health > 0 {
+            let mut instructions = Vec::new();
+            let substitute_damage = damage.min(target.substitute_health);
+            let new_substitute_health = target.substitute_health - substitute_damage;
+            
+            // Generate ChangeSubstituteHealth instruction
+            instructions.push(BattleInstruction::Pokemon(PokemonInstruction::ChangeSubstituteHealth {
+                target: target_position,
+                new_health: new_substitute_health,
+                previous_health: target.substitute_health,
+            }));
+            
+            // If substitute is broken, remove it (but don't carry over damage)
+            if new_substitute_health <= 0 {
+                // Remove substitute volatile status
+                instructions.push(BattleInstruction::Status(crate::core::instructions::StatusInstruction::RemoveVolatile {
+                    target: target_position,
+                    status: VolatileStatus::Substitute,
+                    previous_duration: None,
+                }));
+                
+                // In Pokemon, the substitute absorbs the entire hit that breaks it
+                // No remaining damage is dealt to the Pokemon from the same hit
+            }
+            
+            return (instructions, true);
+        }
+    }
+    
+    // Hit Pokemon directly
+    let instructions = vec![
+        BattleInstruction::Pokemon(PokemonInstruction::Damage {
+            target: target_position,
+            amount: damage,
+            previous_hp: None, // Will be filled in by battle state
+        })
+    ];
+    (instructions, false)
+}
 
 // =============================================================================
 // SIMPLE MOVES WITH STRAIGHTFORWARD EFFECTS
@@ -379,9 +427,10 @@ pub fn apply_generic_effects(
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
+    branch_on_damage: bool,
 ) -> Vec<BattleInstructions> {
     // Use the shared implementation from the main moves module
-    super::apply_generic_effects(state, move_data, user_position, target_positions, generation, true)
+    super::apply_generic_effects(state, move_data, user_position, target_positions, generation, branch_on_damage)
 }
 
 // Fallback function removed - moves should either be implemented or return errors

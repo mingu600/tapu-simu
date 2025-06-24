@@ -4,7 +4,7 @@
 //! with comprehensive validation and error handling.
 
 use crate::core::battle_format::BattleFormat;
-use crate::data::Repository;
+use crate::data::GameDataRepository;
 use crate::data::RandomPokemonSet;
 use crate::types::identifiers::{SpeciesId, AbilityId, MoveId, ItemId};
 use super::traits::{Builder, BuilderError, ValidationContext, ValidatingBuilder};
@@ -12,7 +12,7 @@ use super::traits::{Builder, BuilderError, ValidationContext, ValidatingBuilder}
 /// Team builder with standardized interface
 pub struct TeamBuilder<'a> {
     /// Data repository for validation
-    data: &'a Repository,
+    data: &'a GameDataRepository,
     /// Pokemon on the team
     pokemon: Vec<PokemonBuilder>,
     /// Format for validation
@@ -79,7 +79,7 @@ impl Default for IVsConfig {
 
 impl<'a> TeamBuilder<'a> {
     /// Create a new modern team builder
-    pub fn new(data: &'a Repository) -> Self {
+    pub fn new(data: &'a GameDataRepository) -> Self {
         Self {
             data,
             pokemon: Vec::new(),
@@ -261,7 +261,7 @@ impl PokemonBuilder {
     }
 
     /// Validate this Pokemon
-    pub fn validate(&self, data: &Repository) -> Result<(), BuilderError> {
+    pub fn validate(&self, data: &GameDataRepository) -> Result<(), BuilderError> {
         // Validate level
         let level = self.level.unwrap_or(50);
         if level == 0 || level > 100 {
@@ -298,7 +298,7 @@ impl PokemonBuilder {
     }
 
     /// Build into a RandomPokemonSet
-    pub fn build(self, _data: &Repository) -> Result<RandomPokemonSet, BuilderError> {
+    pub fn build(self, _data: &GameDataRepository) -> Result<RandomPokemonSet, BuilderError> {
         self.validate(_data)?;
 
         // Convert to RandomPokemonSet

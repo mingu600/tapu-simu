@@ -298,7 +298,7 @@ impl RandomPokemonSet {
     }
 
     /// Get EVs with Smogon Random Battle optimization rules
-    pub fn get_evs(&self, repository: &crate::data::Repository) -> Stats {
+    pub fn get_evs(&self, repository: &crate::data::GameDataRepository) -> Stats {
         // Start with default Random Battle EVs
         let mut evs = match &self.evs {
             Some(evs) => evs.to_stats(85),
@@ -316,7 +316,7 @@ impl RandomPokemonSet {
         let has_physical_moves = self.moves.iter().any(|move_name| {
             use crate::types::identifiers::MoveId;
             let move_id = MoveId::from(move_name.clone());
-            if let Ok(move_data) = repository.move_data(&move_id) {
+            if let Ok(move_data) = repository.moves.find_by_id(&move_id) {
                 move_data.category == "Physical"
             } else {
                 false
@@ -342,7 +342,7 @@ impl RandomPokemonSet {
     }
 
     /// Get IVs with Smogon Random Battle optimization rules
-    pub fn get_ivs(&self, repository: &crate::data::Repository) -> Stats {
+    pub fn get_ivs(&self, repository: &crate::data::GameDataRepository) -> Stats {
         // Start with default Random Battle IVs (perfect)
         let mut ivs = match &self.ivs {
             Some(ivs) => ivs.to_stats(31),
@@ -360,7 +360,7 @@ impl RandomPokemonSet {
         let has_physical_moves = self.moves.iter().any(|move_name| {
             use crate::types::identifiers::MoveId;
             let move_id = MoveId::from(move_name.clone());
-            if let Ok(move_data) = repository.move_data(&move_id) {
+            if let Ok(move_data) = repository.moves.find_by_id(&move_id) {
                 move_data.category == "Physical"
             } else {
                 false
@@ -398,7 +398,7 @@ impl RandomPokemonSet {
     /// Convert to battle engine Pokemon
     pub fn to_battle_pokemon(
         &self,
-        repository: &crate::data::Repository,
+        repository: &crate::data::GameDataRepository,
     ) -> Pokemon {
         let mut pokemon = Pokemon::new(self.species.clone());
 
@@ -411,7 +411,7 @@ impl RandomPokemonSet {
         } else {
             // Get default ability from repository
             let species_id = SpeciesId::from(self.species.clone());
-            if let Ok(pokemon_data) = repository.pokemon_data(&species_id) {
+            if let Ok(pokemon_data) = repository.pokemon.find_by_id(&species_id) {
                 // Get first ability if available (slot "0")
                 pokemon_data.abilities.get("0")
                     .cloned()
@@ -432,7 +432,7 @@ impl RandomPokemonSet {
 
         // Calculate stats from base stats, level, nature, IVs, EVs
         let species_id = SpeciesId::from(self.species.clone());
-        let base_stats = if let Ok(pokemon_data) = repository.pokemon_data(&species_id) {
+        let base_stats = if let Ok(pokemon_data) = repository.pokemon.find_by_id(&species_id) {
             pokemon_data.base_stats.to_engine_stats()
         } else {
             eprintln!("Warning: Base stats for '{}' not found in PS data, using fallback", self.species);
@@ -503,7 +503,7 @@ impl RandomPokemonSet {
         };
 
         // Set types from PS data
-        pokemon.types = if let Ok(pokemon_data) = repository.pokemon_data(&species_id) {
+        pokemon.types = if let Ok(pokemon_data) = repository.pokemon.find_by_id(&species_id) {
             pokemon_data.types.iter().map(|type_id| type_id.as_str().to_string()).collect()
         } else {
             eprintln!("Warning: Types for '{}' not found in PS data, using Normal type", self.species);
@@ -519,7 +519,7 @@ impl RandomPokemonSet {
             // Create move using PS data
             use crate::types::identifiers::MoveId;
             let move_id = MoveId::from(move_name.clone());
-            let move_data = match repository.create_move(&move_id) {
+            let move_data = match repository.moves.create_move(&move_id) {
                 Ok(mv) => mv,
                 Err(_) => {
                     // Fallback if move not found in PS data
@@ -557,7 +557,7 @@ impl RandomPokemonSet {
         pokemon.tera_type = self.get_tera_type();
 
         // Set weight from repository data
-        pokemon.weight_kg = repository.get_pokemon_weight(&self.species).unwrap_or(50.0);
+        pokemon.weight_kg = repository.pokemon.get_pokemon_weight(&self.species).unwrap_or(50.0);
 
         pokemon
     }

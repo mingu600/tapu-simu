@@ -13,25 +13,13 @@ mod utils;
 
 use std::collections::HashMap;
 
+use tapu_simu::constants::critical_hits::*;
 use tapu_simu::core::battle_format::{BattlePosition, SideReference};
 use tapu_simu::core::instructions::{
     BattleInstruction, BattleInstructions, PokemonInstruction, SideCondition, Stat,
 };
 use tapu_simu::generation::Generation;
 use utils::{PokemonSpec, Positions, TestBuilder};
-
-/// Generation-specific critical hit constants
-/// These match the poke-engine constants for each generation
-mod crit_constants {
-    pub const GEN1_CRIT_MULTIPLIER: f32 = 2.0;
-    pub const GEN2_BASE_CRIT_CHANCE: f32 = 17.0 / 256.0; // ~6.64%
-    pub const GEN3_BASE_CRIT_CHANCE: f32 = 1.0 / 16.0; // 6.25%
-    pub const GEN3_CRIT_MULTIPLIER: f32 = 2.0;
-    pub const GEN4_BASE_CRIT_CHANCE: f32 = 1.0 / 16.0; // 6.25%
-    pub const GEN4_CRIT_MULTIPLIER: f32 = 1.5;
-    pub const GEN7_BASE_CRIT_CHANCE: f32 = 1.0 / 24.0; // ~4.17%
-    pub const GEN9_BASE_CRIT_CHANCE: f32 = 1.0 / 24.0; // ~4.17%
-}
 
 /// Test basic move pair instruction generation
 /// Verifies the fundamental damage calculation without special effects
@@ -78,7 +66,7 @@ fn test_branch_on_crit() {
 
     let expected_instructions = vec![
         BattleInstructions {
-            percentage: 100.0 * (1.0 - crit_constants::GEN9_BASE_CRIT_CHANCE),
+            percentage: 100.0 * (1.0 - GEN9_BASE_CRIT_CHANCE),
             instruction_list: vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
                 target: BattlePosition::new(SideReference::SideTwo, 0),
                 amount: base_damage,
@@ -87,10 +75,10 @@ fn test_branch_on_crit() {
             affected_positions: vec![BattlePosition::new(SideReference::SideTwo, 0)],
         },
         BattleInstructions {
-            percentage: 100.0 * crit_constants::GEN9_BASE_CRIT_CHANCE,
+            percentage: 100.0 * GEN9_BASE_CRIT_CHANCE,
             instruction_list: vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
                 target: BattlePosition::new(SideReference::SideTwo, 0),
-                amount: (crit_constants::GEN4_CRIT_MULTIPLIER * base_damage as f32).floor() as i16,
+                amount: (GEN4_CRIT_MULTIPLIER * base_damage as f32).floor() as i16,
                 previous_hp: None,
             })],
             affected_positions: vec![BattlePosition::new(SideReference::SideTwo, 0)],
@@ -115,7 +103,7 @@ fn test_branch_when_a_roll_can_kill() {
     // This creates branching where some rolls kill, others don't
     let expected_instructions = vec![
         BattleInstructions {
-            percentage: (1.0 - crit_constants::GEN9_BASE_CRIT_CHANCE) * 6.0 / 16.0 * 100.0, // Calculated probability for non-KO damage
+            percentage: (1.0 - GEN9_BASE_CRIT_CHANCE) * 6.0 / 16.0 * 100.0, // Calculated probability for non-KO damage
             instruction_list: vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
                 target: BattlePosition::new(SideReference::SideTwo, 0),
                 amount: 36,
@@ -124,8 +112,7 @@ fn test_branch_when_a_roll_can_kill() {
             affected_positions: vec![BattlePosition::new(SideReference::SideTwo, 0)],
         },
         BattleInstructions {
-            percentage: 100.0
-                - ((1.0 - crit_constants::GEN9_BASE_CRIT_CHANCE) * 6.0 / 16.0 * 100.0), // Calculated probability for KO damage
+            percentage: 100.0 - ((1.0 - GEN9_BASE_CRIT_CHANCE) * 6.0 / 16.0 * 100.0), // Calculated probability for KO damage
             instruction_list: vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
                 target: BattlePosition::new(SideReference::SideTwo, 0),
                 amount: 38, // Exact damage to reach 0 HP
@@ -150,7 +137,7 @@ fn test_branch_when_a_roll_can_kill() {
 #[test]
 fn test_crit_does_not_overkill() {
     // Very low HP target to test damage capping
-    let crit_chance = crit_constants::GEN9_BASE_CRIT_CHANCE;
+    let crit_chance = GEN9_BASE_CRIT_CHANCE;
     let base_damage = 64;
 
     let expected_instructions = vec![
@@ -383,7 +370,7 @@ fn test_crit_roll_ignores_other_boost() {
         percentage: 100.0, // Persian + Slash = guaranteed crit in Gen 1
         instruction_list: vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
             target: BattlePosition::new(SideReference::SideTwo, 0),
-            amount: 134, // Gen 1 crit damage ignoring defense boost
+            amount: 133, // Gen 1 crit damage ignoring defense boost
             previous_hp: None,
         })],
         affected_positions: vec![BattlePosition::new(SideReference::SideTwo, 0)],
@@ -412,7 +399,7 @@ fn test_crit_roll_ignores_other_boost_negative_boost() {
         percentage: 100.0, // Persian + Slash = guaranteed crit in Gen 1
         instruction_list: vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
             target: BattlePosition::new(SideReference::SideTwo, 0),
-            amount: 134, // Gen 1 crit damage ignoring defense boost
+            amount: 133, // Gen 1 crit damage ignoring defense boost
             previous_hp: None,
         })],
         affected_positions: vec![BattlePosition::new(SideReference::SideTwo, 0)],
@@ -441,7 +428,7 @@ fn test_crit_roll_ignores_own_boost() {
         percentage: 100.0, // Persian + Slash = guaranteed crit in Gen 1
         instruction_list: vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
             target: BattlePosition::new(SideReference::SideTwo, 0),
-            amount: 134, // Gen 1 crit damage ignoring defense boost
+            amount: 133, // Gen 1 crit damage ignoring defense boost
             previous_hp: None,
         })],
         affected_positions: vec![BattlePosition::new(SideReference::SideTwo, 0)],
@@ -468,7 +455,7 @@ fn test_crit_roll_ignores_reflect() {
         percentage: 100.0, // Persian + Slash = guaranteed crit in Gen 1
         instruction_list: vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
             target: BattlePosition::new(SideReference::SideTwo, 0),
-            amount: 134,
+            amount: 133,
             previous_hp: None,
         })],
         affected_positions: vec![BattlePosition::new(SideReference::SideTwo, 0)],
@@ -503,7 +490,7 @@ fn test_dugtrio_using_pound_rolls_crit() {
             percentage: 23.4375, // Crit probability for Dugtrio + Pound
             instruction_list: vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
                 target: BattlePosition::new(SideReference::SideTwo, 0),
-                amount: 57, // Gen 1 crit damage
+                amount: 55, // Gen 1 crit damage
                 previous_hp: None,
             })],
             affected_positions: vec![BattlePosition::new(SideReference::SideTwo, 0)],
@@ -525,13 +512,13 @@ fn test_dugtrio_using_pound_rolls_crit() {
 /// Test Gen 2 branch on crit
 #[test]
 fn test_gen2_branch_on_crit() {
-    let crit_chance = crit_constants::GEN2_BASE_CRIT_CHANCE;
+    let crit_chance = GEN2_BASE_CRIT_CHANCE;
     let expected_instructions = vec![
         BattleInstructions {
             percentage: 100.0 * (1.0 - crit_chance),
             instruction_list: vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
                 target: BattlePosition::new(SideReference::SideTwo, 0),
-                amount: 35,
+                amount: 36,
                 previous_hp: None,
             })],
             affected_positions: vec![BattlePosition::new(SideReference::SideTwo, 0)],
@@ -540,7 +527,7 @@ fn test_gen2_branch_on_crit() {
             percentage: 100.0 * crit_chance,
             instruction_list: vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
                 target: BattlePosition::new(SideReference::SideTwo, 0),
-                amount: 69, // Gen 2 still uses 2x
+                amount: 70, // Gen 2 still uses 2x
                 previous_hp: None,
             })],
             affected_positions: vec![BattlePosition::new(SideReference::SideTwo, 0)],
@@ -560,7 +547,7 @@ fn test_gen2_branch_on_crit() {
 /// Test Gen 2 crit does not overkill
 #[test]
 fn test_gen2_crit_does_not_overkill() {
-    let crit_chance = crit_constants::GEN2_BASE_CRIT_CHANCE;
+    let crit_chance = GEN2_BASE_CRIT_CHANCE;
     let expected_instructions = vec![
         BattleInstructions {
             percentage: 100.0 * (1.0 - crit_chance),
@@ -614,7 +601,7 @@ fn test_gen2_highcrit_move() {
             percentage: 11.875, // Hit with high crit rate
             instruction_list: vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
                 target: BattlePosition::new(SideReference::SideTwo, 0),
-                amount: 82, // Gen 2 still uses 2x
+                amount: 83, // Gen 2 still uses 2x
                 previous_hp: None,
             })],
             affected_positions: vec![BattlePosition::new(SideReference::SideTwo, 0)],

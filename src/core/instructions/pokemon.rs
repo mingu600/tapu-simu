@@ -139,6 +139,31 @@ pub enum PokemonInstruction {
         previous_category: MoveCategory,
         previous_hit_substitute: bool,
     },
+    /// Display a message (for debugging/logging)
+    Message {
+        message: String,
+        affected_positions: Vec<BattlePosition>,
+    },
+    /// Transfer an item from one Pokemon to another
+    ItemTransfer {
+        from: BattlePosition,
+        to: BattlePosition,
+        item: String,
+        previous_from_item: Option<String>,
+        previous_to_item: Option<String>,
+    },
+    /// Force a Pokemon to switch out
+    ForceSwitch {
+        target: BattlePosition,
+        source: Option<BattlePosition>,
+        previous_can_switch: bool,
+    },
+    /// Damage a substitute
+    DamageSubstitute {
+        target: BattlePosition,
+        amount: i16,
+        previous_health: i16,
+    },
 }
 
 impl PokemonInstruction {
@@ -166,6 +191,10 @@ impl PokemonInstruction {
             },
             PokemonInstruction::DecrementFutureSight { target, .. } => vec![*target],
             PokemonInstruction::ChangeDamageDealt { side_position, .. } => vec![*side_position],
+            PokemonInstruction::Message { affected_positions, .. } => affected_positions.clone(),
+            PokemonInstruction::ItemTransfer { from, to, .. } => vec![*from, *to],
+            PokemonInstruction::ForceSwitch { target, .. } => vec![*target],
+            PokemonInstruction::DamageSubstitute { target, .. } => vec![*target],
         }
     }
 
@@ -190,6 +219,10 @@ impl PokemonInstruction {
             PokemonInstruction::SetFutureSight { previous_future_sight, .. } => previous_future_sight.is_some(),
             PokemonInstruction::DecrementFutureSight { .. } => true,
             PokemonInstruction::ChangeDamageDealt { .. } => true,
+            PokemonInstruction::Message { .. } => false, // Messages are not undoable
+            PokemonInstruction::ItemTransfer { .. } => true,
+            PokemonInstruction::ForceSwitch { .. } => true,
+            PokemonInstruction::DamageSubstitute { .. } => true,
         }
     }
 }

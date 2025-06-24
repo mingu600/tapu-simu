@@ -6,15 +6,14 @@
 use super::traits::{Builder, BuilderError, ValidatingBuilder, ValidationContext};
 use crate::core::battle_format::BattleFormat;
 use crate::core::battle_state::BattleState;
-use crate::data::Repository;
+use crate::data::GameDataRepository;
 use crate::data::RandomPokemonSet;
 use crate::simulator::Player;
-use crate::types::errors::BattleError;
 
 /// Battle builder with standardized interface
 pub struct BattleBuilder<'a> {
     /// Data repository for Pokemon/move/ability data
-    data: &'a Repository,
+    data: &'a GameDataRepository,
     /// Battle format configuration
     format: Option<BattleFormat>,
     /// Teams for the battle
@@ -68,7 +67,7 @@ pub struct Battle {
 
 impl<'a> BattleBuilder<'a> {
     /// Create a new modern battle builder
-    pub fn new(data: &'a Repository) -> Self {
+    pub fn new(data: &'a GameDataRepository) -> Self {
         Self {
             data,
             format: None,
@@ -113,9 +112,9 @@ impl<'a> BattleBuilder<'a> {
             }
         }
         
-        // Create placeholder teams for fallback
-        let team1 = vec![]; // Empty placeholder team
-        let team2 = vec![]; // Empty placeholder team
+        // Create basic random teams for fallback using common Pokemon
+        let team1 = self.create_fallback_team();
+        let team2 = self.create_fallback_team();
         self.teams = Some((team1, team2));
         Ok(self)
     }
@@ -299,6 +298,46 @@ impl<'a> BattleBuilder<'a> {
 
         // Additional format-specific validation could go here
         Ok(())
+    }
+
+    /// Create a fallback team with basic Pokemon when random team generation fails
+    fn create_fallback_team(&self) -> Vec<RandomPokemonSet> {
+        // Common Pokemon species for fallback teams
+        let common_species = [
+            "pikachu", "charizard", "blastoise", "venusaur", "dragonite", "mewtwo"
+        ];
+        
+        let mut team = Vec::new();
+        for &species in &common_species {
+            let pokemon_set = RandomPokemonSet {
+                name: species.to_string(),
+                species: species.to_string(),
+                ability: Some("static".to_string()), // Default ability
+                item: None,
+                moves: vec![
+                    "tackle".to_string(),
+                    "thunderbolt".to_string(),
+                    "quick-attack".to_string(),
+                    "rest".to_string(),
+                ],
+                level: 50,
+                evs: Some(crate::data::random_team_loader::RandomStats {
+                    hp: Some(85), atk: Some(85), def: Some(85), spa: Some(85), spd: Some(85), spe: Some(85)
+                }),
+                ivs: Some(crate::data::random_team_loader::RandomStats {
+                    hp: Some(31), atk: Some(31), def: Some(31), spa: Some(31), spd: Some(31), spe: Some(31)
+                }),
+                nature: Some("hardy".to_string()), // Neutral nature
+                gender: None,
+                shiny: Some(false),
+                tera_type: None,
+                role: None,
+                gigantamax: None,
+            };
+            team.push(pokemon_set);
+        }
+        
+        team
     }
 }
 

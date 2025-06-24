@@ -9,7 +9,7 @@ use super::framework::{
 use std::collections::HashMap;
 use tapu_simu::core::battle_format::{BattleFormat, BattlePosition, SideReference};
 use tapu_simu::core::instructions::{
-    BattleInstructions, PokemonStatus, SideCondition, Stat, Terrain, Weather,
+    BattleInstructions, PokemonStatus, SideCondition, Stat, Terrain, VolatileStatus, Weather,
 };
 use tapu_simu::core::move_choice::{MoveChoice, MoveIndex};
 use tapu_simu::data::types::Stats;
@@ -107,6 +107,11 @@ impl TestBuilder {
         self.setup(SetupAction::AddSideCondition(side, condition))
     }
 
+    /// Add a substitute with specific health for a Pokemon
+    pub fn with_substitute(self, position: BattlePosition, health: i16) -> Self {
+        self.setup(SetupAction::AddSubstitute(position, health))
+    }
+
     /// Add a turn with move choices
     pub fn turn(mut self, move_one: MoveChoice, move_two: MoveChoice) -> Self {
         self.test.moves.push((move_one, move_two));
@@ -183,6 +188,16 @@ impl TestBuilder {
     /// Expect no effect at a position
     pub fn expect_no_effect(self, position: BattlePosition) -> Self {
         self.expect(ExpectedOutcome::NoEffect(position))
+    }
+
+    /// Expect substitute health at a position
+    pub fn expect_substitute_health(self, position: BattlePosition, health: i16) -> Self {
+        self.expect(ExpectedOutcome::SubstituteHealth(position, health))
+    }
+
+    /// Expect a volatile status at a position
+    pub fn expect_volatile_status(self, position: BattlePosition, status: VolatileStatus) -> Self {
+        self.expect(ExpectedOutcome::VolatileStatus(position, status))
     }
 
     /// Expect specific instructions

@@ -1,1 +1,0 @@
-Update @LEGACY_STATE_REMOVAL_PLAN.md with our progress, removing anything redundant and revising or adding any steps based on what we've done so far. Stick to only facts and be specific. :

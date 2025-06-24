@@ -5,6 +5,7 @@
 
 use super::damage_context::{DamageContext, DamageEffect, DamageResult};
 use super::type_effectiveness::{PokemonType, TypeChart};
+use crate::constants::damage::*;
 use crate::core::battle_state::BattleState;
 use crate::core::battle_state::Pokemon;
 use crate::core::instructions::MoveCategory;
@@ -12,7 +13,112 @@ use crate::data::showdown_types::MoveData;
 use crate::generation::{GenerationMechanics, GenerationBattleMechanics};
 use crate::utils::normalize_name;
 
-/// Calculate damage with explicit battle positions
+/// Get item damage modifier for Generation 2
+fn get_gen2_item_modifier(item: &str, move_type: &str) -> f32 {
+    match item.to_lowercase().replace("-", "").replace(" ", "").as_str() {
+        // Type-boosting items from Gen 2
+        "blackbelt" if move_type == "Fighting" => 1.1,
+        "blackglasses" if move_type == "Dark" => 1.1,
+        "charcoal" if move_type == "Fire" => 1.1,
+        "dragonfang" if move_type == "Dragon" => 1.1,
+        "hardstone" if move_type == "Rock" => 1.1,
+        "magnet" if move_type == "Electric" => 1.1,
+        "metalcoat" if move_type == "Steel" => 1.1,
+        "miracleseed" if move_type == "Grass" => 1.1,
+        "mysticwater" if move_type == "Water" => 1.1,
+        "nevermeltice" if move_type == "Ice" => 1.1,
+        "pinkbow" | "polkadotbow" if move_type == "Normal" => 1.1,
+        "poisonbarb" if move_type == "Poison" => 1.1,
+        "sharpbeak" if move_type == "Flying" => 1.1,
+        "silverpowder" if move_type == "Bug" => 1.1,
+        "softsand" if move_type == "Ground" => 1.1,
+        "spelltag" if move_type == "Ghost" => 1.1,
+        "twistedspoon" if move_type == "Psychic" => 1.1,
+        
+        // Light Ball for Pikachu (doubles attack)
+        "lightball" => 2.0, // Applied to Pikachu's attack stat specifically
+        
+        // Thick Club for Cubone/Marowak (doubles attack)
+        "thickclub" => 2.0, // Applied to Cubone/Marowak's attack stat specifically
+        
+        _ => 1.0,
+    }
+}
+
+/// Calculate damage between two Pokemon with explicit battle positions.
+///
+/// This is the primary damage calculation function that implements Pokemon's
+/// damage formula with full generation support and format awareness. The
+/// calculation includes all standard damage modifiers including STAB, type
+/// effectiveness, critical hits, abilities, items, and field conditions.
+///
+/// ## Algorithm Overview
+///
+/// The damage calculation follows Pokemon's standard damage formula:
+/// ```text
+/// Damage = ((((2 * Level / 5 + 2) * Power * A / D) / 50) + 2) * Modifiers
+/// ```
+///
+/// Where modifiers include:
+/// - Critical hit multiplier (1.5x for Gen 6+, 2.0x for earlier generations)
+/// - Same Type Attack Bonus (STAB) - typically 1.5x
+/// - Type effectiveness (0x, 0.25x, 0.5x, 1x, 2x, or 4x)
+/// - Random damage roll (85%-100% in 16 discrete steps)
+/// - Weather conditions (e.g., rain boosting Water moves)
+/// - Abilities (e.g., Adaptability changing STAB to 2x)
+/// - Items (e.g., Life Orb adding 30% damage)
+/// - Multi-target spread move penalty
+/// - Generation-specific mechanics
+///
+/// ## Parameters
+///
+/// - `state`: The current battle state containing field conditions
+/// - `attacker`: The Pokemon using the move
+/// - `defender`: The Pokemon receiving the damage
+/// - `move_data`: Complete move information including base power and type
+/// - `is_critical`: Whether this is a critical hit
+/// - `damage_rolls`: Which damage roll variant to use (min/max/average/all)
+/// - `target_count`: Number of targets (affects spread move damage)
+/// - `attacker_position`: Battle position of the attacking Pokemon
+/// - `defender_position`: Battle position of the defending Pokemon
+///
+/// ## Returns
+///
+/// The calculated damage as an i16. Returns 0 for moves that deal no damage
+/// (e.g., status moves, immune type matchups).
+///
+/// ## Examples
+///
+/// ```rust
+/// use tapu_simu::engine::combat::damage_calc::{calculate_damage_with_positions, DamageRolls};
+/// use tapu_simu::core::battle_format::{BattlePosition, SideReference};
+///
+/// // Calculate average damage for a single-target move
+/// let damage = calculate_damage_with_positions(
+///     &battle_state,
+///     &pikachu,
+///     &charmander,
+///     &thunderbolt_data,
+///     false, // not critical
+///     DamageRolls::Average,
+///     1, // single target
+///     BattlePosition::new(SideReference::SideOne, 0),
+///     BattlePosition::new(SideReference::SideTwo, 0),
+/// );
+///
+/// // Calculate minimum damage for worst-case scenario
+/// let min_damage = calculate_damage_with_positions(
+///     &battle_state,
+///     &attacker,
+///     &defender,
+///     &move_data,
+///     false,
+///     DamageRolls::Min, // 85% damage roll
+///     1,
+///     attacker_pos,
+///     defender_pos,
+/// );
+/// ```
 pub fn calculate_damage_with_positions(
     state: &BattleState,
     attacker: &Pokemon,
@@ -131,13 +237,15 @@ impl DamageRolls {
 /// Calculate all 16 possible damage rolls for a base damage value
 /// This matches Pokemon's actual damage calculation: random number 0-15 added to 85%
 pub fn calculate_all_damage_rolls(base_damage_no_roll: f32) -> Vec<i16> {
-    let mut damage_values = Vec::with_capacity(16);
+    let mut damage_values = Vec::with_capacity(DAMAGE_ROLL_COUNT);
 
     // Generate all 16 possible damage rolls (85% + 0% through 85% + 15%)
-    for roll in 0..16 {
-        let multiplier = (85 + roll) as f32 / 100.0;
-        let damage = (base_damage_no_roll * multiplier).floor() as i16;
-        damage_values.push(damage.max(1)); // Minimum 1 damage
+    for roll in 0..DAMAGE_ROLL_COUNT {
+        let multiplier = (MIN_DAMAGE_PERCENT + roll as u8) as f32 / 100.0;
+        let damage_float = base_damage_no_roll * multiplier;
+        // Pokemon uses floor for damage rolls, not rounding
+        let damage = damage_float.floor() as i16;
+        damage_values.push(damage.max(MIN_DAMAGE)); // Minimum 1 damage
     }
 
     damage_values
@@ -149,14 +257,14 @@ pub fn get_damage_for_roll(base_damage_no_roll: f32, roll_type: DamageRolls) -> 
 
     match roll_type {
         DamageRolls::Min => all_rolls[0],  // 85% roll
-        DamageRolls::Max => all_rolls[15], // 100% roll
+        DamageRolls::Max => all_rolls[MAX_DAMAGE_ROLL_INDEX], // 100% roll
         DamageRolls::Average => {
             // Pokemon uses the 8th damage value (0-indexed 7) as the "average"
-            all_rolls[7]
+            all_rolls[AVERAGE_DAMAGE_ROLL_INDEX]
         }
         DamageRolls::All => {
             // For All, just return the average as default
-            ((all_rolls[7] as f32 + all_rolls[8] as f32) / 2.0).round() as i16
+            ((all_rolls[AVERAGE_DAMAGE_ROLL_INDEX] as f32 + all_rolls[AVERAGE_DAMAGE_ROLL_INDEX + 1] as f32) / 2.0).round() as i16
         }
     }
 }
@@ -173,15 +281,15 @@ pub fn random_damage_roll() -> f32 {
 pub fn compare_health_with_damage_multiples(max_damage: i16, health: i16) -> (i16, i16) {
     let max_damage_f32 = max_damage as f32;
     let health_f32 = health as f32;
-    let increment = max_damage_f32 * 0.01; // 1% increments
+    let increment = max_damage_f32 * DAMAGE_ROLL_INCREMENT; // 1% increments
 
-    let mut damage = max_damage_f32 * 0.85; // Start at 85%
+    let mut damage = max_damage_f32 * DAMAGE_ROLL_START; // Start at 85%
     let mut total_less_than = 0i16;
     let mut num_less_than = 0i16;
     let mut num_greater_than = 0i16;
 
     // Calculate 16 discrete damage rolls from 85% to 100%
-    for _ in 0..16 {
+    for _ in 0..DAMAGE_ROLL_COUNT {
         if damage < health_f32 {
             total_less_than += damage as i16;
             num_less_than += 1;
@@ -492,6 +600,177 @@ pub fn get_weather_stat_multiplier(
     }
 }
 
+/// Pokemon's rounding function: rounds down at exactly 0.5
+/// This matches the damage-calc implementation: num % 1 > 0.5 ? Math.ceil(num) : Math.floor(num)
+fn poke_round(num: f32) -> f32 {
+    let fractional_part = num - num.floor();
+    if fractional_part > 0.5 {
+        num.ceil()
+    } else {
+        num.floor()
+    }
+}
+
+/// Calculate final damage roll following the exact sequence from damage-calc getFinalDamage
+/// This matches: getFinalDamage(baseAmount, i, effectiveness, isBurned, stabMod, finalMod, protect)
+fn calculate_final_damage_roll(
+    base_amount: f32,
+    damage_rolls: DamageRolls,
+    effectiveness: f32,
+    is_burned: bool,
+    stab_mod: u32,
+    final_mod: u32,
+) -> i16 {
+    // Get the specific damage roll we want (0-15)
+    let roll_index = match damage_rolls {
+        DamageRolls::Min => 0,     // 85% roll
+        DamageRolls::Max => 15,    // 100% roll 
+        DamageRolls::Average => 7, // ~92% roll (index 7)
+        DamageRolls::All => 7,     // Default to average
+    };
+    
+    // Step 1: Apply damage roll (85 + i) / 100
+    let mut damage_amount = (base_amount * (85.0 + roll_index as f32) / 100.0).floor();
+    
+    // Step 2: Apply STAB (if not 4096 to avoid unnecessary calculation)
+    if stab_mod != 4096 {
+        damage_amount = damage_amount * stab_mod as f32 / 4096.0;
+    }
+    
+    // Step 3: Apply type effectiveness with pokeRound then floor
+    damage_amount = (poke_round(damage_amount) * effectiveness).floor();
+    
+    // Step 4: Apply burn (floor division by 2)
+    if is_burned {
+        damage_amount = (damage_amount / 2.0).floor();
+    }
+    
+    // Step 5: Apply final modifiers with pokeRound
+    let final_damage = poke_round((damage_amount * final_mod as f32 / 4096.0).max(1.0));
+    
+    final_damage as i16
+}
+
+/// Calculate Gen 1/2 damage using the old 217-255 random range
+fn calculate_final_damage_gen12(
+    base_damage: f32,
+    damage_rolls: DamageRolls,
+    generation: crate::generation::Generation,
+) -> i16 {
+    // Gen 1/2 use range 217-255 instead of 85-100
+    let roll_index = match damage_rolls {
+        DamageRolls::Min => 217,     // Min roll
+        DamageRolls::Max => 255,     // Max roll 
+        DamageRolls::Average => 236, // Average roll ~(217+255)/2
+        DamageRolls::All => 236,     // Default to average
+    };
+    
+    if generation == crate::generation::Generation::Gen2 {
+        // Gen 2: damage is always rounded up to 1
+        (base_damage * roll_index as f32 / 255.0).floor().max(1.0) as i16
+    } else {
+        // Gen 1: random factor multiplication is skipped if damage = 1
+        if base_damage == 1.0 {
+            1
+        } else {
+            (base_damage * roll_index as f32 / 255.0).floor() as i16
+        }
+    }
+}
+
+/// Calculate Gen 3 damage using 85-100 range with floor at each step
+fn calculate_final_damage_gen3(
+    base_damage: f32,
+    damage_rolls: DamageRolls,
+    type_effectiveness: f32,
+) -> i16 {
+    // Gen 3 uses 85-100 range
+    let roll_index = match damage_rolls {
+        DamageRolls::Min => 85,     // 85% roll
+        DamageRolls::Max => 100,    // 100% roll 
+        DamageRolls::Average => 92, // Average roll
+        DamageRolls::All => 92,     // Default to average
+    };
+    
+    // Apply damage roll and type effectiveness with floor
+    let damage = (base_damage * roll_index as f32 / 100.0).floor() * type_effectiveness;
+    damage.floor().max(1.0) as i16
+}
+
+/// Calculate Gen 4 damage using 16 rolls with floor at each multiplier
+fn calculate_final_damage_gen4(
+    base_damage: f32,
+    damage_rolls: DamageRolls,
+    stab_mod: f32,
+    type1_effectiveness: f32,
+    type2_effectiveness: f32,
+    filter_mod: f32,
+    expert_belt_mod: f32,
+    tinted_lens_mod: f32,
+    berry_mod: f32,
+) -> i16 {
+    // Gen 4 uses 0-15 range (85%-100%)
+    let roll_index = match damage_rolls {
+        DamageRolls::Min => 0,     // 85% roll
+        DamageRolls::Max => 15,    // 100% roll 
+        DamageRolls::Average => 7, // ~92% roll (index 7)
+        DamageRolls::All => 7,     // Default to average
+    };
+    
+    // Apply damage roll
+    let mut damage = (base_damage * (85.0 + roll_index as f32) / 100.0).floor();
+    
+    // Apply each modifier with floor at each step (Gen 4 specific)
+    damage = (damage * stab_mod).floor();
+    damage = (damage * type1_effectiveness).floor();
+    damage = (damage * type2_effectiveness).floor();
+    damage = (damage * filter_mod).floor();
+    damage = (damage * expert_belt_mod).floor();
+    damage = (damage * tinted_lens_mod).floor();
+    damage = (damage * berry_mod).floor();
+    
+    damage.max(1.0) as i16
+}
+
+/// Calculate Gen 5-6 damage using getFinalDamage but without pokeRound
+fn calculate_final_damage_gen56(
+    base_amount: f32,
+    damage_rolls: DamageRolls,
+    effectiveness: f32,
+    is_burned: bool,
+    stab_mod: u32,
+    final_mod: u32,
+) -> i16 {
+    // Get the specific damage roll we want (0-15)
+    let roll_index = match damage_rolls {
+        DamageRolls::Min => 0,     // 85% roll
+        DamageRolls::Max => 15,    // 100% roll 
+        DamageRolls::Average => 7, // ~92% roll (index 7)
+        DamageRolls::All => 7,     // Default to average
+    };
+    
+    // Step 1: Apply damage roll (85 + i) / 100
+    let mut damage_amount = (base_amount * (85.0 + roll_index as f32) / 100.0).floor();
+    
+    // Step 2: Apply STAB (if not 4096 to avoid unnecessary calculation)
+    if stab_mod != 4096 {
+        damage_amount = damage_amount * stab_mod as f32 / 4096.0;
+    }
+    
+    // Step 3: Apply type effectiveness with floor (no pokeRound in Gen 5-6)
+    damage_amount = (damage_amount * effectiveness).floor();
+    
+    // Step 4: Apply burn (floor division by 2)
+    if is_burned {
+        damage_amount = (damage_amount / 2.0).floor();
+    }
+    
+    // Step 5: Apply final modifiers with floor (no pokeRound in Gen 5-6)
+    let final_damage = (damage_amount * final_mod as f32 / 4096.0).max(1.0).floor();
+    
+    final_damage as i16
+}
+
 /// Calculate weather damage modifier
 pub fn get_weather_damage_modifier(
     state: &BattleState,
@@ -778,15 +1057,22 @@ fn calculate_damage_gen1(context: &DamageContext, damage_rolls: DamageRolls) -> 
             blocked: false,
             was_critical: false,
             type_effectiveness: 1.0,
+            hit_substitute: false,
             effects: vec![],
         };
     }
 
     let mut effects = Vec::new();
     let base_power = context.move_info.base_power as f32;
-    let level = context.attacker.pokemon.level as f32;
+    
+    // Gen 1 critical hits double level before damage calculation
+    let level = if context.move_info.is_critical {
+        (context.attacker.pokemon.level as f32) * 2.0
+    } else {
+        context.attacker.pokemon.level as f32
+    };
 
-    // Get effective stats with Gen 1 critical hit considerations
+    // Get effective stats with Gen 1 critical hit considerations (raw stats if critical)
     let attack_stat = match context.move_info.category {
         crate::core::battle_state::MoveCategory::Physical => context
             .attacker
@@ -804,6 +1090,7 @@ fn calculate_damage_gen1(context: &DamageContext, damage_rolls: DamageRolls) -> 
                 blocked: false,
                 was_critical: false,
                 type_effectiveness: 1.0,
+                hit_substitute: false,
                 effects,
             };
         }
@@ -827,30 +1114,25 @@ fn calculate_damage_gen1(context: &DamageContext, damage_rolls: DamageRolls) -> 
                 blocked: false,
                 was_critical: false,
                 type_effectiveness: 1.0,
+                hit_substitute: false,
                 effects,
             }
         }
     };
 
-    // Gen 1 damage formula (same as poke-engine common_pkmn_damage_calc)
-    let mut damage = 2.0 * level;
-    damage = damage.floor() / 5.0;
-    damage = damage.floor() + 2.0;
-    damage = damage.floor() * base_power;
-    damage = damage * attack_stat / defense_stat;
-    damage = damage.floor() / 50.0;
-    damage = damage.floor() + 2.0;
-    let base_damage = damage;
+    // Gen 1 damage formula following official damage-calc exactly
+    // Base damage calculation: floor(floor((floor((2*Level)/5+2) * max(1,Attack) * BP) / max(1,Defense)) / 50)
+    let mut base_damage = (2.0 * level / 5.0).floor() + 2.0;
+    base_damage = (base_damage * attack_stat.max(1.0) * base_power / defense_stat.max(1.0)).floor() / 50.0;
+    base_damage = base_damage.floor();
 
-    // Apply Gen 1 critical hit modifier
-    let critical_modifier = if context.move_info.is_critical {
-        // Gen 1 critical hit formula: (2*level + 5) / (level + 5)
-        (2.0 * level + 5.0) / (level + 5.0)
-    } else {
-        1.0
-    };
-    let mut damage = base_damage * critical_modifier;
+    // Track critical hit effect
+    if context.move_info.is_critical {
+        effects.push(DamageEffect::Critical);
+    }
 
+    // Apply additional modifiers before +2
+    
     // Type effectiveness calculation (using Gen 1 type chart)
     let type_chart = TypeChart::new(1); // Gen 1 type chart
     let move_type =
@@ -864,13 +1146,13 @@ fn calculate_damage_gen1(context: &DamageContext, damage_rolls: DamageRolls) -> 
         defender_type1
     };
 
-    // Calculate type effectiveness against primary type
-    let mut type_effectiveness = type_chart.get_effectiveness(move_type, defender_type1);
-    // Calculate type effectiveness against secondary type if it exists
-    if defender_type2 != defender_type1 {
-        type_effectiveness *= type_chart.get_effectiveness(move_type, defender_type2);
-    }
-    damage *= type_effectiveness;
+    // Calculate type effectiveness against primary type  
+    let type1_effectiveness = type_chart.get_effectiveness(move_type, defender_type1);
+    let type2_effectiveness = if defender_type2 != defender_type1 {
+        type_chart.get_effectiveness(move_type, defender_type2)
+    } else {
+        1.0
+    };
 
     // STAB calculation
     let attacker_type1 =
@@ -881,36 +1163,54 @@ fn calculate_damage_gen1(context: &DamageContext, damage_rolls: DamageRolls) -> 
         attacker_type1
     };
 
-    let stab_multiplier = type_chart.calculate_stab_multiplier(
-        move_type,
-        (attacker_type1, attacker_type2),
-        None,  // No Tera type in Gen 1
-        false, // No Adaptability in Gen 1
-    );
-    damage *= stab_multiplier;
-    
+    let has_stab = move_type == attacker_type1 || move_type == attacker_type2;
 
-    // Gen 1 doesn't have weather effects on moves
-    // Gen 1 doesn't have terrain effects
+    // Add +2 to base damage (capped at 997)
+    base_damage = (base_damage.min(997.0) + 2.0);
 
-    // Status effects
-    if context.attacker.pokemon.status == crate::core::instructions::PokemonStatus::Burn
-        && context.move_info.category == crate::core::battle_state::MoveCategory::Physical
-    {
-        damage *= 0.5; // Burn halves physical attack
+    // Apply weather effects (Gen 1 has weather but limited)
+    if let crate::core::instructions::Weather::Sun = context.field.weather.condition {
+        if context.move_info.move_type.to_lowercase() == "fire" {
+            base_damage = (base_damage * 1.5).floor();
+            effects.push(DamageEffect::WeatherEffect { weather: context.field.weather.condition });
+        } else if context.move_info.move_type.to_lowercase() == "water" {
+            base_damage = (base_damage / 2.0).floor();
+            effects.push(DamageEffect::WeatherEffect { weather: context.field.weather.condition });
+        }
+    } else if let crate::core::instructions::Weather::Rain = context.field.weather.condition {
+        if context.move_info.move_type.to_lowercase() == "water" {
+            base_damage = (base_damage * 1.5).floor();
+            effects.push(DamageEffect::WeatherEffect { weather: context.field.weather.condition });
+        } else if context.move_info.move_type.to_lowercase() == "fire" {
+            base_damage = (base_damage / 2.0).floor();
+            effects.push(DamageEffect::WeatherEffect { weather: context.field.weather.condition });
+        }
     }
 
-    // Gen 1 doesn't have multi-target reduction in the same way
+    // Apply STAB
+    if has_stab {
+        base_damage = (base_damage * 1.5).floor();
+    }
 
-    // Apply damage roll using Gen 1 specific system
-    let base_damage_no_roll = damage.floor();
-    let final_damage = get_damage_for_roll(base_damage_no_roll, damage_rolls);
+    // Calculate combined type effectiveness
+    let mut type_effectiveness = type1_effectiveness;
+    if type2_effectiveness != type1_effectiveness {
+        type_effectiveness *= type2_effectiveness;
+    }
+
+    // Apply type effectiveness (Gen 1 applies each type separately with floor)
+    base_damage = (base_damage * type1_effectiveness).floor();
+    base_damage = (base_damage * type2_effectiveness).floor();
+
+    // Apply damage roll using Gen 1/2 specific system (217-255 range)
+    let final_damage = calculate_final_damage_gen12(base_damage, damage_rolls, crate::generation::Generation::Gen1);
 
     DamageResult {
         damage: final_damage,
         blocked: false,
         was_critical: context.move_info.is_critical,
         type_effectiveness,
+        hit_substitute: false,
         effects,
     }
 }
@@ -925,6 +1225,7 @@ fn calculate_damage_gen2(context: &DamageContext, damage_rolls: DamageRolls) -> 
             blocked: false,
             was_critical: false,
             type_effectiveness: 1.0,
+            hit_substitute: false,
             effects: vec![],
         };
     }
@@ -951,6 +1252,7 @@ fn calculate_damage_gen2(context: &DamageContext, damage_rolls: DamageRolls) -> 
                 blocked: false,
                 was_critical: false,
                 type_effectiveness: 1.0,
+                hit_substitute: false,
                 effects: vec![],
             };
         }
@@ -971,30 +1273,361 @@ fn calculate_damage_gen2(context: &DamageContext, damage_rolls: DamageRolls) -> 
     };
 
 
-    // Gen 2 damage formula: ((((2 * level)/5 + 2) * power * A/D) / 50 * item * critical + 2) * other modifiers
-    // Step by step with proper floor operations
-    let mut damage = 2.0 * level;
-    damage = damage.floor() / 5.0;
-    damage = damage.floor() + 2.0;
-    damage = damage.floor() * base_power;
-    damage = damage * attack_stat / defense_stat;
-    damage = damage.floor() / 50.0;
-    damage = damage.floor();
-    
-    // Item modifier (placeholder - we'll assume 1.0 for now)
-    // damage *= item_modifier;
-    
+    // Gen 2 damage formula following official damage-calc exactly
+    // Base damage calculation: floor(floor((floor((2*Level)/5+2) * max(1,Attack) * BP) / max(1,Defense)) / 50)
+    let mut base_damage = (2.0 * level / 5.0).floor() + 2.0;
+    base_damage = (base_damage * attack_stat.max(1.0) * base_power / defense_stat.max(1.0)).floor() / 50.0;
+    base_damage = base_damage.floor();
+
+    // Apply item modifier if any (type-boosting items)
+    if let Some(item) = context.attacker.pokemon.item.as_ref() {
+        let item_multiplier = get_gen2_item_modifier(item, &context.move_info.move_type);
+        if item_multiplier != 1.0 {
+            base_damage *= item_multiplier;
+            // Note: ItemBoost effect would need to be added to DamageEffect enum
+        }
+    }
+
     // Gen 2 critical hit multiplier is 2.0x and applied BEFORE the +2
     if context.move_info.is_critical {
-        damage *= 2.0;
+        base_damage *= 2.0;
+        effects.push(DamageEffect::Critical);
     }
     
-    damage = damage.floor() + 2.0;
+    // Add +2 to base damage
+    base_damage = base_damage + 2.0;
 
-    // Type effectiveness calculation
+    // Type effectiveness calculation (using Gen 2 type chart)
     use crate::engine::combat::type_effectiveness::{TypeChart, PokemonType};
     use std::str::FromStr;
     
+    let type_chart = TypeChart::new(2); // Gen 2 type chart
+    let move_type =
+        PokemonType::from_str(&context.move_info.move_type).unwrap_or(PokemonType::Normal);
+
+    let defender_type1 =
+        PokemonType::from_str(&context.defender.pokemon.types[0]).unwrap_or(PokemonType::Normal);
+    let defender_type2 = if context.defender.pokemon.types.len() > 1 {
+        PokemonType::from_str(&context.defender.pokemon.types[1]).unwrap_or(defender_type1)
+    } else {
+        defender_type1
+    };
+
+    // Calculate combined type effectiveness
+    let mut type_effectiveness = type_chart.get_effectiveness(move_type, defender_type1);
+    if defender_type2 != defender_type1 {
+        type_effectiveness *= type_chart.get_effectiveness(move_type, defender_type2);
+    }
+
+    // STAB calculation
+    let attacker_type1 =
+        PokemonType::from_str(&context.attacker.pokemon.types[0]).unwrap_or(PokemonType::Normal);
+    let attacker_type2 = if context.attacker.pokemon.types.len() > 1 {
+        PokemonType::from_str(&context.attacker.pokemon.types[1]).unwrap_or(attacker_type1)
+    } else {
+        attacker_type1
+    };
+
+    let has_stab = move_type == attacker_type1 || move_type == attacker_type2;
+
+    // Apply weather effects (Gen 2 introduced weather)
+    if let crate::core::instructions::Weather::Sun = context.field.weather.condition {
+        if context.move_info.move_type.to_lowercase() == "fire" {
+            base_damage = (base_damage * 1.5).floor();
+            effects.push(DamageEffect::WeatherEffect { weather: context.field.weather.condition });
+        } else if context.move_info.move_type.to_lowercase() == "water" {
+            base_damage = (base_damage / 2.0).floor();
+            effects.push(DamageEffect::WeatherEffect { weather: context.field.weather.condition });
+        }
+    } else if let crate::core::instructions::Weather::Rain = context.field.weather.condition {
+        if context.move_info.move_type.to_lowercase() == "water" {
+            base_damage = (base_damage * 1.5).floor();
+            effects.push(DamageEffect::WeatherEffect { weather: context.field.weather.condition });
+        } else if context.move_info.move_type.to_lowercase() == "fire" {
+            base_damage = (base_damage / 2.0).floor();
+            effects.push(DamageEffect::WeatherEffect { weather: context.field.weather.condition });
+        }
+    }
+
+    // Apply STAB
+    if has_stab {
+        base_damage = (base_damage * 1.5).floor();
+    }
+
+    // Apply type effectiveness (Gen 2 applies combined effectiveness)
+    base_damage = (base_damage * type_effectiveness).floor();
+
+    // Status effects (Gen 2 has burn)
+    if context.attacker.pokemon.status == crate::core::instructions::PokemonStatus::Burn
+        && context.move_info.category == crate::core::battle_state::MoveCategory::Physical
+    {
+        base_damage = (base_damage * 0.5).floor(); // Burn halves physical attack
+    }
+
+    // Apply damage roll using Gen 1/2 specific system (217-255 range)
+    let final_damage = calculate_final_damage_gen12(base_damage, damage_rolls, crate::generation::Generation::Gen2);
+
+    DamageResult {
+        damage: final_damage,
+        blocked: false,
+        was_critical: context.move_info.is_critical,
+        type_effectiveness,
+        hit_substitute: false,
+        effects,
+    }
+}
+
+/// Gen 3 damage calculation using focused DamageContext
+/// Gen 3 uses 85-100% damage rolls with separate type effectiveness applications
+fn calculate_damage_gen3(context: &DamageContext, damage_rolls: DamageRolls) -> DamageResult {
+    // Check if move deals damage at all
+    if context.move_info.base_power == 0 {
+        return DamageResult {
+            damage: 0,
+            blocked: false,
+            was_critical: false,
+            type_effectiveness: 1.0,
+            hit_substitute: false,
+            effects: vec![],
+        };
+    }
+
+    let mut effects = Vec::new();
+    let base_power = context.move_info.base_power as f32;
+    let level = context.attacker.pokemon.level as f32;
+
+    // Get effective stats with Gen 3 critical hit considerations
+    let attack_stat = match context.move_info.category {
+        crate::core::battle_state::MoveCategory::Physical => context
+            .attacker
+            .effective_stats
+            .get_effective_stat_with_crit_gen(crate::core::instructions::Stat::Attack, context.move_info.is_critical, true, crate::generation::Generation::Gen3)
+            as f32,
+        crate::core::battle_state::MoveCategory::Special => context
+            .attacker
+            .effective_stats
+            .get_effective_stat_with_crit_gen(crate::core::instructions::Stat::SpecialAttack, context.move_info.is_critical, true, crate::generation::Generation::Gen3)
+            as f32,
+        crate::core::battle_state::MoveCategory::Status => {
+            return DamageResult {
+                damage: 0,
+                blocked: false,
+                was_critical: false,
+                type_effectiveness: 1.0,
+                hit_substitute: false,
+                effects: vec![],
+            };
+        }
+    };
+
+    let defense_stat = match context.move_info.category {
+        crate::core::battle_state::MoveCategory::Physical => context
+            .defender
+            .effective_stats
+            .get_effective_stat_with_crit_gen(crate::core::instructions::Stat::Defense, context.move_info.is_critical, false, crate::generation::Generation::Gen3)
+            as f32,
+        crate::core::battle_state::MoveCategory::Special => context
+            .defender
+            .effective_stats
+            .get_effective_stat_with_crit_gen(crate::core::instructions::Stat::SpecialDefense, context.move_info.is_critical, false, crate::generation::Generation::Gen3)
+            as f32,
+        crate::core::battle_state::MoveCategory::Status => 1.0,
+    };
+
+    // Gen 3 base damage formula: floor(floor((floor((2*Level)/5+2) * Attack * BP) / Defense) / 50)
+    let mut base_damage = (2.0 * level / 5.0).floor() + 2.0;
+    base_damage = ((base_damage * attack_stat * base_power).floor() / defense_stat).floor() / 50.0;
+    base_damage = base_damage.floor();
+
+    // Apply final modifiers (similar to modern but different order)
+    
+    // Critical hit (Gen 3+ uses 2x multiplier applied at end)
+    let critical_modifier = if context.move_info.is_critical {
+        effects.push(DamageEffect::Critical);
+        2.0
+    } else {
+        1.0
+    };
+
+    // Weather effects
+    let mut weather_multiplier = 1.0;
+    if let crate::core::instructions::Weather::Sun = context.field.weather.condition {
+        match context.move_info.move_type.to_lowercase().as_str() {
+            "fire" => {
+                weather_multiplier = 1.5;
+                effects.push(DamageEffect::WeatherEffect {
+                    weather: context.field.weather.condition,
+                });
+            }
+            "water" => {
+                weather_multiplier = 0.5;
+                effects.push(DamageEffect::WeatherEffect {
+                    weather: context.field.weather.condition,
+                });
+            }
+            _ => {}
+        }
+    } else if let crate::core::instructions::Weather::Rain = context.field.weather.condition {
+        match context.move_info.move_type.to_lowercase().as_str() {
+            "water" => {
+                weather_multiplier = 1.5;
+                effects.push(DamageEffect::WeatherEffect {
+                    weather: context.field.weather.condition,
+                });
+            }
+            "fire" => {
+                weather_multiplier = 0.5;
+                effects.push(DamageEffect::WeatherEffect {
+                    weather: context.field.weather.condition,
+                });
+            }
+            _ => {}
+        }
+    }
+
+    // Apply all modifiers before +2
+    base_damage = base_damage * weather_multiplier;
+
+    // Flash Fire boost
+    // TODO: Add Flash Fire detection
+    
+    // Add +2
+    base_damage = base_damage + 2.0;
+
+    // Apply critical hit
+    base_damage = base_damage * critical_modifier;
+
+    // Apply STAB
+    let type_chart = TypeChart::new(context.format.format.generation.number());
+    let move_type =
+        PokemonType::from_str(&context.move_info.move_type).unwrap_or(PokemonType::Normal);
+
+    let attacker_type1 =
+        PokemonType::from_str(&context.attacker.pokemon.types[0]).unwrap_or(PokemonType::Normal);
+    let attacker_type2 = if context.attacker.pokemon.types.len() > 1 {
+        PokemonType::from_str(&context.attacker.pokemon.types[1]).unwrap_or(attacker_type1)
+    } else {
+        attacker_type1
+    };
+
+    let stab_multiplier = type_chart.calculate_stab_multiplier(
+        move_type,
+        (attacker_type1, attacker_type2),
+        None,  // No Tera type in Gen 3
+        false, // Adaptability check would go here
+    );
+
+    base_damage = (base_damage * stab_multiplier).floor();
+
+    // Type effectiveness (calculated and applied separately in Gen 3)
+    let defender_type1 =
+        PokemonType::from_str(&context.defender.pokemon.types[0]).unwrap_or(PokemonType::Normal);
+    let defender_type2 = if context.defender.pokemon.types.len() > 1 {
+        PokemonType::from_str(&context.defender.pokemon.types[1]).unwrap_or(defender_type1)
+    } else {
+        defender_type1
+    };
+
+    let type1_effectiveness = type_chart.get_effectiveness(move_type, defender_type1);
+    let type2_effectiveness = if defender_type2 != defender_type1 {
+        type_chart.get_effectiveness(move_type, defender_type2)
+    } else {
+        1.0
+    };
+
+    // Apply type effectiveness separately with floor (Gen 3 specific)
+    base_damage = (base_damage * type1_effectiveness).floor();
+    base_damage = (base_damage * type2_effectiveness).floor();
+
+    let total_type_effectiveness = type1_effectiveness * type2_effectiveness;
+
+    // Apply damage roll using Gen 3 specific system (85-100 range)
+    let final_damage = calculate_final_damage_gen3(base_damage, damage_rolls, 1.0); // Type effectiveness already applied
+
+    DamageResult {
+        damage: final_damage,
+        blocked: false,
+        was_critical: context.move_info.is_critical,
+        type_effectiveness: total_type_effectiveness,
+        hit_substitute: false,
+        effects,
+    }
+}
+
+/// Gen 4 damage calculation using focused DamageContext
+/// Gen 4 uses 16 damage rolls with floor at each modifier step
+fn calculate_damage_gen4(context: &DamageContext, damage_rolls: DamageRolls) -> DamageResult {
+    // Check if move deals damage at all
+    if context.move_info.base_power == 0 {
+        return DamageResult {
+            damage: 0,
+            blocked: false,
+            was_critical: false,
+            type_effectiveness: 1.0,
+            hit_substitute: false,
+            effects: vec![],
+        };
+    }
+
+    let mut effects = Vec::new();
+    let base_power = context.move_info.base_power as f32;
+    let level = context.attacker.pokemon.level as f32;
+
+    // Get effective stats with Gen 4 critical hit considerations
+    let attack_stat = match context.move_info.category {
+        crate::core::battle_state::MoveCategory::Physical => context
+            .attacker
+            .effective_stats
+            .get_effective_stat_with_crit_gen(crate::core::instructions::Stat::Attack, context.move_info.is_critical, true, crate::generation::Generation::Gen4)
+            as f32,
+        crate::core::battle_state::MoveCategory::Special => context
+            .attacker
+            .effective_stats
+            .get_effective_stat_with_crit_gen(crate::core::instructions::Stat::SpecialAttack, context.move_info.is_critical, true, crate::generation::Generation::Gen4)
+            as f32,
+        crate::core::battle_state::MoveCategory::Status => {
+            return DamageResult {
+                damage: 0,
+                blocked: false,
+                was_critical: false,
+                type_effectiveness: 1.0,
+                hit_substitute: false,
+                effects: vec![],
+            };
+        }
+    };
+
+    let defense_stat = match context.move_info.category {
+        crate::core::battle_state::MoveCategory::Physical => context
+            .defender
+            .effective_stats
+            .get_effective_stat_with_crit_gen(crate::core::instructions::Stat::Defense, context.move_info.is_critical, false, crate::generation::Generation::Gen4)
+            as f32,
+        crate::core::battle_state::MoveCategory::Special => context
+            .defender
+            .effective_stats
+            .get_effective_stat_with_crit_gen(crate::core::instructions::Stat::SpecialDefense, context.move_info.is_critical, false, crate::generation::Generation::Gen4)
+            as f32,
+        crate::core::battle_state::MoveCategory::Status => 1.0,
+    };
+
+    // Gen 4 base damage formula following official damage-calc exactly
+    let mut base_damage = ((2.0 * level / 5.0).floor() + 2.0) * base_power * attack_stat / 50.0;
+    base_damage = (base_damage / defense_stat).floor();
+
+    // Apply burn status (before other modifiers)
+    if context.attacker.pokemon.status == crate::core::instructions::PokemonStatus::Burn
+        && context.move_info.category == crate::core::battle_state::MoveCategory::Physical
+        && context.attacker.pokemon.ability != "guts"
+    {
+        base_damage = (base_damage * 0.5).floor();
+    }
+
+    // Apply final modifiers (critical hit, weather, etc.)
+    
+    // TODO: Add other final modifiers like weather, Flash Fire, etc.
+    
+    // Get type effectiveness data
     let type_chart = TypeChart::new(context.format.format.generation.number());
     let move_type =
         PokemonType::from_str(&context.move_info.move_type).unwrap_or(PokemonType::Normal);
@@ -1007,12 +1640,12 @@ fn calculate_damage_gen2(context: &DamageContext, damage_rolls: DamageRolls) -> 
         defender_type1
     };
 
-    // Calculate type effectiveness
-    let mut type_effectiveness = type_chart.get_effectiveness(move_type, defender_type1);
-    if defender_type2 != defender_type1 {
-        type_effectiveness *= type_chart.get_effectiveness(move_type, defender_type2);
-    }
-    damage *= type_effectiveness;
+    let type1_effectiveness = type_chart.get_effectiveness(move_type, defender_type1);
+    let type2_effectiveness = if defender_type2 != defender_type1 {
+        type_chart.get_effectiveness(move_type, defender_type2)
+    } else {
+        1.0
+    };
 
     // STAB calculation
     let attacker_type1 =
@@ -1023,46 +1656,76 @@ fn calculate_damage_gen2(context: &DamageContext, damage_rolls: DamageRolls) -> 
         attacker_type1
     };
 
-    if move_type == attacker_type1 || move_type == attacker_type2 {
-        damage *= 1.5; // STAB multiplier
-    }
+    let stab_mod = if move_type == attacker_type1 || move_type == attacker_type2 {
+        if context.attacker.pokemon.ability == "adaptability" {
+            2.0
+        } else {
+            1.5
+        }
+    } else {
+        1.0
+    };
 
-    // Status effects (Gen 2 has burn)
-    if context.attacker.pokemon.status == crate::core::instructions::PokemonStatus::Burn
-        && context.move_info.category == crate::core::battle_state::MoveCategory::Physical
-    {
-        damage *= 0.5; // Burn halves physical attack
-    }
+    // Gen 4 specific modifiers (following damage-calc gen4.ts exactly)
+    let filter_mod = if (context.defender.pokemon.ability == "filter" || context.defender.pokemon.ability == "solidrock") 
+        && (type1_effectiveness * type2_effectiveness) > 1.0 {
+        0.75
+    } else {
+        1.0
+    };
 
-    // Apply damage roll
-    let base_damage_no_roll = damage.floor();
-    let final_damage = get_damage_for_roll(base_damage_no_roll, damage_rolls);
+    let expert_belt_mod = if let Some(ref item) = context.attacker.pokemon.item {
+        if item.to_lowercase() == "expertbelt" && (type1_effectiveness * type2_effectiveness) > 1.0 {
+            1.2
+        } else {
+            1.0
+        }
+    } else {
+        1.0
+    };
+
+    let tinted_lens_mod = if context.attacker.pokemon.ability == "tintedlens" 
+        && (type1_effectiveness * type2_effectiveness) < 1.0 {
+        2.0
+    } else {
+        1.0
+    };
+
+    // Berry resistance (simplified)
+    let berry_mod = 1.0; // TODO: Implement berry resistance
+
+    let total_type_effectiveness = type1_effectiveness * type2_effectiveness;
+
+    // Apply damage roll using Gen 4 specific system (16 rolls with floor at each step)
+    let final_damage = calculate_final_damage_gen4(
+        base_damage,
+        damage_rolls,
+        stab_mod,
+        type1_effectiveness,
+        type2_effectiveness,
+        filter_mod,
+        expert_belt_mod,
+        tinted_lens_mod,
+        berry_mod,
+    );
+
+    if context.move_info.is_critical {
+        effects.push(DamageEffect::Critical);
+    }
 
     DamageResult {
         damage: final_damage,
         blocked: false,
         was_critical: context.move_info.is_critical,
-        type_effectiveness,
+        type_effectiveness: total_type_effectiveness,
+        hit_substitute: false,
         effects,
     }
 }
 
-/// Modern damage calculation using focused DamageContext
-/// This replaces the legacy calculate_damage function that requires the entire State
-pub fn calculate_damage_modern(context: &DamageContext, damage_rolls: DamageRolls) -> DamageResult {
-    // Use generation-specific damage calculation
-    match context.format.format.generation {
-        crate::generation::Generation::Gen1 => {
-            return calculate_damage_gen1(context, damage_rolls);
-        }
-        crate::generation::Generation::Gen2 => {
-            return calculate_damage_gen2(context, damage_rolls);
-        }
-        _ => {
-            // Continue with modern calculation for Gen 3+
-        }
-    }
-
+/// Gen 5-6 damage calculation using focused DamageContext
+/// Gen 5-6 uses getFinalDamage but without pokeRound
+fn calculate_damage_gen56(context: &DamageContext, damage_rolls: DamageRolls) -> DamageResult {
     // Check if move deals damage at all
     if context.move_info.base_power == 0 {
         return DamageResult {
@@ -1070,6 +1733,150 @@ pub fn calculate_damage_modern(context: &DamageContext, damage_rolls: DamageRoll
             blocked: false,
             was_critical: false,
             type_effectiveness: 1.0,
+            hit_substitute: false,
+            effects: vec![],
+        };
+    }
+
+    let mut effects = Vec::new();
+    let base_power = context.move_info.base_power as f32;
+    let level = context.attacker.pokemon.level as f32;
+
+    // Get effective stats with critical hit considerations
+    let attack_stat = match context.move_info.category {
+        crate::core::battle_state::MoveCategory::Physical => context
+            .attacker
+            .effective_stats
+            .get_effective_stat_with_crit_gen(crate::core::instructions::Stat::Attack, context.move_info.is_critical, true, context.format.format.generation)
+            as f32,
+        crate::core::battle_state::MoveCategory::Special => context
+            .attacker
+            .effective_stats
+            .get_effective_stat_with_crit_gen(crate::core::instructions::Stat::SpecialAttack, context.move_info.is_critical, true, context.format.format.generation)
+            as f32,
+        crate::core::battle_state::MoveCategory::Status => {
+            return DamageResult {
+                damage: 0,
+                blocked: false,
+                was_critical: false,
+                type_effectiveness: 1.0,
+                hit_substitute: false,
+                effects: vec![],
+            };
+        }
+    };
+
+    let defense_stat = match context.move_info.category {
+        crate::core::battle_state::MoveCategory::Physical => context
+            .defender
+            .effective_stats
+            .get_effective_stat_with_crit_gen(crate::core::instructions::Stat::Defense, context.move_info.is_critical, false, context.format.format.generation)
+            as f32,
+        crate::core::battle_state::MoveCategory::Special => context
+            .defender
+            .effective_stats
+            .get_effective_stat_with_crit_gen(crate::core::instructions::Stat::SpecialDefense, context.move_info.is_critical, false, context.format.format.generation)
+            as f32,
+        crate::core::battle_state::MoveCategory::Status => 1.0,
+    };
+
+    // Gen 5-6 base damage formula following getBaseDamage exactly
+    let mut base_damage = (2.0 * level / 5.0).floor() + 2.0;
+    base_damage = (base_damage * base_power * attack_stat / defense_stat).floor() / 50.0;
+    base_damage = base_damage.floor();
+
+    // Apply burn status
+    let is_burned = context.attacker.pokemon.status == crate::core::instructions::PokemonStatus::Burn
+        && context.move_info.category == crate::core::battle_state::MoveCategory::Physical
+        && context.attacker.pokemon.ability != "guts";
+
+    // Apply final modifiers before getFinalDamage
+    // TODO: Add weather, Flash Fire, etc.
+
+    // Add +2 and apply critical hit
+    base_damage = base_damage + 2.0;
+    if context.move_info.is_critical {
+        base_damage *= if context.format.format.generation.number() >= 6 { 1.5 } else { 2.0 };
+        effects.push(DamageEffect::Critical);
+    }
+
+    // Apply Life Orb and other final modifiers
+    // TODO: Add Life Orb check
+
+    // Get type effectiveness data
+    let type_chart = TypeChart::new(context.format.format.generation.number());
+    let move_type =
+        PokemonType::from_str(&context.move_info.move_type).unwrap_or(PokemonType::Normal);
+
+    let defender_type1 =
+        PokemonType::from_str(&context.defender.pokemon.types[0]).unwrap_or(PokemonType::Normal);
+    let defender_type2 = if context.defender.pokemon.types.len() > 1 {
+        PokemonType::from_str(&context.defender.pokemon.types[1]).unwrap_or(defender_type1)
+    } else {
+        defender_type1
+    };
+
+    let type1_effectiveness = type_chart.get_effectiveness(move_type, defender_type1);
+    let type2_effectiveness = if defender_type2 != defender_type1 {
+        type_chart.get_effectiveness(move_type, defender_type2)
+    } else {
+        1.0
+    };
+    let total_type_effectiveness = type1_effectiveness * type2_effectiveness;
+
+    // STAB calculation
+    let attacker_type1 =
+        PokemonType::from_str(&context.attacker.pokemon.types[0]).unwrap_or(PokemonType::Normal);
+    let attacker_type2 = if context.attacker.pokemon.types.len() > 1 {
+        PokemonType::from_str(&context.attacker.pokemon.types[1]).unwrap_or(attacker_type1)
+    } else {
+        attacker_type1
+    };
+
+    let stab_multiplier = type_chart.calculate_stab_multiplier(
+        move_type,
+        (attacker_type1, attacker_type2),
+        None,  // No Tera type in Gen 5-6
+        context.attacker.pokemon.ability == "adaptability",
+    );
+
+    // Convert to 4096-based multiplier for getFinalDamage
+    let stab_mod_4096 = (stab_multiplier * 4096.0) as u32;
+
+    // TODO: Calculate final_mod (1.3x for Life Orb, etc.)
+    let final_mod = 4096; // No modifiers for now
+
+    // Apply damage roll using Gen 5-6 specific system (getFinalDamage without pokeRound)
+    let final_damage = calculate_final_damage_gen56(
+        base_damage,
+        damage_rolls,
+        total_type_effectiveness,
+        is_burned,
+        stab_mod_4096,
+        final_mod,
+    );
+
+    DamageResult {
+        damage: final_damage,
+        blocked: false,
+        was_critical: context.move_info.is_critical,
+        type_effectiveness: total_type_effectiveness,
+        hit_substitute: false,
+        effects,
+    }
+}
+
+/// Gen 7-9 damage calculation using modern getFinalDamage with pokeRound
+/// This is the current working implementation
+fn calculate_damage_modern_gen789(context: &DamageContext, damage_rolls: DamageRolls) -> DamageResult {
+    // Check if move deals damage at all
+    if context.move_info.base_power == 0 {
+        return DamageResult {
+            damage: 0,
+            blocked: false,
+            was_critical: false,
+            type_effectiveness: 1.0,
+            hit_substitute: false,
             effects: vec![],
         };
     }
@@ -1077,8 +1884,59 @@ pub fn calculate_damage_modern(context: &DamageContext, damage_rolls: DamageRoll
     let mut effects = Vec::new();
     let base_power = context.move_info.base_power as f32;
 
-    // Early immunity checks would go here
-    // (These would be extracted from ability/item logic)
+    // Early immunity checks 
+    
+    // Check for Levitate immunity to Ground-type moves
+    if context.move_info.move_type.to_lowercase() == "ground" && 
+       context.defender.pokemon.ability.to_lowercase() == "levitate" {
+        return DamageResult {
+            damage: 0,
+            blocked: true,
+            was_critical: false,
+            type_effectiveness: 0.0,
+            hit_substitute: false,
+            effects: vec![],
+        };
+    }
+    
+    // Check for Flash Fire immunity to Fire-type moves (absorbs and boosts)
+    if context.move_info.move_type.to_lowercase() == "fire" && 
+       context.defender.pokemon.ability.to_lowercase() == "flashfire" {
+        return DamageResult {
+            damage: 0,
+            blocked: true,
+            was_critical: false,
+            type_effectiveness: 0.0,
+            hit_substitute: false,
+            effects: vec![],
+        };
+    }
+    
+    // Check for Water Absorb immunity to Water-type moves
+    if context.move_info.move_type.to_lowercase() == "water" && 
+       context.defender.pokemon.ability.to_lowercase() == "waterabsorb" {
+        return DamageResult {
+            damage: 0,
+            blocked: true,
+            was_critical: false,
+            type_effectiveness: 0.0,
+            hit_substitute: false,
+            effects: vec![],
+        };
+    }
+    
+    // Check for Volt Absorb immunity to Electric-type moves  
+    if context.move_info.move_type.to_lowercase() == "electric" && 
+       context.defender.pokemon.ability.to_lowercase() == "voltabsorb" {
+        return DamageResult {
+            damage: 0,
+            blocked: true,
+            was_critical: false,
+            type_effectiveness: 0.0,
+            hit_substitute: false,
+            effects: vec![],
+        };
+    }
 
     // Exact poke-engine damage formula with floor operations at each step
     let level = context.attacker.pokemon.level as f32;
@@ -1101,10 +1959,20 @@ pub fn calculate_damage_modern(context: &DamageContext, damage_rolls: DamageRoll
                 blocked: false,
                 was_critical: false,
                 type_effectiveness: 1.0,
+                hit_substitute: false,
                 effects,
             };
         }
     };
+
+    // Apply ability modifiers to attack stat
+    let mut modified_attack_stat = attack_stat;
+    
+    // Apply Guts ability: 1.5x attack when statused
+    if context.attacker.pokemon.ability.to_lowercase() == "guts" 
+        && context.attacker.pokemon.status != crate::core::instructions::PokemonStatus::None {
+        modified_attack_stat *= 1.5;
+    }
 
     // Get effective defense stat (with critical hit consideration)
     let defense_stat = match context.move_info.category {
@@ -1124,6 +1992,7 @@ pub fn calculate_damage_modern(context: &DamageContext, damage_rolls: DamageRoll
                 blocked: false,
                 was_critical: false,
                 type_effectiveness: 1.0,
+                hit_substitute: false,
                 effects,
             }
         }
@@ -1131,16 +2000,14 @@ pub fn calculate_damage_modern(context: &DamageContext, damage_rolls: DamageRoll
 
     // Calculate base damage using exact poke-engine formula with floor operations
 
-
     let mut damage = 2.0 * level;
     damage = damage.floor() / 5.0;
     damage = damage.floor() + 2.0;
     damage = damage.floor() * base_power;
-    damage = damage * attack_stat / defense_stat;
+    damage = damage * modified_attack_stat / defense_stat;
     damage = damage.floor() / 50.0;
     damage = damage.floor() + 2.0;
     let base_damage = damage;
-
 
     // Apply critical hit modifier (Gen 2+ only, Gen 1 handled separately)
     let critical_modifier = if context.move_info.is_critical {
@@ -1150,7 +2017,7 @@ pub fn calculate_damage_modern(context: &DamageContext, damage_rolls: DamageRoll
     } else {
         1.0
     };
-    let mut damage = base_damage * critical_modifier;
+    let damage = base_damage * critical_modifier;
 
     // Type effectiveness calculation
     let type_chart = TypeChart::new(context.format.format.generation.number());
@@ -1171,7 +2038,19 @@ pub fn calculate_damage_modern(context: &DamageContext, damage_rolls: DamageRoll
     if defender_type2 != defender_type1 {
         type_effectiveness *= type_chart.get_effectiveness(move_type, defender_type2);
     }
-    damage *= type_effectiveness;
+    
+    // Handle Mind's Eye ability: allows Normal and Fighting moves to hit Ghost types
+    if context.attacker.pokemon.ability.as_str() == "Mind's Eye" || context.attacker.pokemon.ability.as_str() == "mindseye" {
+        if (move_type == PokemonType::Normal || move_type == PokemonType::Fighting) {
+            // Check if any of the defender's types is Ghost
+            if defender_type1 == PokemonType::Ghost || defender_type2 == PokemonType::Ghost {
+                // If the move would normally be ineffective due to Ghost immunity, make it neutral (1.0x)
+                if type_effectiveness == 0.0 {
+                    type_effectiveness = 1.0;
+                }
+            }
+        }
+    }
 
     // STAB calculation
     let attacker_type1 =
@@ -1188,19 +2067,19 @@ pub fn calculate_damage_modern(context: &DamageContext, damage_rolls: DamageRoll
         None,  // Tera type support would go here
         false, // Adaptability check would go here
     );
-    damage *= stab_multiplier;
 
     // Weather effects
+    let mut weather_multiplier = 1.0;
     if let crate::core::instructions::Weather::Sun = context.field.weather.condition {
         match context.move_info.move_type.to_lowercase().as_str() {
             "fire" => {
-                damage *= 1.5;
+                weather_multiplier = 1.5;
                 effects.push(DamageEffect::WeatherEffect {
                     weather: context.field.weather.condition,
                 });
             }
             "water" => {
-                damage *= 0.5;
+                weather_multiplier = 0.5;
                 effects.push(DamageEffect::WeatherEffect {
                     weather: context.field.weather.condition,
                 });
@@ -1210,13 +2089,13 @@ pub fn calculate_damage_modern(context: &DamageContext, damage_rolls: DamageRoll
     } else if let crate::core::instructions::Weather::Rain = context.field.weather.condition {
         match context.move_info.move_type.to_lowercase().as_str() {
             "water" => {
-                damage *= 1.5;
+                weather_multiplier = 1.5;
                 effects.push(DamageEffect::WeatherEffect {
                     weather: context.field.weather.condition,
                 });
             }
             "fire" => {
-                damage *= 0.5;
+                weather_multiplier = 0.5;
                 effects.push(DamageEffect::WeatherEffect {
                     weather: context.field.weather.condition,
                 });
@@ -1225,30 +2104,80 @@ pub fn calculate_damage_modern(context: &DamageContext, damage_rolls: DamageRoll
         }
     }
 
-    // Status effects
-    if context.attacker.pokemon.status == crate::core::instructions::PokemonStatus::Burn
+    // Terrain effects (Gen 7+)
+    let generation_mechanics = crate::generation::GenerationMechanics::new(context.format.format.generation);
+    let terrain_multiplier = get_terrain_damage_modifier(
+        &context.field.terrain.condition,
+        &context.move_info.move_type,
+        &context.attacker.pokemon,
+        &context.defender.pokemon,
+        &generation_mechanics,
+    );
+
+    // Burn status effect (Guts ability prevents burn's attack reduction)
+    let is_burned = context.attacker.pokemon.status == crate::core::instructions::PokemonStatus::Burn
         && context.move_info.category == crate::core::battle_state::MoveCategory::Physical
-    {
-        damage *= 0.5; // Burn halves physical attack
-    }
+        && context.attacker.pokemon.ability.to_lowercase() != "guts";
 
     // Multi-target reduction
-    if context.format.target_count > 1 {
-        damage *= 0.75; // 25% reduction for spread moves
-    }
+    let spread_multiplier = if context.format.target_count > 1 {
+        0.75 // 25% reduction for spread moves
+    } else {
+        1.0
+    };
 
-    // Apply final damage roll using Pokemon's actual 16-roll system
-    // The damage before roll should be floored first, then the roll applied
-    let base_damage_no_roll = damage.floor();
-    let final_damage = get_damage_for_roll(base_damage_no_roll, damage_rolls);
+    // Final damage multiplier (combining all remaining modifiers except damage roll)
+    let final_multiplier = spread_multiplier * weather_multiplier * terrain_multiplier;
 
+    // Apply final damage roll using Pokemon's actual damage calculation sequence
+    // This follows the exact sequence from damage-calc getFinalDamage function
+    // Convert STAB multiplier to 4096-based value for damage calc compatibility
+    let stab_mod_4096 = (stab_multiplier * 4096.0) as u32;
+    let final_mod_4096 = (final_multiplier * 4096.0) as u32;
+    
+    let final_damage = calculate_final_damage_roll(
+        damage,
+        damage_rolls,
+        type_effectiveness,
+        is_burned,
+        stab_mod_4096,
+        final_mod_4096,
+    );
 
     DamageResult {
         damage: final_damage,
         blocked: false,
         was_critical: context.move_info.is_critical,
         type_effectiveness,
+        hit_substitute: false,
         effects,
+    }
+}
+
+/// Modern damage calculation using focused DamageContext
+/// This replaces the legacy calculate_damage function that requires the entire State
+pub fn calculate_damage_modern(context: &DamageContext, damage_rolls: DamageRolls) -> DamageResult {
+    // Use generation-specific damage calculation
+    match context.format.format.generation {
+        crate::generation::Generation::Gen1 => {
+            return calculate_damage_gen1(context, damage_rolls);
+        }
+        crate::generation::Generation::Gen2 => {
+            return calculate_damage_gen2(context, damage_rolls);
+        }
+        crate::generation::Generation::Gen3 => {
+            return calculate_damage_gen3(context, damage_rolls);
+        }
+        crate::generation::Generation::Gen4 => {
+            return calculate_damage_gen4(context, damage_rolls);
+        }
+        crate::generation::Generation::Gen5 | crate::generation::Generation::Gen6 => {
+            return calculate_damage_gen56(context, damage_rolls);
+        }
+        _ => {
+            // Gen 7-9 calculation (modern getFinalDamage with pokeRound)
+            return calculate_damage_modern_gen789(context, damage_rolls);
+        }
     }
 }
 

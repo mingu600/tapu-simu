@@ -103,135 +103,58 @@ impl MoveContext {
 // Re-export all move effect functions from their respective modules
 
 // Status effect moves
-pub mod status_effects;
-pub use status_effects::*;
+pub mod status;
+pub use status::status_effects::*;
+pub use status::stat_modifying::*;
+pub use status::healing::*;
 
-// Stat modification moves  
-pub mod stat_modifying;
-pub use stat_modifying::*;
+// Field effect moves
+pub mod field;
+pub use field::weather::*;
+pub use field::screens::*;
+pub use field::hazards::*;
+pub use field::hazard_removal::*;
 
-// Healing moves
-pub mod healing;
-pub use healing::*;
+// Damage moves
+pub mod damage;
+pub use damage::multi_hit::*;
+pub use damage::variable_power::*;
+pub use damage::recoil::*;
+pub use damage::drain::*;
 
-// Recoil moves
-pub mod recoil;
-pub use recoil::*;
+// Special moves
+pub mod special;
+pub use special::protection::*;
 
-// Drain moves
-pub mod drain;
-pub use drain::*;
+// Import remaining modules following the directory structure
+pub use special::complex::*;
+pub use special::substitute::*;
+pub use special::priority::*;
+pub use special::counter::*;
+pub use special::two_turn::*;
+pub use special::type_changing::*;
+pub use special::type_removal::*;
+pub use special::utility::*;
+pub use damage::fixed_damage::*;
+pub use damage::self_destruct::*;
+pub use damage::self_damage::*;
+pub use field::field_manipulation::*;
+pub use field::terrain_dependent::*;
+pub use field::weather_accuracy::*;
+pub use field::advanced_hazards::*;
+pub use status::item_interaction::*;
+pub use special::form_dependent::*;
 
-// Protection moves
-pub mod protection;
-pub use protection::*;
-
-// Weather moves
-pub mod weather;
-pub use weather::*;
-
-// Screen moves
-pub mod screens;
-pub use screens::*;
-
-// Multi-hit moves
-pub mod multi_hit;
-pub use multi_hit::*;
-
-// Variable power moves
-pub mod variable_power;
-pub use variable_power::*;
-
-// Hazard moves
-pub mod hazards;
-pub use hazards::*;
-
-// Hazard removal moves
-pub mod hazard_removal;
-pub use hazard_removal::*;
-
-// Complex moves
-pub mod complex;
-pub use complex::*;
-
-// Substitute moves
-pub mod substitute;
-pub use substitute::*;
-
-// Simple moves
+// Import simple and special_combat directly
 pub mod simple;
 pub use simple::*;
-
-// Utility and field effect moves
-pub mod utility;
-pub use utility::*;
-
-// Priority moves
-pub mod priority;
-pub use priority::*;
-
-// Fixed damage moves
-pub mod fixed_damage;
-pub use fixed_damage::*;
-
-// Counter moves
-pub mod counter;
-pub use counter::*;
-
-// Item interaction moves
-pub mod item_interaction;
-pub use item_interaction::*;
-
-// Field manipulation moves
-pub mod field_manipulation;
-pub use field_manipulation::*;
-
-// Terrain-dependent moves
-pub mod terrain_dependent;
-pub use terrain_dependent::*;
-
-// Two-turn/charge moves
-pub mod two_turn;
-pub use two_turn::*;
-
-// Type-changing moves
-pub mod type_changing;
-pub use type_changing::*;
-
-// Type removal moves
-pub mod type_removal;
-pub use type_removal::*;
-
-// Weather-dependent accuracy moves
-pub mod weather_accuracy;
-pub use weather_accuracy::*;
-
-// Self-destruct moves
-pub mod self_destruct;
-pub use self_destruct::*;
-
-// Self-damage moves
-pub mod self_damage;
-pub use self_damage::*;
-
-// Form-dependent moves
-pub mod form_dependent;
-pub use form_dependent::*;
-
-// Special combat mechanics
 pub mod special_combat;
 pub use special_combat::*;
-
-// Advanced hazard manipulation
-pub mod advanced_hazards;
-pub use advanced_hazards::*;
-
-// Secondary effects moves  
 pub mod secondary_effects;
 pub use secondary_effects::*;
 
 // Re-export common types and structs
-pub use recoil::{DamageBasedEffectType, DamageBasedEffect, create_damage_based_effect, apply_damage_based_secondary_effects};
+pub use damage::recoil::{DamageBasedEffectType, DamageBasedEffect, create_damage_based_effect, apply_damage_based_secondary_effects};
 
 // =============================================================================
 // MAIN MOVE EFFECTS ENTRY POINT
@@ -245,97 +168,159 @@ pub fn apply_move_effects(
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
     context: &MoveContext,
-    repository: &crate::data::Repository,
+    repository: &crate::data::GameDataRepository,
     branch_on_damage: bool,
 ) -> BattleResult<Vec<BattleInstructions>> {
-    let move_name = move_data.name.to_lowercase();
+    use crate::utils::normalize_name;
+    let move_name = normalize_name(&move_data.name);
     
     // Handle moves by name - delegate to appropriate module function
     match move_name.as_str() {
         // Status effects moves
-        "thunderwave" | "thunder wave" => Ok(apply_thunder_wave(state, user_position, target_positions, generation)),
-        "sleeppowder" | "sleep powder" => Ok(apply_sleep_powder(state, user_position, target_positions, generation)),
+        "thunderwave" => Ok(apply_thunder_wave(state, user_position, target_positions, generation)),
+        "sleeppowder" => Ok(apply_sleep_powder(state, user_position, target_positions, generation)),
         "toxic" => Ok(apply_toxic(state, user_position, target_positions, generation)),
-        "willowisp" | "will-o-wisp" => Ok(apply_will_o_wisp(state, user_position, target_positions, generation)),
-        "stunspore" | "stun spore" => Ok(apply_stun_spore(state, user_position, target_positions, generation)),
-        "poisonpowder" | "poison powder" => Ok(apply_poison_powder(state, user_position, target_positions, generation)),
+        "willowisp" => Ok(apply_will_o_wisp(state, user_position, target_positions, generation)),
+        "stunspore" => Ok(apply_stun_spore(state, user_position, target_positions, generation)),
+        "poisonpowder" => Ok(apply_poison_powder(state, user_position, target_positions, generation)),
         "glare" => Ok(apply_glare(state, user_position, target_positions, generation)),
         "spore" => Ok(apply_spore(state, user_position, target_positions, generation)),
         
         // Stat modifying moves
-        "swordsdance" | "swords dance" => Ok(apply_swords_dance(state, user_position, target_positions, generation)),
-        "dragondance" | "dragon dance" => Ok(apply_dragon_dance(state, user_position, target_positions, generation)),
-        "nastyplot" | "nasty plot" => Ok(apply_nasty_plot(state, user_position, target_positions, generation)),
+        "swordsdance" => Ok(apply_swords_dance(state, user_position, target_positions, generation)),
+        "dragondance" => Ok(apply_dragon_dance(state, user_position, target_positions, generation)),
+        "nastyplot" => Ok(apply_nasty_plot(state, user_position, target_positions, generation)),
         "agility" => Ok(apply_agility(state, user_position, target_positions, generation)),
         "growl" => Ok(apply_growl(state, user_position, target_positions, generation)),
         "leer" => Ok(apply_leer(state, user_position, target_positions, generation)),
-        "tailwhip" | "tail whip" => Ok(apply_tail_whip(state, user_position, target_positions, generation)),
-        "stringshot" | "string shot" => Ok(apply_string_shot(state, user_position, target_positions, generation)),
+        "tailwhip" => Ok(apply_tail_whip(state, user_position, target_positions, generation)),
+        "stringshot" => Ok(apply_string_shot(state, user_position, target_positions, generation)),
         "acid" => Ok(apply_acid(state, move_data, user_position, target_positions, generation)),
         "charm" => Ok(apply_charm(state, user_position, target_positions, generation)),
         "growth" => Ok(apply_growth(state, user_position, target_positions, generation)),
-        "filletaway" | "fillet away" => Ok(apply_fillet_away(state, move_data, user_position, target_positions, generation)),
-        "clangoroussoul" | "clangorous soul" => Ok(apply_clangorous_soul(state, move_data, user_position, target_positions, generation)),
+        "filletaway" => Ok(apply_fillet_away(state, user_position, target_positions, generation)),
+        "clangoroussoul" => Ok(apply_clangorous_soul(state, user_position, target_positions, generation)),
         
         // Healing moves
         "recover" => Ok(apply_recover(state, user_position, target_positions, generation)),
         "roost" => Ok(apply_roost(state, user_position, target_positions, generation)),
         "moonlight" => Ok(apply_moonlight(state, user_position, target_positions, generation)),
         "synthesis" => Ok(apply_synthesis(state, user_position, target_positions, generation)),
-        "morningsun" | "morning sun" => Ok(apply_morning_sun(state, user_position, target_positions, generation)),
-        "softboiled" | "soft-boiled" => Ok(apply_soft_boiled(state, user_position, target_positions, generation)),
-        "milkdrink" | "milk drink" => Ok(apply_milk_drink(state, user_position, target_positions, generation)),
-        "slackoff" | "slack off" => Ok(apply_slack_off(state, user_position, target_positions, generation)),
-        "aquaring" | "aqua ring" => Ok(apply_aqua_ring(state, user_position, target_positions, generation)),
-        "shoreup" | "shore up" => Ok(apply_shore_up(state, user_position, target_positions, generation)),
+        "morningsun" => Ok(apply_morning_sun(state, user_position, target_positions, generation)),
+        "softboiled" => Ok(apply_soft_boiled(state, user_position, target_positions, generation)),
+        "milkdrink" => Ok(apply_milk_drink(state, user_position, target_positions, generation)),
+        "slackoff" => Ok(apply_slack_off(state, user_position, target_positions, generation)),
+        "aquaring" => Ok(apply_aqua_ring(state, user_position, target_positions, generation)),
+        "shoreup" => Ok(apply_shore_up(state, user_position, target_positions, generation)),
+        "painsplit" => Ok(status::healing::apply_pain_split(state, user_position, target_positions, generation)),
         
         // Recoil moves
-        "doubleedge" | "double-edge" => Ok(apply_double_edge(state, user_position, target_positions, generation)),
-        "takedown" | "take down" => Ok(apply_take_down(state, user_position, target_positions, generation)),
+        "doubleedge" => Ok(apply_double_edge(state, user_position, target_positions, generation)),
+        "takedown" => Ok(apply_take_down(state, user_position, target_positions, generation)),
         "submission" => Ok(apply_submission(state, user_position, target_positions, generation)),
-        "volttackle" | "volt tackle" => Ok(apply_volt_tackle(state, user_position, target_positions, generation)),
-        "flareblitz" | "flare blitz" => Ok(apply_flare_blitz(state, user_position, target_positions, generation)),
-        "bravebird" | "brave bird" => Ok(apply_brave_bird(state, user_position, target_positions, generation)),
-        "wildcharge" | "wild charge" => Ok(apply_wild_charge(state, user_position, target_positions, generation)),
-        "headsmash" | "head smash" => Ok(apply_head_smash(state, user_position, target_positions, generation)),
+        "volttackle" => Ok(apply_volt_tackle(state, user_position, target_positions, generation)),
+        "flareblitz" => Ok(apply_flare_blitz(state, user_position, target_positions, generation)),
+        "bravebird" => Ok(apply_brave_bird(state, user_position, target_positions, generation)),
+        "wildcharge" => Ok(apply_wild_charge(state, user_position, target_positions, generation)),
+        "headsmash" => Ok(apply_head_smash(state, user_position, target_positions, generation)),
         
-        // Form-dependent moves
-        "aurawheel" | "aura wheel" => Ok(apply_aura_wheel(state, move_data, user_position, target_positions, generation)),
-        "ragingbull" | "raging bull" => Ok(apply_raging_bull(state, move_data, user_position, target_positions, generation)),
+        // Variable power moves
+        "facade" => Ok(damage::variable_power::apply_facade(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "hex" => Ok(damage::variable_power::apply_hex(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "gyroball" => Ok(damage::variable_power::apply_gyro_ball(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "reversal" => Ok(damage::variable_power::apply_reversal(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "acrobatics" => Ok(damage::variable_power::apply_acrobatics(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "weatherball" => Ok(damage::variable_power::apply_weather_ball(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "avalanche" => Ok(damage::variable_power::apply_avalanche(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "boltbeak" => Ok(damage::variable_power::apply_boltbeak(state, move_data, user_position, target_positions, generation, context, branch_on_damage)),
+        "fishiousrend" => Ok(damage::variable_power::apply_fishious_rend(state, move_data, user_position, target_positions, generation, context, branch_on_damage)),
+        "electroball" => Ok(damage::variable_power::apply_electroball(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "eruption" => Ok(damage::variable_power::apply_eruption(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "waterspout" => Ok(damage::variable_power::apply_waterspout(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "punishment" => Ok(damage::variable_power::apply_punishment(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "wakeupslap" => Ok(damage::variable_power::apply_wakeup_slap(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "dragonenergy" => Ok(damage::variable_power::apply_dragon_energy(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "grassknot" => Ok(damage::variable_power::apply_grass_knot(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "lowkick" => Ok(damage::variable_power::apply_low_kick(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "heatcrash" => Ok(damage::variable_power::apply_heat_crash(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "heavyslam" => Ok(damage::variable_power::apply_heavy_slam(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "barbbarrage" => Ok(damage::variable_power::apply_barb_barrage(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "collisioncourse" => Ok(damage::variable_power::apply_collision_course(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "electrodrift" => Ok(damage::variable_power::apply_electro_drift(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "freezedry" => Ok(damage::variable_power::apply_freeze_dry(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "hardpress" => Ok(damage::variable_power::apply_hard_press(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "hydrosteam" => Ok(damage::variable_power::apply_hydro_steam(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "lastrespects" => Ok(damage::variable_power::apply_last_respects(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "poltergeist" => Ok(damage::variable_power::apply_poltergeist(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "pursuit" => Ok(damage::variable_power::apply_pursuit(state, move_data, user_position, target_positions, generation, context, branch_on_damage)),
+        "storedpower" => Ok(damage::variable_power::apply_stored_power(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "powertrip" => Ok(damage::variable_power::apply_power_trip(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "strengthsap" => Ok(damage::variable_power::apply_strength_sap(state, move_data, user_position, target_positions, generation)),
+        "suckerpunch" => Ok(damage::variable_power::apply_sucker_punch(state, move_data, user_position, target_positions, generation, context, branch_on_damage)),
+        "thunderclap" => Ok(damage::variable_power::apply_thunder_clap(state, move_data, user_position, target_positions, generation, context, branch_on_damage)),
+        "terrainpulse" => Ok(damage::variable_power::apply_terrain_pulse(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "upperhand" => Ok(damage::variable_power::apply_upper_hand(state, move_data, user_position, target_positions, generation, context, branch_on_damage)),
+        "mefirst" => Ok(damage::variable_power::apply_me_first(state, move_data, user_position, target_positions, generation, context, repository, branch_on_damage)),
+        
+        // Fixed damage moves
+        "seismictoss" => Ok(damage::fixed_damage::apply_seismic_toss(state, user_position, target_positions, generation)),
+        "nightshade" => Ok(damage::fixed_damage::apply_night_shade(state, user_position, target_positions, generation)),
+        "endeavor" => Ok(damage::fixed_damage::apply_endeavor(state, user_position, target_positions, generation)),
+        "finalgambit" => Ok(damage::fixed_damage::apply_final_gambit(state, user_position, target_positions, generation)),
+        "naturesmadness" => Ok(damage::fixed_damage::apply_natures_madness(state, user_position, target_positions, generation)),
+        "ruination" => Ok(damage::fixed_damage::apply_ruination(state, user_position, target_positions, generation)),
+        "superfang" => Ok(damage::fixed_damage::apply_super_fang(state, user_position, target_positions, generation)),
+        
+        // Self-destruct moves
+        "explosion" => Ok(damage::self_destruct::apply_explosion(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "selfdestruct" => Ok(damage::self_destruct::apply_self_destruct(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        
+        // Self-damage moves
+        "mindblown" => Ok(damage::self_damage::apply_mind_blown(state, move_data, user_position, target_positions, generation, branch_on_damage)),
         
         // Special combat moves
-        "photongeyser" | "photon geyser" => Ok(apply_photon_geyser(state, move_data, user_position, target_positions, generation)),
-        "skydrop" | "sky drop" => Ok(apply_sky_drop(state, move_data, user_position, target_positions, generation)),
+        "bodypress" => Ok(apply_body_press(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "foulplay" => Ok(apply_foul_play(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "photongeyser" => Ok(apply_photon_geyser(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "skydrop" => Ok(apply_sky_drop(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        
+        // Multi-hit moves
+        "tailslap" => Ok(damage::multi_hit::apply_multi_hit_move(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "rockblast" => Ok(damage::multi_hit::apply_multi_hit_move(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "bulletseed" => Ok(damage::multi_hit::apply_multi_hit_move(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "iciclespear" => Ok(damage::multi_hit::apply_multi_hit_move(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "pinmissile" => Ok(damage::multi_hit::apply_multi_hit_move(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "furyattack" => Ok(damage::multi_hit::apply_multi_hit_move(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "furyswipes" => Ok(damage::multi_hit::apply_multi_hit_move(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "bonerush" => Ok(damage::multi_hit::apply_multi_hit_move(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "spikecannon" => Ok(damage::multi_hit::apply_multi_hit_move(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "surgingstrikes" => Ok(damage::multi_hit::apply_surging_strikes(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "dragondarts" => Ok(damage::multi_hit::apply_dragon_darts(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "populationbomb" => Ok(damage::multi_hit::apply_population_bomb(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "scaleshot" => Ok(damage::multi_hit::apply_scale_shot(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        
+        // Form-dependent moves
+        "aurawheel" => Ok(apply_aura_wheel(state, move_data, user_position, target_positions, generation, branch_on_damage)),
+        "ragingbull" => Ok(apply_raging_bull(state, move_data, user_position, target_positions, generation, branch_on_damage)),
         
         // Advanced hazards
-        "mortalspin" | "mortal spin" => Ok(apply_mortal_spin(state, move_data, user_position, target_positions, generation)),
+        "mortalspin" => Ok(apply_mortal_spin(state, move_data, user_position, target_positions, generation)),
         
         // Secondary effects moves
         "flamethrower" => Ok(apply_flamethrower(state, move_data, user_position, target_positions, generation)),
-        "fireblast" | "fire blast" => Ok(apply_fire_blast(state, move_data, user_position, target_positions, generation)),
+        "fireblast" => Ok(apply_fire_blast(state, move_data, user_position, target_positions, generation)),
         "thunderbolt" => Ok(apply_thunderbolt(state, move_data, user_position, target_positions, generation)),
-        "icebeam" | "ice beam" => Ok(apply_ice_beam(state, move_data, user_position, target_positions, generation)),
-        "sludgebomb" | "sludge bomb" => Ok(apply_sludge_bomb(state, move_data, user_position, target_positions, generation)),
-        "airslash" | "air slash" => Ok(apply_air_slash(state, move_data, user_position, target_positions, generation)),
-        "ironhead" | "iron head" => Ok(apply_iron_head(state, move_data, user_position, target_positions, generation)),
-        "rockslide" | "rock slide" => Ok(apply_rock_slide(state, move_data, user_position, target_positions, generation)),
-        
-        // Variable power moves (context-aware)
-        "boltbeak" | "bolt beak" => Ok(apply_boltbeak(state, move_data, user_position, target_positions, generation, context)),
-        "fishiousrend" | "fishious rend" => Ok(apply_fishious_rend(state, move_data, user_position, target_positions, generation, context)),
-        
-        // Priority moves that depend on opponent's move choice
-        "suckerpunch" | "sucker punch" => Ok(variable_power::apply_sucker_punch(state, move_data, user_position, target_positions, generation, context)),
-        "thunderclap" | "thunder clap" => Ok(variable_power::apply_thunder_clap(state, move_data, user_position, target_positions, generation, context)),
-        "pursuit" => Ok(variable_power::apply_pursuit(state, move_data, user_position, target_positions, generation, context)),
-        "upperhand" | "upper hand" => Ok(variable_power::apply_upper_hand(state, move_data, user_position, target_positions, generation, context)),
-        "mefirst" | "me first" => Ok(variable_power::apply_me_first(state, move_data, user_position, target_positions, generation, context, repository)),
+        "icebeam" => Ok(apply_ice_beam(state, move_data, user_position, target_positions, generation)),
+        "sludgebomb" => Ok(apply_sludge_bomb(state, move_data, user_position, target_positions, generation)),
+        "airslash" => Ok(apply_air_slash(state, move_data, user_position, target_positions, generation)),
+        "ironhead" => Ok(apply_iron_head(state, move_data, user_position, target_positions, generation)),
+        "rockslide" => Ok(apply_rock_slide(state, move_data, user_position, target_positions, generation)),
         
         // Counter moves (damage-based)
-        "counter" => Ok(counter::apply_counter(state, user_position, target_positions, generation)),
-        "mirrorcoat" | "mirror coat" => Ok(counter::apply_mirror_coat(state, user_position, target_positions, generation)),
-        "comeuppance" => Ok(counter::apply_comeuppance(state, user_position, target_positions, generation)),
-        "metalburst" | "metal burst" => Ok(counter::apply_metal_burst(state, user_position, target_positions, generation)),
+        "counter" => Ok(special::counter::apply_counter(state, user_position, target_positions, generation)),
+        "mirrorcoat" => Ok(special::counter::apply_mirror_coat(state, user_position, target_positions, generation)),
+        "comeuppance" => Ok(special::counter::apply_comeuppance(state, user_position, target_positions, generation)),
+        "metalburst" => Ok(special::counter::apply_metal_burst(state, user_position, target_positions, generation)),
         
         // Default case - fallback to basic damage for moves without special effects
         _ => {
@@ -358,7 +343,7 @@ pub fn apply_move_effects_simple(
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-    repository: &crate::data::Repository,
+    repository: &crate::data::GameDataRepository,
     branch_on_damage: bool,
 ) -> Vec<BattleInstructions> {
     let context = MoveContext::new();
@@ -691,20 +676,98 @@ fn apply_generic_secondary_effects(
     // For moves without specific implementations, check for secondary effects
     if let Some(secondary) = &move_data.secondary {
         if secondary.chance > 0 {
-            // Use the secondary effects system from stat_modifying module
-            return crate::engine::combat::moves::stat_modifying::apply_probability_based_secondary_effects(
-                state, 
-                move_data, 
-                user_position, 
-                target_positions, 
-                generation, 
-                secondary.chance as i16
-            );
+            return apply_secondary_effects(state, move_data, user_position, target_positions, generation, secondary);
         }
     }
     
     // Return empty instructions for moves with no secondary effects
     vec![BattleInstructions::new(100.0, vec![])]
+}
+
+/// Apply secondary effects from move data
+fn apply_secondary_effects(
+    state: &BattleState,
+    _move_data: &MoveData,
+    user_position: BattlePosition,
+    target_positions: &[BattlePosition],
+    _generation: &GenerationMechanics,
+    secondary: &crate::data::showdown_types::SecondaryEffect,
+) -> Vec<BattleInstructions> {
+    use crate::core::instructions::{BattleInstruction, PokemonInstruction, StatsInstruction, StatusInstruction, Stat, PokemonStatus};
+    use std::collections::HashMap;
+
+    let mut instructions = Vec::new();
+    let probability = secondary.chance as f32;
+    
+    // Miss chance
+    if probability < 100.0 {
+        instructions.push(BattleInstructions::new(100.0 - probability, vec![]));
+    }
+    
+    // Success chance with effects
+    let mut effect_instructions = Vec::new();
+    
+    // Handle status effects
+    if let Some(status_name) = &secondary.status {
+        for &target in target_positions {
+            let status = match status_name.as_str() {
+                "par" => PokemonStatus::Paralysis,
+                "slp" => PokemonStatus::Sleep,
+                "frz" => PokemonStatus::Freeze,
+                "brn" => PokemonStatus::Burn,
+                "psn" => PokemonStatus::Poison,
+                "tox" => PokemonStatus::BadlyPoisoned,
+                _ => continue,
+            };
+            
+            effect_instructions.push(BattleInstruction::Status(StatusInstruction::Apply {
+                target,
+                status,
+                duration: Some(match status {
+                    PokemonStatus::Sleep => 2,
+                    PokemonStatus::Freeze => 0, // Indefinite until thawed
+                    _ => 0,
+                }),
+                previous_status: None,
+                previous_duration: None,
+            }));
+        }
+    }
+    
+    // Handle stat boosts/drops
+    if let Some(boosts) = &secondary.boosts {
+        for &target in target_positions {
+            let mut stat_changes = HashMap::new();
+            
+            for (stat_name, change) in boosts {
+                let stat = match stat_name.as_str() {
+                    "atk" => Stat::Attack,
+                    "def" => Stat::Defense,
+                    "spa" => Stat::SpecialAttack,
+                    "spd" => Stat::SpecialDefense,
+                    "spe" => Stat::Speed,
+                    "accuracy" => Stat::Accuracy,
+                    "evasion" => Stat::Evasion,
+                    _ => continue,
+                };
+                stat_changes.insert(stat, *change);
+            }
+            
+            if !stat_changes.is_empty() {
+                effect_instructions.push(BattleInstruction::Stats(StatsInstruction::BoostStats {
+                    target,
+                    stat_changes,
+                    previous_boosts: HashMap::new(),
+                }));
+            }
+        }
+    }
+    
+    if probability > 0.0 && !effect_instructions.is_empty() {
+        instructions.push(BattleInstructions::new(probability, effect_instructions));
+    }
+    
+    instructions
 }
 
 /// Generate damage instructions for a move hit

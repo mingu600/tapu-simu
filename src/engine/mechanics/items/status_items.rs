@@ -95,7 +95,7 @@ fn toxic_orb_end_of_turn_effect(pokemon: &Pokemon, position: BattlePosition) -> 
     if pokemon.status == PokemonStatus::None {
         let instruction = BattleInstruction::Status(StatusInstruction::Apply {
             target: position,
-            status: PokemonStatus::Toxic,
+            status: PokemonStatus::BadlyPoisoned,
             duration: None,
             previous_status: Some(PokemonStatus::None),
             previous_duration: None,

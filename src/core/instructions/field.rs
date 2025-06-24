@@ -106,6 +106,7 @@ pub enum SideCondition {
     MatBlock,
     QuickGuard,
     WideGuard,
+    LuckyChant,
 }
 
 impl From<u8> for SideCondition {
@@ -216,6 +217,11 @@ pub enum FieldInstruction {
         side: SideReference,
         active: bool,
         previous_state: bool,
+    },
+    /// Display a message (for debugging/logging)
+    Message {
+        message: String,
+        affected_positions: Vec<BattlePosition>,
     },
 }
 
@@ -332,6 +338,7 @@ impl FieldInstruction {
                     ],
                 }
             },
+            FieldInstruction::Message { affected_positions, .. } => affected_positions.clone(),
         }
     }
 
@@ -352,6 +359,7 @@ impl FieldInstruction {
             FieldInstruction::DecrementGravityTurns { previous_turns, .. } => previous_turns.is_some(),
             FieldInstruction::ToggleForceSwitch { .. } => true,
             FieldInstruction::ToggleBatonPassing { .. } => true,
+            FieldInstruction::Message { .. } => false, // Messages are not undoable
         }
     }
 }

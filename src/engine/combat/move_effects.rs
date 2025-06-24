@@ -23,7 +23,6 @@ use crate::core::instructions::{
     BattleInstruction, BattleInstructions, StatusInstruction, PokemonInstruction,
     FieldInstruction, StatsInstruction,
 };
-use crate::data::Repository;
 use crate::core::battle_format::{BattlePosition, SideReference};
 use crate::generation::GenerationMechanics;
 use crate::engine::combat::type_effectiveness::{TypeChart, PokemonType};
@@ -40,7 +39,7 @@ pub fn apply_move_effects(
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
     context: &MoveContext,
-    repository: &Repository,
+    repository: &crate::data::GameDataRepository,
 ) -> Vec<BattleInstructions> {
     // Delegate to the new modular system
     crate::engine::combat::moves::apply_move_effects(

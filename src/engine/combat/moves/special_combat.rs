@@ -3,14 +3,15 @@
 //! 
 //! This module contains moves with unique combat mechanics that don't fit into other categories.
 
-use crate::core::battle_state::{BattleState, MoveCategory};
+use crate::core::battle_state::BattleState;
 use crate::core::instructions::VolatileStatus;
 use crate::core::instructions::{
     BattleInstruction, BattleInstructions, StatusInstruction,
 };
 use crate::core::battle_format::BattlePosition;
 use crate::generation::GenerationMechanics;
-use crate::engine::combat::move_effects::apply_generic_effects;
+use crate::engine::combat::moves::apply_generic_effects;
+use crate::engine::combat::damage_calc::{calculate_damage_with_positions, DamageRolls, critical_hit_probability};
 use crate::data::showdown_types::MoveData;
 
 // =============================================================================
@@ -24,24 +25,43 @@ pub fn apply_photon_geyser(
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
+    _branch_on_damage: bool,
 ) -> Vec<BattleInstructions> {
-    if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
-        // Compare Attack vs Special Attack stats to determine category
-        let attack_stat = user_pokemon.stats.attack;
-        let special_attack_stat = user_pokemon.stats.special_attack;
-        
-        let modified_move_data = MoveData {
-            category: if attack_stat > special_attack_stat {
-                "Physical".to_string()
+    use crate::engine::combat::composers::damage_moves::dynamic_category_move;
+    
+    // Use the centralized dynamic category system
+    let instructions = dynamic_category_move(
+        state,
+        move_data,
+        user_position,
+        target_positions,
+        Box::new(|state, user_position| {
+            if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
+                // Compare Attack vs Special Attack stats to determine category
+                let attack_stat = user_pokemon.stats.attack;
+                let special_attack_stat = user_pokemon.stats.special_attack;
+                
+                if attack_stat > special_attack_stat {
+                    "Physical".to_string()
+                } else {
+                    "Special".to_string()
+                }
             } else {
-                "Special".to_string()
-            },
-            ..move_data.clone()
-        };
-        
-        apply_generic_effects(state, &modified_move_data, user_position, target_positions, generation, true)
+                "Special".to_string() // Default fallback
+            }
+        }),
+        generation,
+    );
+    
+    // Handle accuracy
+    let accuracy = move_data.accuracy as f32;
+    if accuracy < 100.0 {
+        vec![
+            BattleInstructions::new(100.0 - accuracy, vec![]), // Miss
+            BattleInstructions::new(accuracy, instructions),    // Hit
+        ]
     } else {
-        apply_generic_effects(state, move_data, user_position, target_positions, generation, true)
+        vec![BattleInstructions::new(100.0, instructions)]
     }
 }
 
@@ -52,12 +72,13 @@ pub fn apply_sky_drop(
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
+    branch_on_damage: bool,
 ) -> Vec<BattleInstructions> {
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
         // Check if user is already in the Sky Drop charging state
         if user_pokemon.volatile_statuses.contains(&VolatileStatus::SkyDrop) {
             // Second turn - attack and remove both Pokemon from sky
-            let mut instructions = apply_generic_effects(state, move_data, user_position, target_positions, generation, true);
+            let mut instructions = apply_generic_effects(state, move_data, user_position, target_positions, generation, branch_on_damage);
             
             // Remove Sky Drop status from user
             instructions.push(BattleInstructions::new(100.0, vec![
@@ -120,3 +141,79 @@ pub fn apply_sky_drop(
         vec![BattleInstructions::new(100.0, vec![])]
     }
 }
+
+/// Apply Body Press - uses Defense stat for damage calculation instead of Attack
+pub fn apply_body_press(
+    state: &BattleState,
+    move_data: &MoveData,
+    user_position: BattlePosition,
+    target_positions: &[BattlePosition],
+    generation: &GenerationMechanics,
+    _branch_on_damage: bool,
+) -> Vec<BattleInstructions> {
+    use crate::engine::combat::composers::damage_moves::stat_substitution_move;
+    use crate::core::instructions::Stat;
+    
+    // Use the centralized stat substitution system
+    let instructions = stat_substitution_move(
+        state,
+        move_data,
+        user_position,
+        target_positions,
+        Stat::Defense,  // Use Defense as Attack
+        None,           // No defense stat substitution
+        false,          // Don't use target stats
+        generation,
+    );
+    
+    // Handle accuracy
+    let accuracy = move_data.accuracy as f32;
+    if accuracy < 100.0 {
+        vec![
+            BattleInstructions::new(100.0 - accuracy, vec![]), // Miss
+            BattleInstructions::new(accuracy, instructions),    // Hit
+        ]
+    } else {
+        vec![BattleInstructions::new(100.0, instructions)]
+    }
+}
+
+
+
+/// Apply Foul Play - uses target's Attack stat for damage calculation instead of user's Attack
+pub fn apply_foul_play(
+    state: &BattleState,
+    move_data: &MoveData,
+    user_position: BattlePosition,
+    target_positions: &[BattlePosition],
+    generation: &GenerationMechanics,
+    _branch_on_damage: bool,
+) -> Vec<BattleInstructions> {
+    use crate::engine::combat::composers::damage_moves::stat_substitution_move;
+    use crate::core::instructions::Stat;
+    
+    // Use the centralized stat substitution system
+    let instructions = stat_substitution_move(
+        state,
+        move_data,
+        user_position,
+        target_positions,
+        Stat::Attack,   // Use Attack stat (but from target)
+        None,           // No defense stat substitution
+        true,           // Use target's stats
+        generation,
+    );
+    
+    // Handle accuracy
+    let accuracy = move_data.accuracy as f32;
+    if accuracy < 100.0 {
+        vec![
+            BattleInstructions::new(100.0 - accuracy, vec![]), // Miss
+            BattleInstructions::new(accuracy, instructions),    // Hit
+        ]
+    } else {
+        vec![BattleInstructions::new(100.0, instructions)]
+    }
+}
+
+

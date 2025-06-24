@@ -155,6 +155,9 @@ pub fn apply_ability_effect(ability: &AbilityId, context: AbilityContext) -> Abi
         // Screen bypass
         "infiltrator" => apply_infiltrator(),
 
+        // Type immunity bypass
+        "mindseye" | "mind's eye" => apply_minds_eye(context),
+
         // Status immunity
         "waterveil" => apply_water_veil(context),
         "magmaarmor" => apply_magma_armor(context),
@@ -177,8 +180,9 @@ pub fn apply_ability_effect(ability: &AbilityId, context: AbilityContext) -> Abi
 
 // Type immunity abilities
 fn apply_levitate(context: AbilityContext) -> AbilityEffectResult {
+    use crate::utils::normalize_name;
     if let Some(move_type) = context.move_type {
-        if move_type.as_str() == "ground" {
+        if normalize_name(move_type.as_str()) == normalize_name("Ground") {
             return AbilityEffectResult::immunity();
         }
     }
@@ -186,8 +190,9 @@ fn apply_levitate(context: AbilityContext) -> AbilityEffectResult {
 }
 
 fn apply_flash_fire(context: AbilityContext) -> AbilityEffectResult {
+    use crate::utils::normalize_name;
     if let Some(move_type) = context.move_type {
-        if move_type.as_str() == "fire" {
+        if normalize_name(move_type.as_str()) == normalize_name("Fire") {
             return AbilityEffectResult::immunity();
         }
     }
@@ -195,8 +200,9 @@ fn apply_flash_fire(context: AbilityContext) -> AbilityEffectResult {
 }
 
 fn apply_water_absorb(context: AbilityContext) -> AbilityEffectResult {
+    use crate::utils::normalize_name;
     if let Some(move_type) = context.move_type {
-        if move_type.as_str() == "water" {
+        if normalize_name(move_type.as_str()) == normalize_name("Water") {
             return AbilityEffectResult::immunity();
         }
     }
@@ -204,8 +210,9 @@ fn apply_water_absorb(context: AbilityContext) -> AbilityEffectResult {
 }
 
 fn apply_volt_absorb(context: AbilityContext) -> AbilityEffectResult {
+    use crate::utils::normalize_name;
     if let Some(move_type) = context.move_type {
-        if move_type.as_str() == "electric" {
+        if normalize_name(move_type.as_str()) == normalize_name("Electric") {
             return AbilityEffectResult::immunity();
         }
     }
@@ -213,8 +220,9 @@ fn apply_volt_absorb(context: AbilityContext) -> AbilityEffectResult {
 }
 
 fn apply_sap_sipper(context: AbilityContext) -> AbilityEffectResult {
+    use crate::utils::normalize_name;
     if let Some(move_type) = context.move_type {
-        if move_type.as_str() == "grass" {
+        if normalize_name(move_type.as_str()) == normalize_name("Grass") {
             return AbilityEffectResult::immunity();
         }
     }
@@ -222,8 +230,9 @@ fn apply_sap_sipper(context: AbilityContext) -> AbilityEffectResult {
 }
 
 fn apply_storm_drain(context: AbilityContext) -> AbilityEffectResult {
+    use crate::utils::normalize_name;
     if let Some(move_type) = context.move_type {
-        if move_type.as_str() == "water" {
+        if normalize_name(move_type.as_str()) == normalize_name("Water") {
             return AbilityEffectResult::immunity();
         }
     }
@@ -231,8 +240,9 @@ fn apply_storm_drain(context: AbilityContext) -> AbilityEffectResult {
 }
 
 fn apply_lightning_rod(context: AbilityContext) -> AbilityEffectResult {
+    use crate::utils::normalize_name;
     if let Some(move_type) = context.move_type {
-        if move_type.as_str() == "electric" {
+        if normalize_name(move_type.as_str()) == normalize_name("Electric") {
             return AbilityEffectResult::immunity();
         }
     }
@@ -240,8 +250,9 @@ fn apply_lightning_rod(context: AbilityContext) -> AbilityEffectResult {
 }
 
 fn apply_motor_drive(context: AbilityContext) -> AbilityEffectResult {
+    use crate::utils::normalize_name;
     if let Some(move_type) = context.move_type {
-        if move_type.as_str() == "electric" {
+        if normalize_name(move_type.as_str()) == normalize_name("Electric") {
             return AbilityEffectResult::immunity();
         }
     }
@@ -590,6 +601,19 @@ fn apply_weather_negation() -> AbilityEffectResult {
 
 fn apply_infiltrator() -> AbilityEffectResult {
     AbilityEffectResult::bypasses_screens()
+}
+
+fn apply_minds_eye(context: AbilityContext) -> AbilityEffectResult {
+    // Mind's Eye allows Normal and Fighting type moves to hit Ghost types
+    if let Some(move_type) = context.move_type {
+        if move_type.as_str() == "normal" || move_type.as_str() == "fighting" {
+            return AbilityEffectResult {
+                ignore_type_effectiveness: true,
+                ..Default::default()
+            };
+        }
+    }
+    AbilityEffectResult::none()
 }
 
 // Status immunity abilities

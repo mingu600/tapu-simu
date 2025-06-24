@@ -114,7 +114,7 @@ pub mod end_of_turn {
                     previous_hp: Some(pokemon.hp),
                 }))
             }
-            PokemonStatus::Toxic => {
+            PokemonStatus::BadlyPoisoned => {
                 // Toxic damage increases each turn (1/16 * turn counter)
                 let base_damage = pokemon.max_hp / 16;
                 let turn_multiplier = 1; // Simplified - would need to track toxic counter
@@ -289,8 +289,14 @@ pub fn generate_instructions(
         )?
     };
     
-    // Combine instruction sets from both moves to create all possible combinations
-    let combined_instructions = combine_move_instructions(first_instructions, second_instructions);
+    // Combine instruction sets from both moves with move cancellation logic
+    let combined_instructions = combine_move_instructions_with_cancellation(
+        first_instructions, 
+        second_instructions, 
+        state,
+        &second_choice,
+        second_side,
+    )?;
     
     if combined_instructions.is_empty() {
         Ok(vec![BattleInstructions::new(100.0, vec![])])
@@ -675,6 +681,99 @@ fn combine_move_instructions(
     }
     
     combined
+}
+
+/// Combine instruction sets with move cancellation logic
+fn combine_move_instructions_with_cancellation(
+    first_instructions: Vec<BattleInstructions>,
+    second_instructions: Vec<BattleInstructions>,
+    initial_state: &BattleState,
+    second_choice: &MoveChoice,
+    second_side: SideReference,
+) -> BattleResult<Vec<BattleInstructions>> {
+    if first_instructions.is_empty() && second_instructions.is_empty() {
+        return Ok(vec![BattleInstructions::new(100.0, vec![])]);
+    } else if first_instructions.is_empty() {
+        return Ok(second_instructions);
+    } else if second_instructions.is_empty() {
+        return Ok(first_instructions);
+    }
+
+    let mut combined = Vec::new();
+    
+    // For each first instruction, check if second move should be cancelled
+    for first_instr in &first_instructions {
+        // Apply first move to a temporary state
+        let mut temp_state = initial_state.clone();
+        temp_state.apply_instructions(&first_instr.instruction_list);
+        
+        // Check if second move should be cancelled
+        if should_cancel_move(&temp_state, second_choice, second_side) {
+            // Second move is cancelled - only include first move's instructions
+            combined.push(BattleInstructions::new(
+                first_instr.percentage,
+                first_instr.instruction_list.clone(),
+            ));
+        } else {
+            // Second move can proceed - combine both instruction sets
+            for second_instr in &second_instructions {
+                let mut combined_instruction_list = first_instr.instruction_list.clone();
+                combined_instruction_list.extend(second_instr.instruction_list.clone());
+                
+                // Calculate combined probability
+                let combined_percentage = (first_instr.percentage * second_instr.percentage) / 100.0;
+                
+                combined.push(BattleInstructions::new(
+                    combined_percentage,
+                    combined_instruction_list,
+                ));
+            }
+        }
+    }
+    
+    Ok(combined)
+}
+
+/// Check if a move should be cancelled due to target fainting or other conditions
+fn should_cancel_move(
+    state: &BattleState,
+    choice: &MoveChoice,
+    user_side: SideReference,
+) -> bool {
+    // Only check for attack moves, not switches or status moves
+    if let MoveChoice::Move { move_index, target_positions } = choice {
+        // Get the move data to check if it's a status move
+        let user_pos = BattlePosition::new(user_side, 0);
+        if let Some(user_pokemon) = state.get_pokemon_at_position(user_pos) {
+            if let Some(move_data) = user_pokemon.get_move(*move_index) {
+                // Status moves can still be used even if target has fainted
+                if move_data.base_power == 0 {
+                    return false;
+                }
+                
+                // For damage-dealing moves, check if any target has fainted
+                for &target_pos in target_positions {
+                    if let Some(target_pokemon) = state.get_pokemon_at_position(target_pos) {
+                        if target_pokemon.hp == 0 {
+                            return true; // Cancel move if target has fainted
+                        }
+                    } else {
+                        return true; // Cancel move if target doesn't exist
+                    }
+                }
+            }
+        }
+    }
+    
+    // Also check if the attacker has fainted
+    let user_pos = BattlePosition::new(user_side, 0);
+    if let Some(user_pokemon) = state.get_pokemon_at_position(user_pos) {
+        if user_pokemon.hp == 0 {
+            return true; // Cancel move if attacker has fainted
+        }
+    }
+    
+    false
 }
 
 /// Determine which move goes first based on priority and speed (simple version)
@@ -1080,9 +1179,9 @@ fn generate_attack_instructions_with_enhanced_context(
         gen_move_data.clone()
     } else {
         // Fallback to standard repository for moves not found in generation-specific data
-        let repository = crate::data::Repository::from_path("data/ps-extracted")
+        let repository = crate::data::GameDataRepository::from_path("data/ps-extracted")
             .expect("Failed to load Pokemon data from data/ps-extracted");
-        if let Some(repo_move_data) = repository.find_move_by_name(&move_data_raw.name) {
+        if let Some(repo_move_data) = repository.moves.find_by_name(&move_data_raw.name) {
             // Convert repository::MoveData to showdown_types::MoveData
             crate::data::showdown_types::MoveData {
                 name: repo_move_data.name.clone(),
@@ -1143,7 +1242,7 @@ fn generate_attack_instructions_with_enhanced_context(
 }
 
 /// Create a generation-specific repository for move effects
-fn create_generation_repository(generation: &crate::generation::GenerationMechanics) -> crate::types::BattleResult<crate::data::Repository> {
+fn create_generation_repository(generation: &crate::generation::GenerationMechanics) -> crate::types::BattleResult<crate::data::GameDataRepository> {
     use crate::types::BattleError;
     
     // For now, fall back to standard repository since creating a generation-specific Repository
@@ -1152,7 +1251,7 @@ fn create_generation_repository(generation: &crate::generation::GenerationMechan
     // 
     // TODO: Implement a proper generation-aware Repository that loads generation-specific
     // item data and move data for moves like Me First and Fling
-    let repository = crate::data::Repository::from_path("data/ps-extracted")
+    let repository = crate::data::GameDataRepository::from_path("data/ps-extracted")
         .map_err(|e| BattleError::DataLoad(e))?;
     
     Ok(repository)

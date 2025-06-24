@@ -15,7 +15,7 @@ pub enum PokemonStatus {
     Freeze,
     Paralysis,
     Poison,
-    Toxic,
+    BadlyPoisoned, // Toxic/Badly Poisoned
     Sleep,
 }
 
@@ -27,7 +27,7 @@ impl From<u8> for PokemonStatus {
             2 => PokemonStatus::Freeze,
             3 => PokemonStatus::Paralysis,
             4 => PokemonStatus::Poison,
-            5 => PokemonStatus::Toxic,
+            5 => PokemonStatus::BadlyPoisoned,
             6 => PokemonStatus::Sleep,
             _ => PokemonStatus::None, // Default fallback
         }
