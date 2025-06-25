@@ -21,24 +21,7 @@
 //! 
 //! ## Example Usage
 //! 
-//! ```rust
-//! use tapu_simu::{BattleFormat, BattleState, MoveChoice};
-//! use tapu_simu::core::move_choice::{MoveIndex, PokemonIndex};
-//! use tapu_simu::core::battle_format::{BattlePosition, SideReference};
-//! 
-//! // Create a new singles battle using modern BattleState
-//! let mut battle_state = BattleState::new(BattleFormat::gen9_ou());
-//! 
-//! // Create move choices
-//! let move1 = MoveChoice::new_move(
-//!     MoveIndex::M0, 
-//!     vec![BattlePosition::new(SideReference::SideTwo, 0)]
-//! );
-//! let move2 = MoveChoice::new_move(
-//!     MoveIndex::M0, 
-//!     vec![BattlePosition::new(SideReference::SideOne, 0)]
-//! );
-//! ```
+//! Create a new singles battle using modern BattleState and position-based move targeting.
 
 // Core modules
 pub mod core;

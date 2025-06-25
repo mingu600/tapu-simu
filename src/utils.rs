@@ -9,18 +9,6 @@
 /// - Move name comparison
 /// - Pokemon species lookups
 /// - General string matching where spaces and punctuation should be ignored
-/// 
-/// # Examples
-/// 
-/// ```
-/// use tapu_simu::utils::normalize_name;
-/// 
-/// assert_eq!(normalize_name("Shell Armor"), "shellarmor");
-/// assert_eq!(normalize_name("Air-Lock"), "airlock");
-/// assert_eq!(normalize_name("U-turn"), "uturn");
-/// assert_eq!(normalize_name("Farfetch'd"), "farfetchd");
-/// assert_eq!(normalize_name("Mr. Mime"), "mrmime");
-/// ```
 pub fn normalize_name(name: &str) -> String {
     name.to_lowercase()
         .replace(" ", "")

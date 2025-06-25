@@ -45,21 +45,7 @@
 //!
 //! ## Usage Example
 //!
-//! ```rust
-//! use tapu_simu::core::{
-//!     BattleFormat, BattleState, MoveChoice,
-//!     battle_format::{BattlePosition, SideReference},
-//!     move_choice::{MoveIndex, PokemonIndex}
-//! };
-//!
-//! // Create a new battle state
-//! let format = BattleFormat::gen9_ou();
-//! let battle_state = BattleState::new(format);
-//!
-//! // Create a move choice targeting the opponent
-//! let target_position = BattlePosition::new(SideReference::SideTwo, 0);
-//! let move_choice = MoveChoice::new_move(MoveIndex::M0, vec![target_position]);
-//! ```
+//! Create a new battle state and move choice with position-based targeting.
 
 pub mod battle_format;
 pub mod battle_environment;

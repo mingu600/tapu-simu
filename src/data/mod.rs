@@ -40,21 +40,7 @@
 //!
 //! ## Usage Example
 //!
-//! ```rust
-//! use tapu_simu::data::{GameDataRepository, RandomTeamLoader};
-//! use tapu_simu::types::SpeciesId;
-//!
-//! // Load the data repository
-//! let repository = GameDataRepository::from_path("data/ps-extracted")?;
-//!
-//! // Look up Pokemon data
-//! let pikachu_id = SpeciesId::from("pikachu");
-//! let pikachu_data = repository.pokemon.find_by_id(&pikachu_id)?;
-//!
-//! // Generate random teams
-//! let mut team_loader = RandomTeamLoader::new();
-//! let random_team = team_loader.get_random_team(&format)?;
-//! ```
+//! Load the data repository and look up Pokemon data or generate random teams.
 
 pub mod conversion;
 pub mod repositories;

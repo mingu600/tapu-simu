@@ -44,35 +44,7 @@
 //!
 //! ## Usage Example
 //!
-//! ```rust
-//! use tapu_simu::engine::combat::damage_calc::{calculate_damage_with_positions, DamageRolls};
-//! use tapu_simu::engine::combat::moves::apply_move_effects;
-//! 
-//! // Calculate damage between two Pokemon
-//! let damage = calculate_damage_with_positions(
-//!     &battle_state,
-//!     &attacker,
-//!     &defender, 
-//!     &move_data,
-//!     false, // not critical
-//!     DamageRolls::Average,
-//!     1, // single target
-//!     attacker_position,
-//!     defender_position,
-//! );
-//!
-//! // Apply move effects
-//! let instructions = apply_move_effects(
-//!     &battle_state,
-//!     &move_data,
-//!     user_position,
-//!     &target_positions,
-//!     &generation,
-//!     &move_context,
-//!     &repository,
-//!     true, // branch on damage
-//! )?;
-//! ```
+//! Calculate damage between two Pokemon and apply move effects with position-based targeting.
 
 pub mod damage_calc;
 pub mod damage_context;

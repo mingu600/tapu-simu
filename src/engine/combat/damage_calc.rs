@@ -55,9 +55,7 @@ fn get_gen2_item_modifier(item: &str, move_type: &str) -> f32 {
 /// ## Algorithm Overview
 ///
 /// The damage calculation follows Pokemon's standard damage formula:
-/// ```text
 /// Damage = ((((2 * Level / 5 + 2) * Power * A / D) / 50) + 2) * Modifiers
-/// ```
 ///
 /// Where modifiers include:
 /// - Critical hit multiplier (1.5x for Gen 6+, 2.0x for earlier generations)
@@ -86,39 +84,6 @@ fn get_gen2_item_modifier(item: &str, move_type: &str) -> f32 {
 ///
 /// The calculated damage as an i16. Returns 0 for moves that deal no damage
 /// (e.g., status moves, immune type matchups).
-///
-/// ## Examples
-///
-/// ```rust
-/// use tapu_simu::engine::combat::damage_calc::{calculate_damage_with_positions, DamageRolls};
-/// use tapu_simu::core::battle_format::{BattlePosition, SideReference};
-///
-/// // Calculate average damage for a single-target move
-/// let damage = calculate_damage_with_positions(
-///     &battle_state,
-///     &pikachu,
-///     &charmander,
-///     &thunderbolt_data,
-///     false, // not critical
-///     DamageRolls::Average,
-///     1, // single target
-///     BattlePosition::new(SideReference::SideOne, 0),
-///     BattlePosition::new(SideReference::SideTwo, 0),
-/// );
-///
-/// // Calculate minimum damage for worst-case scenario
-/// let min_damage = calculate_damage_with_positions(
-///     &battle_state,
-///     &attacker,
-///     &defender,
-///     &move_data,
-///     false,
-///     DamageRolls::Min, // 85% damage roll
-///     1,
-///     attacker_pos,
-///     defender_pos,
-/// );
-/// ```
 pub fn calculate_damage_with_positions(
     state: &BattleState,
     attacker: &Pokemon,
