@@ -42,9 +42,5 @@ pub use generations::{
     calculate_damage_gen4,
     calculate_damage_gen56,
     calculate_damage_modern_gen789,
-};
-
-// Re-export functions that are still in the main damage_calc module
-pub use super::damage_calc::{
-    calculate_damage_modern,
+    calculate_damage,
 };

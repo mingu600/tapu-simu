@@ -59,7 +59,7 @@ pub use builders::{BattleBuilder, FormatBuilder, TeamBuilder};
 pub use testing::framework::{TestFramework, ContactStatusResult};
 
 // Engine module re-exports for testing
-pub use engine::combat::damage_calc;
+pub use engine::combat::damage;
 pub use engine::combat::type_effectiveness;
 pub use engine::mechanics::items;
 pub use engine::turn::end_of_turn;

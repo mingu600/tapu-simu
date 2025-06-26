@@ -9,7 +9,7 @@ use crate::data::showdown_types::MoveData;
 use crate::utils::normalize_name;
 use crate::engine::combat::damage_context::{DamageContext, DamageResult, DamageEffect};
 use crate::engine::combat::type_effectiveness::{PokemonType, TypeChart};
-use crate::engine::combat::damage_calc::DamageRolls;
+use crate::engine::combat::damage::DamageRolls;
 
 /// Get base speed stat for a Pokemon species
 /// This is a temporary solution until we store base stats in the Pokemon struct

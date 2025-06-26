@@ -16,7 +16,7 @@
 //!   for damage calculations that encapsulates attacker, defender, move, field,
 //!   and format information in a structured way.
 //!
-//! - **Move Effects** (`move_effects`): Legacy move effects system for 
+//! - **Move Effects** (`move_effects`): Legacy move effects system for
 //!   compatibility and transition support.
 //!
 //! - **Moves** (`moves`): Modern move effects implementation organized by
@@ -46,13 +46,12 @@
 //!
 //! Calculate damage between two Pokemon and apply move effects with position-based targeting.
 
-pub mod damage_calc;
-pub mod damage_context;
 pub mod damage;
+pub mod damage_context;
 pub mod move_effects;
 pub mod moves;
 pub mod type_effectiveness;
 
 // New centralized systems
-pub mod core;
 pub mod composers;
+pub mod core;

@@ -11,15 +11,6 @@ use crate::engine::combat::damage_context::{EffectiveStats, AbilityState, ItemEf
 use crate::core::instructions::MoveCategory;
 use super::types::DamageRolls;
 
-/// Convert new modular DamageRolls to old damage_calc DamageRolls for compatibility
-fn convert_damage_rolls(rolls: DamageRolls) -> crate::engine::combat::damage_calc::DamageRolls {
-    match rolls {
-        DamageRolls::Average => crate::engine::combat::damage_calc::DamageRolls::Average,
-        DamageRolls::Min => crate::engine::combat::damage_calc::DamageRolls::Min,
-        DamageRolls::Max => crate::engine::combat::damage_calc::DamageRolls::Max,
-        DamageRolls::All => crate::engine::combat::damage_calc::DamageRolls::All,
-    }
-}
 
 /// Calculate damage between two Pokemon with explicit battle positions.
 ///
@@ -119,27 +110,6 @@ pub fn calculate_damage_with_positions(
         format: format_context,
     };
 
-    // Use the modern damage calculation through the generation dispatch
-    let old_damage_rolls = convert_damage_rolls(damage_rolls);
-    match damage_context.format.format.generation {
-        crate::generation::Generation::Gen1 => {
-            super::generations::calculate_damage_gen1(&damage_context, old_damage_rolls).damage
-        }
-        crate::generation::Generation::Gen2 => {
-            super::generations::calculate_damage_gen2(&damage_context, old_damage_rolls).damage
-        }
-        crate::generation::Generation::Gen3 => {
-            super::generations::calculate_damage_gen3(&damage_context, old_damage_rolls).damage
-        }
-        crate::generation::Generation::Gen4 => {
-            super::generations::calculate_damage_gen4(&damage_context, old_damage_rolls).damage
-        }
-        crate::generation::Generation::Gen5 | crate::generation::Generation::Gen6 => {
-            super::generations::calculate_damage_gen56(&damage_context, old_damage_rolls).damage
-        }
-        _ => {
-            // Gen 7-9 calculation (modern)
-            super::generations::calculate_damage_modern_gen789(&damage_context, old_damage_rolls).damage
-        }
-    }
+    // Use the modular damage calculation through the generation dispatch
+    super::generations::calculate_damage(&damage_context, damage_rolls).damage
 }

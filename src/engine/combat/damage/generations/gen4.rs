@@ -6,7 +6,7 @@
 
 use crate::engine::combat::damage_context::{DamageContext, DamageResult, DamageEffect};
 use crate::engine::combat::type_effectiveness::{PokemonType, TypeChart};
-use crate::engine::combat::damage_calc::DamageRolls;
+use crate::engine::combat::damage::DamageRolls;
 
 /// Calculate final damage with Gen 4 specific system
 fn calculate_final_damage_gen4(

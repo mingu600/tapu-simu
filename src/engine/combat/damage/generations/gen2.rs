@@ -9,7 +9,7 @@ use crate::data::showdown_types::MoveData;
 use crate::utils::normalize_name;
 use crate::engine::combat::damage_context::{DamageContext, DamageResult, DamageEffect};
 use crate::engine::combat::type_effectiveness::{PokemonType, TypeChart};
-use crate::engine::combat::damage_calc::DamageRolls;
+use crate::engine::combat::damage::DamageRolls;
 
 /// Calculate Gen 2 critical hit probability using fixed stages
 /// Formula: Uses fixed stages - base 17/256 (~6.64%), high crit moves use +1 stage (1/8 = 12.5%)

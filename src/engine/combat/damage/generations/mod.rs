@@ -10,6 +10,7 @@ pub mod gen3;
 pub mod gen4;
 pub mod gen56;
 pub mod modern;
+pub mod dispatcher;
 
 // Re-export generation-specific calculation functions
 pub use gen1::{critical_hit_probability_gen1, calculate_damage_gen1};
@@ -18,3 +19,4 @@ pub use gen3::calculate_damage_gen3;
 pub use gen4::calculate_damage_gen4;
 pub use gen56::calculate_damage_gen56;
 pub use modern::calculate_damage_modern_gen789;
+pub use dispatcher::calculate_damage;
