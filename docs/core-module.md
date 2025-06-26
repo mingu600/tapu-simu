@@ -67,7 +67,7 @@ Explicit move selection system with comprehensive targeting support.
 pub enum MoveChoice {
     Move(MoveIndex, Vec<BattlePosition>),     // Standard move with targets
     MoveTera(MoveIndex, PokemonType, Vec<BattlePosition>), // Gen 9+ Terastallization
-    Switch(PokemonIndex),                      // Switch to bench Pokemon
+    Switch(PokemonIndex),                      // Switch to party Pokemon
     None,                                      // No action (forced switch, etc.)
 }
 ```
@@ -91,7 +91,6 @@ Complete Pokemon battle representation with context-aware stat calculations.
 - `Pokemon`: Full battle Pokemon with stats, moves, status, and volatile conditions
 - `Move`: Battle move with PP, accuracy, targeting, category, and priority
 - `DamageInfo`: Turn-based damage tracking for counter moves
-- `Gender`: Pokemon gender system (Male, Female, Genderless)
 
 **Stat System:**
 - Base stats with nature modifications
@@ -262,23 +261,6 @@ pub enum BattleInstruction {
 - `CopyStatBoosts(BattlePosition, BattlePosition)`: Boost copying
 - `SwapStatBoosts(BattlePosition, BattlePosition)`: Boost swapping
 - `InvertStatBoosts(BattlePosition)`: Boost sign inversion
-
-## Architectural Principles
-
-### Multi-Format First Design
-Every component assumes multiple active Pokemon and uses explicit position addressing. Format constraints are validated at targeting and instruction levels.
-
-### Position-Based Targeting  
-All move effects use `Vec<BattlePosition>` for targeting, eliminating implicit "opponent" references and enabling complex multi-target scenarios.
-
-### Instruction-Driven State Changes
-Battle state remains immutable during instruction generation, with all changes applied atomically through the instruction system.
-
-### Format-Aware Mechanics
-Components query the battle format for active Pokemon count, spread move support, and targeting validation constraints.
-
-### Type Safety
-Extensive use of newtypes (`MoveIndex`, `PokemonIndex`, `BattlePosition`) prevents position and index confusion.
 
 ## Component Integration
 

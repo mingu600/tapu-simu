@@ -2,6 +2,8 @@
 //!
 //! This module contains common utility functions used throughout the codebase.
 
+use crate::data::showdown_types::MoveTarget;
+
 /// Normalize names for consistent comparison (removes spaces, hyphens, apostrophes, dots and lowercases)
 /// 
 /// This function is used across the codebase for consistent name normalization:
@@ -23,6 +25,27 @@ pub fn normalize_name(name: &str) -> String {
     result
 }
 
+/// Convert Pokemon Showdown target string to enum
+pub fn target_from_string(target: &str) -> MoveTarget {
+    match target {
+        "normal" => MoveTarget::Normal,
+        "self" => MoveTarget::Self_,
+        "adjacentAlly" => MoveTarget::AdjacentAlly,
+        "adjacentAllyOrSelf" => MoveTarget::AdjacentAllyOrSelf,
+        "adjacentFoe" => MoveTarget::AdjacentFoe,
+        "allAdjacentFoes" => MoveTarget::AllAdjacentFoes,
+        "allAdjacent" => MoveTarget::AllAdjacent,
+        "all" => MoveTarget::All,
+        "allyTeam" => MoveTarget::AllyTeam,
+        "allySide" => MoveTarget::AllySide,
+        "foeSide" => MoveTarget::FoeSide,
+        "any" => MoveTarget::Any,
+        "randomNormal" => MoveTarget::RandomNormal,
+        "scripted" => MoveTarget::Scripted,
+        "allies" => MoveTarget::Allies,
+        _ => MoveTarget::Normal, // Default fallback
+    }
+}
 
 #[cfg(test)]
 mod tests {

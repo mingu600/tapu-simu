@@ -16,12 +16,9 @@ mod utils;
 
 use std::collections::HashMap;
 
-use tapu_simu::{
-    core::instructions::{
-        BattleInstruction, BattleInstructions, PokemonInstruction, Stat, StatsInstruction,
-        VolatileStatus,
-    },
-    StatusInstruction,
+use tapu_simu::core::instructions::{
+    BattleInstruction, BattleInstructions, PokemonInstruction, Stat, StatsInstruction,
+    StatusInstruction, VolatileStatus,
 };
 
 use utils::{PokemonSpec, Positions, TestBuilder};

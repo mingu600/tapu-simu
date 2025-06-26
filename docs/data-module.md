@@ -143,13 +143,6 @@ impl SpeciesId {
     }
 }
 
-// normalize_name removes spaces, hyphens, apostrophes, dots and converts to lowercase
-fn normalize_name(name: &str) -> String {
-    name.chars()
-        .filter(|c| !matches!(c, ' ' | '-' | '\'' | '.'))
-        .map(|c| c.to_lowercase().to_string())
-        .collect()
-}
 ```
 
 ### Repository Implementation Pattern
@@ -229,54 +222,6 @@ impl GameDataRepository {
             item_count: self.items.len(),
             ability_count: self.abilities.len(),
         }
-    }
-}
-```
-
-## Pokemon Showdown Integration
-
-### Data Conversion (`conversion.rs`)
-
-Type-safe conversion between Pokemon Showdown and engine formats.
-
-**Move Conversion:**
-```rust
-pub fn convert_move_data(ps_move: &MoveData) -> EngineMoveData {
-    EngineMoveData {
-        id: MoveId::from_name(&ps_move.name),
-        name: ps_move.name.clone(),
-        type_: ps_move.type_,
-        category: parse_move_category(&ps_move.category),
-        power: ps_move.power.unwrap_or(0),
-        accuracy: ps_move.accuracy.unwrap_or(100),
-        pp: ps_move.pp,
-        priority: ps_move.priority,
-        target: ps_move.target,
-        contact: ps_move.flags.contact,
-        protect: ps_move.flags.protect,
-        // ... additional field conversions
-    }
-}
-```
-
-**Pokemon Conversion:**
-```rust
-pub fn convert_pokemon_data(ps_pokemon: &PokemonData) -> EnginePokemonData {
-    EnginePokemonData {
-        id: SpeciesId::from_name(&ps_pokemon.name),
-        name: ps_pokemon.name.clone(),
-        types: ps_pokemon.types.clone(),
-        base_stats: EngineBaseStats {
-            hp: ps_pokemon.base_stats.hp as i16,
-            attack: ps_pokemon.base_stats.atk as i16,
-            defense: ps_pokemon.base_stats.def as i16,
-            special_attack: ps_pokemon.base_stats.spa as i16,
-            special_defense: ps_pokemon.base_stats.spd as i16,
-            speed: ps_pokemon.base_stats.spe as i16,
-        },
-        abilities: ps_pokemon.abilities.get_all_abilities(),
-        weight: ps_pokemon.weight_kg,
-        height: ps_pokemon.height_m,
     }
 }
 ```

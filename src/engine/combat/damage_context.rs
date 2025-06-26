@@ -11,7 +11,7 @@ use crate::core::instructions::MoveCategory;
 use crate::core::battle_state::BattleState;
 use crate::types::identifiers::AbilityId;
 use crate::data::showdown_types::MoveData;
-use crate::data::types::Stats;
+use crate::data::types::BaseStats;
 use serde::{Deserialize, Serialize};
 
 /// Comprehensive context for damage calculation
@@ -106,7 +106,7 @@ pub struct FormatContext {
 #[derive(Debug, Clone)]
 pub struct EffectiveStats {
     /// Current stat values
-    pub stats: Stats,
+    pub stats: BaseStats,
     /// Stat stage modifiers (-6 to +6)
     pub stat_stages: StatStages,
 }
@@ -518,7 +518,7 @@ impl Default for FormatContext {
 impl Default for EffectiveStats {
     fn default() -> Self {
         Self {
-            stats: crate::data::types::Stats {
+            stats: crate::data::types::BaseStats {
                 hp: 100,
                 attack: 100,
                 defense: 100,

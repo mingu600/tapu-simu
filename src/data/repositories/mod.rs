@@ -3,12 +3,10 @@
 pub mod move_repository;
 pub mod pokemon_repository;
 pub mod item_repository;
-pub mod ability_repository;
 
 pub use move_repository::{MoveRepository, load_moves_data};
 pub use pokemon_repository::{PokemonRepository, load_pokemon_data};
 pub use item_repository::{ItemRepository, load_items_data};
-pub use ability_repository::{AbilityRepository, load_abilities_data};
 
 use crate::types::DataResult;
 use std::path::Path;
@@ -19,7 +17,6 @@ pub struct GameDataRepository {
     pub moves: MoveRepository,
     pub pokemon: PokemonRepository,
     pub items: ItemRepository,
-    pub abilities: AbilityRepository,
 }
 
 impl GameDataRepository {
@@ -31,19 +28,16 @@ impl GameDataRepository {
         let moves_data = load_moves_data(&path.join("moves.json"))?;
         let pokemon_data = load_pokemon_data(&path.join("pokemon.json"))?;
         let items_data = load_items_data(&path.join("items.json"))?;
-        let abilities_data = load_abilities_data(&path.join("abilities.json"))?;
         
         // Create specialized repositories
         let moves = MoveRepository::new(moves_data);
         let pokemon = PokemonRepository::new(pokemon_data);
         let items = ItemRepository::new(items_data);
-        let abilities = AbilityRepository::new(abilities_data);
         
         Ok(Self {
             moves,
             pokemon,
             items,
-            abilities,
         })
     }
 
@@ -53,7 +47,6 @@ impl GameDataRepository {
             move_count: self.moves.count(),
             pokemon_count: self.pokemon.count(),
             item_count: self.items.count(),
-            ability_count: self.abilities.count(),
         }
     }
 }
@@ -64,7 +57,6 @@ pub struct RepositoryStats {
     pub move_count: usize,
     pub pokemon_count: usize,
     pub item_count: usize,
-    pub ability_count: usize,
 }
 
 // Global repository instance (singleton pattern)

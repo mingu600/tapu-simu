@@ -13,7 +13,10 @@ mod utils;
 
 use std::collections::HashMap;
 
-use tapu_simu::constants::critical_hits::*;
+// Critical hit constants for tests
+const GEN9_BASE_CRIT_CHANCE: f32 = 1.0 / 16.0; // 6.25%
+const GEN2_BASE_CRIT_CHANCE: f32 = 1.0 / 16.0; // 6.25%
+const GEN4_CRIT_MULTIPLIER: f32 = 1.5;  // Gen 4+ crit multiplier
 use tapu_simu::core::battle_format::{BattlePosition, SideReference};
 use tapu_simu::core::instructions::{
     BattleInstruction, BattleInstructions, PokemonInstruction, SideCondition, Stat,

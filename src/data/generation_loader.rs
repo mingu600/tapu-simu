@@ -1,23 +1,16 @@
 //! # Pokemon Showdown Generation-Specific Data Loader
-//! 
+//!
 //! This module provides generation-aware data loading for Pokemon Showdown data,
 //! enabling accurate battle simulation across different Pokemon generations.
 
+use crate::core::battle_state::{Move, MoveCategory};
+use crate::data::showdown_types::{ItemData, MoveData, PokemonData};
+use crate::utils::normalize_name;
+use crate::utils::target_from_string;
+use serde_json;
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
-use serde_json;
-use crate::data::showdown_types::{MoveData, ItemData, PokemonData};
-use crate::data::conversion::target_from_string;
-use crate::core::battle_state::{Move, MoveCategory};
-use crate::utils::normalize_name;
-
-/// Apply generation-specific stat changes to Pokemon data
-/// This function is now replaced by the proper generation-specific data extraction
-/// but kept as a placeholder for any manual overrides if needed
-fn apply_generation_stat_changes(_pokemon_data: &mut PokemonData, _generation: u8) {
-    // No longer needed - the data extractor handles all stat changes properly
-}
 
 /// Generation configuration
 #[derive(Debug, Clone)]
@@ -107,211 +100,237 @@ impl GenerationRepository {
         format!("gen{}", generation)
     }
 
-    /// Load generation-specific data from directory
-    pub fn load_from_directory(data_dir: &str) -> Result<Self, Box<dyn std::error::Error>> {
-        let generations = vec![
-            Generation { num: 1, id: "gen1".to_string(), name: "RBY".to_string() },
-            Generation { num: 2, id: "gen2".to_string(), name: "GSC".to_string() },
-            Generation { num: 3, id: "gen3".to_string(), name: "RSE".to_string() },
-            Generation { num: 4, id: "gen4".to_string(), name: "DPPt".to_string() },
-            Generation { num: 5, id: "gen5".to_string(), name: "BW".to_string() },
-            Generation { num: 6, id: "gen6".to_string(), name: "XY".to_string() },
-            Generation { num: 7, id: "gen7".to_string(), name: "SM".to_string() },
-            Generation { num: 8, id: "gen8".to_string(), name: "SWSH".to_string() },
-            Generation { num: 9, id: "gen9".to_string(), name: "SV".to_string() },
-        ];
+    /// Helper function to load generation-specific data from JSON
+    fn load_generation_data<T, G>(
+        data_dir: &str,
+        filename: &str,
+        generations: &[Generation],
+        data_key: &str,
+        constructor: impl Fn(u8, String, usize, HashMap<String, T>) -> G,
+    ) -> Result<HashMap<String, G>, Box<dyn std::error::Error>>
+    where
+        T: serde::de::DeserializeOwned,
+    {
+        let file_path = Path::new(data_dir).join(filename);
+        let mut result = HashMap::new();
 
-        // Load generation move data
-        let generation_move_data_path = Path::new(data_dir).join("moves-by-generation.json");
-        let generation_move_data_content = fs::read_to_string(&generation_move_data_path)?;
-        let raw_generation_move_data: serde_json::Value = serde_json::from_str(&generation_move_data_content)?;
+        if file_path.exists() {
+            let file_content = fs::read_to_string(&file_path)?;
+            let raw_data: serde_json::Value = serde_json::from_str(&file_content)?;
 
-        let mut generation_move_data = HashMap::new();
-        
-        for generation in &generations {
-            if let Some(gen_data) = raw_generation_move_data.get(&generation.id) {
-                let gen_moves_raw = gen_data.get("moves").unwrap().as_object().unwrap();
-                let mut gen_moves = HashMap::new();
-
-                for (move_id, move_value) in gen_moves_raw {
-                    let move_data: MoveData = serde_json::from_value(move_value.clone())?;
-                    gen_moves.insert(move_id.clone(), move_data);
-                }
-
-                generation_move_data.insert(generation.id.clone(), GenerationMoveData {
-                    generation: generation.num,
-                    name: generation.name.clone(),
-                    move_count: gen_moves.len(),
-                    moves: gen_moves,
-                });
-            }
-        }
-
-        // Load generation item data
-        let generation_item_data_path = Path::new(data_dir).join("items-by-generation.json");
-        let mut generation_item_data = HashMap::new();
-        
-        if generation_item_data_path.exists() {
-            let generation_item_data_content = fs::read_to_string(&generation_item_data_path)?;
-            let raw_generation_item_data: serde_json::Value = serde_json::from_str(&generation_item_data_content)?;
-            
-            for generation in &generations {
-                if let Some(gen_data) = raw_generation_item_data.get(&generation.id) {
-                    let gen_items_raw = gen_data.get("items").unwrap().as_object().unwrap();
+            for generation in generations {
+                if let Some(gen_data) = raw_data.get(&generation.id) {
+                    let gen_items_raw = gen_data.get(data_key).unwrap().as_object().unwrap();
                     let mut gen_items = HashMap::new();
 
                     for (item_id, item_value) in gen_items_raw {
-                        let item_data: ItemData = serde_json::from_value(item_value.clone())?;
+                        let item_data: T = serde_json::from_value(item_value.clone())?;
                         gen_items.insert(item_id.clone(), item_data);
                     }
 
-                    generation_item_data.insert(generation.id.clone(), GenerationItemData {
-                        generation: generation.num,
-                        name: generation.name.clone(),
-                        item_count: gen_items.len(),
-                        items: gen_items,
-                    });
+                    let count = gen_items.len();
+                    result.insert(
+                        generation.id.clone(),
+                        constructor(generation.num, generation.name.clone(), count, gen_items),
+                    );
                 }
             }
         }
 
-        // Load move changes data
-        let move_changes_path = Path::new(data_dir).join("move-changes.json");
-        let move_changes_content = fs::read_to_string(&move_changes_path)?;
-        let raw_move_changes: serde_json::Value = serde_json::from_str(&move_changes_content)?;
+        Ok(result)
+    }
 
-        let mut move_changes = HashMap::new();
-        
-        if let Some(changes_obj) = raw_move_changes.as_object() {
-            for (move_id, change_data) in changes_obj {
-                let name = change_data.get("name").unwrap().as_str().unwrap().to_string();
-                let changes_array = change_data.get("changes").unwrap().as_array().unwrap();
-                
-                let mut changes = Vec::new();
-                for change in changes_array {
-                    let generation = change.get("generation").unwrap().as_u64().unwrap() as u8;
-                    let field_changes_array = change.get("changes").unwrap().as_array().unwrap();
-                    
-                    let mut field_changes = Vec::new();
-                    for field_change in field_changes_array {
-                        field_changes.push(FieldChange {
-                            field: field_change.get("field").unwrap().as_str().unwrap().to_string(),
-                            from: field_change.get("from").unwrap().clone(),
-                            to: field_change.get("to").unwrap().clone(),
-                        });
-                    }
-                    
-                    changes.push(GenerationChange {
-                        generation,
-                        changes: field_changes,
-                    });
-                }
-                
-                move_changes.insert(move_id.clone(), MoveChangeHistory {
-                    name,
-                    changes,
-                });
-            }
-        }
+    /// Helper function to load change history data from JSON
+    fn load_change_history<C>(
+        data_dir: &str,
+        filename: &str,
+        constructor: impl Fn(String, Vec<GenerationChange>) -> C,
+    ) -> Result<HashMap<String, C>, Box<dyn std::error::Error>> {
+        let file_path = Path::new(data_dir).join(filename);
+        let mut result = HashMap::new();
 
-        // Load generation Pokemon data (if available)
-        let generation_pokemon_data_path = Path::new(data_dir).join("pokemon-by-generation.json");
-        let mut generation_pokemon_data = HashMap::new();
-        
-        if generation_pokemon_data_path.exists() {
-            let generation_pokemon_data_content = fs::read_to_string(&generation_pokemon_data_path)?;
-            let raw_generation_pokemon_data: serde_json::Value = serde_json::from_str(&generation_pokemon_data_content)?;
-            
-            for generation in &generations {
-                if let Some(gen_data) = raw_generation_pokemon_data.get(&generation.id) {
-                    let gen_pokemon_raw = gen_data.get("pokemon").unwrap().as_object().unwrap();
-                    let mut gen_pokemon = HashMap::new();
+        if file_path.exists() {
+            let file_content = fs::read_to_string(&file_path)?;
+            let raw_data: serde_json::Value = serde_json::from_str(&file_content)?;
 
-                    for (pokemon_id, pokemon_value) in gen_pokemon_raw {
-                        let pokemon_data: PokemonData = serde_json::from_value(pokemon_value.clone())?;
-                        gen_pokemon.insert(pokemon_id.clone(), pokemon_data);
-                    }
-
-                    generation_pokemon_data.insert(generation.id.clone(), GenerationPokemonData {
-                        generation: generation.num,
-                        name: generation.name.clone(),
-                        pokemon_count: gen_pokemon.len(),
-                        pokemon: gen_pokemon,
-                    });
-                }
-            }
-        } else {
-            // If no generation-specific Pokemon data exists, create from base data with known stat changes
-            let base_pokemon_path = Path::new(data_dir).join("pokemon.json");
-            if base_pokemon_path.exists() {
-                let base_pokemon_content = fs::read_to_string(&base_pokemon_path)?;
-                let base_pokemon: HashMap<String, PokemonData> = serde_json::from_str(&base_pokemon_content)?;
-                
-                for generation in &generations {
-                    let mut gen_pokemon = HashMap::new();
-                    
-                    for (pokemon_id, base_data) in &base_pokemon {
-                        let mut pokemon_data = base_data.clone();
-                        
-                        // Apply generation-specific stat changes
-                        apply_generation_stat_changes(&mut pokemon_data, generation.num);
-                        
-                        gen_pokemon.insert(pokemon_id.clone(), pokemon_data);
-                    }
-                    
-                    generation_pokemon_data.insert(generation.id.clone(), GenerationPokemonData {
-                        generation: generation.num,
-                        name: generation.name.clone(),
-                        pokemon_count: gen_pokemon.len(),
-                        pokemon: gen_pokemon,
-                    });
-                }
-            }
-        }
-
-        // Load item changes data
-        let item_changes_path = Path::new(data_dir).join("item-changes.json");
-        let mut item_changes = HashMap::new();
-        
-        if item_changes_path.exists() {
-            let item_changes_content = fs::read_to_string(&item_changes_path)?;
-            let raw_item_changes: serde_json::Value = serde_json::from_str(&item_changes_content)?;
-            
-            if let Some(changes_obj) = raw_item_changes.as_object() {
+            if let Some(changes_obj) = raw_data.as_object() {
                 for (item_id, change_data) in changes_obj {
-                    let name = change_data.get("name").unwrap().as_str().unwrap().to_string();
+                    let name = change_data
+                        .get("name")
+                        .unwrap()
+                        .as_str()
+                        .unwrap()
+                        .to_string();
                     let changes_array = change_data.get("changes").unwrap().as_array().unwrap();
-                    
+
                     let mut changes = Vec::new();
                     for change in changes_array {
                         let generation = change.get("generation").unwrap().as_u64().unwrap() as u8;
                         let field_changes_array = change.get("changes").unwrap().as_array().unwrap();
-                        
+
                         let mut field_changes = Vec::new();
                         for field_change in field_changes_array {
                             field_changes.push(FieldChange {
-                                field: field_change.get("field").unwrap().as_str().unwrap().to_string(),
+                                field: field_change
+                                    .get("field")
+                                    .unwrap()
+                                    .as_str()
+                                    .unwrap()
+                                    .to_string(),
                                 from: field_change.get("from").unwrap().clone(),
                                 to: field_change.get("to").unwrap().clone(),
                             });
                         }
-                        
+
                         changes.push(GenerationChange {
                             generation,
                             changes: field_changes,
                         });
                     }
-                    
-                    item_changes.insert(item_id.clone(), ItemChangeHistory {
-                        name,
-                        changes,
-                    });
+
+                    result.insert(item_id.clone(), constructor(name, changes));
                 }
             }
         }
 
-        // Load Pokemon changes data (placeholder - can be expanded if needed)
-        let pokemon_changes = HashMap::new();
+        Ok(result)
+    }
+
+    /// Load generation-specific data from directory
+    pub fn load_from_directory(data_dir: &str) -> Result<Self, Box<dyn std::error::Error>> {
+        let generations = vec![
+            Generation {
+                num: 1,
+                id: "gen1".to_string(),
+                name: "RBY".to_string(),
+            },
+            Generation {
+                num: 2,
+                id: "gen2".to_string(),
+                name: "GSC".to_string(),
+            },
+            Generation {
+                num: 3,
+                id: "gen3".to_string(),
+                name: "RSE".to_string(),
+            },
+            Generation {
+                num: 4,
+                id: "gen4".to_string(),
+                name: "DPPt".to_string(),
+            },
+            Generation {
+                num: 5,
+                id: "gen5".to_string(),
+                name: "BW".to_string(),
+            },
+            Generation {
+                num: 6,
+                id: "gen6".to_string(),
+                name: "XY".to_string(),
+            },
+            Generation {
+                num: 7,
+                id: "gen7".to_string(),
+                name: "SM".to_string(),
+            },
+            Generation {
+                num: 8,
+                id: "gen8".to_string(),
+                name: "SWSH".to_string(),
+            },
+            Generation {
+                num: 9,
+                id: "gen9".to_string(),
+                name: "SV".to_string(),
+            },
+        ];
+
+        // Load generation move data
+        let generation_move_data = Self::load_generation_data(
+            data_dir,
+            "moves-by-generation.json",
+            &generations,
+            "moves",
+            |generation, name, count, moves| GenerationMoveData {
+                generation,
+                name,
+                move_count: count,
+                moves,
+            },
+        )?;
+
+        // Load generation item data
+        let generation_item_data = Self::load_generation_data(
+            data_dir,
+            "items-by-generation.json",
+            &generations,
+            "items",
+            |generation, name, count, items| GenerationItemData {
+                generation,
+                name,
+                item_count: count,
+                items,
+            },
+        )?;
+
+        // Load move changes data
+        let move_changes = Self::load_change_history(
+            data_dir,
+            "move-changes.json",
+            |name, changes| MoveChangeHistory { name, changes },
+        )?;
+
+        // Load generation Pokemon data (if available)
+        let mut generation_pokemon_data = Self::load_generation_data(
+            data_dir,
+            "pokemon-by-generation.json",
+            &generations,
+            "pokemon",
+            |generation, name, count, pokemon| GenerationPokemonData {
+                generation,
+                name,
+                pokemon_count: count,
+                pokemon,
+            },
+        )?;
+
+        // If no generation-specific Pokemon data exists, create from base data
+        if generation_pokemon_data.is_empty() {
+            let base_pokemon_path = Path::new(data_dir).join("pokemon.json");
+            if base_pokemon_path.exists() {
+                let base_pokemon_content = fs::read_to_string(&base_pokemon_path)?;
+                let base_pokemon: HashMap<String, PokemonData> =
+                    serde_json::from_str(&base_pokemon_content)?;
+
+                for generation in &generations {
+                    let gen_pokemon = base_pokemon.clone();
+                    generation_pokemon_data.insert(
+                        generation.id.clone(),
+                        GenerationPokemonData {
+                            generation: generation.num,
+                            name: generation.name.clone(),
+                            pokemon_count: gen_pokemon.len(),
+                            pokemon: gen_pokemon,
+                        },
+                    );
+                }
+            }
+        }
+
+        // Load item changes data
+        let item_changes = Self::load_change_history(
+            data_dir,
+            "item-changes.json",
+            |name, changes| ItemChangeHistory { name, changes },
+        )?;
+
+        // Load Pokemon changes data
+        let pokemon_changes = Self::load_change_history(
+            data_dir,
+            "pokemon-changes.json",
+            |name, changes| PokemonChangeHistory { name, changes },
+        )?;
 
         Ok(Self {
             generations,
@@ -332,10 +351,14 @@ impl GenerationRepository {
 
     /// Find move data by name (handles both display names and IDs) for a specific generation
     /// Falls back to earlier generations if move doesn't exist in target generation
-    pub fn find_move_by_name_for_generation(&self, move_name: &str, generation: u8) -> Option<&MoveData> {
+    pub fn find_move_by_name_for_generation(
+        &self,
+        move_name: &str,
+        generation: u8,
+    ) -> Option<&MoveData> {
         // Normalize the search name
         let normalized_name = crate::utils::normalize_name(move_name);
-        
+
         // Search from target generation backward to gen 1
         for gen in (1..=generation).rev() {
             let gen_id = Self::gen_id(gen);
@@ -344,7 +367,7 @@ impl GenerationRepository {
                 if let Some(move_data) = generation_data.moves.get(&normalized_name) {
                     return Some(move_data);
                 }
-                
+
                 // Fallback to searching by normalized display name
                 if let Some(move_data) = generation_data.moves.values().find(|move_data| {
                     crate::utils::normalize_name(&move_data.name) == normalized_name
@@ -353,7 +376,7 @@ impl GenerationRepository {
                 }
             }
         }
-        
+
         None
     }
 
@@ -365,10 +388,14 @@ impl GenerationRepository {
 
     /// Find item data by name (handles both display names and IDs) for a specific generation
     /// Falls back to earlier generations if item doesn't exist in target generation
-    pub fn find_item_by_name_for_generation(&self, item_name: &str, generation: u8) -> Option<&ItemData> {
+    pub fn find_item_by_name_for_generation(
+        &self,
+        item_name: &str,
+        generation: u8,
+    ) -> Option<&ItemData> {
         // Normalize the search name
         let normalized_name = normalize_name(item_name);
-        
+
         // Search from target generation backward to gen 1
         for gen in (1..=generation).rev() {
             let gen_id = Self::gen_id(gen);
@@ -377,31 +404,44 @@ impl GenerationRepository {
                 if let Some(item_data) = generation_data.items.get(&normalized_name) {
                     return Some(item_data);
                 }
-                
+
                 // Fallback to searching by normalized display name
-                if let Some(item_data) = generation_data.items.values().find(|item_data| {
-                    normalize_name(&item_data.name) == normalized_name
-                }) {
+                if let Some(item_data) = generation_data
+                    .items
+                    .values()
+                    .find(|item_data| normalize_name(&item_data.name) == normalized_name)
+                {
                     return Some(item_data);
                 }
             }
         }
-        
+
         None
     }
 
     /// Get Pokemon data for a specific generation
-    pub fn get_pokemon_for_generation(&self, pokemon_name: &str, generation: u8) -> Option<&PokemonData> {
+    pub fn get_pokemon_for_generation(
+        &self,
+        pokemon_name: &str,
+        generation: u8,
+    ) -> Option<&PokemonData> {
         let gen_id = Self::gen_id(generation);
-        self.generation_pokemon_data.get(&gen_id)?.pokemon.get(pokemon_name)
+        self.generation_pokemon_data
+            .get(&gen_id)?
+            .pokemon
+            .get(pokemon_name)
     }
 
     /// Find Pokemon data by name (handles both display names and IDs) for a specific generation
     /// Falls back to earlier generations if Pokemon doesn't exist in target generation
-    pub fn find_pokemon_by_name_for_generation(&self, pokemon_name: &str, generation: u8) -> Option<&PokemonData> {
+    pub fn find_pokemon_by_name_for_generation(
+        &self,
+        pokemon_name: &str,
+        generation: u8,
+    ) -> Option<&PokemonData> {
         // Normalize the search name
         let normalized_name = normalize_name(pokemon_name);
-        
+
         // Search from target generation backward to gen 1
         for gen in (1..=generation).rev() {
             let gen_id = Self::gen_id(gen);
@@ -410,16 +450,18 @@ impl GenerationRepository {
                 if let Some(pokemon_data) = generation_data.pokemon.get(&normalized_name) {
                     return Some(pokemon_data);
                 }
-                
+
                 // Fallback to searching by normalized display name
-                if let Some(pokemon_data) = generation_data.pokemon.values().find(|pokemon_data| {
-                    normalize_name(&pokemon_data.name) == normalized_name
-                }) {
+                if let Some(pokemon_data) = generation_data
+                    .pokemon
+                    .values()
+                    .find(|pokemon_data| normalize_name(&pokemon_data.name) == normalized_name)
+                {
                     return Some(pokemon_data);
                 }
             }
         }
-        
+
         None
     }
 
@@ -435,10 +477,16 @@ impl GenerationRepository {
 
     /// Get all generations where a move exists (optimized single pass)
     pub fn get_move_generations(&self, move_name: &str) -> Vec<u8> {
-        self.generations.iter()
+        self.generations
+            .iter()
             .filter_map(|gen| {
                 let gen_id = Self::gen_id(gen.num);
-                if self.generation_move_data.get(&gen_id)?.moves.contains_key(move_name) {
+                if self
+                    .generation_move_data
+                    .get(&gen_id)?
+                    .moves
+                    .contains_key(move_name)
+                {
                     Some(gen.num)
                 } else {
                     None
@@ -449,10 +497,16 @@ impl GenerationRepository {
 
     /// Get all generations where an item exists (optimized single pass)
     pub fn get_item_generations(&self, item_name: &str) -> Vec<u8> {
-        self.generations.iter()
+        self.generations
+            .iter()
             .filter_map(|gen| {
                 let gen_id = Self::gen_id(gen.num);
-                if self.generation_item_data.get(&gen_id)?.items.contains_key(item_name) {
+                if self
+                    .generation_item_data
+                    .get(&gen_id)?
+                    .items
+                    .contains_key(item_name)
+                {
                     Some(gen.num)
                 } else {
                     None
@@ -464,7 +518,8 @@ impl GenerationRepository {
     /// Check if a move exists in a specific generation (optimized)
     pub fn move_exists_in_generation(&self, move_name: &str, generation: u8) -> bool {
         let gen_id = Self::gen_id(generation);
-        self.generation_move_data.get(&gen_id)
+        self.generation_move_data
+            .get(&gen_id)
             .map(|data| data.moves.contains_key(move_name))
             .unwrap_or(false)
     }
@@ -472,7 +527,8 @@ impl GenerationRepository {
     /// Check if an item exists in a specific generation (optimized)
     pub fn item_exists_in_generation(&self, item_name: &str, generation: u8) -> bool {
         let gen_id = Self::gen_id(generation);
-        self.generation_item_data.get(&gen_id)
+        self.generation_item_data
+            .get(&gen_id)
             .map(|data| data.items.contains_key(item_name))
             .unwrap_or(false)
     }
@@ -487,14 +543,25 @@ impl GenerationRepository {
         self.item_changes.get(item_name)
     }
 
+    /// Get change history for a Pokemon
+    pub fn get_pokemon_changes(&self, pokemon_name: &str) -> Option<&PokemonChangeHistory> {
+        self.pokemon_changes.get(pokemon_name)
+    }
+
     /// Get all moves for a specific generation
-    pub fn get_all_moves_for_generation(&self, generation: u8) -> Option<&HashMap<String, MoveData>> {
+    pub fn get_all_moves_for_generation(
+        &self,
+        generation: u8,
+    ) -> Option<&HashMap<String, MoveData>> {
         let gen_id = Self::gen_id(generation);
         Some(&self.generation_move_data.get(&gen_id)?.moves)
     }
 
     /// Get all items for a specific generation
-    pub fn get_all_items_for_generation(&self, generation: u8) -> Option<&HashMap<String, ItemData>> {
+    pub fn get_all_items_for_generation(
+        &self,
+        generation: u8,
+    ) -> Option<&HashMap<String, ItemData>> {
         let gen_id = Self::gen_id(generation);
         Some(&self.generation_item_data.get(&gen_id)?.items)
     }
@@ -505,20 +572,22 @@ impl GenerationRepository {
         move_data.to_engine_move()
     }
 
-
     /// Get generation statistics
     pub fn get_generation_stats(&self) -> Vec<GenerationStats> {
-        self.generations.iter().map(|gen| {
-            let move_data = self.generation_move_data.get(&gen.id);
-            let item_data = self.generation_item_data.get(&gen.id);
-            GenerationStats {
-                generation: gen.num,
-                name: gen.name.clone(),
-                move_count: move_data.map(|d| d.move_count).unwrap_or(0),
-                item_count: item_data.map(|d| d.item_count).unwrap_or(0),
-                has_data: move_data.is_some(),
-            }
-        }).collect()
+        self.generations
+            .iter()
+            .map(|gen| {
+                let move_data = self.generation_move_data.get(&gen.id);
+                let item_data = self.generation_item_data.get(&gen.id);
+                GenerationStats {
+                    generation: gen.num,
+                    name: gen.name.clone(),
+                    move_count: move_data.map(|d| d.move_count).unwrap_or(0),
+                    item_count: item_data.map(|d| d.item_count).unwrap_or(0),
+                    has_data: move_data.is_some(),
+                }
+            })
+            .collect()
     }
 
     /// Get total change statistics
@@ -526,10 +595,20 @@ impl GenerationRepository {
         ChangeStats {
             total_moves_with_changes: self.move_changes.len(),
             total_items_with_changes: self.item_changes.len(),
-            total_move_changes: self.move_changes.values()
+            total_pokemon_with_changes: self.pokemon_changes.len(),
+            total_move_changes: self
+                .move_changes
+                .values()
                 .map(|history| history.changes.len())
                 .sum(),
-            total_item_changes: self.item_changes.values()
+            total_item_changes: self
+                .item_changes
+                .values()
+                .map(|history| history.changes.len())
+                .sum(),
+            total_pokemon_changes: self
+                .pokemon_changes
+                .values()
                 .map(|history| history.changes.len())
                 .sum(),
         }
@@ -537,15 +616,40 @@ impl GenerationRepository {
 
     /// Find moves that changed in a specific generation
     pub fn get_moves_changed_in_generation(&self, generation: u8) -> Vec<&MoveChangeHistory> {
-        self.move_changes.values()
-            .filter(|history| history.changes.iter().any(|change| change.generation == generation))
+        self.move_changes
+            .values()
+            .filter(|history| {
+                history
+                    .changes
+                    .iter()
+                    .any(|change| change.generation == generation)
+            })
             .collect()
     }
 
     /// Find items that changed in a specific generation
     pub fn get_items_changed_in_generation(&self, generation: u8) -> Vec<&ItemChangeHistory> {
-        self.item_changes.values()
-            .filter(|history| history.changes.iter().any(|change| change.generation == generation))
+        self.item_changes
+            .values()
+            .filter(|history| {
+                history
+                    .changes
+                    .iter()
+                    .any(|change| change.generation == generation)
+            })
+            .collect()
+    }
+
+    /// Find Pokemon that changed in a specific generation
+    pub fn get_pokemon_changed_in_generation(&self, generation: u8) -> Vec<&PokemonChangeHistory> {
+        self.pokemon_changes
+            .values()
+            .filter(|history| {
+                history
+                    .changes
+                    .iter()
+                    .any(|change| change.generation == generation)
+            })
             .collect()
     }
 }
@@ -565,7 +669,8 @@ pub struct GenerationStats {
 pub struct ChangeStats {
     pub total_moves_with_changes: usize,
     pub total_items_with_changes: usize,
+    pub total_pokemon_with_changes: usize,
     pub total_move_changes: usize,
     pub total_item_changes: usize,
+    pub total_pokemon_changes: usize,
 }
-

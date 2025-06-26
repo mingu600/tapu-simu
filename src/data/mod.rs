@@ -14,8 +14,6 @@
 //!   generation-specific data and mechanics, supporting multiple Pokemon
 //!   generations with their unique rule sets.
 //!
-//! - **Conversion** (`conversion`): Utilities for converting between different
-//!   data formats and normalizing names for consistent data access.
 //!
 //! - **Showdown Types** (`showdown_types`): Type definitions that match
 //!   Pokemon Showdown's data format, ensuring compatibility and accuracy.
@@ -42,7 +40,6 @@
 //!
 //! Load the data repository and look up Pokemon data or generate random teams.
 
-pub mod conversion;
 pub mod repositories;
 pub mod generation_loader;
 pub mod showdown_types;
@@ -50,8 +47,7 @@ pub mod random_team_loader;
 pub mod types;
 
 // Re-exports for convenience
-pub use conversion::*;
-pub use repositories::{GameDataRepository, MoveRepository, PokemonRepository, ItemRepository, AbilityRepository, RepositoryStats};
+pub use repositories::{GameDataRepository, MoveRepository, PokemonRepository, ItemRepository, RepositoryStats};
 pub use generation_loader::GenerationRepository;
 pub use showdown_types::*;
 pub use random_team_loader::{RandomTeamLoader, RandomPokemonSet, RandomTeam};

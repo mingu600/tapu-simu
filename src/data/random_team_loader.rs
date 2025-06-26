@@ -6,7 +6,7 @@
 use crate::core::battle_format::BattleFormat;
 use crate::core::move_choice::PokemonType;
 use crate::core::battle_state::{Gender, Pokemon};
-use crate::data::types::{Nature, Stats};
+use crate::data::types::{Nature, BaseStats};
 use rand::rngs::StdRng;
 use rand::seq::SliceRandom;
 use rand::SeedableRng;
@@ -46,9 +46,9 @@ pub struct RandomStats {
 }
 
 impl RandomStats {
-    /// Convert to our internal Stats type with defaults
-    pub fn to_stats(&self, default_value: u8) -> Stats {
-        Stats {
+    /// Convert to our internal BaseStats type with defaults
+    pub fn to_stats(&self, default_value: u8) -> BaseStats {
+        BaseStats {
             hp: self.hp.unwrap_or(default_value) as i16,
             attack: self.atk.unwrap_or(default_value) as i16,
             defense: self.def.unwrap_or(default_value) as i16,
@@ -297,12 +297,44 @@ impl RandomPokemonSet {
         })
     }
 
+    /// Apply Smogon Random Battle optimization rules to stats
+    fn apply_stat_optimizations(&self, mut stats: BaseStats, repository: &crate::data::GameDataRepository) -> BaseStats {
+        // Check for physical moves
+        let has_physical_moves = self.moves.iter().any(|move_name| {
+            use crate::types::identifiers::MoveId;
+            let move_id = MoveId::from(move_name.clone());
+            if let Ok(move_data) = repository.moves.find_by_id(&move_id) {
+                move_data.category == "Physical"
+            } else {
+                false
+            }
+        });
+
+        // Check for speed-dependent moves
+        let has_speed_dependent_moves = self.moves.iter().any(|move_name| {
+            let name_lower = move_name.to_lowercase();
+            name_lower == "trick room" || name_lower == "gyro ball"
+        });
+
+        // No physical attacks: Attack stat = 0
+        if !has_physical_moves {
+            stats.attack = 0;
+        }
+
+        // Has Trick Room or Gyro Ball: Speed stat = 0
+        if has_speed_dependent_moves {
+            stats.speed = 0;
+        }
+
+        stats
+    }
+
     /// Get EVs with Smogon Random Battle optimization rules
-    pub fn get_evs(&self, repository: &crate::data::GameDataRepository) -> Stats {
+    pub fn get_evs(&self, repository: &crate::data::GameDataRepository) -> BaseStats {
         // Start with default Random Battle EVs
-        let mut evs = match &self.evs {
+        let evs = match &self.evs {
             Some(evs) => evs.to_stats(85),
-            None => Stats {
+            None => BaseStats {
                 hp: 85,
                 attack: 85,
                 defense: 85,
@@ -312,41 +344,15 @@ impl RandomPokemonSet {
             },
         };
 
-        // Apply Smogon Random Battle optimization rules
-        let has_physical_moves = self.moves.iter().any(|move_name| {
-            use crate::types::identifiers::MoveId;
-            let move_id = MoveId::from(move_name.clone());
-            if let Ok(move_data) = repository.moves.find_by_id(&move_id) {
-                move_data.category == "Physical"
-            } else {
-                false
-            }
-        });
-
-        let has_speed_dependent_moves = self.moves.iter().any(|move_name| {
-            let name_lower = move_name.to_lowercase();
-            name_lower == "trick room" || name_lower == "gyro ball"
-        });
-
-        // No physical attacks: Attack EVs = 0
-        if !has_physical_moves {
-            evs.attack = 0;
-        }
-
-        // Has Trick Room or Gyro Ball: Speed EVs = 0
-        if has_speed_dependent_moves {
-            evs.speed = 0;
-        }
-
-        evs
+        self.apply_stat_optimizations(evs, repository)
     }
 
     /// Get IVs with Smogon Random Battle optimization rules
-    pub fn get_ivs(&self, repository: &crate::data::GameDataRepository) -> Stats {
+    pub fn get_ivs(&self, repository: &crate::data::GameDataRepository) -> BaseStats {
         // Start with default Random Battle IVs (perfect)
-        let mut ivs = match &self.ivs {
+        let ivs = match &self.ivs {
             Some(ivs) => ivs.to_stats(31),
-            None => Stats {
+            None => BaseStats {
                 hp: 31,
                 attack: 31,
                 defense: 31,
@@ -356,33 +362,7 @@ impl RandomPokemonSet {
             },
         };
 
-        // Apply Smogon Random Battle optimization rules
-        let has_physical_moves = self.moves.iter().any(|move_name| {
-            use crate::types::identifiers::MoveId;
-            let move_id = MoveId::from(move_name.clone());
-            if let Ok(move_data) = repository.moves.find_by_id(&move_id) {
-                move_data.category == "Physical"
-            } else {
-                false
-            }
-        });
-
-        let has_speed_dependent_moves = self.moves.iter().any(|move_name| {
-            let name_lower = move_name.to_lowercase();
-            name_lower == "trick room" || name_lower == "gyro ball"
-        });
-
-        // No physical attacks: Attack IVs = 0
-        if !has_physical_moves {
-            ivs.attack = 0;
-        }
-
-        // Has Trick Room or Gyro Ball: Speed IVs = 0
-        if has_speed_dependent_moves {
-            ivs.speed = 0;
-        }
-
-        ivs
+        self.apply_stat_optimizations(ivs, repository)
     }
 
     /// Check if this Pokemon is shiny
@@ -437,7 +417,7 @@ impl RandomPokemonSet {
         } else {
             eprintln!("Warning: Base stats for '{}' not found in PS data, using fallback", self.species);
             // Use reasonable fallback stats
-            crate::data::types::EngineBaseStats {
+            crate::data::types::BaseStats {
                 hp: 70,
                 attack: 70,
                 defense: 70,
@@ -493,7 +473,7 @@ impl RandomPokemonSet {
 
         pokemon.hp = hp as i16;
         pokemon.max_hp = hp as i16;
-        pokemon.stats = Stats {
+        pokemon.stats = BaseStats {
             hp: hp as i16,
             attack,
             defense,

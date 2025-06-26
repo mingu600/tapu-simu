@@ -3,7 +3,7 @@
 use crate::core::battle_format::BattlePosition;
 use crate::core::instructions::{MoveCategory, PokemonStatus, VolatileStatus};
 use crate::core::move_choice::MoveIndex;
-use crate::data::types::Stats;
+use crate::data::types::BaseStats;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 
@@ -129,7 +129,7 @@ pub struct Pokemon {
     /// Maximum HP
     pub max_hp: i16,
     /// Base stats
-    pub stats: Stats,
+    pub stats: BaseStats,
     /// Current stat boosts (-6 to +6)
     pub stat_boosts: HashMap<crate::core::instructions::Stat, i8>,
     /// Current status condition
@@ -175,7 +175,7 @@ impl Pokemon {
             species,
             hp: 100,
             max_hp: 100,
-            stats: Stats {
+            stats: BaseStats {
                 hp: 100,
                 attack: 100,
                 defense: 100,
