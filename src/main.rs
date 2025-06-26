@@ -3,10 +3,13 @@
 //! Command-line interface for Tapu Simu.
 
 use clap::Parser;
+use rand::rngs::StdRng;
+use rand::SeedableRng;
+
 use tapu_simu::data::RandomTeamLoader;
 use tapu_simu::io::{parse_battle_format, print_engine_info, Cli, Commands};
 use tapu_simu::types::errors::{BattleError, BattleResult};
-use tapu_simu::{BattleFormat, BattleState};
+use tapu_simu::{BattleEnvironment, BattleFormat, BattleState, DamageMaximizer, FirstMovePlayer, RandomPlayer};
 
 fn main() -> BattleResult<()> {
     let cli = Cli::parse();
@@ -80,9 +83,6 @@ fn setup_battle_config(
     config_file: Option<String>,
     verbose: bool,
 ) -> BattleResult<()> {
-    use rand::{SeedableRng};
-    use rand::rngs::StdRng;
-
     if let Some(seed_value) = seed {
         let _rng = StdRng::seed_from_u64(seed_value);
         if verbose {
@@ -124,7 +124,6 @@ fn execute_battles(
     verbose: bool,
     log_file: Option<String>,
 ) -> BattleResult<(usize, usize, usize)> {
-    use tapu_simu::{BattleEnvironment, DamageMaximizer, FirstMovePlayer, RandomPlayer};
 
     println!("Running {} battle(s) in {} format", runs, format);
 
@@ -346,7 +345,7 @@ fn validate_format(format: BattleFormat) {
 
 fn debug_stats() -> Result<(), Box<dyn std::error::Error>> {
     use tapu_simu::data::GameDataRepository;
-    use tapu_simu::types::{SpeciesId, MoveId};
+    use tapu_simu::types::{MoveId, SpeciesId};
     
     let repository = GameDataRepository::from_path("data/ps-extracted")?;
     

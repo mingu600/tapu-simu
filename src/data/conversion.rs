@@ -4,7 +4,6 @@
 
 use crate::data::showdown_types::MoveTarget;
 
-// This module previously handled conversion from legacy MoveTarget to MoveTarget
 // Since we now use MoveTarget throughout, only string conversion functions remain
 
 /// Convert Pokemon Showdown target string to enum

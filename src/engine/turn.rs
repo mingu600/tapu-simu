@@ -3,16 +3,16 @@
 //! This module replaces the complex generator hierarchy with simple functions
 //! for turn resolution, following the modernization plan.
 
+use std::collections::HashMap;
+
 use crate::core::battle_format::{BattleFormat, BattlePosition, SideReference};
-use crate::core::instructions::{BattleInstruction, BattleInstructions, PokemonInstruction};
-use crate::core::move_choice::MoveChoice;
 use crate::core::battle_state::BattleState;
+use crate::core::instructions::{BattleInstruction, BattleInstructions, PokemonInstruction, Weather};
+use crate::core::move_choice::MoveChoice;
 use crate::core::targeting::resolve_targets;
-use crate::core::instructions::Weather;
+use crate::data::showdown_types::MoveTarget;
 use crate::engine::combat::moves::{MoveContext, OpponentMoveInfo};
 use crate::types::{BattleError, BattleResult};
-use std::collections::HashMap;
-use crate::data::showdown_types::MoveTarget;
 
 /// Parse move target string to MoveTarget enum
 fn parse_move_target(target_str: &str) -> MoveTarget {
@@ -41,154 +41,12 @@ pub mod end_of_turn {
     use crate::core::battle_format::BattlePosition;
 
 
-    /// Generate end-of-turn effects for a given state (simplified implementation)
+    /// Generate end-of-turn effects for a given state using comprehensive pipeline
     pub fn process_end_of_turn_effects(state: &BattleState) -> Vec<BattleInstructions> {
-        let mut instructions = Vec::new();
-        
-        // 1. Status damage (burn, poison, toxic)
-        instructions.extend(process_status_damage(state));
-        
-        // 2. Weather effects (sandstorm, hail damage)
-        instructions.extend(process_weather_damage(state));
-        
-        // If no effects, return empty instruction set
-        if instructions.is_empty() {
-            vec![BattleInstructions::new(100.0, vec![])]
-        } else {
-            instructions
-        }
+        // Use the new comprehensive end-of-turn processing pipeline
+        crate::engine::combat::core::end_of_turn::generate_end_of_turn_instructions(state)
     }
 
-    /// Process status damage for all active Pokemon
-    fn process_status_damage(state: &BattleState) -> Vec<BattleInstructions> {
-        let mut status_instructions = Vec::new();
-        
-        // Check side one
-        for slot in 0..state.format.active_pokemon_count() {
-            let position = BattlePosition::new(crate::core::battle_format::SideReference::SideOne, slot);
-            if let Some(pokemon) = state.get_pokemon_at_position(position) {
-                if let Some(damage_instruction) = calculate_status_damage(pokemon, position) {
-                    status_instructions.push(BattleInstructions::new(
-                        100.0,
-                        vec![damage_instruction],
-                    ));
-                }
-            }
-        }
-        
-        // Check side two
-        for slot in 0..state.format.active_pokemon_count() {
-            let position = BattlePosition::new(crate::core::battle_format::SideReference::SideTwo, slot);
-            if let Some(pokemon) = state.get_pokemon_at_position(position) {
-                if let Some(damage_instruction) = calculate_status_damage(pokemon, position) {
-                    status_instructions.push(BattleInstructions::new(
-                        100.0,
-                        vec![damage_instruction],
-                    ));
-                }
-            }
-        }
-        
-        status_instructions
-    }
-
-    /// Calculate status damage for a Pokemon
-    fn calculate_status_damage(
-        pokemon: &crate::core::battle_state::Pokemon, 
-        position: BattlePosition
-    ) -> Option<BattleInstruction> {
-        match pokemon.status {
-            PokemonStatus::Burn => {
-                let damage = pokemon.max_hp / 16; // 1/16 of max HP for burn
-                Some(BattleInstruction::Pokemon(PokemonInstruction::Damage {
-                    target: position,
-                    amount: damage as i16,
-                    previous_hp: Some(pokemon.hp),
-                }))
-            }
-            PokemonStatus::Poison => {
-                let damage = pokemon.max_hp / 8; // 1/8 of max HP for poison
-                Some(BattleInstruction::Pokemon(PokemonInstruction::Damage {
-                    target: position,
-                    amount: damage as i16,
-                    previous_hp: Some(pokemon.hp),
-                }))
-            }
-            PokemonStatus::BadlyPoisoned => {
-                // Toxic damage increases each turn (1/16 * turn counter)
-                let base_damage = pokemon.max_hp / 16;
-                let turn_multiplier = 1; // Simplified - would need to track toxic counter
-                let damage = base_damage * turn_multiplier;
-                Some(BattleInstruction::Pokemon(PokemonInstruction::Damage {
-                    target: position,
-                    amount: damage as i16,
-                    previous_hp: Some(pokemon.hp),
-                }))
-            }
-            _ => None, // No damage for other status conditions
-        }
-    }
-
-    /// Process weather damage effects
-    fn process_weather_damage(state: &BattleState) -> Vec<BattleInstructions> {
-        let mut weather_instructions = Vec::new();
-        
-        match state.weather() {
-            Weather::Sand => {
-                // Sandstorm damages non-Ground/Rock/Steel types
-                for slot in 0..state.format.active_pokemon_count() {
-                    for side in [crate::core::battle_format::SideReference::SideOne, crate::core::battle_format::SideReference::SideTwo] {
-                        let position = BattlePosition::new(side, slot);
-                        if let Some(pokemon) = state.get_pokemon_at_position(position) {
-                            // Check if Pokemon is immune to sandstorm
-                            let is_immune = pokemon.types.iter().any(|t| {
-                                matches!(t.as_str(), "Ground" | "Rock" | "Steel")
-                            });
-                            
-                            if !is_immune {
-                                let damage = pokemon.max_hp / 16; // 1/16 of max HP
-                                weather_instructions.push(BattleInstructions::new(
-                                    100.0,
-                                    vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
-                                        target: position,
-                                        amount: damage as i16,
-                                        previous_hp: Some(pokemon.hp),
-                                    })],
-                                ));
-                            }
-                        }
-                    }
-                }
-            }
-            Weather::Hail => {
-                // Hail damages non-Ice types
-                for slot in 0..state.format.active_pokemon_count() {
-                    for side in [crate::core::battle_format::SideReference::SideOne, crate::core::battle_format::SideReference::SideTwo] {
-                        let position = BattlePosition::new(side, slot);
-                        if let Some(pokemon) = state.get_pokemon_at_position(position) {
-                            // Check if Pokemon is immune to hail
-                            let is_immune = pokemon.types.iter().any(|t| t.as_str() == "Ice");
-                            
-                            if !is_immune {
-                                let damage = pokemon.max_hp / 16; // 1/16 of max HP
-                                weather_instructions.push(BattleInstructions::new(
-                                    100.0,
-                                    vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
-                                        target: position,
-                                        amount: damage as i16,
-                                        previous_hp: Some(pokemon.hp),
-                                    })],
-                                ));
-                            }
-                        }
-                    }
-                }
-            }
-            _ => {} // No damage for other weather conditions
-        }
-        
-        weather_instructions
-    }
 }
 
 /// Generate instructions for a complete turn with two move choices
@@ -392,6 +250,8 @@ fn generate_attack_instructions_with_context(
     state: &BattleState,
     going_first: bool,
 ) -> BattleResult<Vec<BattleInstructions>> {
+    use crate::engine::combat::core::move_prevention::{cannot_use_move, generate_prevention_instructions};
+    
     // Get the move data
     let pokemon = state.get_side(user_pos.side.to_index())
         .and_then(|side| side.get_active_pokemon_at_slot(user_pos.slot))
@@ -403,6 +263,16 @@ fn generate_attack_instructions_with_context(
         .ok_or_else(|| BattleError::InvalidState {
             reason: "Move not found on Pokemon".to_string(),
         })?;
+    
+    // Check for move prevention before proceeding
+    let move_choice = crate::core::move_choice::MoveChoice::Move {
+        move_index,
+        target_positions: explicit_targets.to_vec(),
+    };
+    
+    if let Some(prevention) = cannot_use_move(pokemon, &move_choice, None, state, user_pos) {
+        return Ok(generate_prevention_instructions(prevention, user_pos, pokemon));
+    }
     
     // Resolve targets if not explicitly provided
     let targets = if explicit_targets.is_empty() {
@@ -431,34 +301,16 @@ fn generate_attack_instructions_with_context(
         // For now, we'll use false for simplicity - can be enhanced later
         let branch_on_damage = false;
         
-        // Generate different instruction sets based on critical hit probability
-        // Non-critical hit (93.75% chance for most moves)
-        let normal_instructions = generate_damage_instructions_with_rolls(
-            move_data, 
-            &targets, 
-            user_pos, 
-            state, 
-            false,
-            branch_on_damage
+        // Generate hit instructions with secondary effects
+        let hit_instructions = generate_hit_instructions_with_secondary_effects(
+            move_data,
+            &targets,
+            user_pos,
+            state,
+            accuracy_percentage,
+            branch_on_damage,
         )?;
-        instruction_sets.push(BattleInstructions::new(
-            accuracy_percentage * 0.9375, // 93.75% of hit chance
-            normal_instructions,
-        ));
-        
-        // Critical hit (6.25% chance for most moves)
-        let crit_instructions = generate_damage_instructions_with_rolls(
-            move_data, 
-            &targets, 
-            user_pos, 
-            state, 
-            true,
-            branch_on_damage
-        )?;
-        instruction_sets.push(BattleInstructions::new(
-            accuracy_percentage * 0.0625, // 6.25% of hit chance
-            crit_instructions,
-        ));
+        instruction_sets.extend(hit_instructions);
     }
     
     Ok(instruction_sets)
@@ -511,7 +363,7 @@ fn generate_damage_instructions_with_rolls(
                 reason: "No defender pokemon found".to_string(),
             })?;
         
-        // Convert legacy move data to modern MoveData for damage calculation
+        // Convert move data for damage calculation
         let move_data_modern = crate::data::showdown_types::MoveData {
             name: move_data.name.clone(),
             base_power: move_data.base_power as u16,
@@ -826,7 +678,11 @@ fn get_move_priority(state: &BattleState, choice: &MoveChoice, side: SideReferen
 /// Get effective speed for a side
 fn get_effective_speed(state: &BattleState, side: SideReference) -> i16 {
     if let Some(pokemon) = state.get_side(side.to_index()).and_then(|s| s.get_active_pokemon_at_slot(0)) {
-        pokemon.get_effective_stat(crate::core::instructions::Stat::Speed) as i16
+        let position = BattlePosition {
+            side,
+            slot: 0,
+        };
+        pokemon.get_effective_speed(state, position) as i16
     } else {
         0
     }
@@ -1158,6 +1014,7 @@ fn generate_attack_instructions_with_enhanced_context(
     branch_on_damage: bool,
 ) -> BattleResult<Vec<BattleInstructions>> {
     use crate::engine::combat::moves::apply_move_effects;
+    use crate::engine::combat::core::move_prevention::{cannot_use_move, generate_prevention_instructions};
     use crate::generation::GenerationMechanics;
     
     // Get user Pokemon and move data
@@ -1215,6 +1072,16 @@ fn generate_attack_instructions_with_enhanced_context(
         }
     };
     
+    // 1. Pre-move checks (status prevention)
+    let move_choice = crate::core::move_choice::MoveChoice::Move {
+        move_index,
+        target_positions: explicit_targets.to_vec(),
+    };
+    
+    if let Some(prevention) = cannot_use_move(user_pokemon, &move_choice, Some(&move_data), state, user_pos) {
+        return Ok(generate_prevention_instructions(prevention, user_pos, user_pokemon));
+    }
+    
     // Determine targets using the same logic as before
     let targets = if explicit_targets.is_empty() {
         resolve_targets(parse_move_target(&move_data.target), user_pos, format, state)
@@ -1255,5 +1122,101 @@ fn create_generation_repository(generation: &crate::generation::GenerationMechan
         .map_err(|e| BattleError::DataLoad(e))?;
     
     Ok(repository)
+}
+
+/// Generate hit instructions with secondary effects integrated
+/// Following poke-engine pattern: accuracy -> damage -> secondary effects
+fn generate_hit_instructions_with_secondary_effects(
+    move_data: &crate::core::battle_state::Move,
+    targets: &[BattlePosition],
+    user_pos: BattlePosition,
+    state: &BattleState,
+    accuracy_percentage: f32,
+    branch_on_damage: bool,
+) -> BattleResult<Vec<BattleInstructions>> {
+    use crate::data::showdown_types::MoveData;
+    use crate::generation::GenerationMechanics;
+    use crate::engine::combat::moves::MoveContext;
+    
+    let mut instruction_sets = Vec::new();
+    
+    // Convert move data format
+    let move_data_modern = MoveData {
+        name: move_data.name.clone(),
+        base_power: move_data.base_power as u16,
+        move_type: move_data.move_type.clone(),
+        category: format!("{:?}", move_data.category),
+        accuracy: 100, // Accuracy already handled
+        priority: move_data.priority,
+        pp: move_data.pp,
+        target: "normal".to_string(),
+        ..Default::default()
+    };
+    
+    let generation = GenerationMechanics::new(crate::generation::Generation::Gen9);
+    let context = MoveContext::new();
+    let repository = create_generation_repository(&generation)?;
+    
+    // Check if this move has secondary effects by trying to get move effects
+    let secondary_effects_result = crate::engine::combat::moves::apply_move_effects(
+        state,
+        &move_data_modern,
+        user_pos,
+        targets,
+        &generation,
+        &context,
+        &repository,
+        branch_on_damage,
+    );
+    
+    match secondary_effects_result {
+        Ok(secondary_instruction_sets) => {
+            // If move has secondary effects, integrate them with accuracy
+            for secondary_set in secondary_instruction_sets {
+                // Scale the secondary effect probability by the hit chance
+                let final_percentage = accuracy_percentage * secondary_set.percentage / 100.0;
+                
+                if final_percentage > 0.0 {
+                    instruction_sets.push(BattleInstructions::new(
+                        final_percentage,
+                        secondary_set.instruction_list,
+                    ));
+                }
+            }
+        },
+        Err(_) => {
+            // Fallback to basic damage calculation for moves without special effects
+            // Generate different instruction sets based on critical hit probability
+            // Non-critical hit (93.75% chance for most moves)
+            let normal_instructions = generate_damage_instructions_with_rolls(
+                move_data, 
+                targets, 
+                user_pos, 
+                state, 
+                false,
+                branch_on_damage
+            )?;
+            instruction_sets.push(BattleInstructions::new(
+                accuracy_percentage * 0.9375, // 93.75% of hit chance
+                normal_instructions,
+            ));
+            
+            // Critical hit (6.25% chance for most moves)
+            let crit_instructions = generate_damage_instructions_with_rolls(
+                move_data, 
+                targets, 
+                user_pos, 
+                state, 
+                true,
+                branch_on_damage
+            )?;
+            instruction_sets.push(BattleInstructions::new(
+                accuracy_percentage * 0.0625, // 6.25% of hit chance
+                crit_instructions,
+            ));
+        }
+    }
+    
+    Ok(instruction_sets)
 }
 

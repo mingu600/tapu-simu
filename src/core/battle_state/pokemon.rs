@@ -243,6 +243,83 @@ impl Pokemon {
         base_stat * boost_multiplier
     }
 
+    /// Get effective speed with battle context for comprehensive speed calculation
+    pub fn get_effective_speed(
+        &self,
+        battle_state: &crate::core::battle_state::BattleState,
+        position: BattlePosition,
+    ) -> u16 {
+        use crate::core::instructions::{PokemonStatus, Weather};
+        
+        let mut speed = self.get_effective_stat(crate::core::instructions::Stat::Speed) as u16;
+        
+        // Status modifiers
+        if self.status == PokemonStatus::Paralysis {
+            speed = (speed as f32 * 0.5) as u16;
+        }
+        
+        // Weather modifiers (simplified - in real implementation check abilities)
+        match battle_state.weather() {
+            Weather::Sun => {
+                if self.ability == "chlorophyll" {
+                    speed *= 2;
+                }
+            }
+            Weather::Rain => {
+                if self.ability == "swiftswim" {
+                    speed *= 2;
+                }
+            }
+            Weather::Sandstorm => {
+                if self.ability == "sandrush" {
+                    speed *= 2;
+                }
+            }
+            Weather::Hail => {
+                if self.ability == "slushrush" {
+                    speed *= 2;
+                }
+            }
+            _ => {}
+        }
+        
+        // Item modifiers (simplified examples)
+        if let Some(ref item) = self.item {
+            match item.as_str() {
+                "choicescarf" => speed = (speed as f32 * 1.5) as u16,
+                "quickclaw" => {}, // Handled separately with probability
+                "ironball" => speed = (speed as f32 * 0.5) as u16,
+                "machobrace" => speed = (speed as f32 * 0.5) as u16,
+                "powerweight" | "powerbracer" | "powerbelt" | "powerlens" | "powerband" | "poweranklet" => {
+                    speed = (speed as f32 * 0.5) as u16;
+                }
+                _ => {}
+            }
+        }
+        
+        // Ability modifiers (examples)
+        match self.ability.as_str() {
+            "quickfeet" => {
+                if self.status != PokemonStatus::None {
+                    speed = (speed as f32 * 1.5) as u16;
+                }
+            }
+            "unburden" => {
+                if self.item_consumed {
+                    speed *= 2;
+                }
+            }
+            _ => {}
+        }
+        
+        // Trick Room inversion
+        if battle_state.is_trick_room_active() {
+            speed = 10000_u16.saturating_sub(speed);
+        }
+        
+        speed
+    }
+
     /// Add a move to the Pokemon's moveset
     pub fn add_move(&mut self, move_index: MoveIndex, move_data: Move) {
         self.moves.insert(move_index, move_data);

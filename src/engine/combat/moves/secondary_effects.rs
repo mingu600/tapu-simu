@@ -6,13 +6,13 @@
 //! All moves in this module have been converted to use the new composer system for consistency
 //! and to eliminate code duplication.
 
-use crate::core::battle_state::BattleState;
-use crate::core::instructions::{BattleInstruction, BattleInstructions, PokemonStatus, VolatileStatus, Stat};
 use crate::core::battle_format::BattlePosition;
-use crate::generation::GenerationMechanics;
+use crate::core::battle_state::BattleState;
+use crate::core::instructions::{BattleInstruction, BattleInstructions, PokemonStatus, Stat, VolatileStatus};
 use crate::data::showdown_types::MoveData;
-use crate::engine::combat::composers::damage_moves::damage_move_with_secondary_status;
-use crate::engine::combat::core::status_system::StatusApplication;
+use crate::engine::combat::composers::damage_moves::{damage_move_with_secondary_status, damage_move_with_secondary_volatile_status};
+use crate::engine::combat::core::status_system::{StatusApplication, VolatileStatusApplication};
+use crate::generation::GenerationMechanics;
 
 // =============================================================================
 // SECONDARY EFFECT MOVE MACRO
@@ -48,6 +48,7 @@ macro_rules! secondary_effect_move {
 
 /// Macro for moves with flinch chance - these need special handling
 /// as flinch is a volatile status, not a main status
+/// This macro creates branching for secondary effects only - accuracy is handled by the turn system
 macro_rules! flinch_move {
     ($func_name:ident, $chance:expr) => {
         pub fn $func_name(
@@ -57,12 +58,13 @@ macro_rules! flinch_move {
             target_positions: &[BattlePosition],
             generation: &GenerationMechanics,
         ) -> Vec<BattleInstructions> {
-            // Create damage instructions with flinch chance
             use crate::core::instructions::{BattleInstruction, StatusInstruction, VolatileStatus};
+            
+            let mut instruction_sets = Vec::new();
             
             // Get basic damage instructions
             let modifiers = crate::engine::combat::composers::damage_moves::DamageModifiers::default();
-            let mut damage_instructions = crate::engine::combat::composers::damage_moves::simple_damage_move(
+            let damage_instructions = crate::engine::combat::composers::damage_moves::simple_damage_move(
                 state,
                 move_data,
                 user_position,
@@ -71,25 +73,47 @@ macro_rules! flinch_move {
                 generation,
             );
             
-            // Add flinch status to all targets (30% chance for most flinch moves)
-            for &target_position in target_positions {
-                if let Some(target_pokemon) = state.get_pokemon_at_position(target_position) {
-                    // Only apply flinch if target hasn't moved yet this turn and isn't already flinched
-                    if !target_pokemon.volatile_statuses.contains(&VolatileStatus::Flinch) {
-                        damage_instructions.push(BattleInstruction::Status(
-                            StatusInstruction::ApplyVolatile {
-                                target: target_position,
-                                status: VolatileStatus::Flinch,
-                                duration: Some(1), // Flinch lasts only for the current turn
-                                previous_had_status: target_pokemon.volatile_statuses.contains(&VolatileStatus::Flinch),
-                                previous_duration: None,
-                            }
-                        ));
-                    }
-                }
+            // Hit without flinch (100 - flinch_chance)%
+            let no_flinch_percentage = 100.0 - $chance;
+            if no_flinch_percentage > 0.0 {
+                instruction_sets.push(BattleInstructions::new(
+                    no_flinch_percentage,
+                    damage_instructions.clone(),
+                ));
             }
             
-            vec![BattleInstructions::new(100.0, damage_instructions)]
+            // Hit with flinch (flinch_chance)%
+            if $chance > 0.0 {
+                let mut flinch_instructions = damage_instructions.clone();
+                
+                // Add flinch status to all targets (with speed check)
+                for &target_position in target_positions {
+                    if let Some(target_pokemon) = state.get_pokemon_at_position(target_position) {
+                        // Only apply flinch if target hasn't moved yet this turn and isn't already flinched
+                        if !target_pokemon.volatile_statuses.contains(&VolatileStatus::Flinch) {
+                            // Check if user is faster than target (speed-aware flinch)
+                            if is_user_faster_than_target(state, user_position, target_position) {
+                                flinch_instructions.push(BattleInstruction::Status(
+                                    StatusInstruction::ApplyVolatile {
+                                        target: target_position,
+                                        status: VolatileStatus::Flinch,
+                                        duration: Some(1), // Flinch lasts only for the current turn
+                                        previous_had_status: false,
+                                        previous_duration: None,
+                                    }
+                                ));
+                            }
+                        }
+                    }
+                }
+                
+                instruction_sets.push(BattleInstructions::new(
+                    $chance,
+                    flinch_instructions,
+                ));
+            }
+            
+            instruction_sets
         }
     };
 }
@@ -160,17 +184,47 @@ pub fn apply_acid_damage(
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
 ) -> Vec<BattleInstructions> {
-    // TODO: Implement stat modification in composer system
-    // For now, use the existing damage system
-    let instructions = damage_move_with_secondary_status(
+    use crate::engine::combat::composers::damage_moves::{simple_damage_move, DamageModifiers};
+    use std::collections::HashMap;
+    
+    // Create stat changes map for Defense reduction
+    let mut stat_changes = HashMap::new();
+    stat_changes.insert(Stat::Defense, -1);
+    
+    let modifiers = DamageModifiers {
+        stat_changes: Some(stat_changes),
+        ..Default::default()
+    };
+    
+    // Acid has a 10% chance to lower Defense
+    let no_stat_change_percentage = 90.0;
+    let stat_change_percentage = 10.0;
+    
+    let mut instruction_sets = Vec::new();
+    
+    // Hit without stat change (90%)
+    let base_instructions = simple_damage_move(
         state,
         move_data,
         user_position,
         target_positions,
-        vec![], // No status effects, just stat changes
+        DamageModifiers::default(),
         generation,
     );
-    vec![BattleInstructions::new(100.0, instructions)]
+    instruction_sets.push(BattleInstructions::new(no_stat_change_percentage, base_instructions));
+    
+    // Hit with stat change (10%)
+    let stat_change_instructions = simple_damage_move(
+        state,
+        move_data,
+        user_position,
+        target_positions,
+        modifiers,
+        generation,
+    );
+    instruction_sets.push(BattleInstructions::new(stat_change_percentage, stat_change_instructions));
+    
+    instruction_sets
 }
 
 /// Fire Fang - dual effect (burn + flinch)
@@ -181,23 +235,104 @@ pub fn apply_fire_fang_dual(
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
 ) -> Vec<BattleInstructions> {
-    // TODO: Add flinch support - for now just handle burn
-    let instructions = damage_move_with_secondary_status(
-        state,
-        move_data,
-        user_position,
-        target_positions,
-        vec![
-            StatusApplication {
+    let mut all_instructions = Vec::new();
+    
+    for &target_position in target_positions {
+        // Check if user is faster for flinch to work
+        let can_flinch = is_user_faster_than_target(state, user_position, target_position);
+        
+        // Create branching for dual effects: burn (10%) + flinch (10%)
+        // Both effects are independent, so we need 4 branches:
+        // 1. Neither effect (81%)
+        // 2. Burn only (9%) 
+        // 3. Flinch only (9%)
+        // 4. Both effects (1%)
+        
+        let base_instructions = damage_move_with_secondary_status(
+            state,
+            move_data,
+            user_position,
+            &[target_position],
+            vec![],
+            generation,
+        );
+        
+        // Branch 1: Neither effect (81%)
+        all_instructions.push(BattleInstructions::new(crate::constants::moves::DUAL_EFFECT_NEITHER, base_instructions.clone()));
+        
+        // Branch 2: Burn only (9%)
+        let burn_instructions = damage_move_with_secondary_status(
+            state,
+            move_data,
+            user_position,
+            &[target_position],
+            vec![StatusApplication {
                 status: PokemonStatus::Burn,
-                target: target_positions[0],
-                chance: 10.0,
+                target: target_position,
+                chance: 100.0, // Already factored into branch probability
                 duration: None,
-            },
-        ],
-        generation,
-    );
-    vec![BattleInstructions::new(100.0, instructions)]
+            }],
+            generation,
+        );
+        all_instructions.push(BattleInstructions::new(crate::constants::moves::DUAL_EFFECT_FIRST_ONLY, burn_instructions));
+        
+        // Branch 3: Flinch only (9%) - only if user is faster
+        if can_flinch {
+            let flinch_instructions = damage_move_with_secondary_volatile_status(
+                state,
+                move_data,
+                user_position,
+                &[target_position],
+                vec![VolatileStatusApplication {
+                    status: VolatileStatus::Flinch,
+                    target: target_position,
+                    chance: 100.0, // Already factored into branch probability
+                    duration: Some(1),
+                }],
+                generation,
+            );
+            all_instructions.push(BattleInstructions::new(crate::constants::moves::DUAL_EFFECT_SECOND_ONLY, flinch_instructions));
+            
+            // Branch 4: Both effects (1%)
+            let mut both_instructions = damage_move_with_secondary_status(
+                state,
+                move_data,
+                user_position,
+                &[target_position],
+                vec![StatusApplication {
+                    status: PokemonStatus::Burn,
+                    target: target_position,
+                    chance: 100.0,
+                    duration: None,
+                }],
+                generation,
+            );
+            
+            // Add flinch to the same instructions
+            both_instructions.extend(
+                damage_move_with_secondary_volatile_status(
+                    state,
+                    move_data,
+                    user_position,
+                    &[target_position],
+                    vec![VolatileStatusApplication {
+                        status: VolatileStatus::Flinch,
+                        target: target_position,
+                        chance: 100.0,
+                        duration: Some(1),
+                    }],
+                    generation,
+                ).into_iter().skip(1) // Skip damage instruction since we already have it
+            );
+            all_instructions.push(BattleInstructions::new(crate::constants::moves::DUAL_EFFECT_BOTH, both_instructions));
+        } else {
+            // If can't flinch, redistribute the 10% that would have been flinch effects
+            // to the "neither effect" branch, making it 90% instead of 81%
+            all_instructions[0].percentage = 90.0;
+        }
+    }
+    
+    all_instructions
 }
 
 /// Thunder Fang - dual effect (paralysis + flinch)
@@ -208,23 +343,95 @@ pub fn apply_thunder_fang_dual(
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
 ) -> Vec<BattleInstructions> {
-    // TODO: Add flinch support - for now just handle paralysis
-    let instructions = damage_move_with_secondary_status(
-        state,
-        move_data,
-        user_position,
-        target_positions,
-        vec![
-            StatusApplication {
+    let mut all_instructions = Vec::new();
+    
+    for &target_position in target_positions {
+        // Check if user is faster for flinch to work
+        let can_flinch = is_user_faster_than_target(state, user_position, target_position);
+        
+        // Create branching for dual effects: paralysis (10%) + flinch (10%)
+        let base_instructions = damage_move_with_secondary_status(
+            state,
+            move_data,
+            user_position,
+            &[target_position],
+            vec![],
+            generation,
+        );
+        
+        // Branch 1: Neither effect (81%)
+        all_instructions.push(BattleInstructions::new(crate::constants::moves::DUAL_EFFECT_NEITHER, base_instructions.clone()));
+        
+        // Branch 2: Paralysis only (9%)
+        let paralysis_instructions = damage_move_with_secondary_status(
+            state,
+            move_data,
+            user_position,
+            &[target_position],
+            vec![StatusApplication {
                 status: PokemonStatus::Paralysis,
-                target: target_positions[0],
-                chance: 10.0,
+                target: target_position,
+                chance: 100.0,
                 duration: None,
-            },
-        ],
-        generation,
-    );
-    vec![BattleInstructions::new(100.0, instructions)]
+            }],
+            generation,
+        );
+        all_instructions.push(BattleInstructions::new(crate::constants::moves::DUAL_EFFECT_FIRST_ONLY, paralysis_instructions));
+        
+        // Branch 3: Flinch only (9%) - only if user is faster
+        if can_flinch {
+            let flinch_instructions = damage_move_with_secondary_volatile_status(
+                state,
+                move_data,
+                user_position,
+                &[target_position],
+                vec![VolatileStatusApplication {
+                    status: VolatileStatus::Flinch,
+                    target: target_position,
+                    chance: 100.0,
+                    duration: Some(1),
+                }],
+                generation,
+            );
+            all_instructions.push(BattleInstructions::new(crate::constants::moves::DUAL_EFFECT_SECOND_ONLY, flinch_instructions));
+            
+            // Branch 4: Both effects (1%)
+            let mut both_instructions = damage_move_with_secondary_status(
+                state,
+                move_data,
+                user_position,
+                &[target_position],
+                vec![StatusApplication {
+                    status: PokemonStatus::Paralysis,
+                    target: target_position,
+                    chance: 100.0,
+                    duration: None,
+                }],
+                generation,
+            );
+            
+            both_instructions.extend(
+                damage_move_with_secondary_volatile_status(
+                    state,
+                    move_data,
+                    user_position,
+                    &[target_position],
+                    vec![VolatileStatusApplication {
+                        status: VolatileStatus::Flinch,
+                        target: target_position,
+                        chance: 100.0,
+                        duration: Some(1),
+                    }],
+                    generation,
+                ).into_iter().skip(1)
+            );
+            all_instructions.push(BattleInstructions::new(crate::constants::moves::DUAL_EFFECT_BOTH, both_instructions));
+        } else {
+            all_instructions[0].percentage = 90.0;
+        }
+    }
+    
+    all_instructions
 }
 
 /// Ice Fang - dual effect (freeze + flinch)
@@ -235,21 +442,115 @@ pub fn apply_ice_fang_dual(
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
 ) -> Vec<BattleInstructions> {
-    // TODO: Add flinch support - for now just handle freeze
-    let instructions = damage_move_with_secondary_status(
-        state,
-        move_data,
-        user_position,
-        target_positions,
-        vec![
-            StatusApplication {
+    let mut all_instructions = Vec::new();
+    
+    for &target_position in target_positions {
+        // Check if user is faster for flinch to work
+        let can_flinch = is_user_faster_than_target(state, user_position, target_position);
+        
+        // Create branching for dual effects: freeze (10%) + flinch (10%)
+        let base_instructions = damage_move_with_secondary_status(
+            state,
+            move_data,
+            user_position,
+            &[target_position],
+            vec![],
+            generation,
+        );
+        
+        // Branch 1: Neither effect (81%)
+        all_instructions.push(BattleInstructions::new(crate::constants::moves::DUAL_EFFECT_NEITHER, base_instructions.clone()));
+        
+        // Branch 2: Freeze only (9%)
+        let freeze_instructions = damage_move_with_secondary_status(
+            state,
+            move_data,
+            user_position,
+            &[target_position],
+            vec![StatusApplication {
                 status: PokemonStatus::Freeze,
-                target: target_positions[0],
-                chance: 10.0,
+                target: target_position,
+                chance: 100.0,
                 duration: None,
-            },
-        ],
-        generation,
-    );
-    vec![BattleInstructions::new(100.0, instructions)]
+            }],
+            generation,
+        );
+        all_instructions.push(BattleInstructions::new(crate::constants::moves::DUAL_EFFECT_FIRST_ONLY, freeze_instructions));
+        
+        // Branch 3: Flinch only (9%) - only if user is faster
+        if can_flinch {
+            let flinch_instructions = damage_move_with_secondary_volatile_status(
+                state,
+                move_data,
+                user_position,
+                &[target_position],
+                vec![VolatileStatusApplication {
+                    status: VolatileStatus::Flinch,
+                    target: target_position,
+                    chance: 100.0,
+                    duration: Some(1),
+                }],
+                generation,
+            );
+            all_instructions.push(BattleInstructions::new(crate::constants::moves::DUAL_EFFECT_SECOND_ONLY, flinch_instructions));
+            
+            // Branch 4: Both effects (1%)
+            let mut both_instructions = damage_move_with_secondary_status(
+                state,
+                move_data,
+                user_position,
+                &[target_position],
+                vec![StatusApplication {
+                    status: PokemonStatus::Freeze,
+                    target: target_position,
+                    chance: 100.0,
+                    duration: None,
+                }],
+                generation,
+            );
+            
+            both_instructions.extend(
+                damage_move_with_secondary_volatile_status(
+                    state,
+                    move_data,
+                    user_position,
+                    &[target_position],
+                    vec![VolatileStatusApplication {
+                        status: VolatileStatus::Flinch,
+                        target: target_position,
+                        chance: 100.0,
+                        duration: Some(1),
+                    }],
+                    generation,
+                ).into_iter().skip(1)
+            );
+            all_instructions.push(BattleInstructions::new(crate::constants::moves::DUAL_EFFECT_BOTH, both_instructions));
+        } else {
+            all_instructions[0].percentage = 90.0;
+        }
+    }
+    
+    all_instructions
+}
+
+/// Check if the user is faster than the target for speed-aware flinch application
+fn is_user_faster_than_target(
+    state: &BattleState,
+    user_position: BattlePosition,
+    target_position: BattlePosition,
+) -> bool {
+    let user_pokemon = match state.get_pokemon_at_position(user_position) {
+        Some(pokemon) => pokemon,
+        None => return false,
+    };
+    
+    let target_pokemon = match state.get_pokemon_at_position(target_position) {
+        Some(pokemon) => pokemon,
+        None => return false,
+    };
+    
+    let user_speed = user_pokemon.get_effective_speed(state, user_position);
+    let target_speed = target_pokemon.get_effective_speed(state, target_position);
+    
+    user_speed > target_speed
 }

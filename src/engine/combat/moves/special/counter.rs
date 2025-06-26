@@ -20,7 +20,7 @@ pub fn apply_counter(
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
 ) -> Vec<BattleInstructions> {
-    // Get the side that would be targeted by counter (opponent side)
+    // Get the side that would be targeted by counter (opposing side)
     let target_side = match user_position.side {
         SideReference::SideOne => &state.sides[1],
         SideReference::SideTwo => &state.sides[0],
@@ -36,7 +36,7 @@ pub fn apply_counter(
         
         let mut instruction_list = Vec::new();
         
-        // Deal damage to the first target (should be the opponent who dealt damage)
+        // Deal damage to the first target (should be the opposing Pokemon who dealt damage)
         if let Some(&target_position) = target_positions.first() {
             // Check type immunity - Counter can't hit Ghost types
             if let Some(target_pokemon) = state.get_pokemon_at_position(target_position) {
@@ -86,7 +86,7 @@ pub fn apply_mirror_coat(
         
         let mut instruction_list = Vec::new();
         
-        // Deal damage to the first target (should be the opponent who dealt damage)
+        // Deal damage to the first target (should be the opposing Pokemon who dealt damage)
         if let Some(&target_position) = target_positions.first() {
             instruction_list.push(BattleInstruction::Pokemon(PokemonInstruction::Damage {
                 target: target_position,
@@ -127,7 +127,7 @@ pub fn apply_comeuppance(
         
         let mut instruction_list = Vec::new();
         
-        // Deal damage to the first target (should be the opponent who dealt damage)
+        // Deal damage to the first target (should be the opposing Pokemon who dealt damage)
         if let Some(&target_position) = target_positions.first() {
             instruction_list.push(BattleInstruction::Pokemon(PokemonInstruction::Damage {
                 target: target_position,

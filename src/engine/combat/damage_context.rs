@@ -33,7 +33,7 @@ pub struct DamageContext {
 #[derive(Debug, Clone)]
 pub struct AttackerContext {
     /// The attacking Pokemon
-    pub pokemon: Pokemon,
+    pub pokemon: Pokemon, // TODO: Consider using &Pokemon with lifetimes
     /// Position of the attacker on the battlefield
     pub position: BattlePosition,
     /// Effective stats after all modifiers
@@ -62,8 +62,6 @@ pub struct DefenderContext {
 /// Context for the move being used
 #[derive(Debug, Clone)]
 pub struct MoveContext {
-    /// Move data from the engine
-    pub data: MoveData,
     /// Name/ID of the move
     pub name: String,
     /// Base power after initial modifications
@@ -72,6 +70,12 @@ pub struct MoveContext {
     pub is_critical: bool,
     /// Whether this move makes contact
     pub is_contact: bool,
+    /// Whether this move is a punch move (for Iron Fist, Punching Glove)
+    pub is_punch: bool,
+    /// Whether this move is a sound move (for Throat Chop, Soundproof)
+    pub is_sound: bool,
+    /// Whether this move is a multi-hit move (for Loaded Dice)
+    pub is_multihit: bool,
     /// Type of the move (may differ from original due to abilities)
     pub move_type: String,
     /// Category of the move
@@ -229,9 +233,11 @@ impl DamageContext {
             base_power: move_data.base_power as u8,
             is_critical,
             is_contact: move_data.flags.contains_key("contact"),
+            is_punch: move_data.flags.contains_key("punch"),
+            is_sound: move_data.flags.contains_key("sound"),
+            is_multihit: move_data.flags.contains_key("multihit"),
             move_type: move_data.move_type.clone(),
             category: MoveCategory::from_str(&move_data.category),
-            data: move_data.clone(),
         };
 
         let field = FieldContext {
@@ -425,7 +431,6 @@ fn apply_stat_stage_multiplier(base_value: i16, stage: i8) -> i16 {
     (base_value as f32 * multiplier) as i16
 }
 
-// Legacy DamageContext structure removed - use modern DamageContext instead
 
 // Default implementations for testing and compatibility
 impl Default for DamageContext {
@@ -467,11 +472,13 @@ impl Default for DefenderContext {
 impl Default for MoveContext {
     fn default() -> Self {
         Self {
-            data: MoveData::default(),
             name: "tackle".to_string(),
             base_power: 40,
             is_critical: false,
             is_contact: true,
+            is_punch: false,
+            is_sound: false,
+            is_multihit: false,
             move_type: "normal".to_string(),
             category: MoveCategory::Physical,
         }

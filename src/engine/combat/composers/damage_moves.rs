@@ -13,10 +13,13 @@ use super::super::core::{
         DamageCalculationContext, HitCountCalculator, execute_multi_hit_sequence,
         calculate_damage_with_effects,
     },
-    status_system::{StatusApplication, apply_multiple_status_effects},
+    status_system::{StatusApplication, VolatileStatusApplication, apply_multiple_status_effects},
     contact_effects::{apply_recoil_damage, apply_drain_healing},
+    substitute_protection::{EffectType, should_block_effect, get_effect_type_for_status_instruction},
 };
 use std::collections::HashMap;
+use crate::core::instructions::{StatusInstruction, VolatileStatus};
+use crate::core::instructions::VolatileStatus as VS;
 
 /// Check if the user moved first this turn by comparing with targets
 fn check_moved_first(
@@ -161,11 +164,12 @@ pub fn simple_damage_move(
             }
         }
 
-        // Apply secondary status effects
+        // Apply secondary status effects (with substitute protection)
         if !modifiers.secondary_effects.is_empty() {
-            let status_instructions = apply_multiple_status_effects(
+            let status_instructions = apply_multiple_status_effects_with_substitute_protection(
                 state,
                 modifiers.secondary_effects.clone(),
+                target_position,
             );
             instructions.extend(status_instructions);
         }
@@ -488,4 +492,97 @@ pub fn dynamic_category_move(
         DamageModifiers::default(),
         generation,
     )
+}
+
+/// Apply multiple status effects with substitute protection
+/// 
+/// This function checks if the target has a substitute and blocks effects accordingly.
+/// Unlike the regular apply_multiple_status_effects, this version considers whether
+/// the damage hit a substitute to determine if secondary effects should be blocked.
+pub fn apply_multiple_status_effects_with_substitute_protection(
+    state: &BattleState,
+    applications: Vec<StatusApplication>,
+    target_position: BattlePosition,
+) -> Vec<BattleInstruction> {
+    let mut instructions = Vec::new();
+    
+    // Check if target has substitute
+    if let Some(target_pokemon) = state.get_pokemon_at_position(target_position) {
+        let has_substitute = target_pokemon.volatile_statuses.contains(&VS::Substitute) 
+            && target_pokemon.substitute_health > 0;
+        
+        if has_substitute {
+            // If substitute is present, block secondary effects
+            // (In real implementation, we would check if damage actually hit the substitute
+            // but for now we assume any damage move with substitute present hits substitute)
+            return instructions; // Return empty - substitute blocks secondary effects
+        }
+    }
+    
+    // No substitute protection, apply effects normally
+    apply_multiple_status_effects(state, applications)
+}
+
+/// Compose a damage move with volatile status secondary effects
+pub fn damage_move_with_secondary_volatile_status(
+    state: &BattleState,
+    move_data: &MoveData,
+    user_position: BattlePosition,
+    target_positions: &[BattlePosition],
+    volatile_status_applications: Vec<VolatileStatusApplication>,
+    generation: &GenerationMechanics,
+) -> Vec<BattleInstruction> {
+    let mut instructions = Vec::new();
+
+    for &target_position in target_positions {
+        // Create damage context
+        let mut context = DamageCalculationContext::new(
+            move_data.clone(),
+            user_position,
+            target_position,
+            generation.clone(),
+            false, // Use deterministic damage for composed moves
+        );
+
+        // Calculate and apply damage
+        let damage_result = calculate_damage_with_effects(state, context);
+        let damage_dealt = damage_result.damage;
+
+        if damage_dealt > 0 {
+            instructions.push(BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                target: target_position,
+                amount: damage_dealt,
+                previous_hp: None, // Will be filled in by battle state
+            }));
+
+            // Apply contact effects if the move makes contact
+            if move_data.flags.contains_key("contact") {
+                let contact_effects = super::super::core::contact_effects::apply_contact_effects(
+                    state,
+                    move_data,
+                    user_position,
+                    target_position,
+                    damage_dealt,
+                );
+                instructions.extend(contact_effects);
+            }
+        }
+
+        // Apply volatile status effects using the centralized status system
+        let target_applications: Vec<VolatileStatusApplication> = volatile_status_applications
+            .iter()
+            .filter(|app| app.target == target_position)
+            .cloned()
+            .collect();
+
+        if !target_applications.is_empty() {
+            let volatile_status_instructions = super::super::core::status_system::apply_multiple_volatile_status_effects(
+                state,
+                target_applications,
+            );
+            instructions.extend(volatile_status_instructions);
+        }
+    }
+
+    instructions
 }

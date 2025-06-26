@@ -3,15 +3,20 @@
 //! Items that boost offensive/defensive stats or provide conditional stat boosts.
 //! This includes power items, defensive items, reactive items, gems, and seeds.
 
-use super::{ItemModifier, StatBoosts};
-use crate::engine::combat::damage_context::DamageContext;
-use crate::engine::combat::type_effectiveness::{TypeChart, PokemonType};
-use crate::generation::{GenerationBattleMechanics, Generation};
-use crate::core::battle_state::{MoveCategory, Pokemon};
-use crate::core::battle_format::BattlePosition;
-use crate::core::instructions::{Stat, PokemonStatus};
-use crate::core::instructions::{BattleInstruction, BattleInstructions, StatusInstruction, PokemonInstruction, StatsInstruction};
 use std::collections::HashMap;
+
+use crate::core::battle_format::BattlePosition;
+use crate::core::battle_state::{MoveCategory, Pokemon};
+use crate::core::instructions::{
+    BattleInstruction, BattleInstructions, PokemonInstruction, PokemonStatus, Stat,
+    StatusInstruction, StatsInstruction,
+};
+use crate::data::repositories::{GameDataRepository, PokemonRepository};
+use crate::engine::combat::damage_context::DamageContext;
+use crate::engine::combat::type_effectiveness::{PokemonType, TypeChart};
+use crate::generation::{Generation, GenerationBattleMechanics};
+
+use super::{ItemModifier, StatBoosts};
 
 /// Get stat boosting item effect if the item is a stat booster
 pub fn get_stat_boosting_item_effect(
@@ -184,34 +189,26 @@ fn eviolite_effect(pokemon: &Pokemon) -> ItemModifier {
     
     if can_evolve {
         ItemModifier::new()
-            .with_defense_multiplier(1.5)
-            .with_special_defense_multiplier(1.5)
+            .with_defense_multiplier(crate::constants::EVIOLITE_DEF_MULTIPLIER)
+            .with_special_defense_multiplier(crate::constants::EVIOLITE_SPDEF_MULTIPLIER)
     } else {
         ItemModifier::default()
     }
 }
 
-/// Helper function to check if Pokemon is fully evolved
+/// Helper function to check if Pokemon is fully evolved using data repository
 fn is_fully_evolved(species: &str) -> bool {
-    // Simplified check - in real implementation would use evolution data
-    match species.to_lowercase().as_str() {
-        // Fully evolved Pokemon (partial list)
-        "charizard" | "blastoise" | "venusaur" | "pikachu" | "raichu" |
-        "nidoking" | "nidoqueen" | "clefable" | "ninetales" | "jigglypuff" |
-        "wigglytuff" | "vileplume" | "parasect" | "venomoth" | "dugtrio" |
-        "persian" | "golduck" | "primeape" | "arcanine" | "poliwrath" |
-        "alakazam" | "machamp" | "victreebel" | "tentacruel" | "golem" |
-        "rapidash" | "slowbro" | "magnezone" | "farfetchd" | "dodrio" |
-        "dewgong" | "muk" | "cloyster" | "gengar" | "onix" | "hypno" |
-        "kingler" | "electrode" | "exeggutor" | "marowak" | "hitmonlee" |
-        "hitmonchan" | "lickitung" | "weezing" | "rhydon" | "chansey" |
-        "tangela" | "kangaskhan" | "seaking" | "starmie" | "mrmine" |
-        "scyther" | "jynx" | "electabuzz" | "magmar" | "pinsir" |
-        "tauros" | "gyarados" | "lapras" | "ditto" | "vaporeon" |
-        "jolteon" | "flareon" | "porygon" | "omastar" | "kabutops" |
-        "aerodactyl" | "snorlax" | "articuno" | "zapdos" | "moltres" |
-        "dragonite" | "mewtwo" | "mew" => true,
-        _ => false,
+    // Use the global data repository to check evolution status
+    if let Ok(repo) = GameDataRepository::global("data/ps-extracted") {
+        repo.pokemon.find_by_name(species)
+            .map(|data| {
+                // Pokemon is fully evolved if it has no further evolutions
+                data.evos.as_ref().map_or(true, |evos| evos.is_empty())
+            })
+            .unwrap_or(false) // Default to false if Pokemon not found
+    } else {
+        // Fallback to false if repository unavailable
+        false
     }
 }
 
@@ -235,7 +232,7 @@ fn heavy_duty_boots_effect() -> ItemModifier {
 /// Rocky Helmet - Contact moves cause 1/6 max HP recoil to attacker
 fn rocky_helmet_effect(context: &DamageContext) -> ItemModifier {
     // Check if move makes contact
-    if context.move_info.data.flags.contains_key("contact") {
+    if context.move_info.is_contact {
         ItemModifier::new().with_contact_recoil(1.0 / 6.0) // 1/6 max HP
     } else {
         ItemModifier::default()
@@ -355,7 +352,7 @@ fn metal_powder_effect(defender: Option<&Pokemon>) -> ItemModifier {
 /// Punching Glove - 1.1x punch moves, removes contact, no Iron Fist boost
 fn punching_glove_effect(context: &DamageContext) -> ItemModifier {
     // Check if move has punch flag
-    if context.move_info.data.flags.contains_key("punch") {
+    if context.move_info.is_punch {
         ItemModifier::new()
             .with_power_multiplier(1.1)
             .with_contact_removal()

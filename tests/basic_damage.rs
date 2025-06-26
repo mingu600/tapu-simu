@@ -19,6 +19,7 @@ use tapu_simu::core::instructions::{
     BattleInstruction, BattleInstructions, PokemonInstruction, SideCondition, Stat,
 };
 use tapu_simu::generation::Generation;
+
 use utils::{PokemonSpec, Positions, TestBuilder};
 
 /// Test basic move pair instruction generation

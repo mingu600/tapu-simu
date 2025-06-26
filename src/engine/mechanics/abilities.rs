@@ -4,7 +4,6 @@ use crate::core::battle_state::BattleState;
 use crate::core::battle_format::BattlePosition;
 use crate::engine::combat::damage_context::DamageContext;
 
-// Legacy DamageContext type alias removed - using modern DamageContext directly
 
 #[derive(Debug, Clone)]
 pub struct AbilityContext<'a> {
@@ -559,20 +558,25 @@ fn apply_plus_minus(context: AbilityContext) -> AbilityEffectResult {
         return AbilityEffectResult::none();
     }
     
-    // Get ally position (other slot on same side)
-    let ally_slot = 1 - context.user_position.slot;
-    let ally_position = BattlePosition::new(context.user_position.side, ally_slot);
-    
-    // Check if ally position is active and has Plus or Minus
-    if context.state.is_position_active(ally_position) {
-        if let Some(ally_pokemon) = context.state.get_pokemon_at_position(ally_position) {
-            let ally_ability = ally_pokemon.ability.as_str();
-            if ally_ability == "plus" || ally_ability == "minus" {
-                // Boost Special Attack by 50% (1.5x multiplier)
-                return AbilityEffectResult {
-                    special_attack_multiplier: 1.5,
-                    ..Default::default()
-                };
+    // Check all ally positions for Plus or Minus ability
+    let same_side_positions = context.user_position.same_side_positions(&context.state.format);
+    for ally_position in same_side_positions {
+        // Skip self
+        if ally_position == context.user_position {
+            continue;
+        }
+        
+        // Check if ally position is active and has Plus or Minus
+        if context.state.is_position_active(ally_position) {
+            if let Some(ally_pokemon) = context.state.get_pokemon_at_position(ally_position) {
+                let ally_ability = ally_pokemon.ability.as_str();
+                if ally_ability == "plus" || ally_ability == "minus" {
+                    // Boost Special Attack by 50% (1.5x multiplier)
+                    return AbilityEffectResult {
+                        special_attack_multiplier: 1.5,
+                        ..Default::default()
+                    };
+                }
             }
         }
     }
@@ -669,172 +673,7 @@ fn apply_type_change(context: AbilityContext, target_type: &str, power_multiplie
     AbilityEffectResult::none()
 }
 
-// Compatibility layer for existing codebase
-#[derive(Debug, Clone, PartialEq)]
-pub struct AbilityModifier {
-    pub damage_multiplier: f32,
-    pub power_multiplier: f32,
-    pub attack_multiplier: f32,
-    pub defense_multiplier: f32,
-    pub special_attack_multiplier: f32,
-    pub special_defense_multiplier: f32,
-    pub blocks_move: bool,
-    pub ignores_type_effectiveness: bool,
-    pub changed_move_type: Option<String>,
-}
 
-impl AbilityModifier {
-    pub fn new() -> Self {
-        Self {
-            damage_multiplier: 1.0,
-            power_multiplier: 1.0,
-            attack_multiplier: 1.0,
-            defense_multiplier: 1.0,
-            special_attack_multiplier: 1.0,
-            special_defense_multiplier: 1.0,
-            blocks_move: false,
-            ignores_type_effectiveness: false,
-            changed_move_type: None,
-        }
-    }
-}
-
-impl From<AbilityEffectResult> for AbilityModifier {
-    fn from(effect: AbilityEffectResult) -> Self {
-        Self {
-            damage_multiplier: effect.damage_multiplier,
-            power_multiplier: effect.power_multiplier,
-            attack_multiplier: effect.attack_multiplier,
-            defense_multiplier: effect.defense_multiplier,
-            special_attack_multiplier: effect.special_attack_multiplier,
-            special_defense_multiplier: effect.special_defense_multiplier,
-            blocks_move: effect.immunity,
-            ignores_type_effectiveness: effect.ignore_type_effectiveness,
-            changed_move_type: None, // Type changes handled separately
-        }
-    }
-}
-
-/// Calculate all ability modifiers for a damage calculation (compatibility function)
-pub fn calculate_ability_modifiers(
-    context: &crate::engine::combat::damage_context::DamageContext,
-    state: &BattleState,
-    _generation_mechanics: &crate::generation::GenerationMechanics,
-) -> AbilityModifier {
-    // Use modern context directly
-    calculate_ability_modifiers_modern(context, state, _generation_mechanics)
-}
-
-/// Modern function that works with the new DamageContext
-pub fn calculate_ability_modifiers_modern(
-    context: &DamageContext,
-    state: &BattleState,
-    _generation_mechanics: &crate::generation::GenerationMechanics,
-) -> AbilityModifier {
-    let mut combined_modifier = AbilityModifier::new();
-
-    // Convert DamageContext to AbilityContext for attacker
-    let attacker_context = AbilityContext {
-        user_position: context.attacker.position,
-        target_position: Some(context.defender.position),
-        move_type: Some(TypeId::from(context.move_info.move_type.clone())),
-        move_id: Some(&context.move_info.name),
-        base_power: Some(context.move_info.base_power as u16),
-        is_critical: context.move_info.is_critical,
-        is_contact: context.move_info.is_contact,
-        state: state,
-    };
-
-    // Apply attacker ability
-    let attacker_effect = apply_ability_effect(&AbilityId::from(context.attacker.pokemon.ability.as_str()), attacker_context);
-    let attacker_mod = AbilityModifier::from(attacker_effect);
-    
-    if attacker_mod.blocks_move {
-        return attacker_mod;
-    }
-
-    // Convert DamageContext to AbilityContext for defender
-    let defender_context = AbilityContext {
-        user_position: context.defender.position,
-        target_position: Some(context.attacker.position),
-        move_type: Some(TypeId::from(context.move_info.move_type.clone())),
-        move_id: Some(&context.move_info.name),
-        base_power: Some(context.move_info.base_power as u16),
-        is_critical: context.move_info.is_critical,
-        is_contact: context.move_info.is_contact,
-        state: state,
-    };
-
-    // Apply defender ability
-    let defender_effect = apply_ability_effect(&AbilityId::from(context.defender.pokemon.ability.as_str()), defender_context);
-    let defender_mod = AbilityModifier::from(defender_effect);
-    
-    if defender_mod.blocks_move {
-        return defender_mod;
-    }
-
-    // Combine modifiers
-    combined_modifier.damage_multiplier = attacker_mod.damage_multiplier * defender_mod.damage_multiplier;
-    combined_modifier.power_multiplier = attacker_mod.power_multiplier * defender_mod.power_multiplier;
-    combined_modifier.attack_multiplier = attacker_mod.attack_multiplier;
-    combined_modifier.defense_multiplier = defender_mod.defense_multiplier;
-    combined_modifier.special_attack_multiplier = attacker_mod.special_attack_multiplier;
-    combined_modifier.special_defense_multiplier = defender_mod.special_defense_multiplier;
-
-    combined_modifier
-}
-
-// Simple helper functions to replace legacy system usage
-/// Check if an ability provides immunity to a move type
-pub fn ability_provides_immunity(ability_name: &str, move_type: &str) -> bool {
-    let ability_id = AbilityId::from(ability_name);
-    let context = AbilityContext {
-        user_position: BattlePosition::new(crate::core::battle_format::SideReference::SideOne, 0),
-        target_position: None,
-        move_type: Some(TypeId::from(move_type)),
-        move_id: None,
-        base_power: None,
-        is_critical: false,
-        is_contact: false,
-        state: &BattleState::default(),
-    };
-    
-    apply_ability_effect(&ability_id, context).immunity
-}
-
-/// Check if an ability negates weather
-pub fn ability_negates_weather(ability_name: &str) -> bool {
-    let ability_id = AbilityId::from(ability_name);
-    let context = AbilityContext {
-        user_position: BattlePosition::new(crate::core::battle_format::SideReference::SideOne, 0),
-        target_position: None,
-        move_type: None,
-        move_id: None,
-        base_power: None,
-        is_critical: false,
-        is_contact: false,
-        state: &BattleState::default(),
-    };
-    
-    apply_ability_effect(&ability_id, context).negates_weather
-}
-
-/// Check if an ability bypasses screens
-pub fn ability_bypasses_screens(ability_name: &str) -> bool {
-    let ability_id = AbilityId::from(ability_name);
-    let context = AbilityContext {
-        user_position: BattlePosition::new(crate::core::battle_format::SideReference::SideOne, 0),
-        target_position: None,
-        move_type: None,
-        move_id: None,
-        base_power: None,
-        is_critical: false,
-        is_contact: false,
-        state: &BattleState::default(),
-    };
-    
-    apply_ability_effect(&ability_id, context).bypasses_screens
-}
 
 
 

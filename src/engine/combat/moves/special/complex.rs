@@ -213,63 +213,6 @@ pub fn apply_leech_seed(
     instructions
 }
 
-/// Apply Rest - fully heals and puts user to sleep
-pub fn apply_rest(
-    state: &BattleState,
-    user_position: BattlePosition,
-    target_positions: &[BattlePosition],
-    _generation: &GenerationMechanics,
-) -> Vec<BattleInstructions> {
-    let target_position = if target_positions.is_empty() {
-        user_position
-    } else {
-        target_positions[0]
-    };
-    
-    if let Some(pokemon) = state.get_pokemon_at_position(target_position) {
-        let mut instructions = Vec::new();
-        
-        // Heal to full HP
-        let heal_amount = pokemon.max_hp - pokemon.hp;
-        if heal_amount > 0 {
-            instructions.push(BattleInstruction::Pokemon(PokemonInstruction::Heal {
-                target: target_position,
-                amount: heal_amount,
-                previous_hp: Some(pokemon.hp),
-            }));
-        }
-        
-        // Clear any existing status
-        if pokemon.status != PokemonStatus::None {
-            instructions.push(BattleInstruction::Status(StatusInstruction::Apply {
-                target: target_position,
-                status: PokemonStatus::None,
-                duration: None,
-                previous_status: Some(pokemon.status),
-                previous_duration: pokemon.status_duration,
-            }));
-        }
-        
-        // Put to sleep for 2 turns
-        instructions.push(BattleInstruction::Status(StatusInstruction::Apply {
-            target: target_position,
-            status: PokemonStatus::Sleep,
-            duration: Some(2),
-            previous_status: Some(PokemonStatus::None),
-            previous_duration: None,
-        }));
-        
-        instructions.push(BattleInstruction::Status(StatusInstruction::SetRestTurns {
-            target: target_position,
-            turns: 2,
-            previous_turns: None,
-        }));
-        
-        vec![BattleInstructions::new(100.0, instructions)]
-    } else {
-        vec![BattleInstructions::new(100.0, vec![])]
-    }
-}
 
 /// Apply Sleep Talk - uses random move while asleep
 pub fn apply_sleep_talk(

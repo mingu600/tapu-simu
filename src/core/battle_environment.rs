@@ -3,7 +3,7 @@
 //! This module provides the main battle orchestration and player interfaces for Tapu Simu.
 //! It implements 100% parity with poke-engine's battle_environment.rs, adapted for V2 architecture.
 
-use crate::core::battle_format::SideReference;
+use crate::core::battle_format::{SideReference, BattlePosition};
 use crate::core::battle_state::BattleState;
 use crate::core::instructions::BattleInstructions;
 use crate::core::move_choice::MoveChoice;
@@ -93,18 +93,18 @@ impl DamageMaximizer {
     fn estimate_damage(
         &self,
         state: &BattleState,
-        side_ref: SideReference,
+        user_position: BattlePosition,
         move_choice: &MoveChoice,
     ) -> f32 {
         match move_choice {
             MoveChoice::Move { move_index, .. } => {
-                let side = match side_ref {
+                let side = match user_position.side {
                     SideReference::SideOne => &state.sides[0],
                     SideReference::SideTwo => &state.sides[1],
                 };
 
-                // Get the active Pokemon at position 0
-                if let Some(active_pokemon) = side.get_active_pokemon_at_slot(0) {
+                // Get the active Pokemon at the specified position
+                if let Some(active_pokemon) = side.get_active_pokemon_at_slot(user_position.slot) {
                     if let Some(move_data) = active_pokemon.get_move(*move_index) {
                         // Use actual base power from move data
                         move_data.base_power as f32
@@ -117,12 +117,12 @@ impl DamageMaximizer {
             }
             MoveChoice::MoveTera { move_index, .. } => {
                 // Same logic as regular move but potentially higher power due to Tera
-                let side = match side_ref {
+                let side = match user_position.side {
                     SideReference::SideOne => &state.sides[0],
                     SideReference::SideTwo => &state.sides[1],
                 };
 
-                if let Some(active_pokemon) = side.get_active_pokemon_at_slot(0) {
+                if let Some(active_pokemon) = side.get_active_pokemon_at_slot(user_position.slot) {
                     if let Some(_move_data) = active_pokemon.get_move(*move_index) {
                         120.0 // Slightly higher estimate for Tera moves
                     } else {
@@ -146,10 +146,13 @@ impl Player for DamageMaximizer {
         options: &[MoveChoice],
     ) -> MoveChoice {
         let mut best_move = options[0].clone();
-        let mut best_damage = self.estimate_damage(state, side_ref, &options[0]);
+        // For now, assume slot 0 for the damage maximizer - this is a temporary solution
+        // In a full implementation, we'd need more context about which position is acting
+        let user_position = BattlePosition::new(side_ref, 0);
+        let mut best_damage = self.estimate_damage(state, user_position, &options[0]);
 
         for option in options.iter().skip(1) {
-            let damage = self.estimate_damage(state, side_ref, option);
+            let damage = self.estimate_damage(state, user_position, option);
             if damage > best_damage {
                 best_damage = damage;
                 best_move = option.clone();
@@ -367,8 +370,8 @@ impl BattleEnvironment {
 
                 let moves_msg = format!(
                     "\nMoves Selected:\n  Side 1: {}\n  Side 2: {}\n=============================\n",
-                    side_one_choice.to_string(&state.sides[0]),
-                    side_two_choice.to_string(&state.sides[1])
+                    side_one_choice.to_string(&state.sides[0], 0),
+                    side_two_choice.to_string(&state.sides[1], 0)
                 );
 
                 if let Some(ref mut file) = log_file {

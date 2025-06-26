@@ -182,6 +182,41 @@ impl BattleState {
         self.field.terrain.condition
     }
 
+    /// Get all active Pokemon positions in the battle
+    pub fn get_all_active_positions(&self) -> Vec<BattlePosition> {
+        let mut positions = Vec::new();
+        
+        // Add positions based on battle format
+        match self.format.format_type {
+            crate::core::battle_format::FormatType::Singles => {
+                positions.push(BattlePosition { side: SideReference::SideOne, slot: 0 });
+                positions.push(BattlePosition { side: SideReference::SideTwo, slot: 0 });
+            }
+            crate::core::battle_format::FormatType::Doubles | crate::core::battle_format::FormatType::Vgc => {
+                for side in [SideReference::SideOne, SideReference::SideTwo] {
+                    for slot in 0..2 {
+                        let position = BattlePosition { side, slot };
+                        if self.get_pokemon_at_position(position).is_some() {
+                            positions.push(position);
+                        }
+                    }
+                }
+            }
+            crate::core::battle_format::FormatType::Triples => {
+                for side in [SideReference::SideOne, SideReference::SideTwo] {
+                    for slot in 0..3 {
+                        let position = BattlePosition { side, slot };
+                        if self.get_pokemon_at_position(position).is_some() {
+                            positions.push(position);
+                        }
+                    }
+                }
+            }
+        }
+        
+        positions
+    }
+
     /// Get a reference to a side by SideReference
     pub fn get_side_by_ref(&self, side_ref: SideReference) -> &BattleSide {
         match side_ref {
@@ -254,28 +289,60 @@ impl BattleState {
 
     /// Apply Pokemon instruction (damage, healing, switching, etc.)
     fn apply_pokemon_instruction(&mut self, instruction: &PokemonInstruction) {
+        let _ = self.apply_pokemon_instruction_with_substitute_info(instruction);
+    }
+
+    /// Apply Pokemon instruction with substitute information for effect blocking
+    fn apply_pokemon_instruction_with_substitute_info(
+        &mut self,
+        instruction: &PokemonInstruction,
+    ) -> Option<crate::engine::combat::core::SubstituteDamageResult> {
+        use crate::engine::combat::core::SubstituteDamageResult;
         match instruction {
             PokemonInstruction::Damage { target, amount, .. } => {
                 if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
                     // Check if Pokemon has a substitute
                     if pokemon.volatile_statuses.contains(&VolatileStatus::Substitute) && pokemon.substitute_health > 0 {
                         // Damage goes to substitute first
-                        let remaining_substitute_health = pokemon.substitute_health - amount;
+                        let current_substitute_health = pokemon.substitute_health;
+                        let remaining_substitute_health = current_substitute_health - amount;
+                        
                         if remaining_substitute_health <= 0 {
                             // Substitute is broken, apply excess damage to Pokemon
                             pokemon.substitute_health = 0;
                             pokemon.volatile_statuses.remove(&VolatileStatus::Substitute);
-                            let excess_damage = amount - pokemon.substitute_health;
-                            if excess_damage > 0 {
+                            let excess_damage = amount - current_substitute_health;
+                            let damage_to_pokemon = if excess_damage > 0 {
                                 pokemon.hp = (pokemon.hp - excess_damage).max(0);
-                            }
+                                excess_damage
+                            } else {
+                                0
+                            };
+                            
+                            return Some(SubstituteDamageResult {
+                                hit_substitute: true,
+                                substitute_broken: true,
+                                damage_to_pokemon,
+                            });
                         } else {
                             // Substitute absorbs all damage
                             pokemon.substitute_health = remaining_substitute_health;
+                            
+                            return Some(SubstituteDamageResult {
+                                hit_substitute: true,
+                                substitute_broken: false,
+                                damage_to_pokemon: 0,
+                            });
                         }
                     } else {
                         // No substitute or substitute broken, damage goes to Pokemon directly
                         pokemon.hp = (pokemon.hp - amount).max(0);
+                        
+                        return Some(SubstituteDamageResult {
+                            hit_substitute: false,
+                            substitute_broken: false,
+                            damage_to_pokemon: *amount,
+                        });
                     }
                 }
             }
@@ -409,6 +476,8 @@ impl BattleState {
                 eprintln!("Unhandled Pokemon instruction: {:?}", instruction);
             }
         }
+        
+        None
     }
 
     /// Apply Field instruction (weather, terrain, global effects, side conditions)

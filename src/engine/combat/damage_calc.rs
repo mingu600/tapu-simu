@@ -3,15 +3,15 @@
 //! This module provides damage calculation for Pokemon moves with full
 //! generation-specific mechanics support.
 
-use super::damage_context::{DamageContext, DamageEffect, DamageResult};
-use super::type_effectiveness::{PokemonType, TypeChart};
-use crate::constants::damage::*;
-use crate::core::battle_state::BattleState;
-use crate::core::battle_state::Pokemon;
+use crate::constants::moves::*;
+use crate::core::battle_state::{BattleState, Pokemon};
 use crate::core::instructions::MoveCategory;
 use crate::data::showdown_types::MoveData;
-use crate::generation::{GenerationMechanics, GenerationBattleMechanics};
+use crate::generation::{GenerationBattleMechanics, GenerationMechanics};
 use crate::utils::normalize_name;
+
+use super::damage_context::{DamageContext, DamageEffect, DamageResult};
+use super::type_effectiveness::{PokemonType, TypeChart};
 
 /// Get item damage modifier for Generation 2
 fn get_gen2_item_modifier(item: &str, move_type: &str) -> f32 {
@@ -95,32 +95,6 @@ pub fn calculate_damage_with_positions(
     attacker_position: crate::core::battle_format::BattlePosition,
     defender_position: crate::core::battle_format::BattlePosition,
 ) -> i16 {
-    // Use modern DamageContext system
-    calculate_damage_with_modern_context(
-        state,
-        attacker,
-        defender,
-        move_data,
-        is_critical,
-        damage_rolls,
-        target_count,
-        attacker_position,
-        defender_position,
-    )
-}
-
-/// Calculate damage using the modern DamageContext system
-fn calculate_damage_with_modern_context(
-    state: &BattleState,
-    attacker: &Pokemon,
-    defender: &Pokemon,
-    move_data: &MoveData,
-    is_critical: bool,
-    damage_rolls: DamageRolls,
-    target_count: usize,
-    attacker_position: crate::core::battle_format::BattlePosition,
-    defender_position: crate::core::battle_format::BattlePosition,
-) -> i16 {
     use super::damage_context::{
         AbilityState, AttackerContext, DamageContext, DefenderContext, EffectiveStats,
         FieldContext, FormatContext, ItemEffects, MoveContext,
@@ -148,9 +122,11 @@ fn calculate_damage_with_modern_context(
         base_power: move_data.base_power as u8,
         is_critical,
         is_contact: move_data.flags.contains_key("contact"),
+        is_punch: move_data.flags.contains_key("punch"),
+        is_sound: move_data.flags.contains_key("sound"),
+        is_multihit: move_data.flags.contains_key("multihit"),
         move_type: move_data.move_type.clone(),
         category: MoveCategory::from_str(&move_data.category),
-        data: move_data.clone(),
     };
 
     let field_context = FieldContext {
@@ -176,6 +152,7 @@ fn calculate_damage_with_modern_context(
     let result = calculate_damage_modern(&damage_context, damage_rolls);
     result.damage
 }
+
 
 /// DamageRolls enum for consistent damage calculation
 /// Matches Pokemon's actual 16-roll system
@@ -234,12 +211,6 @@ pub fn get_damage_for_roll(base_damage_no_roll: f32, roll_type: DamageRolls) -> 
     }
 }
 
-/// Generate a random damage roll (deprecated - use DamageRolls enum instead)
-pub fn random_damage_roll() -> f32 {
-    use rand::Rng;
-    let mut rng = rand::thread_rng();
-    rng.gen_range(0.85..=1.0)
-}
 
 /// Compare health with damage multiples to determine kill/non-kill scenarios
 /// This implements the poke-engine 16-roll damage calculation logic
@@ -513,12 +484,31 @@ fn calculate_crit_rate_from_stage(stage: i32, generation: crate::generation::Gen
 
 /// Check if weather effects should be negated by any active Pokemon abilities
 pub fn is_weather_negated(state: &BattleState) -> bool {
-    use crate::engine::mechanics::abilities::ability_negates_weather;
+    use crate::engine::mechanics::abilities::{apply_ability_effect, AbilityContext};
+    use crate::types::{AbilityId};
+    use crate::core::battle_format::{BattlePosition, SideReference};
 
     // Check all active Pokemon for weather negation abilities
-    for side in [&state.sides[0], &state.sides[1]] {
-        for pokemon in &side.pokemon {
-            if ability_negates_weather(pokemon.ability.as_str()) {
+    for (side_index, side) in state.sides.iter().enumerate() {
+        for (slot_index, pokemon) in side.pokemon.iter().enumerate() {
+            let ability_id = AbilityId::from(pokemon.ability.as_str());
+            let position = BattlePosition::new(
+                if side_index == 0 { SideReference::SideOne } else { SideReference::SideTwo },
+                slot_index
+            );
+            
+            let context = AbilityContext {
+                user_position: position,
+                target_position: None,
+                move_type: None,
+                move_id: None,
+                base_power: None,
+                is_critical: false,
+                is_contact: false,
+                state: state,
+            };
+            
+            if apply_ability_effect(&ability_id, context).negates_weather {
                 return true;
             }
         }
@@ -795,10 +785,42 @@ pub fn get_screen_damage_modifier(
 ) -> f32 {
     use crate::core::battle_state::MoveCategory;
     use crate::core::instructions::SideCondition;
-    use crate::engine::mechanics::abilities::ability_bypasses_screens;
+    use crate::engine::mechanics::abilities::{apply_ability_effect, AbilityContext};
+    use crate::types::AbilityId;
+    use crate::core::battle_format::{BattlePosition, SideReference};
 
-    // Check if attacker has Infiltrator ability to bypass screens
-    if ability_bypasses_screens(attacker.ability.as_str()) {
+    // Check if attacker has ability to bypass screens (Infiltrator, etc.)
+    // First find the attacker's position
+    let attacker_position = {
+        let mut found_position = None;
+        for (side_index, side) in state.sides.iter().enumerate() {
+            for (slot_index, pokemon) in side.pokemon.iter().enumerate() {
+                if std::ptr::eq(pokemon, attacker) {
+                    found_position = Some(BattlePosition::new(
+                        if side_index == 0 { SideReference::SideOne } else { SideReference::SideTwo },
+                        slot_index
+                    ));
+                    break;
+                }
+            }
+            if found_position.is_some() { break; }
+        }
+        found_position.unwrap_or(BattlePosition::new(SideReference::SideOne, 0))
+    };
+
+    let ability_id = AbilityId::from(attacker.ability.as_str());
+    let context = AbilityContext {
+        user_position: attacker_position,
+        target_position: None,
+        move_type: None,
+        move_id: None,
+        base_power: None,
+        is_critical: false,
+        is_contact: false,
+        state: state,
+    };
+    
+    if apply_ability_effect(&ability_id, context).bypasses_screens {
         return 1.0;
     }
 

@@ -31,10 +31,10 @@ pub enum BattleInstruction {
 
 impl BattleInstruction {
     /// Returns all positions affected by this instruction
-    pub fn affected_positions(&self) -> Vec<BattlePosition> {
+    pub fn affected_positions(&self, format: &crate::core::battle_format::BattleFormat) -> Vec<BattlePosition> {
         match self {
             BattleInstruction::Pokemon(instr) => instr.affected_positions(),
-            BattleInstruction::Field(instr) => instr.affected_positions(),
+            BattleInstruction::Field(instr) => instr.affected_positions(format),
             BattleInstruction::Status(instr) => instr.affected_positions(),
             BattleInstruction::Stats(instr) => instr.affected_positions(),
         }
@@ -64,10 +64,10 @@ pub struct BattleInstructions {
 
 impl BattleInstructions {
     /// Create a new BattleInstructions with calculated affected positions
-    pub fn new(percentage: f32, instruction_list: Vec<BattleInstruction>) -> Self {
+    pub fn new_with_format(percentage: f32, instruction_list: Vec<BattleInstruction>, format: &crate::core::battle_format::BattleFormat) -> Self {
         let mut affected_positions = Vec::new();
         for instruction in &instruction_list {
-            affected_positions.extend(instruction.affected_positions());
+            affected_positions.extend(instruction.affected_positions(format));
         }
         
         // Remove duplicates and sort for consistency
@@ -80,6 +80,25 @@ impl BattleInstructions {
             affected_positions,
         }
     }
+
+    /// Create a new BattleInstructions with manually specified affected positions
+    /// This is useful when you know the affected positions without needing format calculation
+    pub fn new_with_positions(percentage: f32, instruction_list: Vec<BattleInstruction>, affected_positions: Vec<BattlePosition>) -> Self {
+        Self {
+            percentage,
+            instruction_list,
+            affected_positions,
+        }
+    }
+
+    /// Create a new BattleInstructions (backward compatibility - assumes empty affected positions)
+    /// Use new_with_format or new_with_positions for better position tracking
+    pub fn new(percentage: f32, instruction_list: Vec<BattleInstruction>) -> Self {
+        Self {
+            percentage,
+            instruction_list,
+            affected_positions: Vec::new(),
+        }
+    }
 }
 
-// Legacy conversion removed - Instruction is now an alias for BattleInstruction

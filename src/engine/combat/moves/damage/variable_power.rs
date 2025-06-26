@@ -1,19 +1,26 @@
 //! # Variable Power Move Effects
-
 //! 
 //! This module contains variable power move implementations that calculate power
 //! based on various battle conditions such as HP, status, speed, weather, etc.
 
-use crate::core::battle_state::{Pokemon, MoveCategory, BattleState};
-use crate::core::instructions::{PokemonStatus, VolatileStatus, Stat, Weather, SideCondition, Terrain};
-use crate::core::instructions::{BattleInstruction, BattleInstructions, StatusInstruction, PokemonInstruction, FieldInstruction, StatsInstruction};
-use crate::core::battle_format::{BattlePosition, SideReference};
-use crate::generation::GenerationMechanics;
-use crate::engine::combat::type_effectiveness::{TypeChart, PokemonType};
-use crate::engine::combat::moves::MoveContext;
-use crate::engine::combat::moves::simple;
 use std::collections::HashMap;
+
+use crate::constants::moves::*;
+use crate::core::battle_format::{BattlePosition, SideReference};
+use crate::core::battle_state::{BattleState, MoveCategory, Pokemon};
+use crate::core::instructions::{
+    BattleInstruction, BattleInstructions, FieldInstruction, PokemonInstruction, PokemonStatus,
+    SideCondition, Stat, StatusInstruction, StatsInstruction, Terrain, VolatileStatus, Weather,
+};
 use crate::data::showdown_types::MoveData;
+use crate::engine::combat::moves::{simple, MoveContext};
+use crate::engine::combat::type_effectiveness::{PokemonType, TypeChart};
+use crate::generation::GenerationMechanics;
+
+// =============================================================================
+// CONSTANTS FOR MOVE TYPES (avoid string allocations)
+// =============================================================================
+
 
 // =============================================================================
 // VARIABLE POWER MOVE FUNCTIONS
@@ -38,7 +45,7 @@ pub fn apply_facade(
         if has_status {
             // Return a power modifier instruction that doubles the base power
             // This will be handled by the damage calculation system
-            return apply_power_modifier_move(state, move_data, user_position, target_positions, generation, 2.0, branch_on_damage);
+            return apply_power_modifier_move(state, move_data, user_position, target_positions, generation, FACADE_STATUS_MULTIPLIER as f32, branch_on_damage);
         }
     }
     
@@ -68,7 +75,7 @@ pub fn apply_hex(
     
     if has_statused_target {
         // Return a power modifier instruction that doubles the base power
-        return apply_power_modifier_move(state, move_data, user_position, target_positions, generation, 2.0, branch_on_damage);
+        return apply_power_modifier_move(state, move_data, user_position, target_positions, generation, HEX_STATUS_MULTIPLIER as f32, branch_on_damage);
     }
     
     // No statused targets, normal power
@@ -125,21 +132,13 @@ pub fn apply_reversal(
 ) -> Vec<BattleInstructions> {
     if let Some(user) = state.get_pokemon_at_position(user_position) {
         // Reversal power based on HP percentage
-        let hp_percentage = (user.hp as f32 / user.max_hp as f32) * 100.0;
+        let hp_percentage = user.hp as f32 / user.max_hp as f32;
         
-        let base_power = if hp_percentage > 68.75 {
-            20
-        } else if hp_percentage > 35.42 {
-            40
-        } else if hp_percentage > 20.83 {
-            80
-        } else if hp_percentage > 10.42 {
-            100
-        } else if hp_percentage > 4.17 {
-            150
-        } else {
-            200
-        };
+        let base_power = crate::constants::REVERSAL_HP_THRESHOLDS
+            .iter()
+            .find(|(threshold, _)| hp_percentage <= *threshold)
+            .map(|(_, power)| *power as i16)
+            .unwrap_or(20i16);
         
         let power_multiplier = if move_data.base_power > 0 {
             base_power as f32 / move_data.base_power as f32
@@ -184,34 +183,34 @@ pub fn apply_weather_ball(
     generation: &GenerationMechanics,
     branch_on_damage: bool,
 ) -> Vec<BattleInstructions> {
-    let mut modified_move_data = move_data.clone();
+    // Avoid expensive clone by only modifying what we need
+    let current_weather = state.weather();
     
-    // Weather Ball doubles power and changes type based on weather
-    match state.weather() {
-        Weather::Sun | Weather::HarshSun | Weather::HarshSunlight => {
-            modified_move_data.move_type = "Fire".to_string();
-            modified_move_data.base_power = modified_move_data.base_power * 2;
-        }
-        Weather::Rain | Weather::HeavyRain => {
-            modified_move_data.move_type = "Water".to_string();
-            modified_move_data.base_power = modified_move_data.base_power * 2;
-        }
-        Weather::Sand | Weather::Sandstorm => {
-            modified_move_data.move_type = "Rock".to_string();
-            modified_move_data.base_power = modified_move_data.base_power * 2;
-        }
-        Weather::Hail | Weather::Snow => {
-            modified_move_data.move_type = "Ice".to_string();
-            modified_move_data.base_power = modified_move_data.base_power * 2;
-        }
-        Weather::StrongWinds => {
-            modified_move_data.move_type = "Flying".to_string();
-            modified_move_data.base_power = modified_move_data.base_power * 2;
-        }
-        Weather::None => {
-            // Remains Normal type with base power
-        }
-    }
+    // Find matching weather type or return generic effects for no weather
+    let (new_type, power_multiplier) = if let Some((_, pokemon_type)) = WEATHER_BALL_TYPES.iter()
+        .find(|(weather, _)| *weather == current_weather) {
+        (pokemon_type.to_str(), WEATHER_BALL_BOOSTED_POWER)
+    } else {
+        return crate::engine::combat::moves::apply_generic_effects(state, move_data, user_position, target_positions, generation, branch_on_damage);
+    };
+    
+    // Only clone the strings we absolutely need
+    let modified_move_data = MoveData {
+        move_type: new_type.to_string(),
+        base_power: move_data.base_power * power_multiplier,
+        // Copy by reference to avoid allocations where possible
+        id: move_data.id.clone(),
+        num: move_data.num,
+        name: move_data.name.clone(),
+        accuracy: move_data.accuracy,
+        pp: move_data.pp,
+        max_pp: move_data.max_pp,
+        category: move_data.category.clone(),
+        priority: move_data.priority,
+        target: move_data.target.clone(),
+        flags: move_data.flags.clone(),
+        ..Default::default()
+    };
     
     crate::engine::combat::moves::apply_generic_effects(state, &modified_move_data, user_position, target_positions, generation, branch_on_damage)
 }
@@ -315,17 +314,11 @@ pub fn apply_electroball(
                     4.0 // Max power if target has 0 speed
                 };
                 
-                let base_power = if speed_ratio >= 4.0 {
-                    150i16
-                } else if speed_ratio >= 3.0 {
-                    120i16
-                } else if speed_ratio >= 2.0 {
-                    80i16
-                } else if speed_ratio >= 1.0 {
-                    60i16
-                } else {
-                    40i16
-                };
+                let base_power = crate::constants::SPEED_RATIO_POWER_THRESHOLDS
+                    .iter()
+                    .find(|(threshold, _)| speed_ratio >= *threshold)
+                    .map(|(_, power)| *power as i16)
+                    .unwrap_or(40i16);
                 
                 let modified_move_data = MoveData {
                     base_power: base_power as u16,
@@ -533,19 +526,11 @@ pub fn apply_grass_knot(
         if let Some(target_pokemon) = state.get_pokemon_at_position(target_position) {
             // Power based on target's weight (in kg)
             let target_weight = target_pokemon.weight_kg;
-            let base_power = if target_weight >= 200.0 {
-                120i16
-            } else if target_weight >= 100.0 {
-                100i16
-            } else if target_weight >= 50.0 {
-                80i16
-            } else if target_weight >= 25.0 {
-                60i16
-            } else if target_weight >= 10.0 {
-                40i16
-            } else {
-                20i16
-            };
+            let base_power = crate::constants::WEIGHT_POWER_THRESHOLDS
+                .iter()
+                .find(|(threshold, _)| target_weight >= *threshold)
+                .map(|(_, power)| *power as i16)
+                .unwrap_or(20i16);
             
             let modified_move_data = MoveData {
                 base_power: base_power as u16,
@@ -596,17 +581,11 @@ pub fn apply_heat_crash(
                     5.0 // Max power if target has 0 weight
                 };
                 
-                let base_power = if weight_ratio >= 5.0 {
-                    120i16
-                } else if weight_ratio >= 4.0 {
-                    100i16
-                } else if weight_ratio >= 3.0 {
-                    80i16
-                } else if weight_ratio >= 2.0 {
-                    60i16
-                } else {
-                    40i16
-                };
+                let base_power = crate::constants::WEIGHT_RATIO_POWER_THRESHOLDS
+                    .iter()
+                    .find(|(threshold, _)| weight_ratio >= *threshold)
+                    .map(|(_, power)| *power as i16)
+                    .unwrap_or(40i16);
                 
                 let modified_move_data = MoveData {
                     base_power: base_power as u16,
@@ -731,8 +710,11 @@ pub fn apply_freeze_dry(
             let mut modified_move_data = move_data.clone();
             
             // Check if target is Water type - if so, boost damage significantly
-            let has_water_type = target.types.get(0).map_or(false, |t| crate::utils::normalize_name(t) == "water") || 
-                                 target.types.get(1).map_or(false, |t| crate::utils::normalize_name(t) == "water");
+            let has_water_type = FREEZE_DRY_TARGETS.iter().any(|freeze_dry_type| {
+                target.types.iter().any(|target_type| {
+                    crate::utils::normalize_name(target_type) == crate::utils::normalize_name(freeze_dry_type.to_str())
+                })
+            });
             
             if has_water_type {
                 // Freeze-Dry treats Water types as if they were weak to Ice
@@ -1012,28 +994,16 @@ pub fn apply_terrain_pulse(
     let mut modified_move_data = move_data.clone();
     
     // Type and power change based on terrain
-    match state.terrain() {
-        Terrain::Electric | Terrain::ElectricTerrain => {
-            modified_move_data.move_type = "Electric".to_string();
-            modified_move_data.base_power = move_data.base_power * 2;
-        }
-        Terrain::Grassy | Terrain::GrassyTerrain => {
-            modified_move_data.move_type = "Grass".to_string();
-            modified_move_data.base_power = move_data.base_power * 2;
-        }
-        Terrain::Misty | Terrain::MistyTerrain => {
-            modified_move_data.move_type = "Fairy".to_string();
-            modified_move_data.base_power = move_data.base_power * 2;
-        }
-        Terrain::Psychic | Terrain::PsychicTerrain => {
-            modified_move_data.move_type = "Psychic".to_string();
-            modified_move_data.base_power = move_data.base_power * 2;
-        }
-        Terrain::None => {
-            // Remains Normal type with base power
-            modified_move_data.move_type = "Normal".to_string();
-            // Keep original base power
-        }
+    let current_terrain = state.terrain();
+    
+    if let Some((_, terrain_type)) = TERRAIN_PULSE_TYPES.iter()
+        .find(|(terrain, _)| *terrain == current_terrain) {
+        modified_move_data.move_type = terrain_type.to_str().to_string();
+        modified_move_data.base_power = move_data.base_power * WEATHER_BALL_BOOSTED_POWER;
+    } else {
+        // No terrain or unhandled terrain - remains Normal type with base power
+        modified_move_data.move_type = PokemonType::Normal.to_str().to_string();
+        // Keep original base power
     }
     
     crate::engine::combat::moves::apply_generic_effects(state, &modified_move_data, user_position, target_positions, generation, branch_on_damage)
@@ -1170,7 +1140,9 @@ pub fn is_immune_to_type(move_type: &str, target: &Pokemon, generation: &Generat
 pub fn is_immune_to_paralysis(target: &Pokemon, generation: &GenerationMechanics) -> bool {
     // Electric types are immune to paralysis in Gen 6+
     if generation.generation.number() >= 6 {
-        target.types.iter().any(|t| crate::utils::normalize_name(t) == "electric")
+        target.types.iter().any(|target_type| {
+            crate::utils::normalize_name(target_type) == crate::utils::normalize_name(PokemonType::Electric.to_str())
+        })
     } else {
         false
     }
@@ -1179,9 +1151,10 @@ pub fn is_immune_to_paralysis(target: &Pokemon, generation: &GenerationMechanics
 /// Check if a Pokemon is immune to poison
 pub fn is_immune_to_poison(target: &Pokemon, generation: &GenerationMechanics) -> bool {
     // Poison and Steel types are immune to poison
-    target.types.iter().any(|t| {
-        let t_lower = crate::utils::normalize_name(t);
-        t_lower == "poison" || t_lower == "steel"
+    POISON_RESISTANT_TYPES.iter().any(|resistant_type| {
+        target.types.iter().any(|target_type| {
+            crate::utils::normalize_name(target_type) == crate::utils::normalize_name(resistant_type.to_str())
+        })
     })
 }
 
@@ -1227,7 +1200,7 @@ pub fn apply_me_first(
                 continue;
             }
             
-            // Try to copy the opponent's move from repository
+            // Try to copy the opposing Pokemon's move from repository
             if let Some(repo_move_data) = repository.moves.find_by_name(&opponent_info.move_name) {
                 // Convert to showdown_types::MoveData first
                 let mut enhanced_move = crate::data::showdown_types::MoveData {

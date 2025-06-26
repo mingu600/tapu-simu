@@ -35,15 +35,15 @@ impl AutoTargetingEngine {
             }
             
             MoveTarget::Normal | MoveTarget::AdjacentFoe => {
-                // In singles, target the opponent
-                // In doubles, target the opponent in front (or first available)
+                // In singles, target the opposing Pokemon
+                // In doubles, target the opposing Pokemon in front (or first available)
                 self.get_default_opponent_target(opponent_side, user_slot, state)
                     .map(|pos| vec![pos])
                     .unwrap_or_default()
             }
             
             MoveTarget::AllAdjacentFoes => {
-                // All active opponents
+                // All active opposing Pokemon
                 self.get_all_active_opponents(opponent_side, state)
             }
             

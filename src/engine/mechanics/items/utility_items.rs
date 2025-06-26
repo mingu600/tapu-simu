@@ -3,14 +3,18 @@
 //! Miscellaneous utility items with various effects including healing, accuracy changes,
 //! priority modifications, and reactive behaviors.
 
-use super::{ItemModifier, StatBoosts};
+use std::collections::HashMap;
+
+use crate::core::battle_format::BattlePosition;
+use crate::core::battle_state::{MoveCategory, Pokemon};
+use crate::core::instructions::{
+    BattleInstruction, BattleInstructions, PokemonInstruction, PokemonStatus, Stat,
+    StatusInstruction, StatsInstruction,
+};
 use crate::engine::combat::damage_context::DamageContext;
 use crate::generation::GenerationBattleMechanics;
-use crate::core::battle_state::{MoveCategory, Pokemon};
-use crate::core::battle_format::BattlePosition;
-use crate::core::instructions::{Stat, PokemonStatus};
-use crate::core::instructions::{BattleInstruction, BattleInstructions, StatusInstruction, PokemonInstruction, StatsInstruction};
-use std::collections::HashMap;
+
+use super::{ItemModifier, StatBoosts};
 
 /// Get utility item effect if the item is a utility item
 pub fn get_utility_item_effect(
@@ -81,7 +85,7 @@ fn protective_pads_effect() -> ItemModifier {
 /// Throat Spray - +1 Special Attack when using sound moves
 fn throat_spray_effect(context: &DamageContext) -> ItemModifier {
     // Check if move has sound flag
-    if context.move_info.data.flags.contains_key("sound") {
+    if context.move_info.is_sound {
         ItemModifier::new()
             .with_stat_boosts(StatBoosts::special_attack(1))
             .with_consumed()
@@ -103,7 +107,7 @@ fn iron_ball_effect() -> ItemModifier {
 /// Loaded Dice - Multi-hit moves hit more times
 fn loaded_dice_effect(context: &DamageContext) -> ItemModifier {
     // Check if move is multi-hit
-    if context.move_info.data.flags.contains_key("multihit") {
+    if context.move_info.is_multihit {
         // The actual multi-hit logic is handled in move execution
         // This just indicates the item is active
         ItemModifier::default()

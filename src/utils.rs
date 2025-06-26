@@ -10,12 +10,19 @@
 /// - Pokemon species lookups
 /// - General string matching where spaces and punctuation should be ignored
 pub fn normalize_name(name: &str) -> String {
-    name.to_lowercase()
-        .replace(" ", "")
-        .replace("-", "")
-        .replace("'", "")
-        .replace(".", "")
+    // Pre-allocate with exact capacity to avoid reallocations
+    let mut result = String::with_capacity(name.len());
+    
+    for c in name.chars() {
+        match c {
+            ' ' | '-' | '\'' | '.' => {}, // Skip these characters
+            _ => result.push(c.to_lowercase().next().unwrap_or(c)),
+        }
+    }
+    
+    result
 }
+
 
 #[cfg(test)]
 mod tests {

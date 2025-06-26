@@ -99,14 +99,16 @@ impl MoveChoice {
     }
 
     /// Get the move target type from the move data (requires state access)
-    pub fn get_move_target(&self, state: &crate::core::battle_state::BattleState) -> Option<crate::data::showdown_types::MoveTarget> {
+    pub fn get_move_target(&self, state: &crate::core::battle_state::BattleState, user_position: crate::core::battle_format::BattlePosition) -> Option<crate::data::showdown_types::MoveTarget> {
         let move_index = self.move_index()?;
         
-        // Get the user's side - this is a simplified approach
-        // In a full implementation, we'd need to know which side is making the move
-        let user_side = &state.sides[0];
+        // Get the user's side using the provided position
+        let user_side = match user_position.side {
+            crate::core::battle_format::SideReference::SideOne => &state.sides[0],
+            crate::core::battle_format::SideReference::SideTwo => &state.sides[1],
+        };
         
-        if let Some(pokemon) = user_side.get_active_pokemon_at_slot(0) {
+        if let Some(pokemon) = user_side.get_active_pokemon_at_slot(user_position.slot) {
             if let Some(move_data) = pokemon.get_move(move_index) {
                 return Some(move_data.target);
             }
@@ -116,8 +118,8 @@ impl MoveChoice {
     }
 
     /// Check if this move targets multiple positions (spread move)
-    pub fn is_spread_move(&self, state: &crate::core::battle_state::BattleState) -> bool {
-        if let Some(move_target) = self.get_move_target(state) {
+    pub fn is_spread_move(&self, state: &crate::core::battle_state::BattleState, user_position: crate::core::battle_format::BattlePosition) -> bool {
+        if let Some(move_target) = self.get_move_target(state, user_position) {
             move_target.is_spread_move()
         } else {
             false
@@ -125,8 +127,8 @@ impl MoveChoice {
     }
 
     /// Check if this move can affect allies
-    pub fn affects_allies(&self, state: &crate::core::battle_state::BattleState) -> bool {
-        if let Some(move_target) = self.get_move_target(state) {
+    pub fn affects_allies(&self, state: &crate::core::battle_state::BattleState, user_position: crate::core::battle_format::BattlePosition) -> bool {
+        if let Some(move_target) = self.get_move_target(state, user_position) {
             move_target.affects_allies()
         } else {
             false
@@ -143,10 +145,10 @@ impl MoveChoice {
     }
 
     /// Convert the move choice to a human-readable string for logging
-    pub fn to_string(&self, side: &crate::core::battle_state::BattleSide) -> String {
+    pub fn to_string(&self, side: &crate::core::battle_state::BattleSide, user_slot: usize) -> String {
         match self {
             Self::Move { move_index, target_positions } => {
-                let move_name = if let Some(pokemon) = side.get_active_pokemon_at_slot(0) {
+                let move_name = if let Some(pokemon) = side.get_active_pokemon_at_slot(user_slot) {
                     if let Some(move_data) = pokemon.get_move(*move_index) {
                         move_data.name.clone()
                     } else {
@@ -166,7 +168,7 @@ impl MoveChoice {
                 }
             }
             Self::MoveTera { move_index, target_positions, tera_type } => {
-                let move_name = if let Some(pokemon) = side.get_active_pokemon_at_slot(0) {
+                let move_name = if let Some(pokemon) = side.get_active_pokemon_at_slot(user_slot) {
                     if let Some(move_data) = pokemon.get_move(*move_index) {
                         move_data.name.clone()
                     } else {

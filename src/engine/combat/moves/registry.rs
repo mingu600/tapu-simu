@@ -28,7 +28,7 @@ use super::status::stat_modifying::{
 use super::status::healing::{
     apply_recover, apply_roost, apply_moonlight, apply_synthesis,
     apply_morning_sun, apply_soft_boiled, apply_wish, apply_heal_bell,
-    apply_aromatherapy, apply_refresh, apply_rest, apply_sleep_talk
+    apply_aromatherapy, apply_rest
 };
 
 use super::field::weather::{
@@ -49,24 +49,37 @@ use super::field::hazard_removal::{
 
 use super::damage::multi_hit::{
     apply_double_slap, apply_fury_attack, apply_pin_missile, apply_spike_cannon,
-    apply_barrage, apply_fury_swipes, apply_comet_punch, apply_bullet_seed,
-    apply_icicle_spear, apply_rock_blast, apply_tail_slap, apply_scale_shot
+    apply_barrage, apply_comet_punch, apply_bullet_seed,
+    apply_rock_blast, apply_tail_slap, apply_scale_shot
 };
 
 use super::damage::recoil::{
     apply_double_edge, apply_take_down, apply_submission, apply_brave_bird,
-    apply_flare_blitz, apply_volt_tackle, apply_wood_hammer, apply_wild_charge,
+    apply_flare_blitz, apply_volt_tackle, apply_wild_charge,
     apply_head_smash
 };
 
 use super::damage::drain::{
     apply_absorb, apply_mega_drain, apply_giga_drain, apply_drain_punch,
-    apply_leech_life, apply_horn_leech, apply_parabolic_charge
+    apply_leech_life
 };
 
 use super::special::protection::{
-    apply_protect, apply_detect, apply_endure, apply_quick_guard, apply_wide_guard
+    apply_protect, apply_detect, apply_endure
 };
+
+// Additional imports for complex moves from the original match statement
+use super::damage::variable_power;
+use super::damage::{fixed_damage, self_destruct, self_damage, multi_hit};
+use super::special::{complex, counter};
+use super::special_combat::{
+    apply_body_press, apply_foul_play, apply_photon_geyser, apply_sky_drop
+};
+use super::secondary_effects::{
+    apply_flamethrower, apply_fire_blast, apply_thunderbolt, apply_ice_beam,
+    apply_sludge_bomb, apply_air_slash, apply_iron_head, apply_rock_slide
+};
+use super::status::healing;
 
 /// Move effect dispatcher function type
 type MoveEffectFn = fn(
@@ -85,12 +98,51 @@ type ExtendedMoveEffectFn = fn(
     &GenerationMechanics,
 ) -> Vec<BattleInstructions>;
 
+/// Variable power move effect dispatcher function type (with branching)
+type VariablePowerMoveEffectFn = fn(
+    &BattleState,
+    &MoveData,
+    BattlePosition,
+    &[BattlePosition],
+    &GenerationMechanics,
+    bool, // branch_on_damage
+) -> Vec<BattleInstructions>;
+
+/// Context-aware move effect dispatcher function type
+type ContextAwareMoveEffectFn = fn(
+    &BattleState,
+    &MoveData,
+    BattlePosition,
+    &[BattlePosition],
+    &GenerationMechanics,
+    &MoveContext,
+    bool, // branch_on_damage
+) -> Vec<BattleInstructions>;
+
+/// Repository-aware move effect dispatcher function type
+type RepositoryAwareMoveEffectFn = fn(
+    &BattleState,
+    &MoveData,
+    BattlePosition,
+    &[BattlePosition],
+    &GenerationMechanics,
+    &MoveContext,
+    &GameDataRepository,
+    bool, // branch_on_damage
+) -> Vec<BattleInstructions>;
+
 /// Move registry that maps move names to their effect functions
 pub struct MoveRegistry {
     /// Standard move effects
     standard_moves: std::collections::HashMap<String, MoveEffectFn>,
     /// Extended move effects that need move data
     extended_moves: std::collections::HashMap<String, ExtendedMoveEffectFn>,
+    /// Variable power move effects with branching
+    variable_power_moves: std::collections::HashMap<String, VariablePowerMoveEffectFn>,
+    /// Context-aware move effects
+    context_aware_moves: std::collections::HashMap<String, ContextAwareMoveEffectFn>,
+    /// Repository-aware move effects
+    repository_aware_moves: std::collections::HashMap<String, RepositoryAwareMoveEffectFn>,
 }
 
 impl MoveRegistry {
@@ -99,6 +151,9 @@ impl MoveRegistry {
         let mut registry = Self {
             standard_moves: std::collections::HashMap::new(),
             extended_moves: std::collections::HashMap::new(),
+            variable_power_moves: std::collections::HashMap::new(),
+            context_aware_moves: std::collections::HashMap::new(),
+            repository_aware_moves: std::collections::HashMap::new(),
         };
         
         registry.register_all_moves();
@@ -142,9 +197,7 @@ impl MoveRegistry {
         self.register_standard("wish", apply_wish);
         self.register_standard("healbell", apply_heal_bell);
         self.register_standard("aromatherapy", apply_aromatherapy);
-        self.register_standard("refresh", apply_refresh);
         self.register_standard("rest", apply_rest);
-        self.register_standard("sleeptalk", apply_sleep_talk);
 
         // Weather moves
         self.register_standard("sunnyday", apply_sunny_day);
@@ -167,19 +220,22 @@ impl MoveRegistry {
         self.register_standard("rapidspin", apply_rapid_spin);
         self.register_standard("defog", apply_defog);
 
-        // Multi-hit moves
-        self.register_standard("doubleslap", apply_double_slap);
-        self.register_standard("furyattack", apply_fury_attack);
-        self.register_standard("pinmissile", apply_pin_missile);
-        self.register_standard("spikecannon", apply_spike_cannon);
-        self.register_standard("barrage", apply_barrage);
-        self.register_standard("furyswipes", apply_fury_swipes);
-        self.register_standard("cometpunch", apply_comet_punch);
-        self.register_standard("bulletseed", apply_bullet_seed);
-        self.register_standard("iciclespear", apply_icicle_spear);
-        self.register_standard("rockblast", apply_rock_blast);
-        self.register_standard("tailslap", apply_tail_slap);
-        self.register_standard("scaleshot", apply_scale_shot);
+        // Multi-hit moves (use variable power registration for extended signature)
+        self.register_variable_power("surgingstrikes", multi_hit::apply_surging_strikes);
+        self.register_variable_power("dragondarts", multi_hit::apply_dragon_darts);
+        self.register_variable_power("populationbomb", multi_hit::apply_population_bomb);
+        self.register_variable_power("scaleshot", multi_hit::apply_scale_shot);
+        
+        // Generic multi-hit moves that use apply_multi_hit_move
+        self.register_variable_power("doubleslap", multi_hit::apply_multi_hit_move);
+        self.register_variable_power("furyattack", multi_hit::apply_multi_hit_move);
+        self.register_variable_power("pinmissile", multi_hit::apply_multi_hit_move);
+        self.register_variable_power("spikecannon", multi_hit::apply_multi_hit_move);
+        self.register_variable_power("barrage", multi_hit::apply_multi_hit_move);
+        self.register_variable_power("cometpunch", multi_hit::apply_multi_hit_move);
+        self.register_variable_power("bulletseed", multi_hit::apply_multi_hit_move);
+        self.register_variable_power("rockblast", multi_hit::apply_multi_hit_move);
+        self.register_variable_power("tailslap", multi_hit::apply_multi_hit_move);
 
         // Recoil moves
         self.register_standard("doubleedge", apply_double_edge);
@@ -188,7 +244,6 @@ impl MoveRegistry {
         self.register_standard("bravebird", apply_brave_bird);
         self.register_standard("flareblitz", apply_flare_blitz);
         self.register_standard("volttackle", apply_volt_tackle);
-        self.register_standard("woodhammer", apply_wood_hammer);
         self.register_standard("wildcharge", apply_wild_charge);
         self.register_standard("headsmash", apply_head_smash);
 
@@ -198,15 +253,99 @@ impl MoveRegistry {
         self.register_standard("gigadrain", apply_giga_drain);
         self.register_standard("drainpunch", apply_drain_punch);
         self.register_standard("leechlife", apply_leech_life);
-        self.register_standard("hornleech", apply_horn_leech);
-        self.register_standard("paraboliccharge", apply_parabolic_charge);
 
         // Protection moves
         self.register_standard("protect", apply_protect);
         self.register_standard("detect", apply_detect);
         self.register_standard("endure", apply_endure);
-        self.register_standard("quickguard", apply_quick_guard);
-        self.register_standard("wideguard", apply_wide_guard);
+
+        // Variable power moves (with branching support)
+        self.register_variable_power("facade", variable_power::apply_facade);
+        self.register_variable_power("hex", variable_power::apply_hex);
+        self.register_variable_power("gyroball", variable_power::apply_gyro_ball);
+        self.register_variable_power("reversal", variable_power::apply_reversal);
+        self.register_variable_power("acrobatics", variable_power::apply_acrobatics);
+        self.register_variable_power("weatherball", variable_power::apply_weather_ball);
+        self.register_variable_power("avalanche", variable_power::apply_avalanche);
+        self.register_variable_power("electroball", variable_power::apply_electroball);
+        self.register_variable_power("eruption", variable_power::apply_eruption);
+        self.register_variable_power("waterspout", variable_power::apply_waterspout);
+        self.register_variable_power("punishment", variable_power::apply_punishment);
+        self.register_variable_power("wakeupslap", variable_power::apply_wakeup_slap);
+        self.register_variable_power("dragonenergy", variable_power::apply_dragon_energy);
+        self.register_variable_power("grassknot", variable_power::apply_grass_knot);
+        self.register_variable_power("lowkick", variable_power::apply_low_kick);
+        self.register_variable_power("heatcrash", variable_power::apply_heat_crash);
+        self.register_variable_power("heavyslam", variable_power::apply_heavy_slam);
+        self.register_variable_power("barbbarrage", variable_power::apply_barb_barrage);
+        self.register_variable_power("collisioncourse", variable_power::apply_collision_course);
+        self.register_variable_power("electrodrift", variable_power::apply_electro_drift);
+        self.register_variable_power("freezedry", variable_power::apply_freeze_dry);
+        self.register_variable_power("hardpress", variable_power::apply_hard_press);
+        self.register_variable_power("hydrosteam", variable_power::apply_hydro_steam);
+        self.register_variable_power("lastrespects", variable_power::apply_last_respects);
+        self.register_variable_power("poltergeist", variable_power::apply_poltergeist);
+        self.register_variable_power("storedpower", variable_power::apply_stored_power);
+        self.register_variable_power("powertrip", variable_power::apply_power_trip);
+        self.register_variable_power("terrainpulse", variable_power::apply_terrain_pulse);
+
+        // Context-aware moves (need context parameter)
+        self.register_context_aware("boltbeak", variable_power::apply_boltbeak);
+        self.register_context_aware("fishiousrend", variable_power::apply_fishious_rend);
+        self.register_context_aware("pursuit", variable_power::apply_pursuit);
+        self.register_context_aware("suckerpunch", variable_power::apply_sucker_punch);
+        self.register_context_aware("thunderclap", variable_power::apply_thunder_clap);
+        self.register_context_aware("upperhand", variable_power::apply_upper_hand);
+
+        // Repository-aware moves (need repository parameter)
+        self.register_repository_aware("mefirst", variable_power::apply_me_first);
+
+        // Fixed damage moves (use extended registration for move data)
+        self.register_standard("seismictoss", fixed_damage::apply_seismic_toss);
+        self.register_standard("nightshade", fixed_damage::apply_night_shade);
+        self.register_standard("endeavor", fixed_damage::apply_endeavor);
+        self.register_standard("finalgambit", fixed_damage::apply_final_gambit);
+        self.register_standard("naturesmadness", fixed_damage::apply_natures_madness);
+        self.register_standard("ruination", fixed_damage::apply_ruination);
+        self.register_standard("superfang", fixed_damage::apply_super_fang);
+
+        // Self-destruct moves
+        self.register_variable_power("explosion", self_destruct::apply_explosion);
+        self.register_variable_power("selfdestruct", self_destruct::apply_self_destruct);
+
+        // Self-damage moves
+        self.register_variable_power("mindblown", self_damage::apply_mind_blown);
+
+        // Special combat moves
+        self.register_variable_power("bodypress", apply_body_press);
+        self.register_variable_power("foulplay", apply_foul_play);
+        self.register_variable_power("photongeyser", apply_photon_geyser);
+        self.register_variable_power("skydrop", apply_sky_drop);
+
+
+        // Advanced hazards (mortalspin not implemented yet)
+
+        // Secondary effects moves  
+        self.register_extended("flamethrower", apply_flamethrower);
+        self.register_extended("fireblast", apply_fire_blast);
+        self.register_extended("thunderbolt", apply_thunderbolt);
+        self.register_extended("icebeam", apply_ice_beam);
+        self.register_extended("sludgebomb", apply_sludge_bomb);
+        self.register_extended("airslash", apply_air_slash);
+        self.register_extended("ironhead", apply_iron_head);
+        self.register_extended("rockslide", apply_rock_slide);
+
+        // Counter moves
+        self.register_standard("counter", counter::apply_counter);
+        self.register_standard("mirrorcoat", counter::apply_mirror_coat);
+        self.register_standard("comeuppance", counter::apply_comeuppance);
+        self.register_standard("metalburst", counter::apply_metal_burst);
+
+        // Additional healing moves  
+        self.register_standard("painsplit", healing::apply_pain_split);
+
+        // Strength Sap (special variable power move without branching)
+        self.register_extended("strengthsap", variable_power::apply_strength_sap);
     }
 
     /// Register a standard move effect
@@ -219,6 +358,21 @@ impl MoveRegistry {
         self.extended_moves.insert(name.to_string(), effect_fn);
     }
 
+    /// Register a variable power move effect
+    fn register_variable_power(&mut self, name: &str, effect_fn: VariablePowerMoveEffectFn) {
+        self.variable_power_moves.insert(name.to_string(), effect_fn);
+    }
+
+    /// Register a context-aware move effect
+    fn register_context_aware(&mut self, name: &str, effect_fn: ContextAwareMoveEffectFn) {
+        self.context_aware_moves.insert(name.to_string(), effect_fn);
+    }
+
+    /// Register a repository-aware move effect
+    fn register_repository_aware(&mut self, name: &str, effect_fn: RepositoryAwareMoveEffectFn) {
+        self.repository_aware_moves.insert(name.to_string(), effect_fn);
+    }
+
     /// Apply move effects using the registry
     pub fn apply_move_effects(
         &self,
@@ -227,15 +381,25 @@ impl MoveRegistry {
         user_position: BattlePosition,
         target_positions: &[BattlePosition],
         generation: &GenerationMechanics,
-        _context: &MoveContext,
-        _repository: &GameDataRepository,
-        _branch_on_damage: bool,
+        context: &MoveContext,
+        repository: &GameDataRepository,
+        branch_on_damage: bool,
     ) -> BattleResult<Vec<BattleInstructions>> {
         let move_name = normalize_name(&move_data.name);
         
-        // Try standard moves first
-        if let Some(effect_fn) = self.standard_moves.get(&move_name) {
-            return Ok(effect_fn(state, user_position, target_positions, generation));
+        // Try repository-aware moves first (most complex)
+        if let Some(effect_fn) = self.repository_aware_moves.get(&move_name) {
+            return Ok(effect_fn(state, move_data, user_position, target_positions, generation, context, repository, branch_on_damage));
+        }
+        
+        // Try context-aware moves
+        if let Some(effect_fn) = self.context_aware_moves.get(&move_name) {
+            return Ok(effect_fn(state, move_data, user_position, target_positions, generation, context, branch_on_damage));
+        }
+        
+        // Try variable power moves
+        if let Some(effect_fn) = self.variable_power_moves.get(&move_name) {
+            return Ok(effect_fn(state, move_data, user_position, target_positions, generation, branch_on_damage));
         }
         
         // Try extended moves
@@ -243,20 +407,34 @@ impl MoveRegistry {
             return Ok(effect_fn(state, move_data, user_position, target_positions, generation));
         }
         
-        // Fallback for unimplemented moves
-        eprintln!("Warning: Move '{}' not implemented, no effect applied", move_data.name);
-        Ok(vec![])
+        // Try standard moves
+        if let Some(effect_fn) = self.standard_moves.get(&move_name) {
+            return Ok(effect_fn(state, user_position, target_positions, generation));
+        }
+        
+        // Move not found in any registry
+        Err(crate::types::BattleError::InvalidMoveChoice { 
+            reason: format!("Move '{}' is not registered in the move registry", move_data.name) 
+        })
     }
 
     /// Check if a move is registered
     pub fn is_move_registered(&self, move_name: &str) -> bool {
         let normalized = normalize_name(move_name);
-        self.standard_moves.contains_key(&normalized) || self.extended_moves.contains_key(&normalized)
+        self.standard_moves.contains_key(&normalized) 
+            || self.extended_moves.contains_key(&normalized)
+            || self.variable_power_moves.contains_key(&normalized)
+            || self.context_aware_moves.contains_key(&normalized)
+            || self.repository_aware_moves.contains_key(&normalized)
     }
 
     /// Get the number of registered moves
     pub fn registered_move_count(&self) -> usize {
-        self.standard_moves.len() + self.extended_moves.len()
+        self.standard_moves.len() 
+            + self.extended_moves.len()
+            + self.variable_power_moves.len()
+            + self.context_aware_moves.len()
+            + self.repository_aware_moves.len()
     }
 }
 

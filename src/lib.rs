@@ -28,6 +28,7 @@ pub mod core;
 pub mod engine;
 pub mod data;
 pub mod testing;
+pub mod constants;
 pub mod generation;
 pub mod io;
 pub mod types;
@@ -35,7 +36,6 @@ pub mod config;
 pub mod simulator;
 pub mod builders;
 pub mod utils;
-pub mod constants;
 
 // Modern API exports (primary interfaces)
 pub use core::battle_format::{BattleFormat, BattlePosition, SideReference, FormatType};

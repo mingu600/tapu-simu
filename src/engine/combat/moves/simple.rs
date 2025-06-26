@@ -1,20 +1,18 @@
 //! # Simple Move Effects
-
 //! 
 //! This module contains simple move implementations with straightforward effects.
 
-use crate::core::battle_state::{Pokemon, MoveCategory};
-use crate::core::battle_state::BattleState;
-use crate::core::instructions::{PokemonStatus, VolatileStatus, Stat, Weather, SideCondition, Terrain};
-use crate::core::instructions::{
-    BattleInstruction, BattleInstructions, StatusInstruction, PokemonInstruction,
-    FieldInstruction, StatsInstruction,
-};
-use crate::core::battle_format::{BattlePosition, SideReference};
-use crate::generation::GenerationMechanics;
-use crate::engine::combat::type_effectiveness::{TypeChart, PokemonType};
 use std::collections::HashMap;
+
+use crate::core::battle_format::{BattlePosition, SideReference};
+use crate::core::battle_state::{BattleState, MoveCategory, Pokemon};
+use crate::core::instructions::{
+    BattleInstruction, BattleInstructions, FieldInstruction, PokemonInstruction, PokemonStatus,
+    SideCondition, Stat, StatusInstruction, StatsInstruction, Terrain, VolatileStatus, Weather,
+};
 use crate::data::showdown_types::MoveData;
+use crate::engine::combat::type_effectiveness::{PokemonType, TypeChart};
+use crate::generation::GenerationMechanics;
 
 /// Generate damage instructions with substitute tracking
 /// Returns (damage_instructions, hit_substitute)
@@ -82,30 +80,23 @@ pub fn apply_splash(
 
 /// Apply Kinesis - lowers accuracy by 1 stage
 pub fn apply_kinesis(
-    _state: &BattleState,
+    state: &BattleState,
     _user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
 ) -> Vec<BattleInstructions> {
-    let mut instructions = Vec::new();
+    use crate::engine::combat::composers::status_moves::{
+        stat_modification_move, create_stat_changes
+    };
     
-    for &target_position in target_positions {
-        let mut stat_boosts = HashMap::new();
-        stat_boosts.insert(Stat::Accuracy, -1);
-        
-        let instruction = BattleInstruction::Stats(StatsInstruction::BoostStats {
-            target: target_position,
-            stat_changes: stat_boosts,
-            previous_boosts: HashMap::new(),
-        });
-        instructions.push(BattleInstructions::new(100.0, vec![instruction]));
-    }
+    let stat_changes = create_stat_changes(&[(Stat::Accuracy, -1)]);
+    let instructions = stat_modification_move(state, target_positions, &stat_changes, None);
     
     if instructions.is_empty() {
-        instructions.push(BattleInstructions::new(100.0, vec![]));
+        vec![BattleInstructions::new(100.0, vec![])]
+    } else {
+        vec![BattleInstructions::new(100.0, instructions)]
     }
-    
-    instructions
 }
 
 /// Apply Quick Attack - priority +1 physical move
@@ -165,36 +156,13 @@ pub fn apply_refresh(
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
 ) -> Vec<BattleInstructions> {
-    let instruction = BattleInstruction::Status(StatusInstruction::Remove {
-        target: user_position,
-        status: PokemonStatus::None, // Remove any status
-        previous_duration: None,
-    });
+    use crate::engine::combat::composers::status_moves::status_cure_move;
     
-    vec![BattleInstructions::new(100.0, vec![instruction])]
+    let instructions = status_cure_move(&[user_position], Some(user_position));
+    
+    vec![BattleInstructions::new(100.0, instructions)]
 }
 
-/// Apply Wish - heals 50% of user's max HP after 2 turns
-pub fn apply_wish(
-    state: &BattleState,
-    user_position: BattlePosition,
-    _target_positions: &[BattlePosition],
-    _generation: &GenerationMechanics,
-) -> Vec<BattleInstructions> {
-    if let Some(user) = state.get_pokemon_at_position(user_position) {
-        let heal_amount = user.max_hp / 2; // Heals 50% of user's max HP
-        let instruction = BattleInstruction::Pokemon(PokemonInstruction::SetWish {
-            target: user_position,
-            heal_amount,
-            turns_remaining: 2, // Activates after 2 turns
-            previous_wish: None,
-        });
-        
-        vec![BattleInstructions::new(100.0, vec![instruction])]
-    } else {
-        vec![BattleInstructions::new(100.0, vec![])]
-    }
-}
 
 /// Apply Healing Wish - user faints, fully heals replacement
 pub fn apply_healing_wish(
@@ -236,28 +204,18 @@ pub fn apply_life_dew(
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
 ) -> Vec<BattleInstructions> {
+    use crate::engine::combat::composers::status_moves::healing_move;
+    
     let mut instruction_list = Vec::new();
     
-    // Heal user
-    if let Some(user) = state.get_pokemon_at_position(user_position) {
-        let heal_amount = user.max_hp / 4; // Heals 25%
-        instruction_list.push(BattleInstruction::Pokemon(PokemonInstruction::Heal {
-            target: user_position,
-            amount: heal_amount,
-            previous_hp: Some(user.hp),
-        }));
-    }
+    // Heal user using the proper composer
+    let user_heal_instructions = healing_move(state, user_position, 0.25, Some(user_position));
+    instruction_list.extend(user_heal_instructions);
     
-    // Heal targets (ally in doubles)
+    // Heal targets (ally in doubles) using the proper composer
     for &target_position in target_positions {
-        if let Some(target) = state.get_pokemon_at_position(target_position) {
-            let heal_amount = target.max_hp / 4;
-            instruction_list.push(BattleInstruction::Pokemon(PokemonInstruction::Heal {
-                target: target_position,
-                amount: heal_amount,
-                previous_hp: Some(target.hp),
-            }));
-        }
+        let target_heal_instructions = healing_move(state, target_position, 0.25, Some(user_position));
+        instruction_list.extend(target_heal_instructions);
     }
     
     vec![BattleInstructions::new(100.0, instruction_list)]
@@ -265,26 +223,28 @@ pub fn apply_life_dew(
 
 /// Apply No Retreat - boosts all stats but prevents switching
 pub fn apply_no_retreat(
-    _state: &BattleState,
+    state: &BattleState,
     user_position: BattlePosition,
     _target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
 ) -> Vec<BattleInstructions> {
+    use crate::engine::combat::composers::status_moves::{
+        self_stat_boost_move, create_stat_changes
+    };
+    
     let mut instruction_list = Vec::new();
     
-    // Boost all stats by 1 stage
-    let mut stat_boosts = HashMap::new();
-    stat_boosts.insert(Stat::Attack, 1);
-    stat_boosts.insert(Stat::Defense, 1);
-    stat_boosts.insert(Stat::SpecialAttack, 1);
-    stat_boosts.insert(Stat::SpecialDefense, 1);
-    stat_boosts.insert(Stat::Speed, 1);
+    // Boost all stats by 1 stage using the composer
+    let stat_changes = create_stat_changes(&[
+        (Stat::Attack, 1),
+        (Stat::Defense, 1),
+        (Stat::SpecialAttack, 1),
+        (Stat::SpecialDefense, 1),
+        (Stat::Speed, 1),
+    ]);
     
-    instruction_list.push(BattleInstruction::Stats(StatsInstruction::BoostStats {
-        target: user_position,
-        stat_changes: stat_boosts,
-        previous_boosts: HashMap::new(),
-    }));
+    let stat_instructions = self_stat_boost_move(state, user_position, &stat_changes);
+    instruction_list.extend(stat_instructions);
     
     // Apply No Retreat status
     instruction_list.push(BattleInstruction::Status(StatusInstruction::ApplyVolatile {
@@ -320,7 +280,7 @@ pub fn apply_pain_split(
         
         let mut instruction_list = Vec::new();
         
-        // Adjust user's HP
+        // Adjust user's HP (properly using core instructions)
         let user_hp_change = new_hp - user.hp;
         if user_hp_change > 0 {
             instruction_list.push(BattleInstruction::Pokemon(PokemonInstruction::Heal {
@@ -336,7 +296,7 @@ pub fn apply_pain_split(
             }));
         }
         
-        // Adjust target's HP
+        // Adjust target's HP (properly using core instructions)
         let target_hp_change = new_hp - target.hp;
         if target_hp_change > 0 {
             instruction_list.push(BattleInstruction::Pokemon(PokemonInstruction::Heal {
@@ -360,27 +320,24 @@ pub fn apply_pain_split(
 
 /// Apply Parting Shot - lowers opponent's stats then switches
 pub fn apply_parting_shot(
-    _state: &BattleState,
+    state: &BattleState,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
     _generation: &GenerationMechanics,
 ) -> Vec<BattleInstructions> {
-    let mut instruction_list = Vec::new();
+    use crate::engine::combat::composers::status_moves::{
+        enemy_stat_reduction_move, create_stat_changes
+    };
     
-    // Lower target's Attack and Special Attack by 1 stage
-    for &target_position in target_positions {
-        let mut stat_boosts = HashMap::new();
-        stat_boosts.insert(Stat::Attack, -1);
-        stat_boosts.insert(Stat::SpecialAttack, -1);
-        
-        instruction_list.push(BattleInstruction::Stats(StatsInstruction::BoostStats {
-            target: target_position,
-            stat_changes: stat_boosts,
-            previous_boosts: HashMap::new(),
-        }));
-    }
+    // Lower target's Attack and Special Attack by 1 stage using the composer
+    let stat_changes = create_stat_changes(&[
+        (Stat::Attack, -1),
+        (Stat::SpecialAttack, -1),
+    ]);
     
-    vec![BattleInstructions::new(100.0, instruction_list)]
+    let instructions = enemy_stat_reduction_move(state, target_positions, &stat_changes, user_position);
+    
+    vec![BattleInstructions::new(100.0, instructions)]
 }
 
 /// Apply Perish Song - all Pokemon on field faint in 3 turns

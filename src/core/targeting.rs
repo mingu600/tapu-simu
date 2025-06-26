@@ -27,20 +27,20 @@ pub fn resolve_targets(
         }
         
         MoveTarget::Normal | MoveTarget::AdjacentFoe => {
-            // In singles, target the opponent
-            // In doubles, target the opponent in front (or first available)
+            // In singles, target the opposing Pokemon
+            // In doubles, target the opposing Pokemon in front (or first available)
             default_opponent_target(opponent_side, user_slot, format, state)
                 .map(|pos| vec![pos])
                 .unwrap_or_default()
         }
         
         MoveTarget::AllAdjacentFoes => {
-            // All active opponents
+            // All active opposing Pokemon
             all_active_opponents(opponent_side, format, state)
         }
         
         MoveTarget::AllAdjacent => {
-            // All adjacent Pokemon (opponents + ally in doubles)
+            // All adjacent Pokemon (opposing Pokemon + ally in doubles)
             let mut targets = all_active_opponents(opponent_side, format, state);
             
             // Add ally in doubles
@@ -259,11 +259,13 @@ fn ally_position(
         return None;
     }
     
-    let ally_slot = 1 - user_pos.slot;
-    let ally_position = BattlePosition::new(user_pos.side, ally_slot);
-    
-    if state.is_position_active(ally_position) {
-        Some(ally_position)
+    // Use the built-in ally_position method that handles format-specific logic
+    if let Some(ally_pos) = user_pos.ally_position(format) {
+        if state.is_position_active(ally_pos) {
+            Some(ally_pos)
+        } else {
+            None
+        }
     } else {
         None
     }

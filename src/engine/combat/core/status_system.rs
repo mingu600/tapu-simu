@@ -6,7 +6,7 @@
 
 use crate::core::battle_format::BattlePosition;
 use crate::core::battle_state::BattleState;
-use crate::core::instructions::{BattleInstruction, PokemonStatus, StatusInstruction, Stat, StatsInstruction};
+use crate::core::instructions::{BattleInstruction, PokemonStatus, VolatileStatus, StatusInstruction, Stat, StatsInstruction};
 use crate::data::showdown_types::MoveData;
 use std::collections::HashMap;
 
@@ -15,6 +15,19 @@ use std::collections::HashMap;
 pub struct StatusApplication {
     /// The status to apply
     pub status: PokemonStatus,
+    /// Target position
+    pub target: BattlePosition,
+    /// Chance of application (0.0 to 100.0)
+    pub chance: f32,
+    /// Duration in turns (None for permanent)
+    pub duration: Option<u8>,
+}
+
+/// Configuration for applying a volatile status effect
+#[derive(Debug, Clone)]
+pub struct VolatileStatusApplication {
+    /// The volatile status to apply
+    pub status: VolatileStatus,
     /// Target position
     pub target: BattlePosition,
     /// Chance of application (0.0 to 100.0)
@@ -376,4 +389,204 @@ pub fn apply_secondary_status(
     } else {
         vec![]
     }
+}
+
+/// Apply a single volatile status effect with comprehensive checks
+///
+/// This centralized function handles:
+/// - Immunity checks (ability, item, field effects)
+/// - Existing volatile status interactions
+/// - Duration management
+/// - Chance-based application
+pub fn apply_volatile_status_effect(
+    state: &BattleState,
+    application: VolatileStatusApplication,
+) -> StatusResult {
+    let target = state.get_pokemon_at_position(application.target);
+
+    // Check if target exists
+    let target = match target {
+        Some(target) => target,
+        None => return StatusResult {
+            applied: false,
+            instruction: None,
+            failure_reason: Some(StatusFailureReason::TypeImmunity), // No better option for "target doesn't exist"
+        },
+    };
+
+    // Check chance first
+    if application.chance < 100.0 {
+        use rand::Rng;
+        let mut rng = rand::thread_rng();
+        if rng.gen_range(0.0..100.0) >= application.chance {
+            return StatusResult {
+                applied: false,
+                instruction: None,
+                failure_reason: Some(StatusFailureReason::ChanceFailed),
+            };
+        }
+    }
+
+    // Check if target already has this volatile status
+    if target.volatile_statuses.contains(&application.status) {
+        return StatusResult {
+            applied: false,
+            instruction: None,
+            failure_reason: Some(StatusFailureReason::AlreadyStatused),
+        };
+    }
+
+    // Check immunity based on volatile status type
+    if let Some(reason) = check_volatile_status_immunity(state, target, &application.status) {
+        return StatusResult {
+            applied: false,
+            instruction: None,
+            failure_reason: Some(reason),
+        };
+    }
+
+    // Get previous state for the instruction
+    let previous_had_status = target.volatile_statuses.contains(&application.status);
+    let previous_duration = target.volatile_status_durations.get(&application.status).copied();
+
+    // Create the volatile status instruction
+    let instruction = BattleInstruction::Status(StatusInstruction::ApplyVolatile {
+        target: application.target,
+        status: application.status,
+        duration: application.duration,
+        previous_had_status,
+        previous_duration,
+    });
+
+    StatusResult {
+        applied: true,
+        instruction: Some(instruction),
+        failure_reason: None,
+    }
+}
+
+/// Apply multiple volatile status effects with proper ordering
+pub fn apply_multiple_volatile_status_effects(
+    state: &BattleState,
+    applications: Vec<VolatileStatusApplication>,
+) -> Vec<BattleInstruction> {
+    let mut instructions = Vec::new();
+    let mut current_state = state.clone();
+
+    for application in applications {
+        let result = apply_volatile_status_effect(&current_state, application);
+        
+        if let Some(instruction) = result.instruction {
+            instructions.push(instruction.clone());
+            // Update state for next application
+            current_state.apply_instruction(&instruction);
+        }
+    }
+
+    instructions
+}
+
+/// Check if a Pokemon is immune to a specific volatile status
+fn check_volatile_status_immunity(
+    state: &BattleState,
+    target: &crate::core::battle_state::Pokemon,
+    volatile_status: &VolatileStatus,
+) -> Option<StatusFailureReason> {
+    // Check ability immunity
+    if has_volatile_ability_immunity(target, volatile_status) {
+        return Some(StatusFailureReason::AbilityImmunity);
+    }
+
+    // Check item immunity
+    if has_volatile_item_immunity(target, volatile_status) {
+        return Some(StatusFailureReason::ItemImmunity);
+    }
+
+    // Check field effects
+    if has_volatile_field_immunity(state, target, volatile_status) {
+        return Some(StatusFailureReason::Safeguard);
+    }
+
+    // Check substitute protection
+    if target.volatile_statuses.contains(&VolatileStatus::Substitute) && target.substitute_health > 0 {
+        // Substitute blocks most volatile statuses except for certain ones
+        match volatile_status {
+            // These can bypass substitute
+            VolatileStatus::Attract | VolatileStatus::Torment | VolatileStatus::Disable => {},
+            // Most others are blocked
+            _ => return Some(StatusFailureReason::ItemImmunity), // Using ItemImmunity as a generic "blocked" reason
+        }
+    }
+
+    None
+}
+
+/// Check if a Pokemon has ability-based immunity to a volatile status
+fn has_volatile_ability_immunity(target: &crate::core::battle_state::Pokemon, volatile_status: &VolatileStatus) -> bool {
+    let ability = target.ability.to_lowercase();
+    
+    match volatile_status {
+        VolatileStatus::Attract => {
+            matches!(ability.as_str(), "oblivious")
+        }
+        VolatileStatus::Taunt => {
+            matches!(ability.as_str(), "oblivious" | "mentalherb")
+        }
+        VolatileStatus::Confusion => {
+            matches!(ability.as_str(), "owntempo")
+        }
+        VolatileStatus::Flinch => {
+            matches!(ability.as_str(), "innerfocus")
+        }
+        _ => false,
+    }
+}
+
+/// Check if a Pokemon has item-based immunity to a volatile status
+fn has_volatile_item_immunity(target: &crate::core::battle_state::Pokemon, volatile_status: &VolatileStatus) -> bool {
+    if let Some(ref item) = target.item {
+        let item_lower = item.to_lowercase();
+        
+        match volatile_status {
+            VolatileStatus::Attract => {
+                item_lower == "mentalherb"
+            }
+            VolatileStatus::Taunt => {
+                item_lower == "mentalherb"
+            }
+            VolatileStatus::Confusion => {
+                matches!(item_lower.as_str(), "persimberry" | "mentalherb")
+            }
+            _ => false,
+        }
+    } else {
+        false
+    }
+}
+
+/// Check if field effects prevent volatile status application
+fn has_volatile_field_immunity(
+    state: &BattleState,
+    target: &crate::core::battle_state::Pokemon,
+    volatile_status: &VolatileStatus,
+) -> bool {
+    use crate::core::instructions::SideCondition;
+
+    // Check for Safeguard (prevents most volatile statuses)
+    let target_side = if state.sides[0].pokemon.iter().any(|p| std::ptr::eq(p, target)) {
+        &state.sides[0]
+    } else {
+        &state.sides[1]
+    };
+
+    if target_side.side_conditions.contains_key(&SideCondition::Safeguard) {
+        match volatile_status {
+            // Safeguard blocks these
+            VolatileStatus::Attract | VolatileStatus::Confusion | VolatileStatus::Taunt => return true,
+            // Others pass through
+            _ => {}
+        }
+    }
+
+    false
 }

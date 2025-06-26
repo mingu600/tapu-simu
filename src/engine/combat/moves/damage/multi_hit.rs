@@ -118,7 +118,6 @@ fn determine_hit_count(
     }
 }
 
-// Legacy functions removed - all logic now handled by core systems
 
 // =============================================================================
 // SIMPLIFIED MULTI-HIT MOVE FUNCTIONS
@@ -281,3 +280,4 @@ pub fn apply_scale_shot(
     
     instruction_sets
 }
+

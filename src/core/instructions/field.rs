@@ -227,116 +227,56 @@ pub enum FieldInstruction {
 
 impl FieldInstruction {
     /// Returns all positions affected by this instruction
-    pub fn affected_positions(&self) -> Vec<BattlePosition> {
+    pub fn affected_positions(&self, format: &crate::core::battle_format::BattleFormat) -> Vec<BattlePosition> {
         match self {
             // Weather and terrain affect all positions
             FieldInstruction::Weather { .. } => {
-                vec![
-                    BattlePosition { side: SideReference::SideOne, slot: 0 },
-                    BattlePosition { side: SideReference::SideOne, slot: 1 },
-                    BattlePosition { side: SideReference::SideTwo, slot: 0 },
-                    BattlePosition { side: SideReference::SideTwo, slot: 1 },
-                ]
+                BattlePosition::all_positions(format)
             },
             FieldInstruction::Terrain { .. } => {
-                vec![
-                    BattlePosition { side: SideReference::SideOne, slot: 0 },
-                    BattlePosition { side: SideReference::SideOne, slot: 1 },
-                    BattlePosition { side: SideReference::SideTwo, slot: 0 },
-                    BattlePosition { side: SideReference::SideTwo, slot: 1 },
-                ]
+                BattlePosition::all_positions(format)
             },
             // Global effects affect all positions
             FieldInstruction::TrickRoom { .. } => {
-                vec![
-                    BattlePosition { side: SideReference::SideOne, slot: 0 },
-                    BattlePosition { side: SideReference::SideOne, slot: 1 },
-                    BattlePosition { side: SideReference::SideTwo, slot: 0 },
-                    BattlePosition { side: SideReference::SideTwo, slot: 1 },
-                ]
+                BattlePosition::all_positions(format)
             },
             FieldInstruction::Gravity { .. } => {
-                vec![
-                    BattlePosition { side: SideReference::SideOne, slot: 0 },
-                    BattlePosition { side: SideReference::SideOne, slot: 1 },
-                    BattlePosition { side: SideReference::SideTwo, slot: 0 },
-                    BattlePosition { side: SideReference::SideTwo, slot: 1 },
-                ]
+                BattlePosition::all_positions(format)
             },
             // Side conditions affect all positions on that side
             FieldInstruction::ApplySideCondition { side, .. } => {
-                match side {
-                    SideReference::SideOne => vec![
-                        BattlePosition { side: SideReference::SideOne, slot: 0 },
-                        BattlePosition { side: SideReference::SideOne, slot: 1 },
-                    ],
-                    SideReference::SideTwo => vec![
-                        BattlePosition { side: SideReference::SideTwo, slot: 0 },
-                        BattlePosition { side: SideReference::SideTwo, slot: 1 },
-                    ],
-                }
+                (0..format.active_pokemon_count())
+                    .map(|slot| BattlePosition::new(*side, slot))
+                    .collect()
             },
             FieldInstruction::RemoveSideCondition { side, .. } => {
-                match side {
-                    SideReference::SideOne => vec![
-                        BattlePosition { side: SideReference::SideOne, slot: 0 },
-                        BattlePosition { side: SideReference::SideOne, slot: 1 },
-                    ],
-                    SideReference::SideTwo => vec![
-                        BattlePosition { side: SideReference::SideTwo, slot: 0 },
-                        BattlePosition { side: SideReference::SideTwo, slot: 1 },
-                    ],
-                }
+                (0..format.active_pokemon_count())
+                    .map(|slot| BattlePosition::new(*side, slot))
+                    .collect()
             },
             FieldInstruction::DecrementSideConditionDuration { side, .. } => {
-                match side {
-                    SideReference::SideOne => vec![
-                        BattlePosition { side: SideReference::SideOne, slot: 0 },
-                        BattlePosition { side: SideReference::SideOne, slot: 1 },
-                    ],
-                    SideReference::SideTwo => vec![
-                        BattlePosition { side: SideReference::SideTwo, slot: 0 },
-                        BattlePosition { side: SideReference::SideTwo, slot: 1 },
-                    ],
-                }
+                (0..format.active_pokemon_count())
+                    .map(|slot| BattlePosition::new(*side, slot))
+                    .collect()
             },
             // Turn decrements affect all positions
             FieldInstruction::DecrementWeatherTurns { .. } |
             FieldInstruction::DecrementTerrainTurns { .. } |
             FieldInstruction::DecrementTrickRoomTurns { .. } |
             FieldInstruction::DecrementGravityTurns { .. } => {
-                vec![
-                    BattlePosition { side: SideReference::SideOne, slot: 0 },
-                    BattlePosition { side: SideReference::SideOne, slot: 1 },
-                    BattlePosition { side: SideReference::SideTwo, slot: 0 },
-                    BattlePosition { side: SideReference::SideTwo, slot: 1 },
-                ]
+                BattlePosition::all_positions(format)
             },
             // Force switch affects all positions on that side
             FieldInstruction::ToggleForceSwitch { side, .. } => {
-                match side {
-                    SideReference::SideOne => vec![
-                        BattlePosition { side: SideReference::SideOne, slot: 0 },
-                        BattlePosition { side: SideReference::SideOne, slot: 1 },
-                    ],
-                    SideReference::SideTwo => vec![
-                        BattlePosition { side: SideReference::SideTwo, slot: 0 },
-                        BattlePosition { side: SideReference::SideTwo, slot: 1 },
-                    ],
-                }
+                (0..format.active_pokemon_count())
+                    .map(|slot| BattlePosition::new(*side, slot))
+                    .collect()
             },
             // Baton passing affects all positions on that side
             FieldInstruction::ToggleBatonPassing { side, .. } => {
-                match side {
-                    SideReference::SideOne => vec![
-                        BattlePosition { side: SideReference::SideOne, slot: 0 },
-                        BattlePosition { side: SideReference::SideOne, slot: 1 },
-                    ],
-                    SideReference::SideTwo => vec![
-                        BattlePosition { side: SideReference::SideTwo, slot: 0 },
-                        BattlePosition { side: SideReference::SideTwo, slot: 1 },
-                    ],
-                }
+                (0..format.active_pokemon_count())
+                    .map(|slot| BattlePosition::new(*side, slot))
+                    .collect()
             },
             FieldInstruction::Message { affected_positions, .. } => affected_positions.clone(),
         }

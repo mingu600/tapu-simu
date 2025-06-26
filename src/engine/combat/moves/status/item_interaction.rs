@@ -331,7 +331,7 @@ fn get_fling_power(item: &str, repository: &crate::data::GameDataRepository) -> 
     repository.items.get_item_fling_power(item)
         .unwrap_or_else(|| {
             // If item not found in repository, use default power for unknown items
-            eprintln!("Warning: Item '{}' not found in repository. Using default fling power.", item);
+            // TODO: Replace with proper logging when logging system is available
             10 // Default fling power for unknown items
         })
 }

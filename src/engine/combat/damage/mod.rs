@@ -54,6 +54,5 @@ pub use modifiers::{
 
 pub use utils::poke_round;
 
-// Legacy compatibility - re-export the main calculation function
 // as the name it had in the original damage_calc.rs
 pub use core::calculate_damage_with_positions as calculate_damage_with_modern_context;
