@@ -247,7 +247,7 @@ fn apply_generic_damage_effects(
     generation: &GenerationMechanics,
     branch_on_damage: bool,
 ) -> Vec<BattleInstructions> {
-    use crate::engine::combat::damage_calc::{calculate_damage_with_positions, critical_hit_probability, DamageRolls};
+    use crate::engine::combat::damage::{calculate_damage_with_positions, critical_hit_probability, DamageRolls};
     
     let user = match state.get_pokemon_at_position(user_position) {
         Some(pokemon) => pokemon,
@@ -314,7 +314,7 @@ fn generate_advanced_damage_branching(
     generation: &GenerationMechanics,
     accuracy: f32,
 ) -> Vec<BattleInstructions> {
-    use crate::engine::combat::damage_calc::{calculate_damage_with_positions, critical_hit_probability, DamageRolls};
+    use crate::engine::combat::damage::{calculate_damage_with_positions, critical_hit_probability, DamageRolls};
     
     let user = match state.get_pokemon_at_position(user_position) {
         Some(pokemon) => pokemon,
@@ -483,7 +483,7 @@ fn generate_simple_crit_branching(
     generation: &GenerationMechanics,
     accuracy: f32,
 ) -> Vec<BattleInstructions> {
-    use crate::engine::combat::damage_calc::critical_hit_probability;
+    use crate::engine::combat::damage::critical_hit_probability;
     
     let user = match state.get_pokemon_at_position(user_position) {
         Some(pokemon) => pokemon,
@@ -642,7 +642,7 @@ fn generate_damage_instructions(
     is_critical: bool,
     generation: &GenerationMechanics,
 ) -> Vec<BattleInstruction> {
-    use crate::engine::combat::damage_calc::{calculate_damage_with_positions, DamageRolls};
+    use crate::engine::combat::damage::{calculate_damage_with_positions, DamageRolls};
     
     let mut instructions = Vec::new();
     

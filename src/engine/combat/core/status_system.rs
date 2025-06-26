@@ -285,7 +285,7 @@ fn has_field_immunity(
     status: &PokemonStatus,
 ) -> bool {
     use crate::core::instructions::{SideCondition, Terrain};
-    use crate::engine::combat::damage_calc::is_grounded;
+    use crate::engine::combat::damage::is_grounded;
 
     // Check for Safeguard
     let target_side = if state.sides[0].pokemon.iter().any(|p| std::ptr::eq(p, target)) {

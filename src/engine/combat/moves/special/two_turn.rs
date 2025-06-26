@@ -396,7 +396,7 @@ pub fn apply_future_sight(
     generation: &GenerationMechanics,
     branch_on_damage: bool,
 ) -> Vec<BattleInstructions> {
-    use crate::engine::combat::damage_calc::{calculate_damage_with_positions, DamageRolls};
+    use crate::engine::combat::damage::{calculate_damage_with_positions, DamageRolls};
     
     if target_positions.is_empty() {
         return vec![BattleInstructions::new(100.0, vec![])];

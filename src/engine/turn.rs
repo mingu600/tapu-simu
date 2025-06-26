@@ -339,7 +339,7 @@ fn generate_damage_instructions_with_rolls(
     branch_on_damage: bool,
 ) -> BattleResult<Vec<BattleInstruction>> {
     use crate::core::instructions::{BattleInstruction, PokemonInstruction};
-    use crate::engine::combat::damage_calc::{calculate_damage_with_positions, DamageRolls, compare_health_with_damage_multiples};
+    use crate::engine::combat::damage::{calculate_damage_with_positions, DamageRolls, compare_health_with_damage_multiples};
     
     let mut instructions = Vec::new();
     

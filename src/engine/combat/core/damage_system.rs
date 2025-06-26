@@ -8,7 +8,7 @@ use crate::core::battle_format::BattlePosition;
 use crate::core::battle_state::{BattleState, Pokemon};
 use crate::core::instructions::{BattleInstruction, PokemonInstruction, MoveCategory, Stat};
 use crate::data::showdown_types::MoveData;
-use crate::engine::combat::damage_calc::{calculate_damage_with_positions, DamageRolls};
+use crate::engine::combat::damage::{calculate_damage_with_positions, DamageRolls};
 use crate::engine::combat::damage_context::{DamageContext, DamageResult};
 use crate::generation::GenerationMechanics;
 
@@ -333,7 +333,7 @@ fn should_critical_hit(
     move_data: &MoveData,
     generation: crate::generation::Generation,
 ) -> bool {
-    use crate::engine::combat::damage_calc::critical_hit_probability;
+    use crate::engine::combat::damage::critical_hit_probability;
     use rand::Rng;
 
     let crit_probability = critical_hit_probability(user, target, move_data, generation);

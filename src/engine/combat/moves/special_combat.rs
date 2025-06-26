@@ -11,7 +11,7 @@ use crate::core::instructions::{
 use crate::core::battle_format::BattlePosition;
 use crate::generation::GenerationMechanics;
 use crate::engine::combat::moves::apply_generic_effects;
-use crate::engine::combat::damage_calc::{calculate_damage_with_positions, DamageRolls, critical_hit_probability};
+use crate::engine::combat::damage::{calculate_damage_with_positions, DamageRolls, critical_hit_probability};
 use crate::data::showdown_types::MoveData;
 
 // Constants to avoid string allocations

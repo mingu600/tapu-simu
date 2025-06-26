@@ -13,7 +13,7 @@ use crate::core::instructions::{BattleInstruction, BattleInstructions, FieldInst
 use crate::core::battle_state::Pokemon;
 use crate::core::battle_state::BattleState;
 use crate::generation::GenerationMechanics;
-use crate::engine::combat::damage_calc::is_grounded;
+use crate::engine::combat::damage::is_grounded;
 use crate::types::identifiers::AbilityId;
 use std::collections::HashMap;
 use crate::utils::normalize_name;
