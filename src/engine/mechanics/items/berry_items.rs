@@ -12,53 +12,53 @@ use crate::core::battle_state::{MoveCategory, Pokemon};
 use crate::core::battle_format::BattlePosition;
 use crate::core::instructions::{Stat, PokemonStatus};
 use crate::core::instructions::{BattleInstruction, BattleInstructions, StatusInstruction, PokemonInstruction, StatsInstruction};
-use crate::types::identifiers::{ItemId, MoveId, TypeId};
+use crate::types::{Items, Moves};
 use std::collections::HashMap;
 
 /// Get berry item effect if the item is a berry
 pub fn get_berry_item_effect(
-    item_id: &ItemId,
+    item_id: &Items,
     generation: &dyn GenerationBattleMechanics,
     attacker: &Pokemon,
     defender: Option<&Pokemon>,
-    move_id: &MoveId,
-    move_type_id: &TypeId,
+    move_id: &Moves,
+    move_type_id: &PokemonType,
     move_category: MoveCategory,
     context: &DamageContext,
 ) -> Option<ItemModifier> {
-    match item_id.as_str() {
+    match item_id {
         // Damage Reduction Berries (18 items)
-        "chopleberry" => Some(damage_reduction_berry_effect(PokemonType::Fighting, PokemonType::from(&context.move_info.move_type), context)),
-        "cobaberry" => Some(damage_reduction_berry_effect(PokemonType::Flying, PokemonType::from(&context.move_info.move_type), context)),
-        "kebiaberry" => Some(damage_reduction_berry_effect(PokemonType::Poison, PokemonType::from(&context.move_info.move_type), context)),
-        "shucaberry" => Some(damage_reduction_berry_effect(PokemonType::Ground, PokemonType::from(&context.move_info.move_type), context)),
-        "chartiberry" => Some(damage_reduction_berry_effect(PokemonType::Rock, PokemonType::from(&context.move_info.move_type), context)),
-        "tangaberry" => Some(damage_reduction_berry_effect(PokemonType::Bug, PokemonType::from(&context.move_info.move_type), context)),
-        "kasibberry" => Some(damage_reduction_berry_effect(PokemonType::Ghost, PokemonType::from(&context.move_info.move_type), context)),
-        "babiriberry" => Some(damage_reduction_berry_effect(PokemonType::Steel, PokemonType::from(&context.move_info.move_type), context)),
-        "occaberry" => Some(damage_reduction_berry_effect(PokemonType::Fire, PokemonType::from(&context.move_info.move_type), context)),
-        "passhoberry" => Some(damage_reduction_berry_effect(PokemonType::Water, PokemonType::from(&context.move_info.move_type), context)),
-        "rindoberry" => Some(damage_reduction_berry_effect(PokemonType::Grass, PokemonType::from(&context.move_info.move_type), context)),
-        "wacanberry" => Some(damage_reduction_berry_effect(PokemonType::Electric, PokemonType::from(&context.move_info.move_type), context)),
-        "payapaberry" => Some(damage_reduction_berry_effect(PokemonType::Psychic, PokemonType::from(&context.move_info.move_type), context)),
-        "yacheberry" => Some(damage_reduction_berry_effect(PokemonType::Ice, PokemonType::from(&context.move_info.move_type), context)),
-        "habanberry" => Some(damage_reduction_berry_effect(PokemonType::Dragon, PokemonType::from(&context.move_info.move_type), context)),
-        "colburberry" => Some(damage_reduction_berry_effect(PokemonType::Dark, PokemonType::from(&context.move_info.move_type), context)),
-        "roseliberry" => Some(damage_reduction_berry_effect(PokemonType::Fairy, PokemonType::from(&context.move_info.move_type), context)),
-        "chilanberry" => Some(chilan_berry_effect(move_type_id.as_str())), // Special case for Normal
+        Items::CHOPLEBERRY => Some(damage_reduction_berry_effect(PokemonType::Fighting, *move_type_id, context)),
+        Items::COBABERRY => Some(damage_reduction_berry_effect(PokemonType::Flying, *move_type_id, context)),
+        Items::KEBIABERRY => Some(damage_reduction_berry_effect(PokemonType::Poison, *move_type_id, context)),
+        Items::SHUCABERRY => Some(damage_reduction_berry_effect(PokemonType::Ground, *move_type_id, context)),
+        Items::CHARTIBERRY => Some(damage_reduction_berry_effect(PokemonType::Rock, *move_type_id, context)),
+        Items::TANGABERRY => Some(damage_reduction_berry_effect(PokemonType::Bug, *move_type_id, context)),
+        Items::KASIBBERRY => Some(damage_reduction_berry_effect(PokemonType::Ghost, *move_type_id, context)),
+        Items::BABIRIBERRY => Some(damage_reduction_berry_effect(PokemonType::Steel, *move_type_id, context)),
+        Items::OCCABERRY => Some(damage_reduction_berry_effect(PokemonType::Fire, *move_type_id, context)),
+        Items::PASSHOBERRY => Some(damage_reduction_berry_effect(PokemonType::Water, *move_type_id, context)),
+        Items::RINDOBERRY => Some(damage_reduction_berry_effect(PokemonType::Grass, *move_type_id, context)),
+        Items::WACANBERRY => Some(damage_reduction_berry_effect(PokemonType::Electric, *move_type_id, context)),
+        Items::PAYAPABERRY => Some(damage_reduction_berry_effect(PokemonType::Psychic, *move_type_id, context)),
+        Items::YACHEBERRY => Some(damage_reduction_berry_effect(PokemonType::Ice, *move_type_id, context)),
+        Items::HABANBERRY => Some(damage_reduction_berry_effect(PokemonType::Dragon, *move_type_id, context)),
+        Items::COLBURBERRY => Some(damage_reduction_berry_effect(PokemonType::Dark, *move_type_id, context)),
+        Items::ROSELIBERRY => Some(damage_reduction_berry_effect(PokemonType::Fairy, *move_type_id, context)),
+        Items::CHILANBERRY => Some(chilan_berry_effect(*move_type_id)), // Special case for Normal
         
         // Healing/Status Berries (5 items)
-        "lumberry" => Some(lum_berry_effect(defender)),
-        "sitrusberry" => Some(sitrus_berry_effect(defender, generation)),
-        "chestoberry" => Some(chesto_berry_effect(defender)),
-        "miracleberry" => Some(miracle_berry_effect(defender, generation)),
-        "mintberry" => Some(mint_berry_effect(defender, generation)),
+        Items::LUMBERRY => Some(lum_berry_effect(defender)),
+        Items::SITRUSBERRY => Some(sitrus_berry_effect(defender, generation)),
+        Items::CHESTOBERRY => Some(chesto_berry_effect(defender)),
+        Items::MIRACLEBERRY => Some(miracle_berry_effect(defender, generation)),
+        Items::MINTBERRY => Some(mint_berry_effect(defender, generation)),
         
         // Stat Boost Berries (4 items)
-        "liechiberry" => Some(liechi_berry_effect(defender)),
-        "petayaberry" => Some(petaya_berry_effect(defender)),
-        "salacberry" => Some(salac_berry_effect(defender)),
-        "custapberry" => Some(custap_berry_effect(attacker)),
+        Items::LIECHIBERRY => Some(liechi_berry_effect(defender)),
+        Items::PETAYABERRY => Some(petaya_berry_effect(defender)),
+        Items::SALACBERRY => Some(salac_berry_effect(defender)),
+        Items::CUSTAPBERRY => Some(custap_berry_effect(attacker)),
         
         _ => None,
     }
@@ -81,7 +81,7 @@ fn damage_reduction_berry_effect(
     
     // Check if move is super effective
     let type_chart = TypeChart::get_cached(9); // Gen 9 type chart
-    let attacking_type = PokemonType::from(&context.move_info.move_type);
+    let attacking_type = move_type;
     let defender_type1 = context.defender.pokemon.types.get(0).copied().unwrap_or(PokemonType::Normal);
     let defender_type2 = context.defender.pokemon.types.get(1).copied().unwrap_or(defender_type1);
     let type_effectiveness = type_chart.calculate_damage_multiplier(
@@ -100,8 +100,8 @@ fn damage_reduction_berry_effect(
 }
 
 /// Chilan Berry - Special case that reduces Normal-type damage regardless of effectiveness
-fn chilan_berry_effect(move_type: &str) -> ItemModifier {
-    if move_type == "normal" {
+fn chilan_berry_effect(move_type: PokemonType) -> ItemModifier {
+    if move_type == PokemonType::Normal {
         ItemModifier::new()
             .with_damage_multiplier(0.5)
             .with_consumed()
@@ -269,13 +269,13 @@ fn custap_berry_effect(pokemon: &Pokemon) -> ItemModifier {
 
 /// Generate berry activation instructions for reactive berries
 pub fn generate_berry_activation_instructions(
-    item_id: &ItemId,
+    item_id: &Items,
     pokemon: &Pokemon,
     position: BattlePosition,
     generation: &dyn GenerationBattleMechanics,
 ) -> Option<BattleInstructions> {
-    match item_id.as_str() {
-        "lumberry" => {
+    match item_id {
+        Items::LUMBERRY => {
             if pokemon.status != PokemonStatus::None {
                 let instructions = vec![
                     BattleInstruction::Status(StatusInstruction::Remove {
@@ -286,7 +286,7 @@ pub fn generate_berry_activation_instructions(
                     BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
                         target: position,
                         new_item: None,
-                        previous_item: Some("Lum Berry".to_string()),
+                        previous_item: Some(crate::types::Items::LUMBERRY),
                     })
                 ];
                 Some(BattleInstructions::new(100.0, instructions))
@@ -295,7 +295,7 @@ pub fn generate_berry_activation_instructions(
             }
         },
         
-        "sitrusberry" => {
+        Items::SITRUSBERRY => {
             let threshold = match generation.generation() {
                 Generation::Gen3 => 0.5,
                 _ => 0.25,
@@ -315,7 +315,7 @@ pub fn generate_berry_activation_instructions(
                     BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
                         target: position,
                         new_item: None,
-                        previous_item: Some("Sitrus Berry".to_string()),
+                        previous_item: Some(crate::types::Items::SITRUSBERRY),
                     })
                 ];
                 Some(BattleInstructions::new(100.0, instructions))
@@ -324,7 +324,7 @@ pub fn generate_berry_activation_instructions(
             }
         },
         
-        "chestoberry" => {
+        Items::CHESTOBERRY => {
             if pokemon.status == PokemonStatus::Sleep {
                 let instructions = vec![
                     BattleInstruction::Status(StatusInstruction::Remove {
@@ -335,7 +335,7 @@ pub fn generate_berry_activation_instructions(
                     BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
                         target: position,
                         new_item: None,
-                        previous_item: Some("Chesto Berry".to_string()),
+                        previous_item: Some(crate::types::Items::CHESTOBERRY),
                     })
                 ];
                 Some(BattleInstructions::new(100.0, instructions))
@@ -344,15 +344,15 @@ pub fn generate_berry_activation_instructions(
             }
         },
         
-        "liechiberry" | "petayaberry" | "salacberry" | "ganlonberry" | "apicotberry" => {
+        Items::LIECHIBERRY | Items::PETAYABERRY | Items::SALACBERRY | Items::GANLONBERRY | Items::APICOTBERRY => {
             let hp_percentage = pokemon.hp as f32 / pokemon.max_hp as f32;
             if hp_percentage <= 0.25 {
-                let stat = match item_id.as_str() {
-                    "liechiberry" => Stat::Attack,
-                    "petayaberry" => Stat::SpecialAttack,
-                    "salacberry" => Stat::Speed,
-                    "ganlonberry" => Stat::Defense,
-                    "apicotberry" => Stat::SpecialDefense,
+                let stat = match item_id {
+                    Items::LIECHIBERRY => Stat::Attack,
+                    Items::PETAYABERRY => Stat::SpecialAttack,
+                    Items::SALACBERRY => Stat::Speed,
+                    Items::GANLONBERRY => Stat::Defense,
+                    Items::APICOTBERRY => Stat::SpecialDefense,
                     _ => return None, // Should not happen, but return None instead of panicking
                 };
                 
@@ -368,7 +368,7 @@ pub fn generate_berry_activation_instructions(
                     BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
                         target: position,
                         new_item: None,
-                        previous_item: Some(item_id.to_string()),
+                        previous_item: Some(*item_id),
                     })
                 ];
                 Some(BattleInstructions::new(100.0, instructions))
@@ -377,7 +377,7 @@ pub fn generate_berry_activation_instructions(
             }
         },
         
-        "lansatberry" => {
+        Items::LANSATBERRY => {
             let hp_percentage = pokemon.hp as f32 / pokemon.max_hp as f32;
             if hp_percentage <= 0.25 {
                 // Lansat Berry applies Focus Energy effect (increases critical hit ratio)
@@ -392,7 +392,7 @@ pub fn generate_berry_activation_instructions(
                     BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
                         target: position,
                         new_item: None,
-                        previous_item: Some("Lansat Berry".to_string()),
+                        previous_item: Some(crate::types::Items::LANSATBERRY),
                     })
                 ];
                 Some(BattleInstructions::new(100.0, instructions))
@@ -401,7 +401,7 @@ pub fn generate_berry_activation_instructions(
             }
         },
         
-        "starfberry" => {
+        Items::STARFBERRY => {
             let hp_percentage = pokemon.hp as f32 / pokemon.max_hp as f32;
             if hp_percentage <= 0.25 {
                 // Starf Berry boosts a random stat by 2 stages (excluding HP)
@@ -433,7 +433,7 @@ pub fn generate_berry_activation_instructions(
                     BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
                         target: position,
                         new_item: None,
-                        previous_item: Some("Starf Berry".to_string()),
+                        previous_item: Some(crate::types::Items::STARFBERRY),
                     })
                 ];
                 Some(BattleInstructions::new(100.0, instructions))
@@ -442,7 +442,7 @@ pub fn generate_berry_activation_instructions(
             }
         },
         
-        "micleberry" => {
+        Items::MICLEBERRY => {
             let hp_percentage = pokemon.hp as f32 / pokemon.max_hp as f32;
             if hp_percentage <= 0.25 {
                 // Micle Berry increases accuracy of next move
@@ -457,7 +457,7 @@ pub fn generate_berry_activation_instructions(
                     BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
                         target: position,
                         new_item: None,
-                        previous_item: Some("Micle Berry".to_string()),
+                        previous_item: Some(crate::types::Items::MICLEBERRY),
                     })
                 ];
                 Some(BattleInstructions::new(100.0, instructions))
@@ -466,7 +466,7 @@ pub fn generate_berry_activation_instructions(
             }
         },
         
-        "custapberry" => {
+        Items::CUSTAPBERRY => {
             let hp_percentage = pokemon.hp as f32 / pokemon.max_hp as f32;
             if hp_percentage <= 0.25 {
                 // Custap Berry increases priority of next move
@@ -481,7 +481,7 @@ pub fn generate_berry_activation_instructions(
                     BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
                         target: position,
                         new_item: None,
-                        previous_item: Some("Custap Berry".to_string()),
+                        previous_item: Some(crate::types::Items::CUSTAPBERRY),
                     })
                 ];
                 Some(BattleInstructions::new(100.0, instructions))

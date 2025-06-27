@@ -12,15 +12,16 @@ use crate::engine::combat::type_effectiveness::TypeChart;
 use crate::types::PokemonType;
 use crate::engine::combat::damage::DamageRolls;
 use crate::constants::moves::{CRITICAL_HIT_MULTIPLIER_LEGACY, GEN2_BASE_CRIT_RATE, GEN2_HIGH_CRIT_RATE, GEN2_HIGH_CRIT_MOVES};
+use crate::engine::combat::damage::modifiers::items::get_gen2_item_modifier;
 
 /// Calculate Gen 2 critical hit probability using fixed stages
 /// Formula: Uses fixed stages - base 17/256 (~6.64%), high crit moves use +1 stage (1/8 = 12.5%)
 pub fn critical_hit_probability_gen2(attacker: &Pokemon, move_data: &MoveData) -> f32 {
     // Normalize move name for comparison
-    let move_name = normalize_name(&move_data.name);
+    let move_name = move_data.name.as_str();
     
     // Gen 2 uses fixed stages, not multipliers
-    if GEN2_HIGH_CRIT_MOVES.contains(&move_name.as_str()) {
+    if GEN2_HIGH_CRIT_MOVES.contains(&move_name) {
         // High crit rate: +1 stage = 1/8 = 12.5%
         GEN2_HIGH_CRIT_RATE
     } else {
@@ -29,37 +30,6 @@ pub fn critical_hit_probability_gen2(attacker: &Pokemon, move_data: &MoveData) -
     }
 }
 
-/// Get item damage modifier for Generation 2 items
-fn get_gen2_item_modifier(item: &str, move_type: &str) -> f32 {
-    match item.to_lowercase().replace("-", "").replace(" ", "").as_str() {
-        // Type-boosting items from Gen 2
-        "blackbelt" if move_type == "Fighting" => 1.1,
-        "blackglasses" if move_type == "Dark" => 1.1,
-        "charcoal" if move_type == "Fire" => 1.1,
-        "dragonfang" if move_type == "Dragon" => 1.1,
-        "hardstone" if move_type == "Rock" => 1.1,
-        "magnet" if move_type == "Electric" => 1.1,
-        "metalcoat" if move_type == "Steel" => 1.1,
-        "miracleseed" if move_type == "Grass" => 1.1,
-        "mysticwater" if move_type == "Water" => 1.1,
-        "nevermeltice" if move_type == "Ice" => 1.1,
-        "pinkbow" | "polkadotbow" if move_type == "Normal" => 1.1,
-        "poisonbarb" if move_type == "Poison" => 1.1,
-        "sharpbeak" if move_type == "Flying" => 1.1,
-        "silverpowder" if move_type == "Bug" => 1.1,
-        "softsand" if move_type == "Ground" => 1.1,
-        "spelltag" if move_type == "Ghost" => 1.1,
-        "twistedspoon" if move_type == "Psychic" => 1.1,
-        
-        // Light Ball for Pikachu (doubles attack)
-        "lightball" => 2.0, // Applied to Pikachu's attack stat specifically
-        
-        // Thick Club for Cubone/Marowak (doubles attack)
-        "thickclub" => 2.0, // Applied to Cubone/Marowak's attack stat specifically
-        
-        _ => 1.0, // No modifier
-    }
-}
 
 /// Calculate final damage with Gen 1/2 specific damage roll system
 fn calculate_final_damage_gen12(
@@ -152,7 +122,7 @@ pub fn calculate_damage_gen2(context: &DamageContext, damage_rolls: DamageRolls)
 
     // Apply item modifier if any (type-boosting items)
     if let Some(item) = context.attacker.pokemon.item.as_ref() {
-        let item_multiplier = get_gen2_item_modifier(item, context.move_info.move_type.as_str());
+        let item_multiplier = get_gen2_item_modifier(item, &context.move_info.move_type);
         if item_multiplier != 1.0 {
             base_damage *= item_multiplier;
             // Note: ItemBoost effect would need to be added to DamageEffect enum
@@ -170,8 +140,7 @@ pub fn calculate_damage_gen2(context: &DamageContext, damage_rolls: DamageRolls)
 
     // Type effectiveness calculation (using Gen 2 type chart)
     let type_chart = TypeChart::get_cached(2); // Gen 2 type chart
-    let move_type =
-        PokemonType::from_normalized_str(context.move_info.move_type.as_str()).unwrap_or(PokemonType::Normal);
+    let move_type = context.move_info.move_type;
 
     let defender_type1 = context.defender.pokemon.types[0];
     let defender_type2 = if context.defender.pokemon.types.len() > 1 {
@@ -198,18 +167,18 @@ pub fn calculate_damage_gen2(context: &DamageContext, damage_rolls: DamageRolls)
 
     // Apply weather effects (Gen 2 introduced weather)
     if let crate::core::instructions::Weather::Sun = context.field.weather.condition {
-        if context.move_info.move_type.as_str() == "fire" {
+        if context.move_info.move_type == PokemonType::Fire {
             base_damage = (base_damage * 1.5).floor();
             effects.push(DamageEffect::WeatherEffect { weather: context.field.weather.condition });
-        } else if context.move_info.move_type.as_str() == "water" {
+        } else if context.move_info.move_type == PokemonType::Water {
             base_damage = (base_damage / 2.0).floor();
             effects.push(DamageEffect::WeatherEffect { weather: context.field.weather.condition });
         }
     } else if let crate::core::instructions::Weather::Rain = context.field.weather.condition {
-        if context.move_info.move_type.as_str() == "water" {
+        if context.move_info.move_type == PokemonType::Water {
             base_damage = (base_damage * 1.5).floor();
             effects.push(DamageEffect::WeatherEffect { weather: context.field.weather.condition });
-        } else if context.move_info.move_type.as_str() == "fire" {
+        } else if context.move_info.move_type == PokemonType::Fire {
             base_damage = (base_damage / 2.0).floor();
             effects.push(DamageEffect::WeatherEffect { weather: context.field.weather.condition });
         }

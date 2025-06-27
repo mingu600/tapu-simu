@@ -1,4 +1,4 @@
-use crate::types::{AbilityId, ItemId, MoveId, SpeciesId};
+use crate::types::{Abilities, Items, Moves, PokemonName};
 use std::path::PathBuf;
 use thiserror::Error;
 
@@ -9,16 +9,16 @@ pub enum BattleError {
     InvalidMoveChoice { reason: String },
     
     #[error("Pokemon {species} not found")]
-    PokemonNotFound { species: SpeciesId },
+    PokemonNotFound { species: PokemonName },
     
     #[error("Move {move_id} not found")]
-    MoveNotFound { move_id: MoveId },
+    MoveNotFound { move_id: Moves },
     
     #[error("Ability {ability} not found")]
-    AbilityNotFound { ability: AbilityId },
+    AbilityNotFound { ability: Abilities },
     
     #[error("Item {item} not found")]
-    ItemNotFound { item: ItemId },
+    ItemNotFound { item: Items },
     
     #[error("Data loading failed")]
     DataLoad(#[from] DataError),
@@ -57,16 +57,16 @@ pub enum DataError {
     },
     
     #[error("Species {species} not found in data")]
-    SpeciesNotFound { species: SpeciesId },
+    SpeciesNotFound { species: PokemonName },
     
     #[error("Move {move_id} not found in data")]
-    MoveNotFound { move_id: MoveId },
+    MoveNotFound { move_id: Moves },
     
     #[error("Ability {ability} not found in data")]
-    AbilityNotFound { ability: AbilityId },
+    AbilityNotFound { ability: Abilities },
     
     #[error("Item {item} not found in data")]
-    ItemNotFound { item: ItemId },
+    ItemNotFound { item: Items },
     
     #[error("Data directory not found: {path}")]
     DataDirNotFound { path: PathBuf },
@@ -88,16 +88,16 @@ pub enum FormatError {
     InvalidTeamSize { size: usize, expected: usize },
     
     #[error("Banned species: {species}")]
-    BannedSpecies { species: SpeciesId },
+    BannedSpecies { species: PokemonName },
     
     #[error("Banned move: {move_id}")]
-    BannedMove { move_id: MoveId },
+    BannedMove { move_id: Moves },
     
     #[error("Banned ability: {ability}")]
-    BannedAbility { ability: AbilityId },
+    BannedAbility { ability: Abilities },
     
     #[error("Banned item: {item}")]
-    BannedItem { item: ItemId },
+    BannedItem { item: Items },
     
     #[error("Format rule violation: {rule}")]
     RuleViolation { rule: String },
@@ -110,7 +110,7 @@ pub enum TeamError {
     InvalidSize { size: usize },
     
     #[error("Duplicate species: {species}")]
-    DuplicateSpecies { species: SpeciesId },
+    DuplicateSpecies { species: PokemonName },
     
     #[error("Invalid Pokemon configuration: {reason}")]
     InvalidPokemon { reason: String },

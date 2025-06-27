@@ -113,7 +113,7 @@ pub fn calculate_damage_gen56(context: &DamageContext, damage_rolls: DamageRolls
     // Apply burn status
     let is_burned = context.attacker.pokemon.status == crate::core::instructions::PokemonStatus::Burn
         && context.move_info.category == crate::core::battle_state::MoveCategory::Physical
-        && context.attacker.pokemon.ability != "guts";
+        && context.attacker.pokemon.ability != crate::types::Abilities::GUTS;
 
     // Add +2 and apply critical hit
     base_damage = base_damage + 2.0;
@@ -125,8 +125,7 @@ pub fn calculate_damage_gen56(context: &DamageContext, damage_rolls: DamageRolls
 
     // Get type effectiveness data
     let type_chart = TypeChart::get_cached(6); // Gen 6 type chart (includes Fairy type)
-    let move_type =
-        PokemonType::from_normalized_str(context.move_info.move_type.as_str()).unwrap_or(PokemonType::Normal);
+    let move_type = context.move_info.move_type;
 
     let defender_type1 = context.defender.pokemon.types[0];
     let defender_type2 = if context.defender.pokemon.types.len() > 1 {
@@ -155,7 +154,7 @@ pub fn calculate_damage_gen56(context: &DamageContext, damage_rolls: DamageRolls
         move_type,
         (attacker_type1, attacker_type2),
         None,  // No Tera type in Gen 5-6
-        context.attacker.pokemon.ability == "adaptability",
+        context.attacker.pokemon.ability == crate::types::Abilities::ADAPTABILITY,
     );
 
     // Convert to 4096-based multiplier for getFinalDamage

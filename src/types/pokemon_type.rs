@@ -4,7 +4,6 @@
 //! across the entire battle system, replacing fragmented string-based and
 //! duplicate enum approaches.
 
-use crate::types::identifiers::TypeId;
 use crate::types::from_string::FromNormalizedString;
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -191,20 +190,6 @@ impl PokemonType {
     }
 }
 
-/// Conversion from TypeId to PokemonType
-impl From<&TypeId> for PokemonType {
-    fn from(type_id: &TypeId) -> Self {
-        Self::from_normalized_str(type_id.as_str())
-            .unwrap_or(Self::Normal) // Default to Normal for invalid types
-    }
-}
-
-/// Conversion from PokemonType to TypeId
-impl From<PokemonType> for TypeId {
-    fn from(pokemon_type: PokemonType) -> Self {
-        TypeId::new(pokemon_type.to_normalized_str())
-    }
-}
 
 /// Implementation of unified string parsing trait
 impl FromNormalizedString for PokemonType {
@@ -284,15 +269,6 @@ mod tests {
         assert!(types.contains(&PokemonType::Fire));
     }
 
-    #[test]
-    fn test_type_id_conversion() {
-        let type_id = TypeId::new("fire");
-        let pokemon_type = PokemonType::from(&type_id);
-        assert_eq!(pokemon_type, PokemonType::Fire);
-
-        let converted_back: TypeId = pokemon_type.into();
-        assert_eq!(converted_back.as_str(), "fire");
-    }
 
     #[test]
     fn test_from_str() {

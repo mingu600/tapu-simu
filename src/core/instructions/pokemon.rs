@@ -6,7 +6,7 @@
 use crate::core::battle_format::BattlePosition;
 use crate::types::PokemonStatus;
 use crate::types::PokemonType;
-use crate::types::identifiers::AbilityId;
+use crate::types::Abilities;
 use crate::types::from_string::FromNormalizedString;
 use serde::{Deserialize, Serialize};
 
@@ -80,8 +80,8 @@ pub enum PokemonInstruction {
     /// Change Pokemon's ability
     ChangeAbility {
         target: BattlePosition,
-        new_ability: AbilityId,
-        previous_ability: Option<AbilityId>,
+        new_ability: Abilities,
+        previous_ability: Option<Abilities>,
     },
     /// Toggle ability suppression
     ToggleAbility {
@@ -92,8 +92,8 @@ pub enum PokemonInstruction {
     /// Change Pokemon's held item
     ChangeItem {
         target: BattlePosition,
-        new_item: Option<String>,
-        previous_item: Option<String>,
+        new_item: Option<crate::types::Items>,
+        previous_item: Option<crate::types::Items>,
     },
     /// Change Pokemon's types
     ChangeType {

@@ -226,23 +226,24 @@ fn has_type_immunity(target: &crate::core::battle_state::Pokemon, status: &Pokem
 
 /// Check if a Pokemon has ability-based immunity to a status
 fn has_ability_immunity(target: &crate::core::battle_state::Pokemon, status: &PokemonStatus) -> bool {
-    let ability = target.ability.to_lowercase();
+    use crate::types::Abilities;
+    let ability = target.ability;
     
     match status {
         PokemonStatus::Burn => {
-            matches!(ability.as_str(), "waterveil" | "waterbubble")
+            matches!(ability, Abilities::WATERVEIL | Abilities::WATERBUBBLE)
         }
         PokemonStatus::Freeze => {
-            matches!(ability.as_str(), "magmaarmor")
+            matches!(ability, Abilities::MAGMAARMOR)
         }
         PokemonStatus::Paralysis => {
-            matches!(ability.as_str(), "limber")
+            matches!(ability, Abilities::LIMBER)
         }
         PokemonStatus::Poison | PokemonStatus::BadlyPoisoned => {
-            matches!(ability.as_str(), "immunity" | "poisonheal")
+            matches!(ability, Abilities::IMMUNITY | Abilities::POISONHEAL)
         }
         PokemonStatus::Sleep => {
-            matches!(ability.as_str(), "insomnia" | "vitalspirit" | "sweetveil")
+            matches!(ability, Abilities::INSOMNIA | Abilities::VITALSPIRIT | Abilities::SWEETVEIL)
         }
         _ => false,
     }
@@ -251,23 +252,21 @@ fn has_ability_immunity(target: &crate::core::battle_state::Pokemon, status: &Po
 /// Check if a Pokemon has item-based immunity to a status
 fn has_item_immunity(target: &crate::core::battle_state::Pokemon, status: &PokemonStatus) -> bool {
     if let Some(ref item) = target.item {
-        let item_lower = item.to_lowercase();
-        
         match status {
             PokemonStatus::Burn => {
-                item_lower == "rawstberry"
+                *item == crate::types::Items::RAWSTBERRY
             }
             PokemonStatus::Freeze => {
-                item_lower == "aspearberry"
+                *item == crate::types::Items::ASPEARBERRY
             }
             PokemonStatus::Paralysis => {
-                item_lower == "cheriberry"
+                *item == crate::types::Items::CHERIBERRY
             }
             PokemonStatus::Poison | PokemonStatus::BadlyPoisoned => {
-                item_lower == "pechaberry"
+                *item == crate::types::Items::PECHABERRY
             }
             PokemonStatus::Sleep => {
-                item_lower == "chestoberry"
+                *item == crate::types::Items::CHESTOBERRY
             }
             _ => false,
         }
@@ -521,20 +520,20 @@ fn check_volatile_status_immunity(
 
 /// Check if a Pokemon has ability-based immunity to a volatile status
 fn has_volatile_ability_immunity(target: &crate::core::battle_state::Pokemon, volatile_status: &VolatileStatus) -> bool {
-    let ability = target.ability.to_lowercase();
+    let ability = target.ability;
     
     match volatile_status {
         VolatileStatus::Attract => {
-            matches!(ability.as_str(), "oblivious")
+            ability == crate::types::Abilities::OBLIVIOUS
         }
         VolatileStatus::Taunt => {
-            matches!(ability.as_str(), "oblivious" | "mentalherb")
+            ability == crate::types::Abilities::OBLIVIOUS
         }
         VolatileStatus::Confusion => {
-            matches!(ability.as_str(), "owntempo")
+            ability == crate::types::Abilities::OWNTEMPO
         }
         VolatileStatus::Flinch => {
-            matches!(ability.as_str(), "innerfocus")
+            ability == crate::types::Abilities::INNERFOCUS
         }
         _ => false,
     }
@@ -543,17 +542,15 @@ fn has_volatile_ability_immunity(target: &crate::core::battle_state::Pokemon, vo
 /// Check if a Pokemon has item-based immunity to a volatile status
 fn has_volatile_item_immunity(target: &crate::core::battle_state::Pokemon, volatile_status: &VolatileStatus) -> bool {
     if let Some(ref item) = target.item {
-        let item_lower = item.to_lowercase();
-        
         match volatile_status {
             VolatileStatus::Attract => {
-                item_lower == "mentalherb"
+                *item == crate::types::Items::MENTALHERB
             }
             VolatileStatus::Taunt => {
-                item_lower == "mentalherb"
+                *item == crate::types::Items::MENTALHERB
             }
             VolatileStatus::Confusion => {
-                matches!(item_lower.as_str(), "persimberry" | "mentalherb")
+                *item == crate::types::Items::PERSIMBERRY || *item == crate::types::Items::MENTALHERB
             }
             _ => false,
         }

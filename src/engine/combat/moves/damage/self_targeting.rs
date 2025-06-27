@@ -202,7 +202,7 @@ fn has_damp_ability(state: &BattleState) -> bool {
                 if let Some(pokemon) = side.pokemon.get(index) {
                     // Only check active Pokemon that are not fainted and have ability not suppressed
                     if pokemon.hp > 0 && !pokemon.ability_suppressed && 
-                       crate::utils::normalize_name(&pokemon.ability) == "damp" {
+                       pokemon.ability == crate::types::Abilities::DAMP {
                         return true;
                     }
                 }

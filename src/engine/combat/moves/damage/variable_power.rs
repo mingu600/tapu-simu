@@ -231,7 +231,7 @@ pub fn apply_acrobatics(
     if let Some(user) = state.get_pokemon_at_position(user_position) {
         // Acrobatics doubles power if user has no item or an unusable item
         let has_no_item =
-            user.item.is_none() || user.item.as_ref().map_or(true, |item| item.is_empty());
+            user.item.is_none() || user.item.as_ref().map_or(true, |item| *item == crate::types::Items::NONE);
 
         if has_no_item {
             return apply_power_modifier_move(

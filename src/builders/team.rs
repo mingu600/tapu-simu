@@ -6,7 +6,7 @@
 use crate::core::battle_format::BattleFormat;
 use crate::data::GameDataRepository;
 use crate::data::RandomPokemonSet;
-use crate::types::identifiers::{SpeciesId, AbilityId, MoveId, ItemId};
+use crate::types::{PokemonName, Abilities, Moves, Items};
 use super::traits::{Builder, BuilderError, ValidationContext, ValidatingBuilder};
 
 /// Team builder with standardized interface
@@ -25,15 +25,15 @@ pub struct TeamBuilder<'a> {
 #[derive(Debug, Clone)]
 pub struct PokemonBuilder {
     /// Species ID
-    species: SpeciesId,
+    species: PokemonName,
     /// Level (1-100)
     level: Option<u8>,
     /// Ability
-    ability: Option<AbilityId>,
+    ability: Option<Abilities>,
     /// Held item
-    item: Option<ItemId>,
+    item: Option<Items>,
     /// Moves (up to 4)
-    moves: Vec<MoveId>,
+    moves: Vec<Moves>,
     /// Nature
     nature: Option<String>,
     /// EVs (Effort Values)
@@ -95,7 +95,7 @@ impl<'a> TeamBuilder<'a> {
     }
 
     /// Add a Pokemon using the builder pattern
-    pub fn pokemon(mut self, species: impl Into<SpeciesId>) -> TeamPokemonContext<'a> {
+    pub fn pokemon(mut self, species: impl Into<PokemonName>) -> TeamPokemonContext<'a> {
         TeamPokemonContext {
             team_builder: self,
             pokemon_builder: PokemonBuilder::new(species.into()),
@@ -203,7 +203,7 @@ impl<'a> ValidatingBuilder<Vec<RandomPokemonSet>> for TeamBuilder<'a> {
 
 impl PokemonBuilder {
     /// Create a new Pokemon builder
-    pub fn new(species: SpeciesId) -> Self {
+    pub fn new(species: PokemonName) -> Self {
         Self {
             species,
             level: None,
@@ -223,19 +223,19 @@ impl PokemonBuilder {
     }
 
     /// Set ability
-    pub fn ability(mut self, ability: impl Into<AbilityId>) -> Self {
+    pub fn ability(mut self, ability: impl Into<Abilities>) -> Self {
         self.ability = Some(ability.into());
         self
     }
 
     /// Set held item
-    pub fn item(mut self, item: impl Into<ItemId>) -> Self {
+    pub fn item(mut self, item: impl Into<Items>) -> Self {
         self.item = Some(item.into());
         self
     }
 
     /// Add a move
-    pub fn move_slot(mut self, move_id: impl Into<MoveId>) -> Self {
+    pub fn move_slot(mut self, move_id: impl Into<Moves>) -> Self {
         if self.moves.len() < 4 {
             self.moves.push(move_id.into());
         }
@@ -305,13 +305,13 @@ impl PokemonBuilder {
         // This is a simplified conversion - a real implementation would be more comprehensive
         Ok(RandomPokemonSet {
             name: self.species.as_str().to_string(),
-            species: self.species.as_str().to_string(),
+            species: self.species,
             level: self.level.unwrap_or(50),
             gender: None,
             shiny: None,
-            ability: self.ability.map(|a| a.as_str().to_string()),
-            item: self.item.map(|i| i.as_str().to_string()),
-            moves: self.moves.into_iter().map(|m| m.as_str().to_string()).collect(),
+            ability: self.ability,
+            item: self.item,
+            moves: self.moves,
             nature: self.nature,
             evs: None, // Simplified for now
             ivs: None, // Simplified for now
@@ -336,19 +336,19 @@ impl<'a> TeamPokemonContext<'a> {
     }
 
     /// Set ability and continue building
-    pub fn ability(mut self, ability: impl Into<AbilityId>) -> Self {
+    pub fn ability(mut self, ability: impl Into<Abilities>) -> Self {
         self.pokemon_builder = self.pokemon_builder.ability(ability);
         self
     }
 
     /// Set item and continue building
-    pub fn item(mut self, item: impl Into<ItemId>) -> Self {
+    pub fn item(mut self, item: impl Into<Items>) -> Self {
         self.pokemon_builder = self.pokemon_builder.item(item);
         self
     }
 
     /// Add a move and continue building
-    pub fn move_slot(mut self, move_id: impl Into<MoveId>) -> Self {
+    pub fn move_slot(mut self, move_id: impl Into<Moves>) -> Self {
         self.pokemon_builder = self.pokemon_builder.move_slot(move_id);
         self
     }
@@ -366,7 +366,7 @@ impl<'a> TeamPokemonContext<'a> {
     }
 
     /// Add another Pokemon to the team
-    pub fn pokemon(self, species: impl Into<SpeciesId>) -> TeamPokemonContext<'a> {
+    pub fn pokemon(self, species: impl Into<PokemonName>) -> TeamPokemonContext<'a> {
         let mut team_builder = self.finish();
         team_builder.pokemon(species)
     }

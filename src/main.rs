@@ -345,12 +345,12 @@ fn validate_format(format: BattleFormat) {
 
 fn debug_stats() -> Result<(), Box<dyn std::error::Error>> {
     use tapu_simu::data::GameDataRepository;
-    use tapu_simu::types::{MoveId, SpeciesId};
+    use tapu_simu::types::{Moves, PokemonName};
     
     let repository = GameDataRepository::from_path("data/ps-extracted")?;
     
     // Get Pikachu data
-    let pikachu_id = SpeciesId::from("pikachu");
+    let pikachu_id = <PokemonName as tapu_simu::types::FromNormalizedString>::from_normalized_str("pikachu").unwrap();
     let pikachu_data = repository.pokemon.find_by_id(&pikachu_id)?;
     
     println!("=== PIKACHU (Level 50) ===");
@@ -378,7 +378,7 @@ fn debug_stats() -> Result<(), Box<dyn std::error::Error>> {
     println!("  Speed: {}", speed);
     
     // Get Charmander data
-    let charmander_id = SpeciesId::from("charmander");
+    let charmander_id = <PokemonName as tapu_simu::types::FromNormalizedString>::from_normalized_str("charmander").unwrap();
     let charmander_data = repository.pokemon.find_by_id(&charmander_id)?;
     
     println!("\n=== CHARMANDER (Level 50) ===");
@@ -401,7 +401,7 @@ fn debug_stats() -> Result<(), Box<dyn std::error::Error>> {
     println!("  Speed: {}", speed);
     
     // Get Tackle data
-    let tackle_id = MoveId::from("tackle");
+    let tackle_id = <Moves as tapu_simu::types::FromNormalizedString>::from_normalized_str("tackle").unwrap();
     let tackle_move = repository.moves.create_move(&tackle_id)?;
     
     println!("\n=== TACKLE MOVE ===");

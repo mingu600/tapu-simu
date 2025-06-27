@@ -1,6 +1,9 @@
+pub mod abilities;
 pub mod errors;
 pub mod from_string;
-pub mod identifiers;
+pub mod items;
+pub mod moves;
+pub mod pokemon;
 pub mod pokemon_type;
 pub mod positions;
 pub mod stat;
@@ -8,9 +11,12 @@ pub mod status;
 pub mod terrain;
 pub mod weather;
 
+pub use abilities::*;
 pub use errors::*;
 pub use from_string::*;
-pub use identifiers::*;
+pub use items::*;
+pub use moves::*;
+pub use pokemon::*;
 pub use pokemon_type::*;
 pub use positions::*;
 pub use stat::*;

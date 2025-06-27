@@ -108,15 +108,14 @@ pub fn calculate_damage_gen4(context: &DamageContext, damage_rolls: DamageRolls)
     // Apply burn status (before other modifiers)
     if context.attacker.pokemon.status == crate::core::instructions::PokemonStatus::Burn
         && context.move_info.category == crate::core::battle_state::MoveCategory::Physical
-        && context.attacker.pokemon.ability != "guts"
+        && context.attacker.pokemon.ability != crate::types::Abilities::GUTS
     {
         base_damage = (base_damage * 0.5).floor();
     }
 
     // Get type effectiveness data
     let type_chart = TypeChart::get_cached(4); // Gen 4 type chart
-    let move_type =
-        PokemonType::from_normalized_str(context.move_info.move_type.as_str()).unwrap_or(PokemonType::Normal);
+    let move_type = context.move_info.move_type;
 
     let defender_type1 = context.defender.pokemon.types[0];
     let defender_type2 = if context.defender.pokemon.types.len() > 1 {
@@ -141,7 +140,7 @@ pub fn calculate_damage_gen4(context: &DamageContext, damage_rolls: DamageRolls)
     };
 
     let stab_mod = if move_type == attacker_type1 || move_type == attacker_type2 {
-        if context.attacker.pokemon.ability == "adaptability" {
+        if context.attacker.pokemon.ability == crate::types::Abilities::ADAPTABILITY {
             2.0
         } else {
             1.5
@@ -151,7 +150,7 @@ pub fn calculate_damage_gen4(context: &DamageContext, damage_rolls: DamageRolls)
     };
 
     // Gen 4 specific modifiers (following damage-calc gen4.ts exactly)
-    let filter_mod = if (context.defender.pokemon.ability == "filter" || context.defender.pokemon.ability == "solidrock") 
+    let filter_mod = if (context.defender.pokemon.ability == crate::types::Abilities::FILTER || context.defender.pokemon.ability == crate::types::Abilities::SOLIDROCK) 
         && (type1_effectiveness * type2_effectiveness) > 1.0 {
         0.75
     } else {
@@ -159,7 +158,7 @@ pub fn calculate_damage_gen4(context: &DamageContext, damage_rolls: DamageRolls)
     };
 
     let expert_belt_mod = if let Some(ref item) = context.attacker.pokemon.item {
-        if item.to_lowercase() == "expertbelt" && (type1_effectiveness * type2_effectiveness) > 1.0 {
+        if *item == crate::types::Items::EXPERTBELT && (type1_effectiveness * type2_effectiveness) > 1.0 {
             1.2
         } else {
             1.0
@@ -168,7 +167,7 @@ pub fn calculate_damage_gen4(context: &DamageContext, damage_rolls: DamageRolls)
         1.0
     };
 
-    let tinted_lens_mod = if context.attacker.pokemon.ability == "tintedlens" 
+    let tinted_lens_mod = if context.attacker.pokemon.ability == crate::types::Abilities::TINTEDLENS 
         && (type1_effectiveness * type2_effectiveness) < 1.0 {
         2.0
     } else {

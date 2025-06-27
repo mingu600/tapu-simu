@@ -10,19 +10,19 @@ use crate::core::battle_state::{MoveCategory, Pokemon};
 
 /// Get choice item effect if the item is a choice item
 pub fn get_choice_item_effect(
-    item_name: &str,
+    item_id: &crate::types::Items,
     _generation: &dyn GenerationBattleMechanics,
     _attacker: &Pokemon,
     _defender: Option<&Pokemon>,
-    _move_name: &str,
-    _move_type: &str,
+    _move_id: &crate::types::Moves,
+    _move_type: &crate::types::PokemonType,
     move_category: MoveCategory,
     _context: &DamageContext,
 ) -> Option<ItemModifier> {
-    match item_name {
-        "choiceband" => Some(choice_band_effect(move_category)),
-        "choicespecs" => Some(choice_specs_effect(move_category)),
-        "choicescarf" => Some(choice_scarf_effect()),
+    match *item_id {
+        crate::types::Items::CHOICEBAND => Some(choice_band_effect(move_category)),
+        crate::types::Items::CHOICESPECS => Some(choice_specs_effect(move_category)),
+        crate::types::Items::CHOICESCARF => Some(choice_scarf_effect()),
         _ => None,
     }
 }

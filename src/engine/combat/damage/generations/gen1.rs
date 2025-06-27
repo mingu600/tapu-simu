@@ -22,10 +22,10 @@ pub fn critical_hit_probability_gen1(attacker: &Pokemon, move_data: &MoveData) -
     let base_speed = attacker.base_stats.speed;
 
     // Normalize move name for comparison
-    let move_name = normalize_name(&move_data.name);
+    let move_name = move_data.name.as_str();
 
     // Calculate critical hit rate using the correct Gen 1 formula
-    let crit_rate = if GEN1_HIGH_CRIT_MOVES.contains(&move_name.as_str()) {
+    let crit_rate = if GEN1_HIGH_CRIT_MOVES.contains(&move_name) {
         // High crit moves: min(8 * floor(base_speed / 2), 255)
         (GEN1_HIGH_CRIT_MULTIPLIER * (base_speed / GEN1_CRIT_SPEED_DIVISOR)).min(255)
     } else {
@@ -169,8 +169,7 @@ pub fn calculate_damage_gen1(context: &DamageContext, damage_rolls: DamageRolls)
 
     // Type effectiveness calculation (using Gen 1 type chart)
     let type_chart = TypeChart::get_cached(1); // Gen 1 type chart
-    let move_type =
-        PokemonType::from_normalized_str(context.move_info.move_type.as_str()).unwrap_or(PokemonType::Normal);
+    let move_type = context.move_info.move_type;
 
     let defender_type1 = context.defender.pokemon.types[0];
     let defender_type2 = if context.defender.pokemon.types.len() > 1 {
@@ -202,24 +201,24 @@ pub fn calculate_damage_gen1(context: &DamageContext, damage_rolls: DamageRolls)
 
     // Apply weather effects (Gen 1 has weather but limited)
     if let crate::core::instructions::Weather::Sun = context.field.weather.condition {
-        if context.move_info.move_type.as_str() == "fire" {
+        if context.move_info.move_type == PokemonType::Fire {
             base_damage = (base_damage * 1.5).floor();
             effects.push(DamageEffect::WeatherEffect {
                 weather: context.field.weather.condition,
             });
-        } else if context.move_info.move_type.as_str() == "water" {
+        } else if context.move_info.move_type == PokemonType::Water {
             base_damage = (base_damage / 2.0).floor();
             effects.push(DamageEffect::WeatherEffect {
                 weather: context.field.weather.condition,
             });
         }
     } else if let crate::core::instructions::Weather::Rain = context.field.weather.condition {
-        if context.move_info.move_type.as_str() == "water" {
+        if context.move_info.move_type == PokemonType::Water {
             base_damage = (base_damage * 1.5).floor();
             effects.push(DamageEffect::WeatherEffect {
                 weather: context.field.weather.condition,
             });
-        } else if context.move_info.move_type.as_str() == "fire" {
+        } else if context.move_info.move_type == PokemonType::Fire {
             base_damage = (base_damage / 2.0).floor();
             effects.push(DamageEffect::WeatherEffect {
                 weather: context.field.weather.condition,

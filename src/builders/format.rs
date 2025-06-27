@@ -1,7 +1,7 @@
 use crate::core::battle_format::{BattleFormat, FormatType, FormatClause, BanList};
 use crate::generation::Generation;
 use crate::types::errors::{FormatError, FormatResult};
-use crate::types::identifiers::{SpeciesId, MoveId, AbilityId, ItemId};
+use crate::types::{PokemonName, Moves, Abilities, Items};
 
 /// Builder for creating battle formats with fluent API
 #[derive(Debug, Clone)]
@@ -12,10 +12,10 @@ pub struct FormatBuilder {
     team_size: Option<usize>,
     active_per_side: Option<usize>,
     clauses: Vec<FormatClause>,
-    banned_species: Vec<SpeciesId>,
-    banned_moves: Vec<MoveId>,
-    banned_items: Vec<ItemId>,
-    banned_abilities: Vec<AbilityId>,
+    banned_species: Vec<PokemonName>,
+    banned_moves: Vec<Moves>,
+    banned_items: Vec<Items>,
+    banned_abilities: Vec<Abilities>,
 }
 
 impl FormatBuilder {
@@ -186,7 +186,7 @@ impl FormatBuilder {
     }
 
     /// Ban a Pokemon species
-    pub fn ban_species(mut self, species: impl Into<SpeciesId>) -> Self {
+    pub fn ban_species(mut self, species: impl Into<PokemonName>) -> Self {
         let species = species.into();
         if !self.banned_species.contains(&species) {
             self.banned_species.push(species);
@@ -195,7 +195,7 @@ impl FormatBuilder {
     }
 
     /// Ban multiple Pokemon species
-    pub fn ban_species_list(mut self, species: Vec<SpeciesId>) -> Self {
+    pub fn ban_species_list(mut self, species: Vec<PokemonName>) -> Self {
         for s in species {
             if !self.banned_species.contains(&s) {
                 self.banned_species.push(s);
@@ -205,7 +205,7 @@ impl FormatBuilder {
     }
 
     /// Ban a move
-    pub fn ban_move(mut self, move_id: impl Into<MoveId>) -> Self {
+    pub fn ban_move(mut self, move_id: impl Into<Moves>) -> Self {
         let move_id = move_id.into();
         if !self.banned_moves.contains(&move_id) {
             self.banned_moves.push(move_id);
@@ -214,7 +214,7 @@ impl FormatBuilder {
     }
 
     /// Ban multiple moves
-    pub fn ban_moves(mut self, moves: Vec<MoveId>) -> Self {
+    pub fn ban_moves(mut self, moves: Vec<Moves>) -> Self {
         for m in moves {
             if !self.banned_moves.contains(&m) {
                 self.banned_moves.push(m);
@@ -224,7 +224,7 @@ impl FormatBuilder {
     }
 
     /// Ban an item
-    pub fn ban_item(mut self, item: impl Into<ItemId>) -> Self {
+    pub fn ban_item(mut self, item: impl Into<Items>) -> Self {
         let item = item.into();
         if !self.banned_items.contains(&item) {
             self.banned_items.push(item);
@@ -233,7 +233,7 @@ impl FormatBuilder {
     }
 
     /// Ban multiple items
-    pub fn ban_items(mut self, items: Vec<ItemId>) -> Self {
+    pub fn ban_items(mut self, items: Vec<Items>) -> Self {
         for i in items {
             if !self.banned_items.contains(&i) {
                 self.banned_items.push(i);
@@ -243,7 +243,7 @@ impl FormatBuilder {
     }
 
     /// Ban an ability
-    pub fn ban_ability(mut self, ability: impl Into<AbilityId>) -> Self {
+    pub fn ban_ability(mut self, ability: impl Into<Abilities>) -> Self {
         let ability = ability.into();
         if !self.banned_abilities.contains(&ability) {
             self.banned_abilities.push(ability);
@@ -252,7 +252,7 @@ impl FormatBuilder {
     }
 
     /// Ban multiple abilities
-    pub fn ban_abilities(mut self, abilities: Vec<AbilityId>) -> Self {
+    pub fn ban_abilities(mut self, abilities: Vec<Abilities>) -> Self {
         for a in abilities {
             if !self.banned_abilities.contains(&a) {
                 self.banned_abilities.push(a);
@@ -419,7 +419,9 @@ impl FormatBuilder {
         };
 
         for species in uber_species {
-            builder = builder.ban_species(species);
+            if let Some(pokemon_name) = <crate::types::PokemonName as crate::types::FromNormalizedString>::from_normalized_str(species) {
+                builder = builder.ban_species(pokemon_name);
+            }
         }
 
         builder

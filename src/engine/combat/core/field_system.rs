@@ -248,11 +248,11 @@ pub fn check_weather_extension(
 
     // Check for weather-extending items
     if let Some(ref item) = pokemon.item {
-        match (weather, item.to_lowercase().as_str()) {
-            (Weather::Sun | Weather::HarshSun, "heatrock") => Some(8),
-            (Weather::Rain | Weather::HeavyRain, "damprock") => Some(8),
-            (Weather::Sand | Weather::Sandstorm, "smoothrock") => Some(8),
-            (Weather::Hail | Weather::Snow, "icyrock") => Some(8),
+        match (weather, item) {
+            (Weather::Sun | Weather::HarshSun, crate::types::Items::HEATROCK) => Some(8),
+            (Weather::Rain | Weather::HeavyRain, crate::types::Items::DAMPROCK) => Some(8),
+            (Weather::Sand | Weather::Sandstorm, crate::types::Items::SMOOTHROCK) => Some(8),
+            (Weather::Hail | Weather::Snow, crate::types::Items::ICYROCK) => Some(8),
             _ => None,
         }
     } else {
@@ -270,11 +270,11 @@ pub fn check_terrain_extension(
 
     // Check for terrain-extending items
     if let Some(ref item) = pokemon.item {
-        match (terrain, item.to_lowercase().as_str()) {
-            (Terrain::Electric | Terrain::ElectricTerrain, "terrainextender") => Some(8),
-            (Terrain::Grassy | Terrain::GrassyTerrain, "terrainextender") => Some(8),
-            (Terrain::Misty | Terrain::MistyTerrain, "terrainextender") => Some(8),
-            (Terrain::Psychic | Terrain::PsychicTerrain, "terrainextender") => Some(8),
+        match (terrain, item) {
+            (Terrain::Electric | Terrain::ElectricTerrain, crate::types::Items::TERRAINEXTENDER) => Some(8),
+            (Terrain::Grassy | Terrain::GrassyTerrain, crate::types::Items::TERRAINEXTENDER) => Some(8),
+            (Terrain::Misty | Terrain::MistyTerrain, crate::types::Items::TERRAINEXTENDER) => Some(8),
+            (Terrain::Psychic | Terrain::PsychicTerrain, crate::types::Items::TERRAINEXTENDER) => Some(8),
             _ => None,
         }
     } else {

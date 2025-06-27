@@ -150,7 +150,7 @@ impl MoveChoice {
             Self::Move { move_index, target_positions } => {
                 let move_name = if let Some(pokemon) = side.get_active_pokemon_at_slot(user_slot) {
                     if let Some(move_data) = pokemon.get_move(*move_index) {
-                        move_data.name.clone()
+                        move_data.name.as_str().to_string()
                     } else {
                         format!("Move{:?}", move_index)
                     }
@@ -170,7 +170,7 @@ impl MoveChoice {
             Self::MoveTera { move_index, target_positions, tera_type } => {
                 let move_name = if let Some(pokemon) = side.get_active_pokemon_at_slot(user_slot) {
                     if let Some(move_data) = pokemon.get_move(*move_index) {
-                        move_data.name.clone()
+                        move_data.name.as_str().to_string()
                     } else {
                         format!("Move{:?}", move_index)
                     }
@@ -189,7 +189,7 @@ impl MoveChoice {
             }
             Self::Switch(pokemon_index) => {
                 let pokemon_name = if let Some(pokemon) = side.pokemon.get(pokemon_index.to_index()) {
-                    pokemon.species.clone()
+                    pokemon.species.as_str().to_string()
                 } else {
                     format!("Pokemon{:?}", pokemon_index)
                 };

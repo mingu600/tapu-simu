@@ -10,38 +10,38 @@ use crate::core::battle_state::{MoveCategory, Pokemon};
 use crate::core::battle_format::BattlePosition;
 use crate::core::instructions::PokemonStatus;
 use crate::core::instructions::{BattleInstruction, BattleInstructions, StatusInstruction, PokemonInstruction};
-use crate::types::identifiers::{ItemId, MoveId, TypeId};
+use crate::types::{Items, Moves};
 use crate::types::PokemonType;
 
 /// Get status item effect if the item affects status conditions
 pub fn get_status_item_effect(
-    item_id: &ItemId,
+    item_id: &Items,
     _generation: &dyn GenerationBattleMechanics,
     _attacker: &Pokemon,
     _defender: Option<&Pokemon>,
-    _move_id: &MoveId,
-    _move_type_id: &TypeId,
+    _move_id: &Moves,
+    _move_type_id: &PokemonType,
     _move_category: MoveCategory,
     _context: &DamageContext,
 ) -> Option<ItemModifier> {
-    match item_id.as_str() {
+    match item_id {
         // Status items don't modify damage during combat, they have end-of-turn effects
-        "blacksludge" | "flameorb" | "toxicorb" => Some(ItemModifier::default()),
+        Items::BLACKSLUDGE | Items::FLAMEORB | Items::TOXICORB => Some(ItemModifier::default()),
         _ => None,
     }
 }
 
 /// Get HP restore per turn for status items
 pub fn get_item_hp_restore_per_turn(
-    item_id: &crate::types::ItemId,
+    item_id: &Items,
     pokemon: &Pokemon,
     position: BattlePosition,
     _generation: &dyn GenerationBattleMechanics,
 ) -> Option<BattleInstructions> {
-    match item_id.as_str() {
-        "blacksludge" => Some(black_sludge_end_of_turn_effect(pokemon, position)),
-        "flameorb" => Some(flame_orb_end_of_turn_effect(pokemon, position)),
-        "toxicorb" => Some(toxic_orb_end_of_turn_effect(pokemon, position)),
+    match item_id {
+        Items::BLACKSLUDGE => Some(black_sludge_end_of_turn_effect(pokemon, position)),
+        Items::FLAMEORB => Some(flame_orb_end_of_turn_effect(pokemon, position)),
+        Items::TOXICORB => Some(toxic_orb_end_of_turn_effect(pokemon, position)),
         _ => None,
     }
 }

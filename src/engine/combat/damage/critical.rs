@@ -44,14 +44,14 @@ pub fn critical_hit_probability(
         crate::generation::Generation::Gen9
     ) {
         let defender_ability = &defender.ability;
-        if defender_ability == "shellarmor" || defender_ability == "battlearmor" {
+        if *defender_ability == crate::types::Abilities::SHELLARMOR || *defender_ability == crate::types::Abilities::BATTLEARMOR {
             return 0.0; // No critical hit possible
         }
     }
     
     // Check for guaranteed critical hit moves first (applies to certain generations)
-    let normalized_move_name = normalize_name(&move_data.name);
-    if GUARANTEED_CRIT_MOVES.contains(&normalized_move_name.as_str()) {
+    let move_name = move_data.name.as_str();
+    if GUARANTEED_CRIT_MOVES.contains(&move_name) {
         return 1.0; // Always critical hit
     }
     
@@ -72,13 +72,13 @@ pub fn critical_hit_probability(
     let mut crit_stage = 0;
 
     // High critical hit ratio moves increase stage by 1
-    if HIGH_CRIT_MOVES.contains(&normalized_move_name.as_str()) {
+    if HIGH_CRIT_MOVES.contains(&move_name) {
         crit_stage += 1;
     }
 
     // Ability modifiers (Gen 3+)
-    match attacker.ability.as_str() {
-        "superluck" => {
+    match attacker.ability {
+        crate::types::Abilities::SUPERLUCK => {
             crit_stage += 1;
         }
         _ => {}
@@ -86,21 +86,21 @@ pub fn critical_hit_probability(
 
     // Item modifiers
     if let Some(item) = &attacker.item {
-        match item.to_lowercase().as_str() {
-            "scopelens" => {
+        match item {
+            crate::types::Items::SCOPELENS => {
                 crit_stage += 1;
             }
-            "razorclaw" => {
+            crate::types::Items::RAZORCLAW => {
                 crit_stage += 1;
             }
-            "luckypunch" => {
-                if attacker.species.to_lowercase() == "chansey" {
+            crate::types::Items::LUCKYPUNCH => {
+                if attacker.species == crate::types::PokemonName::CHANSEY {
                     crit_stage += 2;
                 }
             }
-            "leek" | "stick" => {
-                if attacker.species.to_lowercase() == "farfetchd"
-                    || attacker.species.to_lowercase() == "sirfetchd"
+            crate::types::Items::LEEK | crate::types::Items::STICK => {
+                if attacker.species == crate::types::PokemonName::FARFETCHD
+                    || attacker.species == crate::types::PokemonName::SIRFETCHD
                 {
                     crit_stage += 2;
                 }
@@ -130,11 +130,11 @@ pub fn critical_hit_probability_gen1(attacker: &Pokemon, move_data: &MoveData) -
     // In Gen 1, we use the base species stat, not the effective stat
     let base_speed = attacker.base_stats.speed;
     
-    // Normalize move name for comparison
-    let move_name = normalize_name(&move_data.name);
+    // Get move name for comparison  
+    let move_name = move_data.name.as_str();
     
     // Calculate critical hit rate using the correct Gen 1 formula
-    let crit_rate = if GEN1_HIGH_CRIT_MOVES.contains(&move_name.as_str()) {
+    let crit_rate = if GEN1_HIGH_CRIT_MOVES.contains(&move_name) {
         // High crit moves: min(8 * floor(base_speed / 2), 255)
         let rate_numerator = std::cmp::min(
             GEN1_HIGH_CRIT_MULTIPLIER * (base_speed / GEN1_CRIT_SPEED_DIVISOR), 
@@ -165,11 +165,11 @@ pub fn critical_hit_probability_gen1(attacker: &Pokemon, move_data: &MoveData) -
 /// ## Returns
 /// The critical hit probability for Gen 2
 pub fn critical_hit_probability_gen2(attacker: &Pokemon, move_data: &MoveData) -> f32 {
-    // Normalize move name for comparison
-    let move_name = normalize_name(&move_data.name);
+    // Get move name for comparison
+    let move_name = move_data.name.as_str();
     
     // Gen 2 uses fixed stages, not multipliers
-    if GEN2_HIGH_CRIT_MOVES.contains(&move_name.as_str()) {
+    if GEN2_HIGH_CRIT_MOVES.contains(&move_name) {
         // High crit rate: +1 stage = 1/8 = 12.5%
         GEN2_HIGH_CRIT_RATE
     } else {

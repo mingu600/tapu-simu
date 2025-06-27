@@ -9,7 +9,7 @@ use crate::core::instructions::{Weather, Terrain, Stat};
 use crate::core::battle_state::Pokemon;
 use crate::core::instructions::MoveCategory;
 use crate::core::battle_state::BattleState;
-use crate::types::identifiers::{AbilityId, ItemId, MoveId, TypeId};
+use crate::types::{Abilities, Items, Moves, PokemonType};
 use crate::data::showdown_types::MoveData;
 use crate::data::types::Stats;
 use serde::{Deserialize, Serialize};
@@ -63,7 +63,7 @@ pub struct DefenderContext {
 #[derive(Debug, Clone)]
 pub struct MoveContext {
     /// Name/ID of the move
-    pub name: MoveId,
+    pub name: Moves,
     /// Base power after initial modifications
     pub base_power: u8,
     /// Whether this is a critical hit
@@ -77,7 +77,7 @@ pub struct MoveContext {
     /// Whether this move is a multi-hit move (for Loaded Dice)
     pub is_multihit: bool,
     /// Type of the move (may differ from original due to abilities)
-    pub move_type: TypeId,
+    pub move_type: PokemonType,
     /// Category of the move
     pub category: MoveCategory,
 }
@@ -125,7 +125,7 @@ pub struct StatStages {
 #[derive(Debug, Clone, Default)]
 pub struct AbilityState {
     /// The ability ID
-    pub ability_id: Option<AbilityId>,
+    pub ability_id: Option<Abilities>,
     /// Whether the ability is suppressed
     pub is_suppressed: bool,
     /// Whether the ability was triggered this turn
@@ -136,7 +136,7 @@ pub struct AbilityState {
 #[derive(Debug, Clone, Default)]
 pub struct ItemEffects {
     /// The item name
-    pub item_name: Option<ItemId>,
+    pub item_name: Option<Items>,
     /// Whether the item can be used
     pub is_active: bool,
     /// Whether the item was consumed
@@ -229,14 +229,14 @@ impl DamageContext {
         };
 
         let move_info = MoveContext {
-            name: MoveId::new(move_data.name.clone()),
+            name: move_data.name,
             base_power: move_data.base_power as u8,
             is_critical,
             is_contact: move_data.flags.contains_key("contact"),
             is_punch: move_data.flags.contains_key("punch"),
             is_sound: move_data.flags.contains_key("sound"),
             is_multihit: move_data.flags.contains_key("multihit"),
-            move_type: TypeId::new(move_data.move_type.to_normalized_str()),
+            move_type: move_data.move_type,
             category: MoveCategory::from_str(&move_data.category),
         };
 
@@ -398,7 +398,7 @@ impl AbilityState {
     /// Create ability state from a Pokemon
     pub fn from_pokemon(pokemon: &Pokemon) -> Self {
         Self {
-            ability_id: Some(crate::types::identifiers::AbilityId::from(pokemon.ability.clone())),
+            ability_id: Some(pokemon.ability),
             is_suppressed: pokemon.ability_suppressed,
             triggered_this_turn: pokemon.ability_triggered_this_turn,
         }
@@ -409,7 +409,7 @@ impl ItemEffects {
     /// Create item effects from a Pokemon
     pub fn from_pokemon(pokemon: &Pokemon) -> Self {
         Self {
-            item_name: pokemon.item.as_ref().map(|item| ItemId::new(item.clone())),
+            item_name: pokemon.item.as_ref().copied(),
             is_active: pokemon.item.is_some() && !pokemon.item_consumed,
             is_consumed: pokemon.item_consumed,
         }
@@ -472,14 +472,14 @@ impl Default for DefenderContext {
 impl Default for MoveContext {
     fn default() -> Self {
         Self {
-            name: MoveId::new("tackle"),
+            name: Moves::TACKLE,
             base_power: 40,
             is_critical: false,
             is_contact: true,
             is_punch: false,
             is_sound: false,
             is_multihit: false,
-            move_type: TypeId::new("normal"),
+            move_type: PokemonType::Normal,
             category: MoveCategory::Physical,
         }
     }

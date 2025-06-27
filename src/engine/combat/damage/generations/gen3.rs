@@ -104,14 +104,14 @@ pub fn calculate_damage_gen3(context: &DamageContext, damage_rolls: DamageRolls)
     // Weather effects
     let mut weather_multiplier = 1.0;
     if let Weather::Sun = context.field.weather.condition {
-        match context.move_info.move_type.as_str() {
-            "fire" => {
+        match context.move_info.move_type {
+            PokemonType::Fire => {
                 weather_multiplier = 1.5;
                 effects.push(DamageEffect::WeatherEffect {
                     weather: context.field.weather.condition,
                 });
             }
-            "water" => {
+            PokemonType::Water => {
                 weather_multiplier = 0.5;
                 effects.push(DamageEffect::WeatherEffect {
                     weather: context.field.weather.condition,
@@ -120,14 +120,14 @@ pub fn calculate_damage_gen3(context: &DamageContext, damage_rolls: DamageRolls)
             _ => {}
         }
     } else if let Weather::Rain = context.field.weather.condition {
-        match context.move_info.move_type.as_str() {
-            "water" => {
+        match context.move_info.move_type {
+            PokemonType::Water => {
                 weather_multiplier = 1.5;
                 effects.push(DamageEffect::WeatherEffect {
                     weather: context.field.weather.condition,
                 });
             }
-            "fire" => {
+            PokemonType::Fire => {
                 weather_multiplier = 0.5;
                 effects.push(DamageEffect::WeatherEffect {
                     weather: context.field.weather.condition,
@@ -151,8 +151,7 @@ pub fn calculate_damage_gen3(context: &DamageContext, damage_rolls: DamageRolls)
 
     // Apply STAB
     let type_chart = TypeChart::get_cached(3); // Gen 3 type chart
-    let move_type =
-        PokemonType::from_normalized_str(context.move_info.move_type.as_str()).unwrap_or(PokemonType::Normal);
+    let move_type = context.move_info.move_type;
 
     let attacker_type1 = context.attacker.pokemon.types[0];
     let attacker_type2 = if context.attacker.pokemon.types.len() > 1 {

@@ -1,4 +1,4 @@
-use crate::types::{DataError, DataResult, SpeciesId};
+use crate::types::{DataError, DataResult, PokemonName};
 use crate::utils::normalize_name;
 use crate::data::showdown_types::PokemonData;
 use std::collections::HashMap;
@@ -6,13 +6,13 @@ use std::path::Path;
 
 /// Repository for pokemon-related data operations
 pub struct PokemonRepository {
-    data: HashMap<SpeciesId, PokemonData>,
-    name_index: HashMap<String, SpeciesId>,
+    data: HashMap<PokemonName, PokemonData>,
+    name_index: HashMap<String, PokemonName>,
 }
 
 impl PokemonRepository {
     /// Create new PokemonRepository from data
-    pub fn new(data: HashMap<SpeciesId, PokemonData>) -> Self {
+    pub fn new(data: HashMap<PokemonName, PokemonData>) -> Self {
         // Get capacity before moving data
         let capacity = data.len() * 2; // Multiply by 2 to account for both name and ID indexing
         let mut repo = Self {
@@ -30,13 +30,13 @@ impl PokemonRepository {
             let normalized_name = normalize_name(&pokemon_data.name);
             self.name_index.insert(normalized_name, species_id.clone());
             // Also index by species ID string
-            let normalized_id = normalize_name(species_id.as_str());
+            let normalized_id = normalize_name(&format!("{:?}", species_id));
             self.name_index.insert(normalized_id, species_id.clone());
         }
     }
 
     /// Get pokemon data by ID
-    pub fn find_by_id(&self, id: &SpeciesId) -> DataResult<&PokemonData> {
+    pub fn find_by_id(&self, id: &PokemonName) -> DataResult<&PokemonData> {
         self.data.get(id).ok_or_else(|| DataError::SpeciesNotFound { 
             species: id.clone() 
         })
@@ -56,7 +56,7 @@ impl PokemonRepository {
     }
 
     /// Check if pokemon exists
-    pub fn has_pokemon(&self, id: &SpeciesId) -> bool {
+    pub fn has_pokemon(&self, id: &PokemonName) -> bool {
         self.data.contains_key(id)
     }
 
@@ -82,7 +82,7 @@ impl PokemonRepository {
     }
 
     /// Get all available species IDs
-    pub fn species_ids(&self) -> impl Iterator<Item = &SpeciesId> {
+    pub fn species_ids(&self) -> impl Iterator<Item = &PokemonName> {
         self.data.keys()
     }
 
@@ -98,7 +98,7 @@ impl PokemonRepository {
 }
 
 /// Load pokemon data from JSON file
-pub fn load_pokemon_data(path: &Path) -> DataResult<HashMap<SpeciesId, PokemonData>> {
+pub fn load_pokemon_data(path: &Path) -> DataResult<HashMap<PokemonName, PokemonData>> {
     if !path.exists() {
         return Ok(HashMap::new());
     }
@@ -130,7 +130,7 @@ pub fn load_pokemon_data(path: &Path) -> DataResult<HashMap<SpeciesId, PokemonDa
                     .map(|v| v as f32)
                     .unwrap_or(50.0); // Default to 50kg if missing
                     
-                pokemon.insert(SpeciesId::from(id), pokemon_data);
+                pokemon.insert(crate::types::FromNormalizedString::from_normalized_str(&crate::utils::normalize_name(&id)).unwrap_or(PokemonName::NONE), pokemon_data);
             }
             Err(e) => {
                 parse_errors.push(format!("Failed to parse pokemon '{}': {}", id, e));

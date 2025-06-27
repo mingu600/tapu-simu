@@ -308,22 +308,21 @@ impl ItemModifier {
 
 /// Main item lookup function - delegates to category-specific functions
 pub fn get_item_by_name_with_generation(
-    item_name: &str,
+    item_id: &crate::types::Items,
     generation: &dyn GenerationBattleMechanics,
     attacker: &Pokemon,
     defender: Option<&Pokemon>,
-    move_name: &str,
-    move_type: &str,
+    move_id: &crate::types::Moves,
+    move_type: &crate::types::PokemonType,
     move_category: MoveCategory,
     context: &DamageContext,
 ) -> ItemModifier {
-    // Convert to typed identifiers
-    let item_id = crate::types::ItemId::new(item_name);
-    let move_id = crate::types::MoveId::new(move_name);
-    let type_id = crate::types::TypeId::new(move_type);
+    let item_id = *item_id;
+    let move_id = *move_id;
+    let type_id = *move_type;
     // Try each category in order
     if let Some(modifier) = choice_items::get_choice_item_effect(
-        item_name, generation, attacker, defender, move_name, move_type, move_category, context
+        &item_id, generation, attacker, defender, &move_id, &type_id, move_category, context
     ) {
         return modifier;
     }
@@ -370,17 +369,16 @@ pub fn get_item_by_name_with_generation(
 
 /// Check if an item provides HP restore per turn (for end-of-turn processing)
 pub fn get_item_hp_restore_per_turn(
-    item_name: &str,
+    item_id: &crate::types::Items,
     pokemon: &Pokemon,
     position: BattlePosition,
     generation: &dyn GenerationBattleMechanics,
 ) -> BattleInstructions {
-    let item_id = crate::types::ItemId::new(item_name);
-    if let Some(instructions) = status_items::get_item_hp_restore_per_turn(&item_id, pokemon, position, generation) {
+    if let Some(instructions) = status_items::get_item_hp_restore_per_turn(item_id, pokemon, position, generation) {
         return instructions;
     }
     
-    if let Some(instructions) = utility_items::get_item_hp_restore_per_turn(&item_id, pokemon, position, generation) {
+    if let Some(instructions) = utility_items::get_item_hp_restore_per_turn(item_id, pokemon, position, generation) {
         return instructions;
     }
     
@@ -389,20 +387,18 @@ pub fn get_item_hp_restore_per_turn(
 
 /// Check for item effects that trigger on switch-in
 pub fn get_item_on_switch_in_effects(
-    item_name: &str,
+    item_id: &crate::types::Items,
     pokemon: &Pokemon,
     position: BattlePosition,
     generation: &dyn GenerationBattleMechanics,
 ) -> BattleInstructions {
-    let item_id = crate::types::ItemId::new(item_name);
-    
     // Check utility items for switch-in effects
-    if let Some(instructions) = utility_items::get_item_on_switch_in_effects(&item_id, pokemon, position, generation) {
+    if let Some(instructions) = utility_items::get_item_on_switch_in_effects(item_id, pokemon, position, generation) {
         return instructions;
     }
     
     // Check stat boosting items for switch-in effects  
-    if let Some(instructions) = stat_boosting_items::get_item_on_switch_in_effects(&item_id, pokemon, position, generation) {
+    if let Some(instructions) = stat_boosting_items::get_item_on_switch_in_effects(item_id, pokemon, position, generation) {
         return instructions;
     }
     
@@ -412,23 +408,23 @@ pub fn get_item_on_switch_in_effects(
 
 /// Calculate all item modifiers for a given context
 pub fn calculate_item_modifiers(
-    attacker_item: Option<&str>,
-    defender_item: Option<&str>,
+    attacker_item: Option<&crate::types::Items>,
+    defender_item: Option<&crate::types::Items>,
     generation: &dyn GenerationBattleMechanics,
     attacker: &Pokemon,
     defender: Option<&Pokemon>,
-    move_name: &str,
-    move_type: &str,
+    move_id: &crate::types::Moves,
+    move_type: &crate::types::PokemonType,
     move_category: MoveCategory,
     context: &DamageContext,
 ) -> (ItemModifier, ItemModifier) {
-    let attacker_modifier = if let Some(item_name) = attacker_item {
+    let attacker_modifier = if let Some(item_id) = attacker_item {
         get_item_by_name_with_generation(
-            item_name,
+            item_id,
             generation,
             attacker,
             defender,
-            move_name,
+            move_id,
             move_type,
             move_category,
             context,
@@ -437,14 +433,14 @@ pub fn calculate_item_modifiers(
         ItemModifier::default()
     };
     
-    let defender_modifier = if let Some(item_name) = defender_item {
+    let defender_modifier = if let Some(item_id) = defender_item {
         if let Some(def_pokemon) = defender {
             get_item_by_name_with_generation(
-                item_name,
+                item_id,
                 generation,
                 def_pokemon,
                 Some(attacker),
-                move_name,
+                move_id,
                 move_type,
                 move_category,
                 context,
@@ -463,7 +459,7 @@ pub fn calculate_item_modifiers(
 pub fn apply_expert_belt_boost(context: &DamageContext, type_effectiveness: f32, generation: u8) -> f32 {
     // Check if attacker has Expert Belt
     if let Some(item) = &context.attacker.pokemon.item {
-        if item.to_lowercase().replace(&[' ', '-'][..], "") == "expertbelt" && type_effectiveness > 1.0 {
+        if *item == crate::types::Items::EXPERTBELT && type_effectiveness > 1.0 {
             return 1.2; // Expert Belt provides 1.2x boost to super effective moves
         }
     }

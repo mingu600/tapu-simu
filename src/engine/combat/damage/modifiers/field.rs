@@ -16,7 +16,6 @@ pub fn get_screen_damage_modifier(
     _generation_mechanics: &GenerationMechanics,
 ) -> f32 {
     use crate::engine::mechanics::abilities::{apply_ability_effect, AbilityContext};
-    use crate::types::AbilityId;
     use crate::core::battle_format::{BattlePosition, SideReference};
 
     // Check if attacker has ability to bypass screens (Infiltrator, etc.)
@@ -38,7 +37,7 @@ pub fn get_screen_damage_modifier(
         found_position.unwrap_or(BattlePosition::new(SideReference::SideOne, 0))
     };
 
-    let ability_id = AbilityId::from(attacker.ability.as_str());
+    let ability_id = attacker.ability;
     let context = AbilityContext {
         user_position: attacker_position,
         target_position: None,

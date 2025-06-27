@@ -283,7 +283,7 @@ fn should_item_swap_fail(user: &Pokemon, target: &Pokemon) -> bool {
     }
     
     // Fail if target has Sticky Hold ability
-    if crate::utils::normalize_name(&target.ability) == "stickyhold" {
+    if target.ability == crate::types::Abilities::STICKYHOLD {
         return true;
     }
     
@@ -301,33 +301,34 @@ fn should_item_swap_fail(user: &Pokemon, target: &Pokemon) -> bool {
 }
 
 /// Check if an item is permanent and cannot be removed
-fn is_permanent_item(item: &str, pokemon_species: &str) -> bool {
-    let normalized_item = crate::utils::normalize_name(item);
-    let normalized_species = crate::utils::normalize_name(pokemon_species);
-    
-    match normalized_item.as_str() {
+fn is_permanent_item(item: &crate::types::Items, pokemon_species: &crate::types::PokemonName) -> bool {
+    match item {
         // Arceus plates
-        "dracoplate" | "dreadplate" | "earthplate" | "fistplate" | 
-        "flameplate" | "icicleplate" | "insectplate" | "ironplate" |
-        "meadowplate" | "mindplate" | "pixieplate" | "skyplate" |
-        "splashplate" | "spookyplate" | "stoneplate" | "toxicplate" |
-        "zapplate" => normalized_species.starts_with("arceus"),
+        crate::types::Items::DRACOPLATE | crate::types::Items::DREADPLATE | 
+        crate::types::Items::EARTHPLATE | crate::types::Items::FISTPLATE | 
+        crate::types::Items::FLAMEPLATE | crate::types::Items::ICICLEPLATE | 
+        crate::types::Items::INSECTPLATE | crate::types::Items::IRONPLATE |
+        crate::types::Items::MEADOWPLATE | crate::types::Items::MINDPLATE | 
+        crate::types::Items::PIXIEPLATE | crate::types::Items::SKYPLATE |
+        crate::types::Items::SPLASHPLATE | crate::types::Items::SPOOKYPLATE | 
+        crate::types::Items::STONEPLATE | crate::types::Items::TOXICPLATE |
+        crate::types::Items::ZAPPLATE => *pokemon_species == crate::types::PokemonName::ARCEUS,
         
         // Origin forme items
-        "lustrousglobe" => normalized_species.contains("palkia"),
-        "griseouscore" => normalized_species.contains("giratina"),
-        "adamantcrystal" => normalized_species.contains("dialga"),
+        crate::types::Items::LUSTROUSGLOBE => *pokemon_species == crate::types::PokemonName::PALKIA,
+        crate::types::Items::GRISEOUSCORE => *pokemon_species == crate::types::PokemonName::GIRATINA,
+        crate::types::Items::ADAMANTCRYSTAL => *pokemon_species == crate::types::PokemonName::DIALGA,
         
         // Rusted weapons
-        "rustedsword" => normalized_species.contains("zacian"),
-        "rustedshield" => normalized_species.contains("zamazenta"),
+        crate::types::Items::RUSTEDSWORD => *pokemon_species == crate::types::PokemonName::ZACIAN,
+        crate::types::Items::RUSTEDSHIELD => *pokemon_species == crate::types::PokemonName::ZAMAZENTA,
         
         _ => false,
     }
 }
 
 /// Get fling power for an item
-fn get_fling_power(item: &str, repository: &crate::data::GameDataRepository) -> u8 {
+fn get_fling_power(item: &crate::types::Items, repository: &crate::data::GameDataRepository) -> u8 {
     repository.items.get_item_fling_power(item)
         .unwrap_or_else(|| {
             // If item not found in repository, use default power for unknown items
@@ -337,20 +338,18 @@ fn get_fling_power(item: &str, repository: &crate::data::GameDataRepository) -> 
 }
 
 /// Get fling status effect for an item
-fn get_fling_status(item: &str) -> Option<&'static str> {
-    let normalized_item = crate::utils::normalize_name(item);
-    match normalized_item.as_str() {
-        "flameorb" => Some("brn"),
-        "toxicorb" => Some("tox"),
+fn get_fling_status(item: &crate::types::Items) -> Option<&'static str> {
+    match item {
+        crate::types::Items::FLAMEORB => Some("brn"),
+        crate::types::Items::TOXICORB => Some("tox"),
         _ => None,
     }
 }
 
 /// Get fling volatile status effect for an item
-fn get_fling_volatile_status(item: &str) -> Option<&'static str> {
-    let normalized_item = crate::utils::normalize_name(item);
-    match normalized_item.as_str() {
-        "kingsrock" | "razorfang" => Some("flinch"),
+fn get_fling_volatile_status(item: &crate::types::Items) -> Option<&'static str> {
+    match item {
+        crate::types::Items::KINGSROCK | crate::types::Items::RAZORFANG => Some("flinch"),
         _ => None,
     }
 }

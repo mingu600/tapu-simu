@@ -119,7 +119,7 @@ pub fn apply_ivy_cudgel(
     
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
         // Ivy Cudgel's type depends on Ogerpon's form/mask
-        let cudgel_type = determine_ivy_cudgel_type(&user_pokemon.species, user_pokemon.item.as_deref());
+        let cudgel_type = determine_ivy_cudgel_type(&user_pokemon.species, user_pokemon.item.as_ref());
         
         // Change the move's type based on the form/mask
         let mut modified_move_data = move_data.clone();
@@ -186,23 +186,23 @@ pub fn apply_tera_blast(
 // =============================================================================
 
 /// Determine Ivy Cudgel's type based on Ogerpon's form and mask
-fn determine_ivy_cudgel_type(species: &str, item: Option<&str>) -> PokemonType {
+fn determine_ivy_cudgel_type(species: &crate::types::PokemonName, item: Option<&crate::types::Items>) -> PokemonType {
     // Check for Ogerpon forms and their corresponding types
-    if crate::utils::normalize_name(species).contains("ogerpon") {
-        match item {
-            Some(item_name) => {
-                let normalized_item = crate::utils::normalize_name(item_name);
-                match normalized_item.as_str() {
-                    "wellspringmask" => PokemonType::Water,
-                    "hearthflamemask" => PokemonType::Fire,
-                    "cornerstonemask" => PokemonType::Rock,
-                    _ => PokemonType::Grass, // Base form or no mask
+    match species {
+        crate::types::PokemonName::OGERPON => {
+            match item {
+                Some(item_id) => {
+                    match item_id {
+                        crate::types::Items::WELLSPRINGMASK => PokemonType::Water,
+                        crate::types::Items::HEARTHFLAMEMASK => PokemonType::Fire,
+                        crate::types::Items::CORNERSTONEMASK => PokemonType::Rock,
+                        _ => PokemonType::Grass, // Base form or no mask
+                    }
                 }
+                None => PokemonType::Grass, // No item
             }
-            None => PokemonType::Grass, // No item
         }
-    } else {
-        PokemonType::Grass // Default to Grass type
+        _ => PokemonType::Grass, // Default to Grass type
     }
 }
 

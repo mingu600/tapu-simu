@@ -1,6 +1,7 @@
 {
   "name": "ps-data-extractor",
   "version": "1.0.0",
+  "type": "module",
   "description": "Extract move and item data from Pokemon Showdown for use in Tapu Simu",
   "main": "extract.js",
   "scripts": {

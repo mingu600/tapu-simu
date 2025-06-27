@@ -311,14 +311,14 @@ impl<'a> BattleBuilder<'a> {
         for &species in &common_species {
             let pokemon_set = RandomPokemonSet {
                 name: species.to_string(),
-                species: species.to_string(),
-                ability: Some("static".to_string()), // Default ability
+                species: <crate::types::PokemonName as crate::types::FromNormalizedString>::from_normalized_str(species).unwrap_or(crate::types::PokemonName::NONE),
+                ability: Some(crate::types::Abilities::STATIC), // Default ability
                 item: None,
                 moves: vec![
-                    "tackle".to_string(),
-                    "thunderbolt".to_string(),
-                    "quick-attack".to_string(),
-                    "rest".to_string(),
+                    crate::types::Moves::TACKLE,
+                    crate::types::Moves::THUNDERBOLT,
+                    crate::types::Moves::QUICKATTACK,
+                    crate::types::Moves::REST,
                 ],
                 level: 50,
                 evs: Some(crate::data::random_team_loader::RandomStats {

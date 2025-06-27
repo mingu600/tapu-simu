@@ -18,7 +18,8 @@ use tapu_simu::data::types::Stats;
 use tapu_simu::data::GameDataRepository;
 use tapu_simu::engine::turn;
 use tapu_simu::generation::Generation;
-use tapu_simu::types::identifiers::AbilityId;
+use tapu_simu::types::{Abilities, Items, PokemonName, Moves};
+use tapu_simu::types::from_string::FromNormalizedString;
 use tapu_simu::types::DataResult;
 
 /// Core test framework for tapu-simu battles
@@ -246,10 +247,16 @@ impl TapuTestFramework {
         use tapu_simu::core::battle_state::Pokemon;
         use tapu_simu::core::move_choice::MoveIndex;
         use tapu_simu::data::types::Stats;
-        use tapu_simu::types::{MoveId, SpeciesId};
+        // Old ID types removed - using direct enums now
 
         // Create Pokemon with basic data
-        let mut pokemon = Pokemon::new(spec.species.to_string());
+        // Convert species string to PokemonName enum
+        let species_enum = PokemonName::from_normalized_str(&tapu_simu::utils::normalize_name(spec.species))
+            .unwrap_or_else(|| {
+                use tapu_simu::types::{DataError, PokemonName};
+                panic!("Unknown species: {}", spec.species);
+            });
+        let mut pokemon = Pokemon::new(species_enum);
 
         // Set level
         pokemon.level = spec.level;
@@ -258,9 +265,9 @@ impl TapuTestFramework {
             .generation_repository
             .find_pokemon_by_name_for_generation(spec.species, self.format.generation.number())
             .ok_or_else(|| {
-                use tapu_simu::types::{DataError, SpeciesId};
+                use tapu_simu::types::DataError;
                 DataError::SpeciesNotFound {
-                    species: SpeciesId::from(spec.species),
+                    species: species_enum,
                 }
             })?;
 
@@ -424,14 +431,20 @@ impl TapuTestFramework {
         // Set weight
         pokemon.weight_kg = pokemon_data.weight_kg;
 
-        // Set ability if specified (normalize using AbilityId)
+        // Set ability if specified
         if let Some(ability) = spec.ability {
-            pokemon.ability = AbilityId::from(ability).as_str().to_string();
+            pokemon.ability = Abilities::from_normalized_str(&tapu_simu::utils::normalize_name(ability))
+                .unwrap_or_else(|| {
+                    panic!("Unknown ability: {}", ability);
+                });
         }
 
         // Set item if specified
         if let Some(item) = spec.item {
-            pokemon.item = Some(item.to_string());
+            pokemon.item = Some(Items::from_normalized_str(&tapu_simu::utils::normalize_name(item))
+                .unwrap_or_else(|| {
+                    panic!("Unknown item: {}", item);
+                }));
         }
 
         // Add moves using generation-specific repository data - fail if move not found
@@ -443,9 +456,10 @@ impl TapuTestFramework {
                     .generation_repository
                     .find_move_by_name_for_generation(move_name, self.format.generation.number())
                     .ok_or_else(|| {
-                        use tapu_simu::types::{DataError, MoveId};
+                        use tapu_simu::types::DataError;
                         DataError::MoveNotFound {
-                            move_id: MoveId::from(move_name),
+                            move_id: Moves::from_normalized_str(&tapu_simu::utils::normalize_name(move_name))
+                                .unwrap_or(Moves::NONE),
                         }
                     })?;
 

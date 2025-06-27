@@ -10,21 +10,65 @@ use crate::data::types::{Nature, Stats};
 use rand::rngs::StdRng;
 use rand::seq::SliceRandom;
 use rand::SeedableRng;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Deserializer};
+use crate::types::{FromNormalizedString, PokemonName, Abilities, Items, Moves};
 use std::fs;
 use std::path::Path;
+
+// Custom deserialization functions for enum types
+fn deserialize_pokemon_name<'de, D>(deserializer: D) -> Result<PokemonName, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    Ok(FromNormalizedString::from_normalized_str(&crate::utils::normalize_name(&s))
+        .unwrap_or(PokemonName::NONE))
+}
+
+fn deserialize_optional_ability<'de, D>(deserializer: D) -> Result<Option<Abilities>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let opt_s: Option<String> = Option::deserialize(deserializer)?;
+    Ok(opt_s.map(|s| FromNormalizedString::from_normalized_str(&crate::utils::normalize_name(&s))
+        .unwrap_or(Abilities::NONE)))
+}
+
+fn deserialize_optional_item<'de, D>(deserializer: D) -> Result<Option<Items>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let opt_s: Option<String> = Option::deserialize(deserializer)?;
+    Ok(opt_s.map(|s| FromNormalizedString::from_normalized_str(&crate::utils::normalize_name(&s))
+        .unwrap_or(Items::NONE)))
+}
+
+fn deserialize_moves<'de, D>(deserializer: D) -> Result<Vec<Moves>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let strings: Vec<String> = Vec::deserialize(deserializer)?;
+    Ok(strings.into_iter()
+        .map(|s| FromNormalizedString::from_normalized_str(&crate::utils::normalize_name(&s))
+            .unwrap_or(Moves::NONE))
+        .collect())
+}
 
 /// Represents a Pokemon set from random battle data
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RandomPokemonSet {
     pub name: String,
-    pub species: String,
+    #[serde(deserialize_with = "deserialize_pokemon_name")]
+    pub species: crate::types::PokemonName,
     pub level: u8,
     pub gender: Option<String>,
     pub shiny: Option<bool>,
-    pub ability: Option<String>,
-    pub item: Option<String>,
-    pub moves: Vec<String>,
+    #[serde(deserialize_with = "deserialize_optional_ability")]
+    pub ability: Option<crate::types::Abilities>,
+    #[serde(deserialize_with = "deserialize_optional_item")]
+    pub item: Option<crate::types::Items>,
+    #[serde(deserialize_with = "deserialize_moves")]
+    pub moves: Vec<crate::types::Moves>,
     pub nature: Option<String>,
     pub evs: Option<RandomStats>,
     pub ivs: Option<RandomStats>,
@@ -301,8 +345,8 @@ impl RandomPokemonSet {
     fn apply_stat_optimizations(&self, mut stats: Stats, repository: &crate::data::GameDataRepository) -> Stats {
         // Check for physical moves
         let has_physical_moves = self.moves.iter().any(|move_name| {
-            use crate::types::identifiers::MoveId;
-            let move_id = MoveId::from(move_name.clone());
+            use crate::types::Moves;
+            let move_id = *move_name;
             if let Ok(move_data) = repository.moves.find_by_id(&move_id) {
                 move_data.category == "Physical"
             } else {
@@ -312,8 +356,7 @@ impl RandomPokemonSet {
 
         // Check for speed-dependent moves
         let has_speed_dependent_moves = self.moves.iter().any(|move_name| {
-            let name_lower = move_name.to_lowercase();
-            name_lower == "trick room" || name_lower == "gyro ball"
+            *move_name == crate::types::Moves::TRICKROOM || *move_name == crate::types::Moves::GYROBALL
         });
 
         // No physical attacks: Attack stat = 0
@@ -380,28 +423,29 @@ impl RandomPokemonSet {
         &self,
         repository: &crate::data::GameDataRepository,
     ) -> Pokemon {
-        let mut pokemon = Pokemon::new(self.species.clone());
+        let mut pokemon = Pokemon::new(self.species);
 
         // Set basic attributes
         pokemon.level = self.level;
         // Set ability from random team data or default from PS data
-        use crate::types::identifiers::{AbilityId, SpeciesId};
-        pokemon.ability = if let Some(ability_name) = &self.ability {
-            ability_name.clone()
+        use crate::types::{Abilities, PokemonName};
+        pokemon.ability = if let Some(ability) = self.ability {
+            ability
         } else {
             // Get default ability from repository
-            let species_id = SpeciesId::from(self.species.clone());
-            if let Ok(pokemon_data) = repository.pokemon.find_by_id(&species_id) {
-                // Get first ability if available (slot "0")
-                pokemon_data.abilities.get("0")
-                    .cloned()
-                    .unwrap_or_else(|| AbilityId::new(""))
-                    .to_string()
+            if let Ok(pokemon_data) = repository.pokemon.find_by_id(&self.species) {
+                // Get first ability if available (slot "0") and convert to enum
+                if let Some(ability_name) = pokemon_data.abilities.get("0") {
+                    <Abilities as crate::types::FromNormalizedString>::from_normalized_str(ability_name.as_str())
+                        .unwrap_or(Abilities::NONE)
+                } else {
+                    Abilities::NONE
+                }
             } else {
-                String::new()
+                Abilities::NONE
             }
         };
-        pokemon.item = self.item.clone();
+        pokemon.item = self.item;
 
         // Set gender
         pokemon.gender = match self.gender.as_ref().map(|s| s.as_str()) {
@@ -411,11 +455,10 @@ impl RandomPokemonSet {
         };
 
         // Calculate stats from base stats, level, nature, IVs, EVs
-        let species_id = SpeciesId::from(self.species.clone());
-        let base_stats = if let Ok(pokemon_data) = repository.pokemon.find_by_id(&species_id) {
+        let base_stats = if let Ok(pokemon_data) = repository.pokemon.find_by_id(&self.species) {
             pokemon_data.base_stats.to_engine_stats()
         } else {
-            eprintln!("Warning: Base stats for '{}' not found in PS data, using fallback", self.species);
+            eprintln!("Warning: Base stats for '{}' not found in PS data, using fallback", self.species.as_str());
             // Use reasonable fallback stats
             crate::data::types::Stats {
                 hp: 70,
@@ -486,10 +529,10 @@ impl RandomPokemonSet {
         pokemon.base_stats = base_stats;
 
         // Set types from PS data  
-        pokemon.types = if let Ok(pokemon_data) = repository.pokemon.find_by_id(&species_id) {
+        pokemon.types = if let Ok(pokemon_data) = repository.pokemon.find_by_id(&self.species) {
             pokemon_data.types.clone()
         } else {
-            eprintln!("Warning: Types for '{}' not found in PS data, using Normal type", self.species);
+            eprintln!("Warning: Types for '{}' not found in PS data, using Normal type", self.species.as_str());
             vec![PokemonType::Normal]
         };
 
@@ -500,18 +543,16 @@ impl RandomPokemonSet {
             } // Pokemon can only have 4 moves
 
             // Create move using PS data
-            use crate::types::identifiers::MoveId;
-            let move_id = MoveId::from(move_name.clone());
-            let move_data = match repository.moves.create_move(&move_id) {
+            let move_data = match repository.moves.create_move(move_name) {
                 Ok(mv) => mv,
                 Err(_) => {
                     // Fallback if move not found in PS data
                     eprintln!(
                         "Warning: Move '{}' not found in PS data, using placeholder",
-                        move_name
+                        move_name.as_str()
                     );
                     crate::core::battle_state::Move {
-                        name: move_name.clone(),
+                        name: *move_name,
                         base_power: 80,
                         move_type: PokemonType::Normal,
                         category: crate::core::battle_state::MoveCategory::Physical,
@@ -540,7 +581,7 @@ impl RandomPokemonSet {
         pokemon.tera_type = self.get_tera_type();
 
         // Set weight from repository data
-        pokemon.weight_kg = repository.pokemon.get_pokemon_weight(&self.species).unwrap_or(50.0);
+        pokemon.weight_kg = repository.pokemon.get_pokemon_weight(&self.species.as_str()).unwrap_or(50.0);
 
         pokemon
     }

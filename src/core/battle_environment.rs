@@ -566,7 +566,7 @@ impl BattleEnvironment {
             pokemon.stats.special_defense,
             pokemon.stats.speed,
             pokemon.ability,
-            pokemon.item.as_ref().unwrap_or(&"None".to_string()),
+            pokemon.item.as_ref().map(|i| i.as_str()).unwrap_or("None"),
             pokemon.types.iter().map(|t| t.to_normalized_str()).collect::<Vec<_>>().join("/")
         )
     }
@@ -647,7 +647,7 @@ impl BattleEnvironment {
         }
 
         // Moves
-        let mut move_names: Vec<String> = pokemon.moves.values().map(|m| m.name.clone()).collect();
+        let mut move_names: Vec<String> = pokemon.moves.values().map(|m| m.name.as_str().to_string()).collect();
         move_names.sort(); // Sort for consistent output
         for move_name in move_names {
             paste.push_str(&format!("- {}\n", move_name));
@@ -671,8 +671,7 @@ impl BattleEnvironment {
 
         // Check if Pokemon has Trick Room or Gyro Ball
         let has_speed_dependent_moves = pokemon.moves.values().any(|m| {
-            let name_lower = m.name.to_lowercase();
-            name_lower == "trick room" || name_lower == "gyro ball"
+            m.name == crate::types::Moves::TRICKROOM || m.name == crate::types::Moves::GYROBALL
         });
 
         let mut ivs = PokemonIVs::default(); // 31 in all stats

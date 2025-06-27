@@ -17,7 +17,7 @@ pub fn normalize_name(name: &str) -> String {
     
     for c in name.chars() {
         match c {
-            ' ' | '-' | '\'' | '.' => {}, // Skip these characters
+            ' ' | '-' | '\'' | '.' | ',' | '(' | ')' => {}, // Skip these characters
             _ => result.push(c.to_lowercase().next().unwrap_or(c)),
         }
     }

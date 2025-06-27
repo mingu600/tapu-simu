@@ -1,4 +1,4 @@
-use crate::types::{DataError, DataResult, ItemId};
+use crate::types::{DataError, DataResult, Items};
 use crate::utils::normalize_name;
 use crate::data::showdown_types::ItemData;
 use std::collections::HashMap;
@@ -6,13 +6,13 @@ use std::path::Path;
 
 /// Repository for item-related data operations
 pub struct ItemRepository {
-    data: HashMap<ItemId, ItemData>,
-    name_index: HashMap<String, ItemId>,
+    data: HashMap<Items, ItemData>,
+    name_index: HashMap<String, Items>,
 }
 
 impl ItemRepository {
     /// Create new ItemRepository from data
-    pub fn new(data: HashMap<ItemId, ItemData>) -> Self {
+    pub fn new(data: HashMap<Items, ItemData>) -> Self {
         // Get capacity before moving data
         let capacity = data.len() * 2; // Multiply by 2 to account for both name and ID indexing
         let mut repo = Self {
@@ -30,13 +30,13 @@ impl ItemRepository {
             let normalized_name = normalize_name(&item_data.name);
             self.name_index.insert(normalized_name, item_id.clone());
             // Also index by item ID string
-            let normalized_id = normalize_name(item_id.as_str());
+            let normalized_id = normalize_name(&format!("{:?}", item_id));
             self.name_index.insert(normalized_id, item_id.clone());
         }
     }
 
     /// Get item data by ID
-    pub fn find_by_id(&self, id: &ItemId) -> DataResult<&ItemData> {
+    pub fn find_by_id(&self, id: &Items) -> DataResult<&ItemData> {
         self.data.get(id).ok_or_else(|| DataError::ItemNotFound { 
             item: id.clone() 
         })
@@ -56,54 +56,30 @@ impl ItemRepository {
     }
 
     /// Check if item exists
-    pub fn has_item(&self, id: &ItemId) -> bool {
+    pub fn has_item(&self, id: &Items) -> bool {
         self.data.contains_key(id)
     }
 
     /// Get item fling power
-    pub fn get_item_fling_power(&self, item_name: &str) -> Option<u8> {
-        let normalized_name = normalize_name(item_name);
-        
-        // Try index lookup first
-        if let Some(item_id) = self.name_index.get(&normalized_name) {
-            if let Some(item_data) = self.data.get(item_id) {
-                return item_data.fling.as_ref().map(|f| f.base_power);
-            }
-        }
-        
-        // Fallback to linear search for edge cases
-        for item_data in self.data.values() {
-            if normalize_name(&item_data.name) == normalized_name {
-                return item_data.fling.as_ref().map(|f| f.base_power);
-            }
+    pub fn get_item_fling_power(&self, item_id: &Items) -> Option<u8> {
+        if let Some(item_data) = self.data.get(item_id) {
+            return item_data.fling.as_ref().map(|f| f.base_power);
         }
         
         None
     }
 
     /// Check if item can be flung
-    pub fn can_item_be_flung(&self, item_name: &str) -> bool {
-        let normalized_name = normalize_name(item_name);
-        
-        // Try index lookup first
-        if let Some(item_id) = self.name_index.get(&normalized_name) {
-            if let Some(item_data) = self.data.get(item_id) {
-                return item_data.fling.is_some();
-            }
-        }
-        
-        // Fallback to linear search for edge cases
-        for item_data in self.data.values() {
-            if normalize_name(&item_data.name) == normalized_name {
-                return item_data.fling.is_some();
-            }
+    pub fn can_item_be_flung(&self, item_id: &Items) -> bool {
+        if let Some(item_data) = self.data.get(item_id) {
+            return item_data.fling.is_some();
         }
         
         false // Default to not flungable if not found
     }
 
     /// Get all available item IDs
-    pub fn item_ids(&self) -> impl Iterator<Item = &ItemId> {
+    pub fn item_ids(&self) -> impl Iterator<Item = &Items> {
         self.data.keys()
     }
 
@@ -119,7 +95,7 @@ impl ItemRepository {
 }
 
 /// Load items data from JSON file
-pub fn load_items_data(path: &Path) -> DataResult<HashMap<ItemId, ItemData>> {
+pub fn load_items_data(path: &Path) -> DataResult<HashMap<Items, ItemData>> {
     if !path.exists() {
         return Ok(HashMap::new());
     }
@@ -143,7 +119,7 @@ pub fn load_items_data(path: &Path) -> DataResult<HashMap<ItemId, ItemData>> {
     for (id, value) in raw_data {
         match serde_json::from_value::<ItemData>(value) {
             Ok(item_data) => {
-                items.insert(ItemId::from(id), item_data);
+                items.insert(crate::types::FromNormalizedString::from_normalized_str(&crate::utils::normalize_name(&id)).unwrap_or(Items::NONE), item_data);
             }
             Err(e) => {
                 parse_errors.push(format!("Failed to parse item '{}': {}", id, e));

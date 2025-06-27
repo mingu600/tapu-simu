@@ -1,4 +1,4 @@
-use crate::types::identifiers::{AbilityId, TypeId};
+use crate::types::Abilities;
 use crate::types::PokemonType;
 use crate::core::battle_state::Pokemon;
 use crate::core::battle_state::BattleState;
@@ -10,7 +10,7 @@ use crate::engine::combat::damage_context::DamageContext;
 pub struct AbilityContext<'a> {
     pub user_position: BattlePosition,
     pub target_position: Option<BattlePosition>,
-    pub move_type: Option<TypeId>,
+    pub move_type: Option<PokemonType>,
     pub move_id: Option<&'a str>,
     pub base_power: Option<u16>,
     pub is_critical: bool,
@@ -109,70 +109,70 @@ impl AbilityEffectResult {
     }
 }
 
-pub fn apply_ability_effect(ability: &AbilityId, context: AbilityContext) -> AbilityEffectResult {
-    match ability.as_str() {
+pub fn apply_ability_effect(ability: &Abilities, context: AbilityContext) -> AbilityEffectResult {
+    match *ability {
         // Type immunities
-        "levitate" => apply_levitate(context),
-        "flashfire" => apply_flash_fire(context),
-        "waterabsorb" => apply_water_absorb(context),
-        "voltabsorb" => apply_volt_absorb(context),
-        "sapsipper" => apply_sap_sipper(context),
-        "stormdrain" => apply_storm_drain(context),
-        "lightningrod" => apply_lightning_rod(context),
-        "motordrive" => apply_motor_drive(context),
-        "dryskin" => apply_dry_skin(context),
-        "wonderguard" => apply_wonder_guard(context),
+        Abilities::LEVITATE => apply_levitate(context),
+        Abilities::FLASHFIRE => apply_flash_fire(context),
+        Abilities::WATERABSORB => apply_water_absorb(context),
+        Abilities::VOLTABSORB => apply_volt_absorb(context),
+        Abilities::SAPSIPPER => apply_sap_sipper(context),
+        Abilities::STORMDRAIN => apply_storm_drain(context),
+        Abilities::LIGHTNINGROD => apply_lightning_rod(context),
+        Abilities::MOTORDRIVE => apply_motor_drive(context),
+        Abilities::DRYSKIN => apply_dry_skin(context),
+        Abilities::WONDERGUARD => apply_wonder_guard(context),
 
         // Damage reduction
-        "filter" | "solidrock" => apply_damage_reduction(context, 0.75),
-        "multiscale" => apply_multiscale(context),
-        "thickfat" => apply_thick_fat(context),
+        Abilities::FILTER | Abilities::SOLIDROCK => apply_damage_reduction(context, 0.75),
+        Abilities::MULTISCALE => apply_multiscale(context),
+        Abilities::THICKFAT => apply_thick_fat(context),
 
         // Damage boost
-        "neuroforce" => apply_neuroforce(context),
-        "tintedlens" => apply_tinted_lens(context),
-        "steelworker" => apply_steelworker(context),
+        Abilities::NEUROFORCE => apply_neuroforce(context),
+        Abilities::TINTEDLENS => apply_tinted_lens(context),
+        Abilities::STEELWORKER => apply_steelworker(context),
 
         // Power boost
-        "technician" => apply_technician(context),
-        "skilllink" => apply_skill_link(context),
-        "strongjaw" => apply_strong_jaw(context),
-        "toughclaws" => apply_tough_claws(context),
-        "punkrock" => apply_punk_rock(context),
+        Abilities::TECHNICIAN => apply_technician(context),
+        Abilities::SKILLLINK => apply_skill_link(context),
+        Abilities::STRONGJAW => apply_strong_jaw(context),
+        Abilities::TOUGHCLAWS => apply_tough_claws(context),
+        Abilities::PUNKROCK => apply_punk_rock(context),
 
         // Stat multipliers
-        "hugepower" | "purepower" => apply_stat_doubler(1.0, 1.0, 2.0, 1.0),
-        "guts" => apply_guts(context),
-        "marvelscale" => apply_marvel_scale(context),
-        "plus" | "minus" => apply_plus_minus(context),
+        Abilities::HUGEPOWER | Abilities::PUREPOWER => apply_stat_doubler(1.0, 1.0, 2.0, 1.0),
+        Abilities::GUTS => apply_guts(context),
+        Abilities::MARVELSCALE => apply_marvel_scale(context),
+        Abilities::PLUS | Abilities::MINUS => apply_plus_minus(context),
 
         // STAB modifiers
-        "adaptability" => apply_adaptability(context),
+        Abilities::ADAPTABILITY => apply_adaptability(context),
 
         // Weather/environment
-        "cloudnine" | "airlock" => apply_weather_negation(),
+        Abilities::CLOUDNINE | Abilities::AIRLOCK => apply_weather_negation(),
 
         // Screen bypass
-        "infiltrator" => apply_infiltrator(),
+        Abilities::INFILTRATOR => apply_infiltrator(),
 
         // Type immunity bypass
-        "mindseye" | "mind's eye" => apply_minds_eye(context),
+        Abilities::MINDSEYE => apply_minds_eye(context),
 
         // Status immunity
-        "waterveil" => apply_water_veil(context),
-        "magmaarmor" => apply_magma_armor(context),
-        "immunity" => apply_immunity_ability(context),
-        "limber" => apply_limber(context),
-        "insomnia" | "vitalspirit" => apply_sleep_immunity(context),
-        "owntempo" => apply_own_tempo(context),
-        "oblivious" => apply_oblivious(context),
+        Abilities::WATERVEIL => apply_water_veil(context),
+        Abilities::MAGMAARMOR => apply_magma_armor(context),
+        Abilities::IMMUNITY => apply_immunity_ability(context),
+        Abilities::LIMBER => apply_limber(context),
+        Abilities::INSOMNIA | Abilities::VITALSPIRIT => apply_sleep_immunity(context),
+        Abilities::OWNTEMPO => apply_own_tempo(context),
+        Abilities::OBLIVIOUS => apply_oblivious(context),
 
         // Special cases
-        "normalize" => apply_normalize(context),
-        "refrigerate" => apply_type_change(context, "ice", 1.2),
-        "pixilate" => apply_type_change(context, "fairy", 1.2),
-        "aerilate" => apply_type_change(context, "flying", 1.2),
-        "galvanize" => apply_type_change(context, "electric", 1.2),
+        Abilities::NORMALIZE => apply_normalize(context),
+        Abilities::REFRIGERATE => apply_type_change(context, "ice", 1.2),
+        Abilities::PIXILATE => apply_type_change(context, "fairy", 1.2),
+        Abilities::AERILATE => apply_type_change(context, "flying", 1.2),
+        Abilities::GALVANIZE => apply_type_change(context, "electric", 1.2),
 
         _ => AbilityEffectResult::none(),
     }
@@ -181,7 +181,7 @@ pub fn apply_ability_effect(ability: &AbilityId, context: AbilityContext) -> Abi
 // Type immunity abilities
 fn apply_levitate(context: AbilityContext) -> AbilityEffectResult {
     if let Some(move_type) = context.move_type {
-        if move_type.as_str() == "ground" {
+        if move_type == PokemonType::Ground {
             return AbilityEffectResult::immunity();
         }
     }
@@ -190,7 +190,7 @@ fn apply_levitate(context: AbilityContext) -> AbilityEffectResult {
 
 fn apply_flash_fire(context: AbilityContext) -> AbilityEffectResult {
     if let Some(move_type) = context.move_type {
-        if move_type.as_str() == "fire" {
+        if move_type == PokemonType::Fire {
             return AbilityEffectResult::immunity();
         }
     }
@@ -199,7 +199,7 @@ fn apply_flash_fire(context: AbilityContext) -> AbilityEffectResult {
 
 fn apply_water_absorb(context: AbilityContext) -> AbilityEffectResult {
     if let Some(move_type) = context.move_type {
-        if move_type.as_str() == "water" {
+        if move_type == PokemonType::Water {
             return AbilityEffectResult::immunity();
         }
     }
@@ -208,7 +208,7 @@ fn apply_water_absorb(context: AbilityContext) -> AbilityEffectResult {
 
 fn apply_volt_absorb(context: AbilityContext) -> AbilityEffectResult {
     if let Some(move_type) = context.move_type {
-        if move_type.as_str() == "electric" {
+        if move_type == PokemonType::Electric {
             return AbilityEffectResult::immunity();
         }
     }
@@ -217,7 +217,7 @@ fn apply_volt_absorb(context: AbilityContext) -> AbilityEffectResult {
 
 fn apply_sap_sipper(context: AbilityContext) -> AbilityEffectResult {
     if let Some(move_type) = context.move_type {
-        if move_type.as_str() == "grass" {
+        if move_type == PokemonType::Grass {
             return AbilityEffectResult::immunity();
         }
     }
@@ -226,7 +226,7 @@ fn apply_sap_sipper(context: AbilityContext) -> AbilityEffectResult {
 
 fn apply_storm_drain(context: AbilityContext) -> AbilityEffectResult {
     if let Some(move_type) = context.move_type {
-        if move_type.as_str() == "water" {
+        if move_type == PokemonType::Water {
             return AbilityEffectResult::immunity();
         }
     }
@@ -235,7 +235,7 @@ fn apply_storm_drain(context: AbilityContext) -> AbilityEffectResult {
 
 fn apply_lightning_rod(context: AbilityContext) -> AbilityEffectResult {
     if let Some(move_type) = context.move_type {
-        if move_type.as_str() == "electric" {
+        if move_type == PokemonType::Electric {
             return AbilityEffectResult::immunity();
         }
     }
@@ -244,7 +244,7 @@ fn apply_lightning_rod(context: AbilityContext) -> AbilityEffectResult {
 
 fn apply_motor_drive(context: AbilityContext) -> AbilityEffectResult {
     if let Some(move_type) = context.move_type {
-        if move_type.as_str() == "electric" {
+        if move_type == PokemonType::Electric {
             return AbilityEffectResult::immunity();
         }
     }
@@ -253,9 +253,9 @@ fn apply_motor_drive(context: AbilityContext) -> AbilityEffectResult {
 
 fn apply_dry_skin(context: AbilityContext) -> AbilityEffectResult {
     if let Some(move_type) = context.move_type {
-        match move_type.as_str() {
-            "water" => AbilityEffectResult::immunity(),
-            "fire" => AbilityEffectResult::damage_multiplier(1.25),
+        match move_type {
+            PokemonType::Water => AbilityEffectResult::immunity(),
+            PokemonType::Fire => AbilityEffectResult::damage_multiplier(1.25),
             _ => AbilityEffectResult::none(),
         }
     } else {
@@ -293,10 +293,7 @@ fn apply_wonder_guard(context: AbilityContext) -> AbilityEffectResult {
         defender_type1
     };
     
-    // Convert TypeId to string and then to PokemonType
-    let move_type_str = format!("{:?}", move_type_id).to_lowercase();
-    let move_type = PokemonType::from_normalized_str(&move_type_str)
-        .unwrap_or(PokemonType::Normal);
+    let move_type = move_type_id;
     
     // Check type effectiveness
     let type_chart = TypeChart::default();
@@ -334,7 +331,7 @@ fn apply_multiscale(context: AbilityContext) -> AbilityEffectResult {
 
 fn apply_thick_fat(context: AbilityContext) -> AbilityEffectResult {
     if let Some(move_type) = context.move_type {
-        if move_type.as_str() == "fire" || move_type.as_str() == "ice" {
+        if move_type == PokemonType::Fire || move_type == PokemonType::Ice {
             return AbilityEffectResult::damage_multiplier(0.5);
         }
     }
@@ -372,10 +369,7 @@ fn apply_neuroforce(context: AbilityContext) -> AbilityEffectResult {
         defender_type1
     };
     
-    // Convert TypeId to string and then to PokemonType
-    let move_type_str = format!("{:?}", move_type_id).to_lowercase();
-    let move_type = PokemonType::from_normalized_str(&move_type_str)
-        .unwrap_or(PokemonType::Normal);
+    let move_type = move_type_id;
     
     // Check type effectiveness
     let type_chart = TypeChart::default();
@@ -426,10 +420,7 @@ fn apply_tinted_lens(context: AbilityContext) -> AbilityEffectResult {
         defender_type1
     };
     
-    // Convert TypeId to string and then to PokemonType
-    let move_type_str = format!("{:?}", move_type_id).to_lowercase();
-    let move_type = PokemonType::from_normalized_str(&move_type_str)
-        .unwrap_or(PokemonType::Normal);
+    let move_type = move_type_id;
     
     // Check type effectiveness
     let type_chart = TypeChart::default();
@@ -452,7 +443,7 @@ fn apply_tinted_lens(context: AbilityContext) -> AbilityEffectResult {
 
 fn apply_steelworker(context: AbilityContext) -> AbilityEffectResult {
     if let Some(move_type) = context.move_type {
-        if move_type.as_str() == "steel" {
+        if move_type == PokemonType::Steel {
             return AbilityEffectResult::power_multiplier(1.5);
         }
     }
@@ -559,8 +550,7 @@ fn apply_plus_minus(context: AbilityContext) -> AbilityEffectResult {
         // Check if ally position is active and has Plus or Minus
         if context.state.is_position_active(ally_position) {
             if let Some(ally_pokemon) = context.state.get_pokemon_at_position(ally_position) {
-                let ally_ability = ally_pokemon.ability.as_str();
-                if ally_ability == "plus" || ally_ability == "minus" {
+                if ally_pokemon.ability == crate::types::Abilities::PLUS || ally_pokemon.ability == crate::types::Abilities::MINUS {
                     // Boost Special Attack by 50% (1.5x multiplier)
                     return AbilityEffectResult {
                         special_attack_multiplier: 1.5,
@@ -580,8 +570,7 @@ fn apply_adaptability(context: AbilityContext) -> AbilityEffectResult {
     // This needs access to Pokemon's types and move type matching
     if let Some(move_type) = context.move_type {
         if let Some(pokemon) = context.state.get_pokemon_at_position(context.user_position) {
-            let move_pokemon_type = PokemonType::from(&move_type);
-            if pokemon.types.contains(&move_pokemon_type) {
+            if pokemon.types.contains(&move_type) {
                 return AbilityEffectResult::stab_multiplier(2.0);
             }
         }
@@ -601,7 +590,7 @@ fn apply_infiltrator() -> AbilityEffectResult {
 fn apply_minds_eye(context: AbilityContext) -> AbilityEffectResult {
     // Mind's Eye allows Normal and Fighting type moves to hit Ghost types
     if let Some(move_type) = context.move_type {
-        if move_type.as_str() == "normal" || move_type.as_str() == "fighting" {
+        if move_type == PokemonType::Normal || move_type == PokemonType::Fighting {
             return AbilityEffectResult {
                 ignore_type_effectiveness: true,
                 ..Default::default()
@@ -657,7 +646,7 @@ fn apply_normalize(context: AbilityContext) -> AbilityEffectResult {
 fn apply_type_change(context: AbilityContext, target_type: &str, power_multiplier: f32) -> AbilityEffectResult {
     // Changes Normal-type moves to specified type with power boost
     if let Some(move_type) = context.move_type {
-        if move_type.as_str() == "normal" {
+        if move_type == PokemonType::Normal {
             return AbilityEffectResult::power_multiplier(power_multiplier);
         }
     }

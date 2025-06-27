@@ -1,4 +1,5 @@
-use crate::types::{DataError, DataResult, MoveId};
+use crate::types::{DataError, DataResult, Moves};
+use crate::types::from_string::FromNormalizedString;
 use crate::utils::normalize_name;
 use crate::data::showdown_types::MoveData;
 use std::collections::HashMap;
@@ -6,13 +7,13 @@ use std::path::Path;
 
 /// Repository for move-related data operations
 pub struct MoveRepository {
-    data: HashMap<MoveId, MoveData>,
-    name_index: HashMap<String, MoveId>,
+    data: HashMap<Moves, MoveData>,
+    name_index: HashMap<String, Moves>,
 }
 
 impl MoveRepository {
     /// Create new MoveRepository from data
-    pub fn new(data: HashMap<MoveId, MoveData>) -> Self {
+    pub fn new(data: HashMap<Moves, MoveData>) -> Self {
         // Get capacity before moving data
         let capacity = data.len();
         let mut repo = Self {
@@ -27,14 +28,14 @@ impl MoveRepository {
     /// Build performance index for fast name lookups
     fn build_index(&mut self) {
         for (move_id, move_data) in &self.data {
-            let normalized_name = normalize_name(&move_data.name);
+            let normalized_name = move_data.name.as_str().to_string();
             // Use reference to avoid cloning ID
             self.name_index.insert(normalized_name, move_id.clone());
         }
     }
 
     /// Get move data by ID
-    pub fn find_by_id(&self, id: &MoveId) -> DataResult<&MoveData> {
+    pub fn find_by_id(&self, id: &Moves) -> DataResult<&MoveData> {
         self.data.get(id).ok_or_else(|| DataError::MoveNotFound { 
             move_id: id.clone() 
         })
@@ -50,22 +51,22 @@ impl MoveRepository {
         }
         
         // Fallback to linear search should rarely be needed with proper indexing
-        self.data.values().find(|move_data| normalize_name(&move_data.name) == normalized_name)
+        self.data.values().find(|move_data| move_data.name.as_str() == normalized_name)
     }
 
     /// Check if move exists
-    pub fn has_move(&self, id: &MoveId) -> bool {
+    pub fn has_move(&self, id: &Moves) -> bool {
         self.data.contains_key(id)
     }
 
     /// Convert move data to engine Move type when needed
-    pub fn create_move(&self, id: &MoveId) -> DataResult<crate::core::battle_state::Move> {
+    pub fn create_move(&self, id: &Moves) -> DataResult<crate::core::battle_state::Move> {
         let data = self.find_by_id(id)?;
         Ok(data.to_engine_move())
     }
 
     /// Get all available move IDs
-    pub fn move_ids(&self) -> impl Iterator<Item = &MoveId> {
+    pub fn move_ids(&self) -> impl Iterator<Item = &Moves> {
         self.data.keys()
     }
 
@@ -81,7 +82,7 @@ impl MoveRepository {
 }
 
 /// Load moves data from JSON file
-pub fn load_moves_data(path: &Path) -> DataResult<HashMap<MoveId, MoveData>> {
+pub fn load_moves_data(path: &Path) -> DataResult<HashMap<Moves, MoveData>> {
     if !path.exists() {
         return Err(DataError::FileRead { 
             path: path.to_path_buf(), 
@@ -108,7 +109,13 @@ pub fn load_moves_data(path: &Path) -> DataResult<HashMap<MoveId, MoveData>> {
     for (id, value) in raw_data {
         match serde_json::from_value::<MoveData>(value) {
             Ok(move_data) => {
-                moves.insert(MoveId::from(id), move_data);
+                // Convert string ID to enum using FromNormalizedString trait
+                let normalized_id = normalize_name(&id);
+                if let Some(move_enum) = Moves::from_normalized_str(&normalized_id) {
+                    moves.insert(move_enum, move_data);
+                } else {
+                    parse_errors.push(format!("Unknown move ID '{}' (normalized: '{}')", id, normalized_id));
+                }
             }
             Err(e) => {
                 parse_errors.push(format!("Failed to parse move '{}': {}", id, e));

@@ -30,14 +30,14 @@ fn is_grounded(pokemon: &Pokemon) -> bool {
     }
 
     // Check for Levitate ability
-    if pokemon.ability == "levitate" {
+    if pokemon.ability == crate::types::Abilities::LEVITATE {
         return false;
     }
 
     // Check for items that affect grounding
     if let Some(ref item) = pokemon.item {
-        match item.to_lowercase().as_str() {
-            "airballoon" | "air balloon" => return false, // Air Balloon makes Pokemon ungrounded
+        match *item {
+            crate::types::Items::AIRBALLOON => return false, // Air Balloon makes Pokemon ungrounded
             _ => {}
         }
     }
@@ -62,7 +62,7 @@ fn is_grounded(pokemon: &Pokemon) -> bool {
 /// Get terrain damage modifier for modern generations
 fn get_terrain_damage_modifier(
     terrain: &crate::core::instructions::Terrain,
-    move_type: &str,
+    move_type: &PokemonType,
     attacker: &Pokemon,
     defender: &Pokemon,
     generation_mechanics: &GenerationMechanics,
@@ -71,7 +71,7 @@ fn get_terrain_damage_modifier(
 
     match terrain {
         Terrain::Electric | Terrain::ElectricTerrain => {
-            if move_type.to_lowercase() == "electric" && is_grounded(attacker) {
+            if *move_type == PokemonType::Electric && is_grounded(attacker) {
                 // Electric Terrain: 1.3x in Gen 8+, 1.5x in Gen 7
                 if generation_mechanics.generation.number() >= 8 {
                     1.3
@@ -83,14 +83,14 @@ fn get_terrain_damage_modifier(
             }
         }
         Terrain::Grassy | Terrain::GrassyTerrain => {
-            if move_type.to_lowercase() == "grass" && is_grounded(attacker) {
+            if *move_type == PokemonType::Grass && is_grounded(attacker) {
                 // Grassy Terrain: 1.3x in Gen 8+, 1.5x in Gen 7
                 if generation_mechanics.generation.number() >= 8 {
                     1.3
                 } else {
                     1.5
                 }
-            } else if move_type.to_lowercase() == "ground" && is_grounded(defender) {
+            } else if *move_type == PokemonType::Ground && is_grounded(defender) {
                 // Grassy Terrain reduces Earthquake and other ground moves by 0.5x
                 0.5
             } else {
@@ -98,7 +98,7 @@ fn get_terrain_damage_modifier(
             }
         }
         Terrain::Psychic | Terrain::PsychicTerrain => {
-            if move_type.to_lowercase() == "psychic" && is_grounded(attacker) {
+            if *move_type == PokemonType::Psychic && is_grounded(attacker) {
                 // Psychic Terrain: 1.3x in Gen 8+, 1.5x in Gen 7
                 if generation_mechanics.generation.number() >= 8 {
                     1.3
@@ -111,7 +111,7 @@ fn get_terrain_damage_modifier(
         }
         Terrain::Misty | Terrain::MistyTerrain => {
             // Misty Terrain reduces Dragon moves by 0.5x when target is grounded
-            if move_type.to_lowercase() == "dragon" && is_grounded(defender) {
+            if *move_type == PokemonType::Dragon && is_grounded(defender) {
                 0.5
             } else {
                 1.0
@@ -180,8 +180,8 @@ pub fn calculate_damage_modern_gen789(context: &DamageContext, damage_rolls: Dam
     // Early immunity checks 
     
     // Check for Levitate immunity to Ground-type moves
-    if context.move_info.move_type.as_str() == "ground" && 
-       context.defender.pokemon.ability.to_lowercase() == "levitate" {
+    if context.move_info.move_type == PokemonType::Ground && 
+       context.defender.pokemon.ability == crate::types::Abilities::LEVITATE {
         return DamageResult {
             damage: 0,
             blocked: true,
@@ -193,8 +193,8 @@ pub fn calculate_damage_modern_gen789(context: &DamageContext, damage_rolls: Dam
     }
     
     // Check for Flash Fire immunity to Fire-type moves (absorbs and boosts)
-    if context.move_info.move_type.as_str() == "fire" && 
-       context.defender.pokemon.ability.to_lowercase() == "flashfire" {
+    if context.move_info.move_type == PokemonType::Fire && 
+       context.defender.pokemon.ability == crate::types::Abilities::FLASHFIRE {
         return DamageResult {
             damage: 0,
             blocked: true,
@@ -206,8 +206,8 @@ pub fn calculate_damage_modern_gen789(context: &DamageContext, damage_rolls: Dam
     }
     
     // Check for Water Absorb immunity to Water-type moves
-    if context.move_info.move_type.as_str() == "water" && 
-       context.defender.pokemon.ability.to_lowercase() == "waterabsorb" {
+    if context.move_info.move_type == PokemonType::Water && 
+       context.defender.pokemon.ability == crate::types::Abilities::WATERABSORB {
         return DamageResult {
             damage: 0,
             blocked: true,
@@ -219,8 +219,8 @@ pub fn calculate_damage_modern_gen789(context: &DamageContext, damage_rolls: Dam
     }
     
     // Check for Volt Absorb immunity to Electric-type moves  
-    if context.move_info.move_type.as_str() == "electric" && 
-       context.defender.pokemon.ability.to_lowercase() == "voltabsorb" {
+    if context.move_info.move_type == PokemonType::Electric && 
+       context.defender.pokemon.ability == crate::types::Abilities::VOLTABSORB {
         return DamageResult {
             damage: 0,
             blocked: true,
@@ -262,7 +262,7 @@ pub fn calculate_damage_modern_gen789(context: &DamageContext, damage_rolls: Dam
     let mut modified_attack_stat = attack_stat;
     
     // Apply Guts ability: 1.5x attack when statused
-    if context.attacker.pokemon.ability.to_lowercase() == "guts" 
+    if context.attacker.pokemon.ability == crate::types::Abilities::GUTS 
         && context.attacker.pokemon.status != crate::core::instructions::PokemonStatus::None {
         modified_attack_stat *= 1.5;
     }
@@ -312,8 +312,7 @@ pub fn calculate_damage_modern_gen789(context: &DamageContext, damage_rolls: Dam
 
     // Type effectiveness calculation
     let type_chart = TypeChart::get_cached(8); // Modern type chart
-    let move_type =
-        PokemonType::from_normalized_str(context.move_info.move_type.as_str()).unwrap_or(PokemonType::Normal);
+    let move_type = context.move_info.move_type;
 
     let defender_type1 = context.defender.pokemon.types[0];
     let defender_type2 = if context.defender.pokemon.types.len() > 1 {
@@ -330,7 +329,7 @@ pub fn calculate_damage_modern_gen789(context: &DamageContext, damage_rolls: Dam
     }
     
     // Handle Mind's Eye ability: allows Normal and Fighting moves to hit Ghost types
-    if context.attacker.pokemon.ability.as_str() == "Mind's Eye" || context.attacker.pokemon.ability.as_str() == "mindseye" {
+    if context.attacker.pokemon.ability == crate::types::Abilities::MINDSEYE {
         if (move_type == PokemonType::Normal || move_type == PokemonType::Fighting) {
             // Check if any of the defender's types is Ghost
             if defender_type1 == PokemonType::Ghost || defender_type2 == PokemonType::Ghost {
@@ -360,14 +359,14 @@ pub fn calculate_damage_modern_gen789(context: &DamageContext, damage_rolls: Dam
     // Weather effects
     let mut weather_multiplier = 1.0;
     if let crate::core::instructions::Weather::Sun = context.field.weather.condition {
-        match context.move_info.move_type.as_str() {
-            "fire" => {
+        match context.move_info.move_type {
+            PokemonType::Fire => {
                 weather_multiplier = 1.5;
                 effects.push(DamageEffect::WeatherEffect {
                     weather: context.field.weather.condition,
                 });
             }
-            "water" => {
+            PokemonType::Water => {
                 weather_multiplier = 0.5;
                 effects.push(DamageEffect::WeatherEffect {
                     weather: context.field.weather.condition,
@@ -376,14 +375,14 @@ pub fn calculate_damage_modern_gen789(context: &DamageContext, damage_rolls: Dam
             _ => {}
         }
     } else if let crate::core::instructions::Weather::Rain = context.field.weather.condition {
-        match context.move_info.move_type.as_str() {
-            "water" => {
+        match context.move_info.move_type {
+            PokemonType::Water => {
                 weather_multiplier = 1.5;
                 effects.push(DamageEffect::WeatherEffect {
                     weather: context.field.weather.condition,
                 });
             }
-            "fire" => {
+            PokemonType::Fire => {
                 weather_multiplier = 0.5;
                 effects.push(DamageEffect::WeatherEffect {
                     weather: context.field.weather.condition,
@@ -397,7 +396,7 @@ pub fn calculate_damage_modern_gen789(context: &DamageContext, damage_rolls: Dam
     let generation_mechanics = GenerationMechanics::new(crate::generation::Generation::Gen8);
     let terrain_multiplier = get_terrain_damage_modifier(
         &context.field.terrain.condition,
-        context.move_info.move_type.as_str(),
+        &context.move_info.move_type,
         &context.attacker.pokemon,
         &context.defender.pokemon,
         &generation_mechanics,
@@ -406,7 +405,7 @@ pub fn calculate_damage_modern_gen789(context: &DamageContext, damage_rolls: Dam
     // Burn status effect (Guts ability prevents burn's attack reduction)
     let is_burned = context.attacker.pokemon.status == crate::core::instructions::PokemonStatus::Burn
         && context.move_info.category == crate::core::battle_state::MoveCategory::Physical
-        && context.attacker.pokemon.ability.to_lowercase() != "guts";
+        && context.attacker.pokemon.ability != crate::types::Abilities::GUTS;
 
     // Multi-target reduction
     let spread_multiplier = if context.format.target_count > 1 {

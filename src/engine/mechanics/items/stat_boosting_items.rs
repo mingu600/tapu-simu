@@ -16,72 +16,72 @@ use crate::engine::combat::damage_context::DamageContext;
 use crate::engine::combat::type_effectiveness::TypeChart;
 use crate::types::PokemonType;
 use crate::generation::{Generation, GenerationBattleMechanics};
-use crate::types::identifiers::{ItemId, MoveId, TypeId};
+use crate::types::{Items, Moves};
 
 use super::{ItemModifier, StatBoosts};
 
 /// Get stat boosting item effect if the item is a stat booster
 pub fn get_stat_boosting_item_effect(
-    item_id: &ItemId,
+    item_id: &Items,
     generation: &dyn GenerationBattleMechanics,
     attacker: &Pokemon,
     defender: Option<&Pokemon>,
-    move_id: &MoveId,
-    move_type_id: &TypeId,
+    move_id: &Moves,
+    move_type_id: &PokemonType,
     move_category: MoveCategory,
     context: &DamageContext,
 ) -> Option<ItemModifier> {
-    let move_type_str = move_type_id.as_str();
+    let move_type = move_type_id;
     
-    match item_id.as_str() {
+    match item_id {
         // Power Items
-        "lifeorb" => Some(life_orb_effect()),
-        "expertbelt" => Some(expert_belt_effect(context)),
-        "muscleband" => Some(muscle_band_effect(move_category)),
-        "wiseglasses" => Some(wise_glasses_effect(move_category)),
+        Items::LIFEORB => Some(life_orb_effect()),
+        Items::EXPERTBELT => Some(expert_belt_effect(context)),
+        Items::MUSCLEBAND => Some(muscle_band_effect(move_category)),
+        Items::WISEGLASSES => Some(wise_glasses_effect(move_category)),
         
         // Defensive Items
-        "eviolite" => Some(eviolite_effect(attacker)),
-        "assaultvest" => Some(assault_vest_effect(move_category)),
-        "airballoon" => Some(air_balloon_effect()),
-        "heavydutyboots" => Some(heavy_duty_boots_effect()),
-        "rockyhelmet" => Some(rocky_helmet_effect(context)),
+        Items::EVIOLITE => Some(eviolite_effect(attacker)),
+        Items::ASSAULTVEST => Some(assault_vest_effect(move_category)),
+        Items::AIRBALLOON => Some(air_balloon_effect()),
+        Items::HEAVYDUTYBOOTS => Some(heavy_duty_boots_effect()),
+        Items::ROCKYHELMET => Some(rocky_helmet_effect(context)),
         
         // Reactive Stat Items
-        "weaknesspolicy" => Some(weakness_policy_effect(context)),
-        "focussash" => Some(focus_sash_effect(defender)),
-        "absorbbulb" => Some(absorb_bulb_effect(move_type_str)),
-        "cellbattery" => Some(cell_battery_effect(move_type_str)),
-        "shellbell" => Some(shell_bell_effect()),
-        "metalpowder" => Some(metal_powder_effect(defender)),
-        "punchingglove" => Some(punching_glove_effect(context)),
-        "boosterenergy" => Some(booster_energy_effect()),
+        Items::WEAKNESSPOLICY => Some(weakness_policy_effect(context)),
+        Items::FOCUSSASH => Some(focus_sash_effect(defender)),
+        Items::ABSORBBULB => Some(absorb_bulb_effect(move_type)),
+        Items::CELLBATTERY => Some(cell_battery_effect(move_type)),
+        Items::SHELLBELL => Some(shell_bell_effect()),
+        Items::METALPOWDER => Some(metal_powder_effect(defender)),
+        Items::PUNCHINGGLOVE => Some(punching_glove_effect(context)),
+        Items::BOOSTERENERGY => Some(booster_energy_effect()),
         
         // Generation-Aware Gems
-        "normalgem" => Some(gem_effect("normal", move_type_str, generation)),
-        "fightinggem" => Some(gem_effect("fighting", move_type_str, generation)),
-        "flyinggem" => Some(gem_effect("flying", move_type_str, generation)),
-        "poisongem" => Some(gem_effect("poison", move_type_str, generation)),
-        "groundgem" => Some(gem_effect("ground", move_type_str, generation)),
-        "rockgem" => Some(gem_effect("rock", move_type_str, generation)),
-        "buggem" => Some(gem_effect("bug", move_type_str, generation)),
-        "ghostgem" => Some(gem_effect("ghost", move_type_str, generation)),
-        "steelgem" => Some(gem_effect("steel", move_type_str, generation)),
-        "firegem" => Some(gem_effect("fire", move_type_str, generation)),
-        "watergem" => Some(gem_effect("water", move_type_str, generation)),
-        "grassgem" => Some(gem_effect("grass", move_type_str, generation)),
-        "electricgem" => Some(gem_effect("electric", move_type_str, generation)),
-        "psychicgem" => Some(gem_effect("psychic", move_type_str, generation)),
-        "icegem" => Some(gem_effect("ice", move_type_str, generation)),
-        "dragongem" => Some(gem_effect("dragon", move_type_str, generation)),
-        "darkgem" => Some(gem_effect("dark", move_type_str, generation)),
-        "fairygem" => Some(gem_effect("fairy", move_type_str, generation)),
+        Items::NORMALGEM => Some(gem_effect(&PokemonType::Normal, move_type, generation)),
+        Items::FIGHTINGGEM => Some(gem_effect(&PokemonType::Fighting, move_type, generation)),
+        Items::FLYINGGEM => Some(gem_effect(&PokemonType::Flying, move_type, generation)),
+        Items::POISONGEM => Some(gem_effect(&PokemonType::Poison, move_type, generation)),
+        Items::GROUNDGEM => Some(gem_effect(&PokemonType::Ground, move_type, generation)),
+        Items::ROCKGEM => Some(gem_effect(&PokemonType::Rock, move_type, generation)),
+        Items::BUGGEM => Some(gem_effect(&PokemonType::Bug, move_type, generation)),
+        Items::GHOSTGEM => Some(gem_effect(&PokemonType::Ghost, move_type, generation)),
+        Items::STEELGEM => Some(gem_effect(&PokemonType::Steel, move_type, generation)),
+        Items::FIREGEM => Some(gem_effect(&PokemonType::Fire, move_type, generation)),
+        Items::WATERGEM => Some(gem_effect(&PokemonType::Water, move_type, generation)),
+        Items::GRASSGEM => Some(gem_effect(&PokemonType::Grass, move_type, generation)),
+        Items::ELECTRICGEM => Some(gem_effect(&PokemonType::Electric, move_type, generation)),
+        Items::PSYCHICGEM => Some(gem_effect(&PokemonType::Psychic, move_type, generation)),
+        Items::ICEGEM => Some(gem_effect(&PokemonType::Ice, move_type, generation)),
+        Items::DRAGONGEM => Some(gem_effect(&PokemonType::Dragon, move_type, generation)),
+        Items::DARKGEM => Some(gem_effect(&PokemonType::Dark, move_type, generation)),
+        Items::FAIRYGEM => Some(gem_effect(&PokemonType::Fairy, move_type, generation)),
         
         // Seeds
-        "electricseed" => Some(electric_seed_effect()),
-        "grassyseed" => Some(grassy_seed_effect()),
-        "mistyseed" => Some(misty_seed_effect()),
-        "psychicseed" => Some(psychic_seed_effect()),
+        Items::ELECTRICSEED => Some(electric_seed_effect()),
+        Items::GRASSYSEED => Some(grassy_seed_effect()),
+        Items::MISTYSEED => Some(misty_seed_effect()),
+        Items::PSYCHICSEED => Some(psychic_seed_effect()),
         
         _ => None,
     }
@@ -89,13 +89,13 @@ pub fn get_stat_boosting_item_effect(
 
 /// Check for item effects that trigger on switch-in
 pub fn get_item_on_switch_in_effects(
-    item_id: &crate::types::ItemId,
+    item_id: &Items,
     pokemon: &Pokemon,
     position: BattlePosition,
     generation: &dyn GenerationBattleMechanics,
 ) -> Option<BattleInstructions> {
-    match item_id.as_str() {
-        "boosterenergy" => Some(booster_energy_switch_in_effect(pokemon, position)),
+    match item_id {
+        Items::BOOSTERENERGY => Some(booster_energy_switch_in_effect(pokemon, position)),
         _ => None,
     }
 }
@@ -128,11 +128,8 @@ fn expert_belt_effect(context: &DamageContext) -> ItemModifier {
     
     let type_chart = TypeChart::get_cached(generation);
     
-    // Parse move type and defender types
-    let move_type_str = match PokemonType::from_normalized_str(context.move_info.move_type.as_str()) {
-        Some(t) => t,
-        None => return ItemModifier::default(), // Invalid move type
-    };
+    // Get move type directly
+    let move_type = context.move_info.move_type;
     
     let defender_type1 = context.defender.pokemon.types.get(0).copied().unwrap_or(PokemonType::Normal);
     
@@ -140,10 +137,9 @@ fn expert_belt_effect(context: &DamageContext) -> ItemModifier {
     
     // Calculate type effectiveness including Tera type if applicable
     let type_effectiveness = type_chart.calculate_damage_multiplier(
-        move_type_str,
+        move_type,
         (defender_type1, defender_type2),
-        context.defender.pokemon.tera_type
-            .and_then(|t| PokemonType::from_normalized_str(&format!("{:?}", t))),
+        context.defender.pokemon.tera_type,
         Some(context.move_info.name.as_str()),
     );
     
@@ -191,10 +187,10 @@ fn eviolite_effect(pokemon: &Pokemon) -> ItemModifier {
 }
 
 /// Helper function to check if Pokemon is fully evolved using data repository
-fn is_fully_evolved(species: &str) -> bool {
+fn is_fully_evolved(species: &crate::types::PokemonName) -> bool {
     // Use the global data repository to check evolution status
     if let Ok(repo) = GameDataRepository::global("data/ps-extracted") {
-        repo.pokemon.find_by_name(species)
+        repo.pokemon.find_by_name(species.as_str())
             .map(|data| {
                 // Pokemon is fully evolved if it has no further evolutions
                 data.evos.as_ref().map_or(true, |evos| evos.is_empty())
@@ -254,11 +250,8 @@ fn weakness_policy_effect(context: &DamageContext) -> ItemModifier {
     
     let type_chart = TypeChart::get_cached(generation);
     
-    // Parse move type and defender types
-    let move_type_str = match PokemonType::from_normalized_str(context.move_info.move_type.as_str()) {
-        Some(t) => t,
-        None => return ItemModifier::default(), // Invalid move type
-    };
+    // Get move type directly
+    let move_type = context.move_info.move_type;
     
     let defender_type1 = context.defender.pokemon.types.get(0).copied().unwrap_or(PokemonType::Normal);
     
@@ -266,10 +259,9 @@ fn weakness_policy_effect(context: &DamageContext) -> ItemModifier {
     
     // Calculate type effectiveness including Tera type if applicable
     let type_effectiveness = type_chart.calculate_damage_multiplier(
-        move_type_str,
+        move_type,
         (defender_type1, defender_type2),
-        context.defender.pokemon.tera_type
-            .and_then(|t| PokemonType::from_normalized_str(&format!("{:?}", t))),
+        context.defender.pokemon.tera_type,
         Some(context.move_info.name.as_str()),
     );
     
@@ -298,8 +290,8 @@ fn focus_sash_effect(defender: Option<&Pokemon>) -> ItemModifier {
 }
 
 /// Absorb Bulb - +1 Special Attack when hit by Water moves
-fn absorb_bulb_effect(move_type: &str) -> ItemModifier {
-    if move_type == "water" {
+fn absorb_bulb_effect(move_type: &PokemonType) -> ItemModifier {
+    if *move_type == PokemonType::Water {
         ItemModifier::new()
             .with_stat_boosts(StatBoosts::special_attack(1))
             .with_consumed()
@@ -309,8 +301,8 @@ fn absorb_bulb_effect(move_type: &str) -> ItemModifier {
 }
 
 /// Cell Battery - +1 Attack when hit by Electric moves
-fn cell_battery_effect(move_type: &str) -> ItemModifier {
-    if move_type == "electric" {
+fn cell_battery_effect(move_type: &PokemonType) -> ItemModifier {
+    if *move_type == PokemonType::Electric {
         ItemModifier::new()
             .with_stat_boosts(StatBoosts::attack(1))
             .with_consumed()
@@ -327,7 +319,7 @@ fn shell_bell_effect() -> ItemModifier {
 /// Metal Powder - Reduce damage by 50% when held by Ditto
 fn metal_powder_effect(defender: Option<&Pokemon>) -> ItemModifier {
     if let Some(pokemon) = defender {
-        if pokemon.species == "ditto" {
+        if pokemon.species == crate::types::PokemonName::DITTO {
             ItemModifier::new().with_damage_multiplier(0.5)
         } else {
             ItemModifier::default()
@@ -359,12 +351,13 @@ fn booster_energy_effect() -> ItemModifier {
 /// Booster Energy switch-in effect
 fn booster_energy_switch_in_effect(pokemon: &Pokemon, position: BattlePosition) -> BattleInstructions {
     // Check if Pokemon has Protosynthesis or Quark Drive
-    if pokemon.ability == "protosynthesis" || pokemon.ability == "quarkdrive" {
+    let ability_id = pokemon.ability;
+    if ability_id == crate::types::Abilities::PROTOSYNTHESIS || ability_id == crate::types::Abilities::QUARKDRIVE {
         // Consume the item and trigger the ability
         let consume_instruction = BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
             target: position,
             new_item: None,
-            previous_item: Some("Booster Energy".to_string()),
+            previous_item: Some(crate::types::Items::BOOSTERENERGY),
         });
         
         BattleInstructions::new(100.0, vec![consume_instruction])
@@ -378,7 +371,7 @@ fn booster_energy_switch_in_effect(pokemon: &Pokemon, position: BattlePosition) 
 // =============================================================================
 
 /// Gem effect with generation-aware multipliers
-fn gem_effect(gem_type: &str, move_type: &str, generation: &dyn GenerationBattleMechanics) -> ItemModifier {
+fn gem_effect(gem_type: &PokemonType, move_type: &PokemonType, generation: &dyn GenerationBattleMechanics) -> ItemModifier {
     if move_type == gem_type {
         // Generation-aware multipliers:
         // Gen 5: 1.5x multiplier

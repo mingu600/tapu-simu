@@ -16,14 +16,14 @@ pub fn is_grounded(pokemon: &Pokemon) -> bool {
     }
 
     // Check for Levitate ability
-    if pokemon.ability == "levitate" {
+    if pokemon.ability == crate::types::Abilities::LEVITATE {
         return false;
     }
 
     // Check for items that affect grounding
     if let Some(ref item) = pokemon.item {
-        match item.to_lowercase().as_str() {
-            "airballoon" | "air balloon" => return false, // Air Balloon makes Pokemon ungrounded
+        match *item {
+            crate::types::Items::AIRBALLOON => return false, // Air Balloon makes Pokemon ungrounded
             _ => {}
         }
     }
@@ -55,39 +55,55 @@ pub fn get_terrain_damage_modifier(
 ) -> f32 {
     match terrain {
         Terrain::Electric | Terrain::ElectricTerrain => {
-            if move_type.to_lowercase() == "electric" && is_grounded(attacker) {
-                // Electric Terrain: 1.3x in Gen 8+, 1.5x in Gen 7
-                if generation_mechanics.generation.number() >= 8 {
-                    1.3
+            if let Some(crate::types::PokemonType::Electric) = crate::types::PokemonType::from_normalized_str(&move_type.to_lowercase()) {
+                if is_grounded(attacker) {
+                    // Electric Terrain: 1.3x in Gen 8+, 1.5x in Gen 7
+                    if generation_mechanics.generation.number() >= 8 {
+                        1.3
+                    } else {
+                        1.5
+                    }
                 } else {
-                    1.5
+                    1.0
                 }
             } else {
                 1.0
             }
         }
         Terrain::Grassy | Terrain::GrassyTerrain => {
-            if move_type.to_lowercase() == "grass" && is_grounded(attacker) {
-                // Grassy Terrain: 1.3x in Gen 8+, 1.5x in Gen 7
-                if generation_mechanics.generation.number() >= 8 {
-                    1.3
+            if let Some(crate::types::PokemonType::Grass) = crate::types::PokemonType::from_normalized_str(&move_type.to_lowercase()) {
+                if is_grounded(attacker) {
+                    // Grassy Terrain: 1.3x in Gen 8+, 1.5x in Gen 7
+                    if generation_mechanics.generation.number() >= 8 {
+                        1.3
+                    } else {
+                        1.5
+                    }
                 } else {
-                    1.5
+                    1.0
                 }
-            } else if move_type.to_lowercase() == "ground" && is_grounded(defender) {
-                // Grassy Terrain reduces Earthquake and other ground moves by 0.5x
-                0.5
+            } else if let Some(crate::types::PokemonType::Ground) = crate::types::PokemonType::from_normalized_str(&move_type.to_lowercase()) {
+                if is_grounded(defender) {
+                    // Grassy Terrain reduces Earthquake and other ground moves by 0.5x
+                    0.5
+                } else {
+                    1.0
+                }
             } else {
                 1.0
             }
         }
         Terrain::Psychic | Terrain::PsychicTerrain => {
-            if move_type.to_lowercase() == "psychic" && is_grounded(attacker) {
-                // Psychic Terrain: 1.3x in Gen 8+, 1.5x in Gen 7
-                if generation_mechanics.generation.number() >= 8 {
-                    1.3
+            if let Some(crate::types::PokemonType::Psychic) = crate::types::PokemonType::from_normalized_str(&move_type.to_lowercase()) {
+                if is_grounded(attacker) {
+                    // Psychic Terrain: 1.3x in Gen 8+, 1.5x in Gen 7
+                    if generation_mechanics.generation.number() >= 8 {
+                        1.3
+                    } else {
+                        1.5
+                    }
                 } else {
-                    1.5
+                    1.0
                 }
             } else {
                 1.0
@@ -95,8 +111,12 @@ pub fn get_terrain_damage_modifier(
         }
         Terrain::Misty | Terrain::MistyTerrain => {
             // Misty Terrain reduces Dragon moves by 0.5x when target is grounded
-            if move_type.to_lowercase() == "dragon" && is_grounded(defender) {
-                0.5
+            if let Some(crate::types::PokemonType::Dragon) = crate::types::PokemonType::from_normalized_str(&move_type.to_lowercase()) {
+                if is_grounded(defender) {
+                    0.5
+                } else {
+                    1.0
+                }
             } else {
                 1.0
             }

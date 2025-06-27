@@ -4,7 +4,7 @@ use crate::core::battle_format::BattlePosition;
 use crate::core::instructions::{MoveCategory, PokemonStatus, VolatileStatus};
 use crate::core::move_choice::MoveIndex;
 use crate::data::types::Stats;
-use crate::types::PokemonType;
+use crate::types::{PokemonType, PokemonName, Abilities, Items, Moves};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 
@@ -50,7 +50,7 @@ impl DamageInfo {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Move {
     /// Move name/identifier
-    pub name: String,
+    pub name: Moves,
     /// Base power (0 for status moves)
     pub base_power: u8,
     /// Accuracy (1-100, 0 for never-miss moves)
@@ -70,7 +70,7 @@ pub struct Move {
 }
 
 impl Move {
-    pub fn new(name: String) -> Self {
+    pub fn new(name: crate::types::Moves) -> Self {
         Self {
             name,
             base_power: 60,
@@ -91,12 +91,12 @@ impl Move {
 
     /// Get the move's name
     pub fn get_name(&self) -> &str {
-        &self.name
+        self.name.as_str()
     }
 
     /// Create a new move with detailed parameters
     pub fn new_with_details(
-        name: String,
+        name: crate::types::Moves,
         base_power: u8,
         accuracy: u8,
         move_type: PokemonType,
@@ -124,7 +124,7 @@ impl Move {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Pokemon {
     /// Pokemon species name/ID
-    pub species: String,
+    pub species: PokemonName,
     /// Current HP
     pub hp: i16,
     /// Maximum HP
@@ -148,9 +148,9 @@ pub struct Pokemon {
     /// Current moves
     pub moves: HashMap<MoveIndex, Move>,
     /// Current ability
-    pub ability: String,
+    pub ability: Abilities,
     /// Held item
-    pub item: Option<String>,
+    pub item: Option<Items>,
     /// Types (can change due to moves like Soak)
     pub types: Vec<PokemonType>,
     /// Level
@@ -173,7 +173,7 @@ pub struct Pokemon {
 
 impl Pokemon {
     /// Create a new Pokemon with default values
-    pub fn new(species: String) -> Self {
+    pub fn new(species: crate::types::PokemonName) -> Self {
         Self {
             species,
             hp: 100,
@@ -201,7 +201,7 @@ impl Pokemon {
             volatile_status_durations: HashMap::new(),
             substitute_health: 0,
             moves: HashMap::new(),
-            ability: String::new(),
+            ability: crate::types::Abilities::NONE,
             item: None,
             types: vec![PokemonType::Normal],
             level: 50,
@@ -272,22 +272,22 @@ impl Pokemon {
         // Weather modifiers (simplified - in real implementation check abilities)
         match battle_state.weather() {
             Weather::Sun => {
-                if self.ability == "chlorophyll" {
+                if self.ability == crate::types::Abilities::CHLOROPHYLL {
                     speed *= 2;
                 }
             }
             Weather::Rain => {
-                if self.ability == "swiftswim" {
+                if self.ability == crate::types::Abilities::SWIFTSWIM {
                     speed *= 2;
                 }
             }
             Weather::Sandstorm => {
-                if self.ability == "sandrush" {
+                if self.ability == crate::types::Abilities::SANDRUSH {
                     speed *= 2;
                 }
             }
             Weather::Hail => {
-                if self.ability == "slushrush" {
+                if self.ability == crate::types::Abilities::SLUSHRUSH {
                     speed *= 2;
                 }
             }
@@ -296,12 +296,12 @@ impl Pokemon {
         
         // Item modifiers (simplified examples)
         if let Some(ref item) = self.item {
-            match item.as_str() {
-                "choicescarf" => speed = (speed as f32 * 1.5) as u16,
-                "quickclaw" => {}, // Handled separately with probability
-                "ironball" => speed = (speed as f32 * 0.5) as u16,
-                "machobrace" => speed = (speed as f32 * 0.5) as u16,
-                "powerweight" | "powerbracer" | "powerbelt" | "powerlens" | "powerband" | "poweranklet" => {
+            match *item {
+                crate::types::Items::CHOICESCARF => speed = (speed as f32 * 1.5) as u16,
+                crate::types::Items::QUICKCLAW => {}, // Handled separately with probability
+                crate::types::Items::IRONBALL => speed = (speed as f32 * 0.5) as u16,
+                crate::types::Items::MACHOBRACE => speed = (speed as f32 * 0.5) as u16,
+                crate::types::Items::POWERWEIGHT | crate::types::Items::POWERBRACER | crate::types::Items::POWERBELT | crate::types::Items::POWERLENS | crate::types::Items::POWERBAND | crate::types::Items::POWERANKLET => {
                     speed = (speed as f32 * 0.5) as u16;
                 }
                 _ => {}
@@ -309,13 +309,13 @@ impl Pokemon {
         }
         
         // Ability modifiers (examples)
-        match self.ability.as_str() {
-            "quickfeet" => {
+        match self.ability {
+            crate::types::Abilities::QUICKFEET => {
                 if self.status != PokemonStatus::None {
                     speed = (speed as f32 * 1.5) as u16;
                 }
             }
-            "unburden" => {
+            crate::types::Abilities::UNBURDEN => {
                 if self.item_consumed {
                     speed *= 2;
                 }
@@ -339,6 +339,6 @@ impl Pokemon {
 
 impl Default for Pokemon {
     fn default() -> Self {
-        Self::new("MissingNo".to_string())
+        Self::new(crate::types::PokemonName::NONE)
     }
 }

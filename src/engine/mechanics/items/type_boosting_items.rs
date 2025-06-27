@@ -8,68 +8,68 @@ use super::ItemModifier;
 use crate::engine::combat::damage_context::DamageContext;
 use crate::generation::{GenerationBattleMechanics, Generation};
 use crate::core::battle_state::{MoveCategory, Pokemon};
-use crate::types::{ItemId, MoveId, TypeId};
+use crate::types::{Items, Moves, PokemonType};
 
 /// Get type boosting item effect if the item is a type booster
 pub fn get_type_boosting_item_effect(
-    item_id: &ItemId,
+    item_id: &Items,
     generation: &dyn GenerationBattleMechanics,
     _attacker: &Pokemon,
     _defender: Option<&Pokemon>,
-    move_id: &MoveId,
-    move_type_id: &TypeId,
+    move_id: &Moves,
+    move_type_id: &PokemonType,
     _move_category: MoveCategory,
     _context: &DamageContext,
 ) -> Option<ItemModifier> {
-    match item_id.as_str() {
+    match item_id {
         // Normal type boosters
-        "silkscarf" => Some(type_booster_effect("normal", move_type_id, generation)),
-        "pinkbow" => Some(pink_bow_effect(move_type_id)),
-        "polkadotbow" => Some(polkadot_bow_effect(move_type_id)),
+        Items::SILKSCARF => Some(type_booster_effect(PokemonType::Normal, move_type_id, generation)),
+        Items::PINKBOW => Some(pink_bow_effect(move_type_id)),
+        Items::POLKADOTBOW => Some(polkadot_bow_effect(move_type_id)),
         
         // Type boosters
-        "blackbelt" => Some(type_booster_effect("fighting", move_type_id, generation)),
-        "blackglasses" => Some(type_booster_effect("dark", move_type_id, generation)),
-        "charcoal" => Some(type_booster_effect("fire", move_type_id, generation)),
-        "dragonfang" => Some(type_booster_effect("dragon", move_type_id, generation)),
-        "dragonscale" => Some(type_booster_effect("dragon", move_type_id, generation)),
-        "hardstone" => Some(type_booster_effect("rock", move_type_id, generation)),
-        "magnet" => Some(type_booster_effect("electric", move_type_id, generation)),
-        "metalcoat" => Some(type_booster_effect("steel", move_type_id, generation)),
-        "mysticwater" => Some(type_booster_effect("water", move_type_id, generation)),
-        "nevermeltice" => Some(type_booster_effect("ice", move_type_id, generation)),
-        "poisonbarb" => Some(type_booster_effect("poison", move_type_id, generation)),
-        "sharpbeak" => Some(type_booster_effect("flying", move_type_id, generation)),
-        "silverpowder" => Some(type_booster_effect("bug", move_type_id, generation)),
-        "softsand" => Some(type_booster_effect("ground", move_type_id, generation)),
-        "spelltag" => Some(type_booster_effect("ghost", move_type_id, generation)),
-        "miracleseed" => Some(type_booster_effect("grass", move_type_id, generation)),
-        "twistedspoon" => Some(type_booster_effect("psychic", move_type_id, generation)),
-        "fairyfeather" => Some(type_booster_effect("fairy", move_type_id, generation)),
+        Items::BLACKBELT => Some(type_booster_effect(PokemonType::Fighting, move_type_id, generation)),
+        Items::BLACKGLASSES => Some(type_booster_effect(PokemonType::Dark, move_type_id, generation)),
+        Items::CHARCOAL => Some(type_booster_effect(PokemonType::Fire, move_type_id, generation)),
+        Items::DRAGONFANG => Some(type_booster_effect(PokemonType::Dragon, move_type_id, generation)),
+        Items::DRAGONSCALE => Some(type_booster_effect(PokemonType::Dragon, move_type_id, generation)),
+        Items::HARDSTONE => Some(type_booster_effect(PokemonType::Rock, move_type_id, generation)),
+        Items::MAGNET => Some(type_booster_effect(PokemonType::Electric, move_type_id, generation)),
+        Items::METALCOAT => Some(type_booster_effect(PokemonType::Steel, move_type_id, generation)),
+        Items::MYSTICWATER => Some(type_booster_effect(PokemonType::Water, move_type_id, generation)),
+        Items::NEVERMELTICE => Some(type_booster_effect(PokemonType::Ice, move_type_id, generation)),
+        Items::POISONBARB => Some(type_booster_effect(PokemonType::Poison, move_type_id, generation)),
+        Items::SHARPBEAK => Some(type_booster_effect(PokemonType::Flying, move_type_id, generation)),
+        Items::SILVERPOWDER => Some(type_booster_effect(PokemonType::Bug, move_type_id, generation)),
+        Items::SOFTSAND => Some(type_booster_effect(PokemonType::Ground, move_type_id, generation)),
+        Items::SPELLTAG => Some(type_booster_effect(PokemonType::Ghost, move_type_id, generation)),
+        Items::MIRACLESEED => Some(type_booster_effect(PokemonType::Grass, move_type_id, generation)),
+        Items::TWISTEDSPOON => Some(type_booster_effect(PokemonType::Psychic, move_type_id, generation)),
+        Items::FAIRYFEATHER => Some(type_booster_effect(PokemonType::Fairy, move_type_id, generation)),
         
         // Incense items
-        "seaincense" => Some(sea_incense_effect(move_type_id, generation)),
-        "waveincense" => Some(type_booster_effect("water", move_type_id, generation)),
-        "oddincense" => Some(type_booster_effect("psychic", move_type_id, generation)),
+        Items::SEAINCENSE => Some(sea_incense_effect(move_type_id, generation)),
+        Items::WAVEINCENSE => Some(type_booster_effect(PokemonType::Water, move_type_id, generation)),
+        Items::ODDINCENSE => Some(type_booster_effect(PokemonType::Psychic, move_type_id, generation)),
         
         // Arceus plates
-        "fistplate" => Some(arceus_plate_effect("fighting", move_id, move_type_id)),
-        "skyplate" => Some(arceus_plate_effect("flying", move_id, move_type_id)),
-        "toxicplate" => Some(arceus_plate_effect("poison", move_id, move_type_id)),
-        "earthplate" => Some(arceus_plate_effect("ground", move_id, move_type_id)),
-        "stoneplate" => Some(arceus_plate_effect("rock", move_id, move_type_id)),
-        "insectplate" => Some(arceus_plate_effect("bug", move_id, move_type_id)),
-        "spookyplate" => Some(arceus_plate_effect("ghost", move_id, move_type_id)),
-        "ironplate" => Some(arceus_plate_effect("steel", move_id, move_type_id)),
-        "flameplate" => Some(arceus_plate_effect("fire", move_id, move_type_id)),
-        "splashplate" => Some(arceus_plate_effect("water", move_id, move_type_id)),
-        "meadowplate" => Some(arceus_plate_effect("grass", move_id, move_type_id)),
-        "zapplate" => Some(arceus_plate_effect("electric", move_id, move_type_id)),
-        "mindplate" => Some(arceus_plate_effect("psychic", move_id, move_type_id)),
-        "icicleplate" => Some(arceus_plate_effect("ice", move_id, move_type_id)),
-        "dracoplate" => Some(arceus_plate_effect("dragon", move_id, move_type_id)),
-        "dreadplate" => Some(arceus_plate_effect("dark", move_id, move_type_id)),
-        "pixieplate" => Some(arceus_plate_effect("fairy", move_id, move_type_id)),
+        Items::FISTPLATE => Some(arceus_plate_effect(PokemonType::Fighting, move_id, move_type_id)),
+        Items::SKYPLATE => Some(arceus_plate_effect(PokemonType::Flying, move_id, move_type_id)),
+        Items::TOXICPLATE => Some(arceus_plate_effect(PokemonType::Poison, move_id, move_type_id)),
+        Items::EARTHPLATE => Some(arceus_plate_effect(PokemonType::Ground, move_id, move_type_id)),
+        Items::STONEPLATE => Some(arceus_plate_effect(PokemonType::Rock, move_id, move_type_id)),
+        Items::INSECTPLATE => Some(arceus_plate_effect(PokemonType::Bug, move_id, move_type_id)),
+        Items::SPOOKYPLATE => Some(arceus_plate_effect(PokemonType::Ghost, move_id, move_type_id)),
+        Items::IRONPLATE => Some(arceus_plate_effect(PokemonType::Steel, move_id, move_type_id)),
+        Items::FLAMEPLATE => Some(arceus_plate_effect(PokemonType::Fire, move_id, move_type_id)),
+        Items::SPLASHPLATE => Some(arceus_plate_effect(PokemonType::Water, move_id, move_type_id)),
+        Items::MEADOWPLATE => Some(arceus_plate_effect(PokemonType::Grass, move_id, move_type_id)),
+        Items::ZAPPLATE => Some(arceus_plate_effect(PokemonType::Electric, move_id, move_type_id)),
+        Items::MINDPLATE => Some(arceus_plate_effect(PokemonType::Psychic, move_id, move_type_id)),
+        Items::ICICLEPLATE => Some(arceus_plate_effect(PokemonType::Ice, move_id, move_type_id)),
+        Items::DRACOPLATE => Some(arceus_plate_effect(PokemonType::Dragon, move_id, move_type_id)),
+        Items::DREADPLATE => Some(arceus_plate_effect(PokemonType::Dark, move_id, move_type_id)),
+        Items::PIXIEPLATE => Some(arceus_plate_effect(PokemonType::Fairy, move_id, move_type_id)),
         
         _ => None,
     }
@@ -77,11 +77,11 @@ pub fn get_type_boosting_item_effect(
 
 /// Standard type booster with generation-aware multipliers
 fn type_booster_effect(
-    boosted_type: &str,
-    move_type_id: &TypeId,
+    boosted_type: PokemonType,
+    move_type_id: &PokemonType,
     generation: &dyn GenerationBattleMechanics,
 ) -> ItemModifier {
-    if move_type_id.as_str() == boosted_type {
+    if *move_type_id == boosted_type {
         // Generation-aware multipliers:
         // Gen 2-3: 1.1x multiplier
         // Gen 4+: 1.2x multiplier
@@ -96,8 +96,8 @@ fn type_booster_effect(
 }
 
 /// Pink Bow - Normal-type moves with 1.1x boost (Gen 2-3 only)
-fn pink_bow_effect(move_type_id: &TypeId) -> ItemModifier {
-    if move_type_id.as_str() == "normal" {
+fn pink_bow_effect(move_type_id: &PokemonType) -> ItemModifier {
+    if *move_type_id == PokemonType::Normal {
         ItemModifier::new().with_power_multiplier(1.1)
     } else {
         ItemModifier::default()
@@ -105,8 +105,8 @@ fn pink_bow_effect(move_type_id: &TypeId) -> ItemModifier {
 }
 
 /// Polkadot Bow - Normal-type moves with 1.1x boost across all generations
-fn polkadot_bow_effect(move_type_id: &TypeId) -> ItemModifier {
-    if move_type_id.as_str() == "normal" {
+fn polkadot_bow_effect(move_type_id: &PokemonType) -> ItemModifier {
+    if *move_type_id == PokemonType::Normal {
         ItemModifier::new().with_power_multiplier(1.1)
     } else {
         ItemModifier::default()
@@ -114,8 +114,8 @@ fn polkadot_bow_effect(move_type_id: &TypeId) -> ItemModifier {
 }
 
 /// Sea Incense - Water-type moves with generation-specific multipliers
-fn sea_incense_effect(move_type_id: &TypeId, generation: &dyn GenerationBattleMechanics) -> ItemModifier {
-    if move_type_id.as_str() == "water" {
+fn sea_incense_effect(move_type_id: &PokemonType, generation: &dyn GenerationBattleMechanics) -> ItemModifier {
+    if *move_type_id == PokemonType::Water {
         let multiplier = match generation.generation() {
             Generation::Gen3 => 1.05,
             Generation::Gen4 | Generation::Gen5 | Generation::Gen6 | 
@@ -129,16 +129,16 @@ fn sea_incense_effect(move_type_id: &TypeId, generation: &dyn GenerationBattleMe
 }
 
 /// Arceus plate that changes Judgment type and boosts matching moves
-fn arceus_plate_effect(plate_type: &str, move_id: &MoveId, move_type_id: &TypeId) -> ItemModifier {
+fn arceus_plate_effect(plate_type: PokemonType, move_id: &Moves, move_type_id: &PokemonType) -> ItemModifier {
     let mut modifier = ItemModifier::new();
 
     // Change Judgment to plate type
-    if move_id.as_str() == "judgment" {
-        modifier = modifier.with_type_change(plate_type.to_string());
+    if *move_id == Moves::JUDGMENT {
+        modifier = modifier.with_type_change(plate_type.to_normalized_str().to_string());
     }
 
     // Boost matching type moves
-    if move_type_id.as_str() == plate_type {
+    if *move_type_id == plate_type {
         modifier = modifier.with_power_multiplier(1.2);
     }
 

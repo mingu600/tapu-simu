@@ -365,7 +365,7 @@ fn generate_damage_instructions_with_rolls(
         
         // Convert move data for damage calculation
         let move_data_modern = crate::data::showdown_types::MoveData {
-            name: move_data.name.clone(),
+            name: move_data.name,
             base_power: move_data.base_power as u16,
             move_type: move_data.move_type.clone(),
             category: format!("{:?}", move_data.category),
@@ -494,7 +494,7 @@ fn is_pursuit(state: &BattleState, choice: &MoveChoice, side: SideReference) -> 
         let pokemon = state.get_side(side.to_index()).and_then(|s| s.get_active_pokemon_at_slot(0));
         if let Some(pokemon) = pokemon {
             if let Some(move_data) = pokemon.get_move(move_index) {
-                return move_data.name.to_lowercase() == "pursuit";
+                return move_data.name == crate::types::Moves::PURSUIT;
             }
         }
     }
@@ -722,7 +722,7 @@ fn calculate_move_accuracy(
     // Apply weather-based accuracy modifications
     final_accuracy = apply_weather_accuracy_modifiers(
         final_accuracy,
-        &move_data.name,
+        move_data.name.as_str(),
         state.weather(),
     );
     
@@ -794,12 +794,13 @@ fn apply_ability_accuracy_modifiers(
     state: &BattleState,
 ) -> f32 {
     if let Some(user) = state.get_pokemon_at_position(user_pos) {
-        match user.ability.to_lowercase().as_str() {
-            "compoundeyes" | "compound-eyes" => {
+        let ability_id = user.ability;
+        match ability_id {
+            crate::types::Abilities::COMPOUNDEYES => {
                 // Compound Eyes increases accuracy by 30% (1.3x multiplier)
                 base_accuracy * 1.3
             }
-            "noguard" | "no-guard" => {
+            crate::types::Abilities::NOGUARD => {
                 // No Guard makes all moves hit regardless of accuracy
                 100.0
             }
@@ -820,12 +821,12 @@ fn apply_item_accuracy_modifiers(
 ) -> f32 {
     if let Some(user) = state.get_pokemon_at_position(user_pos) {
         if let Some(ref item) = user.item {
-            match item.to_lowercase().replace(" ", "").replace("-", "").as_str() {
-                "widelens" => {
+            match item {
+                crate::types::Items::WIDELENS => {
                     // Wide Lens increases accuracy by 10% (1.1x multiplier)
                     base_accuracy * 1.1
                 }
-                "zoomlens" => {
+                crate::types::Items::ZOOMLENS => {
                     // Zoom Lens increases accuracy by 20% when moving after target
                     let moves_after_target = check_moves_after_target(user_pos, _targets, state, going_first);
                     if moves_after_target {
@@ -958,7 +959,7 @@ fn create_move_context_with_opponents(
         if let Some(opponent_pokemon) = state.get_pokemon_at_position(opponent_position) {
             if let Some(move_data) = opponent_pokemon.get_move(*move_index) {
                 let opponent_info = OpponentMoveInfo {
-                    move_name: move_data.name.clone(),
+                    move_name: move_data.name.as_str().to_string(),
                     move_category: move_data.category,
                     is_switching: false,
                     priority: move_data.priority,
@@ -1045,17 +1046,17 @@ fn generate_attack_instructions_with_enhanced_context(
     // Convert Move to MoveData via generation-specific repository lookup
     let generation_repository = crate::data::generation_loader::GenerationRepository::load_from_directory("data/ps-extracted")
         .expect("Failed to load generation-specific Pokemon data from data/ps-extracted");
-    let move_data = if let Some(gen_move_data) = generation_repository.find_move_by_name_for_generation(&move_data_raw.name, state.format.generation.number()) {
+    let move_data = if let Some(gen_move_data) = generation_repository.find_move_by_name_for_generation(&move_data_raw.name.as_str(), state.format.generation.number()) {
         // Use generation-specific move data directly (already in showdown_types::MoveData format)
         gen_move_data.clone()
     } else {
         // Fallback to standard repository for moves not found in generation-specific data
         let repository = crate::data::GameDataRepository::from_path("data/ps-extracted")
             .expect("Failed to load Pokemon data from data/ps-extracted");
-        if let Some(repo_move_data) = repository.moves.find_by_name(&move_data_raw.name) {
+        if let Some(repo_move_data) = repository.moves.find_by_name(&move_data_raw.name.as_str()) {
             // Convert repository::MoveData to showdown_types::MoveData
             crate::data::showdown_types::MoveData {
-                name: repo_move_data.name.clone(),
+                name: repo_move_data.name,
                 base_power: repo_move_data.base_power as u16,
                 accuracy: repo_move_data.accuracy as u16,
                 pp: repo_move_data.pp,
@@ -1179,7 +1180,7 @@ fn generate_hit_instructions_with_secondary_effects(
     
     // Convert move data format
     let move_data_modern = MoveData {
-        name: move_data.name.clone(),
+        name: move_data.name,
         base_power: move_data.base_power as u16,
         move_type: move_data.move_type.clone(),
         category: format!("{:?}", move_data.category),

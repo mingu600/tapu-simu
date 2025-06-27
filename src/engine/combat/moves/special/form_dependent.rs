@@ -32,8 +32,7 @@ pub fn apply_aura_wheel(
 ) -> Vec<BattleInstructions> {
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
         // Check Morpeko form to determine type
-        let normalized_species = crate::utils::normalize_name(&user_pokemon.species);
-        let modified_move_type = if normalized_species.contains("hangry") {
+        let modified_move_type = if user_pokemon.species == crate::types::PokemonName::MORPEKOHANGRY {
             PokemonType::Dark // Hangry Mode Morpeko
         } else {
             PokemonType::Electric // Full Belly Mode Morpeko (default)
@@ -77,11 +76,10 @@ pub fn apply_raging_bull(
 ) -> Vec<BattleInstructions> {
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
         // Determine type based on Tauros form
-        let normalized_species = crate::utils::normalize_name(&user_pokemon.species);
-        let modified_move_type = match normalized_species.as_str() {
-            s if s.contains("tauros") && s.contains("combat") => PokemonType::Fighting, // Paldean Combat Form
-            s if s.contains("tauros") && s.contains("blaze") => PokemonType::Fire,     // Paldean Blaze Form
-            s if s.contains("tauros") && s.contains("aqua") => PokemonType::Water,     // Paldean Aqua Form
+        let modified_move_type = match user_pokemon.species {
+            crate::types::PokemonName::TAUROSPALDEACOMBAT => PokemonType::Fighting, // Paldean Combat Form
+            crate::types::PokemonName::TAUROSPALDEABLAZE => PokemonType::Fire,      // Paldean Blaze Form
+            crate::types::PokemonName::TAUROSPALDEAAQUA => PokemonType::Water,      // Paldean Aqua Form
             _ => move_data.move_type, // Regular Tauros keeps Normal type
         };
         

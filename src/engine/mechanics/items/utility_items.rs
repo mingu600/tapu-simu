@@ -13,56 +13,56 @@ use crate::core::instructions::{
 };
 use crate::engine::combat::damage_context::DamageContext;
 use crate::generation::GenerationBattleMechanics;
-use crate::types::{AbilityId, ItemId, MoveId, TypeId};
+use crate::types::{Abilities, Items, Moves, PokemonType};
 
 use super::{ItemModifier, StatBoosts};
 
 /// Get utility item effect if the item is a utility item
 pub fn get_utility_item_effect(
-    item_id: &ItemId,
+    item_id: &Items,
     _generation: &dyn GenerationBattleMechanics,
     attacker: &Pokemon,
     _defender: Option<&Pokemon>,
-    _move_id: &MoveId,
-    move_type_id: &TypeId,
+    _move_id: &Moves,
+    move_type_id: &PokemonType,
     move_category: MoveCategory,
     context: &DamageContext,
 ) -> Option<ItemModifier> {
-    match item_id.as_str() {
-        "leftovers" => Some(ItemModifier::default()), // End-of-turn healing only
-        "protectivepads" => Some(protective_pads_effect()),
-        "throatspray" => Some(throat_spray_effect(context)),
-        "widelens" => Some(wide_lens_effect()),
-        "ironball" => Some(iron_ball_effect()),
-        "loadeddice" => Some(loaded_dice_effect(context)),
-        "blunderpolicy" => Some(ItemModifier::default()), // Triggers on miss only
-        "quickclaw" => Some(quick_claw_effect()),
-        "adrenalineorb" => Some(ItemModifier::default()), // Triggers on Intimidate only
+    match item_id {
+        Items::LEFTOVERS => Some(ItemModifier::default()), // End-of-turn healing only
+        Items::PROTECTIVEPADS => Some(protective_pads_effect()),
+        Items::THROATSPRAY => Some(throat_spray_effect(context)),
+        Items::WIDELENS => Some(wide_lens_effect()),
+        Items::IRONBALL => Some(iron_ball_effect()),
+        Items::LOADEDDICE => Some(loaded_dice_effect(context)),
+        Items::BLUNDERPOLICY => Some(ItemModifier::default()), // Triggers on miss only
+        Items::QUICKCLAW => Some(quick_claw_effect()),
+        Items::ADRENALINEORB => Some(ItemModifier::default()), // Triggers on Intimidate only
         _ => None,
     }
 }
 
 /// Get HP restore per turn for utility items
 pub fn get_item_hp_restore_per_turn(
-    item_id: &ItemId,
+    item_id: &Items,
     pokemon: &Pokemon,
     position: BattlePosition,
     _generation: &dyn GenerationBattleMechanics,
 ) -> Option<BattleInstructions> {
-    match item_id.as_str() {
-        "leftovers" => Some(leftovers_end_of_turn_effect(pokemon, position)),
+    match item_id {
+        Items::LEFTOVERS => Some(leftovers_end_of_turn_effect(pokemon, position)),
         _ => None,
     }
 }
 
 /// Check for utility item effects that trigger on switch-in
 pub fn get_item_on_switch_in_effects(
-    item_id: &ItemId,
+    item_id: &Items,
     _pokemon: &Pokemon,
     _position: BattlePosition,
     _generation: &dyn GenerationBattleMechanics,
 ) -> Option<BattleInstructions> {
-    match item_id.as_str() {
+    match item_id {
         // Most utility items don't have switch-in effects
         _ => None,
     }
@@ -132,24 +132,24 @@ fn leftovers_end_of_turn_effect(pokemon: &Pokemon, position: BattlePosition) -> 
 
 /// Generate instructions for utility items that trigger on move miss
 pub fn generate_miss_trigger_instructions(
-    item_id: &ItemId,
+    item_id: &Items,
     position: BattlePosition,
 ) -> Option<BattleInstructions> {
-    match item_id.as_str() {
-        "blunderpolicy" => Some(blunder_policy_miss_effect(position)),
+    match item_id {
+        Items::BLUNDERPOLICY => Some(blunder_policy_miss_effect(position)),
         _ => None,
     }
 }
 
 /// Generate instructions for utility items that trigger on abilities
 pub fn generate_ability_trigger_instructions(
-    item_id: &ItemId,
+    item_id: &Items,
     position: BattlePosition,
-    ability_id: &AbilityId,
+    ability_id: &Abilities,
 ) -> Option<BattleInstructions> {
-    match item_id.as_str() {
-        "adrenalineorb" => {
-            if ability_id.as_str() == "intimidate" {
+    match item_id {
+        Items::ADRENALINEORB => {
+            if *ability_id == Abilities::INTIMIDATE {
                 Some(adrenaline_orb_intimidate_effect(position))
             } else {
                 None
@@ -173,7 +173,7 @@ fn blunder_policy_miss_effect(position: BattlePosition) -> BattleInstructions {
         BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
             target: position,
             new_item: None,
-            previous_item: Some("Blunder Policy".to_string()),
+            previous_item: Some(crate::types::Items::BLUNDERPOLICY),
         })
     ];
     BattleInstructions::new(100.0, instructions)
@@ -193,7 +193,7 @@ fn adrenaline_orb_intimidate_effect(position: BattlePosition) -> BattleInstructi
         BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
             target: position,
             new_item: None,
-            previous_item: Some("Adrenaline Orb".to_string()),
+            previous_item: Some(crate::types::Items::ADRENALINEORB),
         })
     ];
     BattleInstructions::new(100.0, instructions)

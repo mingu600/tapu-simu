@@ -264,12 +264,12 @@ fn is_grounded(pokemon: &crate::core::battle_state::Pokemon) -> bool {
     }
     
     if let Some(ref item) = pokemon.item {
-        if item == "airballoon" {
+        if *item == crate::types::Items::AIRBALLOON {
             return false;
         }
     }
     
-    if pokemon.ability == "levitate" {
+    if pokemon.ability == crate::types::Abilities::LEVITATE {
         return false;
     }
     

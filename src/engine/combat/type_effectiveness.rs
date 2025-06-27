@@ -6,7 +6,7 @@
 use std::collections::HashMap;
 use std::sync::LazyLock;
 use serde::{Deserialize, Serialize};
-use crate::types::identifiers::{MoveId, TypeId};
+use crate::types::Moves;
 use crate::types::PokemonType;
 // Removed old service layer import - type chart loading now handled differently
 
@@ -32,7 +32,7 @@ pub struct TypeChart {
     /// Generation this chart applies to
     generation: u8,
     /// Special case overrides for specific move-type combinations
-    special_cases: HashMap<(MoveId, PokemonType), f32>,
+    special_cases: HashMap<(Moves, PokemonType), f32>,
 }
 
 impl TypeChart {
@@ -94,7 +94,7 @@ impl TypeChart {
         // Check for special case overrides first
         if let Some(move_name) = move_name {
             for target_type in [target_types.0, target_types.1].iter() {
-                if let Some(&override_multiplier) = self.special_cases.get(&(MoveId::new(move_name), *target_type)) {
+                if let Some(&override_multiplier) = self.special_cases.get(&(crate::types::FromNormalizedString::from_normalized_str(&crate::utils::normalize_name(move_name)).unwrap_or(Moves::NONE), *target_type)) {
                     return override_multiplier;
                 }
             }
@@ -388,13 +388,13 @@ impl TypeChart {
     /// Add special case overrides for specific moves
     fn add_special_cases(&mut self) {
         // Freeze-Dry is super effective against Water despite being Ice-type
-        self.special_cases.insert((MoveId::new("freeze-dry"), PokemonType::Water), 2.0);
+        self.special_cases.insert((Moves::FREEZEDRY, PokemonType::Water), 2.0);
         
         // Flying Press is Fighting-type but hits like Fighting + Flying
         // This is handled in move-specific logic, not here
         
         // Thousand Arrows hits Flying types for neutral damage despite being Ground
-        self.special_cases.insert((MoveId::new("thousand-arrows"), PokemonType::Flying), 1.0);
+        self.special_cases.insert((Moves::THOUSANDARROWS, PokemonType::Flying), 1.0);
     }
 }
 

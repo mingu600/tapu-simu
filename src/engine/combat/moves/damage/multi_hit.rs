@@ -59,13 +59,13 @@ fn determine_hit_count(
     let force_max_hits = user_pokemon.map_or(false, |pokemon| {
         // Check for Loaded Dice item
         if let Some(ref item) = pokemon.item {
-            if crate::utils::normalize_name(item) == "loadeddice" {
+            if *item == crate::types::Items::LOADEDDICE {
                 return true;
             }
         }
         
         // Check for Skill Link ability
-        if crate::utils::normalize_name(&pokemon.ability) == "skilllink" {
+        if pokemon.ability == crate::types::Abilities::SKILLLINK {
             return true;
         }
         
@@ -73,8 +73,8 @@ fn determine_hit_count(
     });
     
     // Handle special cases for specific moves
-    let normalized_move_name = crate::utils::normalize_name(&move_data.name);
-    match normalized_move_name.as_str() {
+    let move_name = move_data.name.as_str();
+    match move_name {
         "doubleslap" | "bonemerang" => HitCountCalculator::Fixed(2),
         "tripleaxel" | "triplekick" | "surgingstrikes" => HitCountCalculator::Fixed(3),
         "dragondarts" => HitCountCalculator::Fixed(2),
@@ -82,7 +82,7 @@ fn determine_hit_count(
             // Population Bomb special case - check for Wide Lens
             let has_wide_lens = user_pokemon.map_or(false, |pokemon| {
                 if let Some(ref item) = pokemon.item {
-                    crate::utils::normalize_name(item) == "widelens"
+                    *item == crate::types::Items::WIDELENS
                 } else {
                     false
                 }

@@ -7,7 +7,7 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use crate::generation::Generation;
-use crate::types::identifiers::{SpeciesId, MoveId, ItemId, AbilityId};
+use crate::types::{PokemonName, Moves, Items, Abilities};
 
 /// Format types for battle mechanics
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -88,10 +88,10 @@ pub enum FormatClause {
 /// Specific Pokemon, moves, items, or abilities that are banned
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BanList {
-    pub species: Vec<SpeciesId>,
-    pub moves: Vec<MoveId>,
-    pub items: Vec<ItemId>,
-    pub abilities: Vec<AbilityId>,
+    pub species: Vec<PokemonName>,
+    pub moves: Vec<Moves>,
+    pub items: Vec<Items>,
+    pub abilities: Vec<Abilities>,
 }
 
 impl BanList {
@@ -113,10 +113,10 @@ impl BanList {
         abilities: Vec<String>,
     ) -> Self {
         Self {
-            species: species.into_iter().map(|s| SpeciesId::new(s)).collect(),
-            moves: moves.into_iter().map(|s| MoveId::new(s)).collect(),
-            items: items.into_iter().map(|s| ItemId::new(s)).collect(),
-            abilities: abilities.into_iter().map(|s| AbilityId::new(s)).collect(),
+            species: species.into_iter().map(|s| crate::types::FromNormalizedString::from_normalized_str(&crate::utils::normalize_name(&s)).unwrap_or(PokemonName::NONE)).collect(),
+            moves: moves.into_iter().map(|s| crate::types::FromNormalizedString::from_normalized_str(&crate::utils::normalize_name(&s)).unwrap_or(Moves::NONE)).collect(),
+            items: items.into_iter().map(|s| crate::types::FromNormalizedString::from_normalized_str(&crate::utils::normalize_name(&s)).unwrap_or(Items::NONE)).collect(),
+            abilities: abilities.into_iter().map(|s| crate::types::FromNormalizedString::from_normalized_str(&crate::utils::normalize_name(&s)).unwrap_or(Abilities::NONE)).collect(),
         }
     }
 }
@@ -338,22 +338,22 @@ impl BattleFormat {
     }
 
     /// Check if a species is banned
-    pub fn is_species_banned(&self, species_id: &SpeciesId) -> bool {
+    pub fn is_species_banned(&self, species_id: &PokemonName) -> bool {
         self.ban_list.species.contains(species_id)
     }
 
     /// Check if a move is banned
-    pub fn is_move_banned(&self, move_id: &MoveId) -> bool {
+    pub fn is_move_banned(&self, move_id: &Moves) -> bool {
         self.ban_list.moves.contains(move_id)
     }
 
     /// Check if an item is banned
-    pub fn is_item_banned(&self, item_id: &ItemId) -> bool {
+    pub fn is_item_banned(&self, item_id: &Items) -> bool {
         self.ban_list.items.contains(item_id)
     }
 
     /// Check if an ability is banned
-    pub fn is_ability_banned(&self, ability_id: &AbilityId) -> bool {
+    pub fn is_ability_banned(&self, ability_id: &Abilities) -> bool {
         self.ban_list.abilities.contains(ability_id)
     }
 

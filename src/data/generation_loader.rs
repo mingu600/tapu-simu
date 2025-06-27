@@ -5,7 +5,7 @@
 
 use crate::core::battle_state::{Move, MoveCategory};
 use crate::data::showdown_types::{ItemData, MoveData, PokemonData};
-use crate::types::identifiers::{ItemId, MoveId, SpeciesId};
+use crate::types::{Items, Moves, PokemonName};
 use crate::utils::normalize_name;
 use crate::utils::target_from_string;
 use serde_json;
@@ -27,9 +27,9 @@ pub struct GenerationRepository {
     generation_move_data: HashMap<String, GenerationMoveData>,
     generation_item_data: HashMap<String, GenerationItemData>,
     generation_pokemon_data: HashMap<String, GenerationPokemonData>,
-    move_changes: HashMap<MoveId, MoveChangeHistory>,
-    item_changes: HashMap<ItemId, ItemChangeHistory>,
-    pokemon_changes: HashMap<SpeciesId, PokemonChangeHistory>,
+    move_changes: HashMap<Moves, MoveChangeHistory>,
+    item_changes: HashMap<Items, ItemChangeHistory>,
+    pokemon_changes: HashMap<PokemonName, PokemonChangeHistory>,
 }
 
 /// Move data for a specific generation
@@ -281,9 +281,9 @@ impl GenerationRepository {
             "move-changes.json",
             |name, changes| MoveChangeHistory { name, changes },
         )?;
-        let move_changes: HashMap<MoveId, MoveChangeHistory> = move_changes_raw
+        let move_changes: HashMap<Moves, MoveChangeHistory> = move_changes_raw
             .into_iter()
-            .map(|(key, value)| (MoveId::new(key), value))
+            .map(|(key, value)| (crate::types::FromNormalizedString::from_normalized_str(&crate::utils::normalize_name(&key)).unwrap_or(Moves::NONE), value))
             .collect();
 
         // Load generation Pokemon data (if available)
@@ -329,9 +329,9 @@ impl GenerationRepository {
             "item-changes.json",
             |name, changes| ItemChangeHistory { name, changes },
         )?;
-        let item_changes: HashMap<ItemId, ItemChangeHistory> = item_changes_raw
+        let item_changes: HashMap<Items, ItemChangeHistory> = item_changes_raw
             .into_iter()
-            .map(|(key, value)| (ItemId::new(key), value))
+            .map(|(key, value)| (crate::types::FromNormalizedString::from_normalized_str(&crate::utils::normalize_name(&key)).unwrap_or(Items::NONE), value))
             .collect();
 
         // Load Pokemon changes data
@@ -340,9 +340,9 @@ impl GenerationRepository {
             "pokemon-changes.json",
             |name, changes| PokemonChangeHistory { name, changes },
         )?;
-        let pokemon_changes: HashMap<SpeciesId, PokemonChangeHistory> = pokemon_changes_raw
+        let pokemon_changes: HashMap<PokemonName, PokemonChangeHistory> = pokemon_changes_raw
             .into_iter()
-            .map(|(key, value)| (SpeciesId::new(key), value))
+            .map(|(key, value)| (crate::types::FromNormalizedString::from_normalized_str(&crate::utils::normalize_name(&key)).unwrap_or(PokemonName::NONE), value))
             .collect();
 
         Ok(Self {
@@ -383,7 +383,7 @@ impl GenerationRepository {
 
                 // Fallback to searching by normalized display name
                 if let Some(move_data) = generation_data.moves.values().find(|move_data| {
-                    crate::utils::normalize_name(&move_data.name) == normalized_name
+                    move_data.name.as_str() == normalized_name
                 }) {
                     return Some(move_data);
                 }
@@ -547,17 +547,17 @@ impl GenerationRepository {
     }
 
     /// Get change history for a move
-    pub fn get_move_changes(&self, move_id: &MoveId) -> Option<&MoveChangeHistory> {
+    pub fn get_move_changes(&self, move_id: &Moves) -> Option<&MoveChangeHistory> {
         self.move_changes.get(move_id)
     }
 
     /// Get change history for an item
-    pub fn get_item_changes(&self, item_id: &ItemId) -> Option<&ItemChangeHistory> {
+    pub fn get_item_changes(&self, item_id: &Items) -> Option<&ItemChangeHistory> {
         self.item_changes.get(item_id)
     }
 
     /// Get change history for a Pokemon
-    pub fn get_pokemon_changes(&self, species_id: &SpeciesId) -> Option<&PokemonChangeHistory> {
+    pub fn get_pokemon_changes(&self, species_id: &PokemonName) -> Option<&PokemonChangeHistory> {
         self.pokemon_changes.get(species_id)
     }
 

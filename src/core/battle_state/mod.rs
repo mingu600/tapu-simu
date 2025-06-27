@@ -389,14 +389,14 @@ impl BattleState {
                 ..
             } => {
                 if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
-                    pokemon.ability = new_ability.to_string();
+                    pokemon.ability = *new_ability;
                 }
             }
             PokemonInstruction::ChangeItem {
                 target, new_item, ..
             } => {
                 if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
-                    pokemon.item = new_item.clone();
+                    pokemon.item = *new_item;
                 }
             }
             PokemonInstruction::ChangeType {

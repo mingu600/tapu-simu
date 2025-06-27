@@ -9,7 +9,7 @@ use crate::core::battle_state::BattleState;
 use crate::core::instructions::{BattleInstruction, PokemonInstruction, PokemonStatus, StatusInstruction, StatsInstruction, Stat};
 use crate::data::showdown_types::MoveData;
 use super::status_system::{apply_status_effect, StatusApplication};
-use crate::types::identifiers::AbilityId;
+use crate::types::Abilities;
 use std::collections::HashMap;
 
 /// Apply all contact effects that should occur after a move hits
@@ -65,8 +65,8 @@ fn apply_contact_abilities(
         return instructions;
     }
 
-    match target.ability.to_lowercase().as_str() {
-        "static" => {
+    match target.ability {
+        Abilities::STATIC => {
             // 30% chance to paralyze the attacker
             let status_app = StatusApplication {
                 status: PokemonStatus::Paralysis,
@@ -79,7 +79,7 @@ fn apply_contact_abilities(
                 instructions.push(instruction);
             }
         }
-        "flamebody" => {
+        Abilities::FLAMEBODY => {
             // 30% chance to burn the attacker
             let status_app = StatusApplication {
                 status: PokemonStatus::Burn,
@@ -92,7 +92,7 @@ fn apply_contact_abilities(
                 instructions.push(instruction);
             }
         }
-        "poisonpoint" => {
+        Abilities::POISONPOINT => {
             // 30% chance to poison the attacker
             let status_app = StatusApplication {
                 status: PokemonStatus::Poison,
@@ -105,7 +105,7 @@ fn apply_contact_abilities(
                 instructions.push(instruction);
             }
         }
-        "roughskin" => {
+        Abilities::ROUGHSKIN => {
             // Deal 1/8 max HP damage to the attacker
             let user = state.get_pokemon_at_position(user_position);
             if let Some(user) = user {
@@ -117,7 +117,7 @@ fn apply_contact_abilities(
                 }));
             }
         }
-        "ironbarbs" => {
+        Abilities::IRONBARBS => {
             // Deal 1/8 max HP damage to the attacker
             let user = state.get_pokemon_at_position(user_position);
             if let Some(user) = user {
@@ -129,7 +129,7 @@ fn apply_contact_abilities(
                 }));
             }
         }
-        "gooey" | "tanglinghair" => {
+        Abilities::GOOEY | Abilities::TANGLINGHAIR => {
             // Lower the attacker's speed by 1 stage
             let mut stat_changes = HashMap::new();
             stat_changes.insert(Stat::Speed, -1);
@@ -144,16 +144,16 @@ fn apply_contact_abilities(
                 previous_boosts,
             }));
         }
-        "mummy" => {
+        Abilities::MUMMY => {
             // Change the attacker's ability to Mummy
             instructions.push(BattleInstruction::Pokemon(PokemonInstruction::ChangeAbility {
                 target: user_position,
-                new_ability: AbilityId::new("mummy"),
+                new_ability: Abilities::MUMMY,
                 previous_ability: state.get_pokemon_at_position(user_position)
-                    .map(|p| AbilityId::new(&p.ability)),
+                    .map(|p| p.ability),
             }));
         }
-        "cursebody" => {
+        Abilities::CURSEDBODY => {
             // 30% chance to disable the last used move
             use rand::Rng;
             let mut rng = rand::thread_rng();
@@ -197,9 +197,8 @@ fn apply_contact_items(
     }
 
     if let Some(ref item) = target.item {
-        let normalized_item = crate::utils::normalize_name(item);
-        match normalized_item.as_str() {
-            "rockyhelmet" => {
+        match *item {
+            crate::types::Items::ROCKYHELMET => {
                 // Deal 1/6 max HP damage to the attacker
                 let user = state.get_pokemon_at_position(user_position);
                 if let Some(user) = user {
@@ -211,17 +210,17 @@ fn apply_contact_items(
                     }));
                 }
             }
-            "stickybarb" => {
+            crate::types::Items::STICKYBARB => {
                 // Transfer the Sticky Barb to the attacker
                 instructions.push(BattleInstruction::Pokemon(PokemonInstruction::ItemTransfer {
                     from: target_position,
                     to: user_position,
                     item: "stickybarb".to_string(),
-                    previous_from_item: target.item.clone(),
+                    previous_from_item: target.item.as_ref().map(|i| i.as_str().to_string()),
                     previous_to_item: None, // TODO: Get actual previous item
                 }));
             }
-            "redcard" => {
+            crate::types::Items::REDCARD => {
                 // Force the attacker to switch out (in formats that allow it)
                 if state.format.allows_switching() {
                     instructions.push(BattleInstruction::Pokemon(PokemonInstruction::ForceSwitch {
@@ -231,7 +230,7 @@ fn apply_contact_items(
                     }));
                 }
             }
-            "ejectbutton" => {
+            crate::types::Items::EJECTBUTTON => {
                 // Force the target to switch out if it took damage
                 if state.format.allows_switching() {
                     instructions.push(BattleInstruction::Pokemon(PokemonInstruction::ForceSwitch {

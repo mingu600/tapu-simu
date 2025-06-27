@@ -14,7 +14,7 @@ use crate::core::battle_state::Pokemon;
 use crate::core::battle_state::BattleState;
 use crate::generation::GenerationMechanics;
 use crate::engine::combat::damage::is_grounded;
-use crate::types::identifiers::AbilityId;
+use crate::types::Abilities;
 use crate::types::PokemonType;
 use std::collections::HashMap;
 use crate::utils::normalize_name;
@@ -170,10 +170,9 @@ fn process_switch_in_abilities(
         None => return instructions,
     };
     
-    let ability_name = normalize_name(&pokemon.ability);
-    match ability_name.as_str() {
+    match pokemon.ability {
         // Weather-setting abilities
-        "drought" => {
+        crate::types::Abilities::DROUGHT => {
             instructions.push(BattleInstructions::new(100.0, vec![
                 BattleInstruction::Field(FieldInstruction::Weather {
                     new_weather: crate::core::instructions::Weather::Sun,
@@ -184,7 +183,7 @@ fn process_switch_in_abilities(
                 })
             ]));
         }
-        "drizzle" => {
+        crate::types::Abilities::DRIZZLE => {
             instructions.push(BattleInstructions::new(100.0, vec![
                 BattleInstruction::Field(FieldInstruction::Weather {
                     new_weather: crate::core::instructions::Weather::Rain,
@@ -195,7 +194,7 @@ fn process_switch_in_abilities(
                 })
             ]));
         }
-        "sandstream" => {
+        crate::types::Abilities::SANDSTREAM => {
             instructions.push(BattleInstructions::new(100.0, vec![
                 BattleInstruction::Field(FieldInstruction::Weather {
                     new_weather: crate::core::instructions::Weather::Sand,
@@ -206,7 +205,7 @@ fn process_switch_in_abilities(
                 })
             ]));
         }
-        "snowwarning" => {
+        crate::types::Abilities::SNOWWARNING => {
             let weather = if generation.generation.number() >= 9 {
                 crate::core::instructions::Weather::Snow
             } else {
@@ -224,7 +223,7 @@ fn process_switch_in_abilities(
         }
         
         // Terrain-setting abilities
-        "electricsurge" => {
+        crate::types::Abilities::ELECTRICSURGE => {
             instructions.push(BattleInstructions::new(100.0, vec![
                 BattleInstruction::Field(FieldInstruction::Terrain {
                     new_terrain: crate::core::instructions::Terrain::ElectricTerrain,
@@ -235,7 +234,7 @@ fn process_switch_in_abilities(
                 })
             ]));
         }
-        "grassysurge" => {
+        crate::types::Abilities::GRASSYSURGE => {
             instructions.push(BattleInstructions::new(100.0, vec![
                 BattleInstruction::Field(FieldInstruction::Terrain {
                     new_terrain: crate::core::instructions::Terrain::GrassyTerrain,
@@ -246,7 +245,7 @@ fn process_switch_in_abilities(
                 })
             ]));
         }
-        "mistysurge" => {
+        crate::types::Abilities::MISTYSURGE => {
             instructions.push(BattleInstructions::new(100.0, vec![
                 BattleInstruction::Field(FieldInstruction::Terrain {
                     new_terrain: crate::core::instructions::Terrain::MistyTerrain,
@@ -257,7 +256,7 @@ fn process_switch_in_abilities(
                 })
             ]));
         }
-        "psychicsurge" => {
+        crate::types::Abilities::PSYCHICSURGE => {
             instructions.push(BattleInstructions::new(100.0, vec![
                 BattleInstruction::Field(FieldInstruction::Terrain {
                     new_terrain: crate::core::instructions::Terrain::PsychicTerrain,
@@ -270,46 +269,49 @@ fn process_switch_in_abilities(
         }
         
         // Intimidate
-        "intimidate" => {
+        crate::types::Abilities::INTIMIDATE => {
             instructions.extend(apply_intimidate_effect(state, switching_position, generation));
         }
         
         // Download
-        "download" => {
+        crate::types::Abilities::DOWNLOAD => {
             instructions.extend(apply_download_effect(state, switching_position, generation));
         }
         
         // Trace
-        "trace" => {
+        crate::types::Abilities::TRACE => {
             instructions.extend(apply_trace_effect(state, switching_position, generation));
         }
         
         // Gen 9 Legendary Abilities (Zacian/Zamazenta)
-        "intrepidsword" => {
+        crate::types::Abilities::INTREPIDSWORD => {
             instructions.extend(apply_intrepid_sword_effect(state, switching_position, generation));
         }
-        "dauntlessshield" => {
+        crate::types::Abilities::DAUNTLESSSHIELD => {
             instructions.extend(apply_dauntless_shield_effect(state, switching_position, generation));
         }
         
         // Paradox Pokemon Abilities
-        "protosynthesis" => {
+        crate::types::Abilities::PROTOSYNTHESIS => {
             instructions.extend(apply_protosynthesis_effect(state, switching_position, generation));
         }
-        "quarkdrive" => {
+        crate::types::Abilities::QUARKDRIVE => {
             instructions.extend(apply_quark_drive_effect(state, switching_position, generation));
         }
         
         // Ogerpon Embody Aspect Abilities
-        "embodyaspect" => {
+        crate::types::Abilities::EMBODYASPECTCORNERSTONE |
+        crate::types::Abilities::EMBODYASPECTHEARTHFLAME |
+        crate::types::Abilities::EMBODYASPECTTEAL |
+        crate::types::Abilities::EMBODYASPECTWELLSPRING => {
             instructions.extend(apply_embody_aspect_effect(state, switching_position, generation));
         }
         
         // Utility Abilities
-        "screencleaner" => {
+        crate::types::Abilities::SCREENCLEANER => {
             instructions.extend(apply_screen_cleaner_effect(state, switching_position, generation));
         }
-        "slowstart" => {
+        crate::types::Abilities::SLOWSTART => {
             instructions.extend(apply_slow_start_effect(state, switching_position, generation));
         }
         
@@ -417,8 +419,8 @@ fn apply_trace_effect(
     
     for slot in 0..state.format.active_pokemon_count() {
         if let Some(opponent) = opposing_side_data.get_active_pokemon_at_slot(slot) {
-            if is_ability_traceable(opponent.ability.as_str(), generation) {
-                traceable_abilities.push(opponent.ability.clone());
+            if is_ability_traceable(opponent.ability, generation) {
+                traceable_abilities.push(opponent.ability);
             }
         }
     }
@@ -426,12 +428,12 @@ fn apply_trace_effect(
     if !traceable_abilities.is_empty() {
         // For now, trace the first available ability
         // In a full implementation, this would be random
-        let new_ability = &traceable_abilities[0];
+        let new_ability = traceable_abilities[0];
         
         instructions.push(BattleInstructions::new(100.0, vec![
             BattleInstruction::Pokemon(PokemonInstruction::ChangeAbility {
                 target: user_position,
-                new_ability: AbilityId::from(new_ability.clone()),
+                new_ability,
                 previous_ability: None,
             })
         ]));
@@ -455,10 +457,9 @@ fn process_switch_in_items(
     };
     
     if let Some(item) = &pokemon.item {
-        let item_name = normalize_name(item);
-        match item_name.as_str() {
+        match item {
             // Air Balloon - Provides Ground immunity
-            "airballoon" => {
+            crate::types::Items::AIRBALLOON => {
                 instructions.push(BattleInstructions::new(100.0, vec![
                     BattleInstruction::Status(StatusInstruction::ApplyVolatile {
                         target: switching_position,
@@ -471,7 +472,7 @@ fn process_switch_in_items(
             }
             
             // Choice items - Lock into first move used
-            "choiceband" => {
+            crate::types::Items::CHOICEBAND => {
                 instructions.push(BattleInstructions::new(100.0, vec![
                     BattleInstruction::Status(StatusInstruction::ApplyVolatile {
                         target: switching_position,
@@ -483,7 +484,7 @@ fn process_switch_in_items(
                 ]));
             }
             
-            "choicescarf" => {
+            crate::types::Items::CHOICESCARF => {
                 instructions.push(BattleInstructions::new(100.0, vec![
                     BattleInstruction::Status(StatusInstruction::ApplyVolatile {
                         target: switching_position,
@@ -495,7 +496,7 @@ fn process_switch_in_items(
                 ]));
             }
             
-            "choicespecs" => {
+            crate::types::Items::CHOICESPECS => {
                 instructions.push(BattleInstructions::new(100.0, vec![
                     BattleInstruction::Status(StatusInstruction::ApplyVolatile {
                         target: switching_position,
@@ -508,7 +509,7 @@ fn process_switch_in_items(
             }
             
             // Iron Ball - Makes Pokemon grounded
-            "ironball" => {
+            crate::types::Items::IRONBALL => {
                 instructions.push(BattleInstructions::new(100.0, vec![
                     BattleInstruction::Status(StatusInstruction::ApplyVolatile {
                         target: switching_position,
@@ -521,7 +522,7 @@ fn process_switch_in_items(
             }
             
             // Toxic Orb - Badly poisons holder at end of turn
-            "toxicorb" => {
+            crate::types::Items::TOXICORB => {
                 instructions.push(BattleInstructions::new(100.0, vec![
                     BattleInstruction::Status(StatusInstruction::ApplyVolatile {
                         target: switching_position,
@@ -534,7 +535,7 @@ fn process_switch_in_items(
             }
             
             // Flame Orb - Burns holder at end of turn
-            "flameorb" => {
+            crate::types::Items::FLAMEORB => {
                 instructions.push(BattleInstructions::new(100.0, vec![
                     BattleInstruction::Status(StatusInstruction::ApplyVolatile {
                         target: switching_position,
@@ -547,7 +548,7 @@ fn process_switch_in_items(
             }
             
             // Mental Herb - Removes attraction and choice lock (one time use)
-            "mentalherb" => {
+            crate::types::Items::MENTALHERB => {
                 // Mental Herb is reactive - it activates when needed
                 instructions.push(BattleInstructions::new(100.0, vec![
                     BattleInstruction::Status(StatusInstruction::ApplyVolatile {
@@ -561,7 +562,7 @@ fn process_switch_in_items(
             }
             
             // Power Herb - Allows immediate use of charge moves (one time use)
-            "powerherb" => {
+            crate::types::Items::POWERHERB => {
                 instructions.push(BattleInstructions::new(100.0, vec![
                     BattleInstruction::Status(StatusInstruction::ApplyVolatile {
                         target: switching_position,
@@ -574,7 +575,7 @@ fn process_switch_in_items(
             }
             
             // Room Service - Lowers Speed when Trick Room is active
-            "roomservice" => {
+            crate::types::Items::ROOMSERVICE => {
                 if state.field.global_effects.trick_room.is_some() {
                     let mut stat_boosts = HashMap::new();
                     stat_boosts.insert(Stat::Speed, -1);
@@ -596,12 +597,11 @@ fn process_switch_in_items(
             }
             
             // Booster Energy - Activates Protosynthesis/Quark Drive
-            "boosterenergy" => {
+            crate::types::Items::BOOSTERENERGY => {
                 let user_side = state.get_side_by_ref(switching_position.side);
                 if let Some(pokemon) = user_side.get_active_pokemon_at_slot(switching_position.slot) {
-                    let ability_name = normalize_name(&pokemon.ability);
-                    match ability_name.as_str() {
-                        "protosynthesis" => {
+                    match pokemon.ability {
+                        crate::types::Abilities::PROTOSYNTHESIS => {
                             let highest_stat = calculate_highest_stat_excluding_hp(pokemon);
                             let mut stat_boosts = HashMap::new();
                             stat_boosts.insert(highest_stat, 1);
@@ -620,7 +620,7 @@ fn process_switch_in_items(
                                 })
                             ]));
                         }
-                        "quarkdrive" => {
+                        crate::types::Abilities::QUARKDRIVE => {
                             let highest_stat = calculate_highest_stat_excluding_hp(pokemon);
                             let mut stat_boosts = HashMap::new();
                             stat_boosts.insert(highest_stat, 1);
@@ -665,9 +665,8 @@ fn process_switch_out_abilities(
         None => return instructions,
     };
     
-    let ability_name = normalize_name(&pokemon.ability);
-    match ability_name.as_str() {
-        "naturalcure" => {
+    match pokemon.ability {
+        crate::types::Abilities::NATURALCURE => {
             // Remove status conditions when switching out
             if pokemon.status != crate::core::instructions::PokemonStatus::None {
                 instructions.push(BattleInstructions::new(100.0, vec![
@@ -679,7 +678,7 @@ fn process_switch_out_abilities(
                 ]));
             }
         }
-        "regenerator" => {
+        crate::types::Abilities::REGENERATOR => {
             // Heal 1/3 HP when switching out
             if pokemon.hp < pokemon.max_hp && pokemon.hp > 0 {
                 let heal_amount = pokemon.max_hp / 3;
@@ -692,15 +691,15 @@ fn process_switch_out_abilities(
                 ]));
             }
         }
-        "zerotohero" => {
+        crate::types::Abilities::ZEROTOHERO => {
             // Palafin forme change when switching out
             instructions.extend(apply_zero_to_hero_forme_change(state, switching_position, generation));
         }
-        "gulpmissile" => {
+        crate::types::Abilities::GULPMISSILE => {
             // Cramorant forme change back to base form
             instructions.extend(apply_gulp_missile_switch_out(state, switching_position, generation));
         }
-        "hungerswitch" => {
+        crate::types::Abilities::HUNGERSWITCH => {
             // Morpeko forme change when switching out (alternate forme)
             instructions.extend(apply_hunger_switch_switch_out(state, switching_position, generation));
         }
@@ -725,16 +724,15 @@ fn process_switch_out_items(
     };
     
     if let Some(item) = &pokemon.item {
-        let item_name = normalize_name(item);
-        match item_name.as_str() {
+        match item {
             // Red Card - Forces attacker to switch out (consumed on use)
-            "redcard" => {
+            crate::types::Items::REDCARD => {
                 // Red Card is reactive and consumed when hit
                 // No switch-out effect needed
             }
             
             // Eject Button - Forces user to switch out when hit (consumed on use)
-            "ejectbutton" => {
+            crate::types::Items::EJECTBUTTON => {
                 // Eject Button is reactive and consumed when hit
                 // No switch-out effect needed
             }
@@ -743,7 +741,7 @@ fn process_switch_out_items(
             // but those are ability-based
             
             // White Herb - Removes negative stat changes (consumed on use)
-            "whiteherb" => {
+            crate::types::Items::WHITEHERB => {
                 // Check if Pokemon has any negative stat changes to remove
                 let mut has_negative_boosts = false;
                 let mut stat_changes = HashMap::new();
@@ -773,12 +771,12 @@ fn process_switch_out_items(
             }
             
             // Shell Bell - Heals based on damage dealt (no switch-out effect)
-            "shellbell" => {
+            crate::types::Items::SHELLBELL => {
                 // No switch-out effect for Shell Bell
             }
             
             // Shed Shell - Allows switching even when trapped
-            "shedshell" => {
+            crate::types::Items::SHEDSHELL => {
                 // Remove any trapping effects when switching out
                 let mut remove_instructions = Vec::new();
                 
@@ -806,12 +804,12 @@ fn process_switch_out_items(
             }
             
             // Grip Claw / Binding Band extend trapping moves (no switch-out effect)
-            "gripclaw" | "bindingband" => {
+            crate::types::Items::GRIPCLAW | crate::types::Items::BINDINGBAND => {
                 // No switch-out effect
             }
             
             // Toxic Orb / Flame Orb - remove their volatile status markers
-            "toxicorb" => {
+            crate::types::Items::TOXICORB => {
                 // Remove the ToxicOrb volatile status
                 if pokemon.volatile_statuses.contains(&crate::core::instructions::VolatileStatus::HealBlock) {
                     instructions.push(BattleInstructions::new(100.0, vec![
@@ -824,7 +822,7 @@ fn process_switch_out_items(
                 }
             }
             
-            "flameorb" => {
+            crate::types::Items::FLAMEORB => {
                 // Remove the FlameOrb volatile status
                 if pokemon.volatile_statuses.contains(&crate::core::instructions::VolatileStatus::HealBlock) {
                     instructions.push(BattleInstructions::new(100.0, vec![
@@ -838,7 +836,7 @@ fn process_switch_out_items(
             }
             
             // Air Balloon - remove when switching out
-            "airballoon" => {
+            crate::types::Items::AIRBALLOON => {
                 if pokemon.volatile_statuses.contains(&crate::core::instructions::VolatileStatus::MagnetRise) {
                     instructions.push(BattleInstructions::new(100.0, vec![
                         BattleInstruction::Status(StatusInstruction::RemoveVolatile {
@@ -851,7 +849,7 @@ fn process_switch_out_items(
             }
             
             // Choice items - remove choice lock when switching out
-            "choiceband" | "choicescarf" | "choicespecs" => {
+            crate::types::Items::CHOICEBAND | crate::types::Items::CHOICESCARF | crate::types::Items::CHOICESPECS => {
                 if pokemon.volatile_statuses.contains(&crate::core::instructions::VolatileStatus::LockedMove) {
                     instructions.push(BattleInstructions::new(100.0, vec![
                         BattleInstruction::Status(StatusInstruction::RemoveVolatile {
@@ -1062,24 +1060,24 @@ fn get_toxic_spikes_effect(
 
 /// Check if a Pokemon is immune to Intimidate
 fn is_immune_to_intimidate(pokemon: &Pokemon, generation: &GenerationMechanics) -> bool {
-    let ability_name = normalize_name(&pokemon.ability);
-    match ability_name.as_str() {
-        "clearbody" | "hypercutter" | "whitesmoke" | "fullmetalbody" | 
-        "innerfocus" | "oblivious" | "owntempo" | "scrappy" => true,
+    use crate::types::Abilities;
+    match pokemon.ability {
+        Abilities::CLEARBODY | Abilities::HYPERCUTTER | Abilities::WHITESMOKE | Abilities::FULLMETALBODY | 
+        Abilities::INNERFOCUS | Abilities::OBLIVIOUS | Abilities::OWNTEMPO | Abilities::SCRAPPY => true,
         _ => false,
     }
 }
 
 /// Check if an ability can be traced
-fn is_ability_traceable(ability: &str, generation: &GenerationMechanics) -> bool {
+fn is_ability_traceable(ability: crate::types::Abilities, generation: &GenerationMechanics) -> bool {
     // Some abilities cannot be traced
-    let ability_name = normalize_name(ability);
-    match ability_name.as_str() {
-        "trace" | "forecast" | "flowergift" | "illusion" | "imposter" |
-        "multitype" | "zenmode" | "stancechange" | "powerconstruct" |
-        "schooling" | "comatose" | "shieldsdown" | "disguise" |
-        "rkssystem" | "battlebond" | "powerofalchemy" | "receiver" |
-        "wonderguard" | "airlock" | "cloudnine" => false,
+    use crate::types::Abilities;
+    match ability {
+        Abilities::TRACE | Abilities::FORECAST | Abilities::FLOWERGIFT | Abilities::ILLUSION | Abilities::IMPOSTER |
+        Abilities::MULTITYPE | Abilities::ZENMODE | Abilities::STANCECHANGE | Abilities::POWERCONSTRUCT |
+        Abilities::SCHOOLING | Abilities::COMATOSE | Abilities::SHIELDSDOWN | Abilities::DISGUISE |
+        Abilities::RKSSYSTEM | Abilities::BATTLEBOND | Abilities::POWEROFALCHEMY | Abilities::RECEIVER |
+        Abilities::WONDERGUARD | Abilities::AIRLOCK | Abilities::CLOUDNINE => false,
         _ => true,
     }
 }
@@ -1115,13 +1113,15 @@ fn apply_gulp_missile_switch_out(
     let side = state.get_side_by_ref(switching_position.side);
     if let Some(pokemon) = side.get_active_pokemon_at_slot(switching_position.slot) {
         // Return to base form when switching out
-        let species_name = normalize_name(&pokemon.species);
-        if species_name.contains("gulping") || species_name.contains("gorging") {
+        if matches!(pokemon.species,
+            crate::types::PokemonName::CRAMORANTGULPING |
+            crate::types::PokemonName::CRAMORANTGORGING
+        ) {
             instructions.push(BattleInstructions::new(100.0, vec![
                 BattleInstruction::Pokemon(PokemonInstruction::FormeChange {
                     target: switching_position,
                     new_forme: "cramorant".to_string(),
-                    previous_forme: pokemon.species.clone(),
+                    previous_forme: pokemon.species.as_str().to_string(),
                 })
             ]));
         }
@@ -1141,19 +1141,19 @@ fn apply_hunger_switch_switch_out(
     let side = state.get_side_by_ref(switching_position.side);
     if let Some(pokemon) = side.get_active_pokemon_at_slot(switching_position.slot) {
         // Alternate forme when switching out
-        let species_name = normalize_name(&pokemon.species);
-        let target_forme = if species_name.contains("hangry") {
+        let target_forme = if pokemon.species == crate::types::PokemonName::MORPEKOHANGRY {
             "morpeko" // Switch to Full Belly form
         } else {
             "morpekohangry" // Switch to Hangry form
         };
         
-        if species_name != normalize_name(target_forme) {
+        let current_forme = pokemon.species.as_str();
+        if current_forme != target_forme {
             instructions.push(BattleInstructions::new(100.0, vec![
                 BattleInstruction::Pokemon(PokemonInstruction::FormeChange {
                     target: switching_position,
                     new_forme: target_forme.to_string(),
-                    previous_forme: pokemon.species.clone(),
+                    previous_forme: pokemon.species.as_str().to_string(),
                 })
             ]));
         }
@@ -1333,12 +1333,11 @@ fn apply_embody_aspect_effect(
     let user_side = state.get_side_by_ref(user_position.side);
     if let Some(pokemon) = user_side.get_active_pokemon_at_slot(user_position.slot) {
         // Determine which stat to boost based on Ogerpon's forme
-        let species_name = normalize_name(&pokemon.species);
-        let stat_to_boost = match species_name.as_str() {
-            "ogerpon" | "ogerponteal" => Stat::Speed,                    // Teal Mask (base forme)
-            "ogerponwellspring" => Stat::SpecialDefense,                 // Wellspring Mask
-            "ogerponcornerstone" => Stat::Defense,                       // Cornerstone Mask  
-            "ogerponhearthflame" => Stat::Attack,                        // Hearthflame Mask
+        let stat_to_boost = match pokemon.species {
+            crate::types::PokemonName::OGERPON | crate::types::PokemonName::OGERPONTEALTERA => Stat::Speed,                    // Teal Mask (base forme)
+            crate::types::PokemonName::OGERPONWELLSPRING | crate::types::PokemonName::OGERPONWELLSPRINGTERA => Stat::SpecialDefense,                 // Wellspring Mask
+            crate::types::PokemonName::OGERPONCORNERSTONE | crate::types::PokemonName::OGERPONCORNERSTONETERA => Stat::Defense,                       // Cornerstone Mask  
+            crate::types::PokemonName::OGERPONHEARTHFLAME | crate::types::PokemonName::OGERPONHEARTHFLAMETERA => Stat::Attack,                        // Hearthflame Mask
             _ => return instructions, // Not an Ogerpon forme
         };
         

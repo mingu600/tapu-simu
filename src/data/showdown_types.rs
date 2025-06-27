@@ -3,7 +3,7 @@
 //! This module defines data types that match Pokemon Showdown's conventions,
 //! enabling direct usage of PS data without transformation.
 
-use crate::types::{AbilityId, TypeId, PokemonType};
+use crate::types::{Abilities, PokemonType, Moves};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
 use std::fmt;
@@ -243,7 +243,8 @@ impl fmt::Display for MoveTarget {
 pub struct MoveData {
     pub id: String,
     pub num: i32,
-    pub name: String,
+    #[serde(deserialize_with = "deserialize_move_name")]
+    pub name: Moves,
     #[serde(rename = "basePower")]
     pub base_power: u16,
     pub accuracy: u16,
@@ -322,7 +323,7 @@ impl Default for MoveData {
         Self {
             id: "0".to_string(),
             num: 0,
-            name: "tackle".to_string(),
+            name: crate::types::Moves::TACKLE,
             base_power: 40,
             accuracy: 100,
             pp: 35,
@@ -595,7 +596,8 @@ pub struct PokemonData {
     pub types: Vec<PokemonType>,
     #[serde(rename = "baseStats")]
     pub base_stats: BaseStats,
-    pub abilities: HashMap<String, AbilityId>, // slot -> ability
+    #[serde(deserialize_with = "deserialize_abilities")]
+    pub abilities: HashMap<String, Abilities>, // slot -> ability
     #[serde(default = "default_weight", rename = "weightkg")]
     pub weight_kg: f32, // Weight in kilograms
 
@@ -713,9 +715,11 @@ fn deserialize_pokemon_type<'de, D>(deserializer: D) -> Result<PokemonType, D::E
 where
     D: Deserializer<'de>,
 {
+    use crate::utils::normalize_name;
     let type_str = String::deserialize(deserializer)?;
-    PokemonType::from_normalized_str(&type_str)
-        .ok_or_else(|| serde::de::Error::custom(format!("Invalid Pokemon type: {}", type_str)))
+    let normalized = normalize_name(&type_str);
+    PokemonType::from_normalized_str(&normalized)
+        .ok_or_else(|| serde::de::Error::custom(format!("Invalid Pokemon type: {} (normalized: {})", type_str, normalized)))
 }
 
 /// Custom deserializer for Vec<PokemonType> from Vec<String>
@@ -723,12 +727,46 @@ fn deserialize_pokemon_types<'de, D>(deserializer: D) -> Result<Vec<PokemonType>
 where
     D: Deserializer<'de>,
 {
+    use crate::utils::normalize_name;
     let type_strings = Vec::<String>::deserialize(deserializer)?;
     type_strings
         .into_iter()
         .map(|type_str| {
-            PokemonType::from_normalized_str(&type_str)
-                .ok_or_else(|| serde::de::Error::custom(format!("Invalid Pokemon type: {}", type_str)))
+            let normalized = normalize_name(&type_str);
+            PokemonType::from_normalized_str(&normalized)
+                .ok_or_else(|| serde::de::Error::custom(format!("Invalid Pokemon type: {} (normalized: {})", type_str, normalized)))
+        })
+        .collect()
+}
+
+/// Custom deserializer for Moves from string
+fn deserialize_move_name<'de, D>(deserializer: D) -> Result<Moves, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    use crate::types::FromNormalizedString;
+    use crate::utils::normalize_name;
+    let move_str = String::deserialize(deserializer)?;
+    let normalized = normalize_name(&move_str);
+    Moves::from_normalized_str(&normalized)
+        .ok_or_else(|| serde::de::Error::custom(format!("Invalid move name: {} (normalized: {})", move_str, normalized)))
+}
+
+/// Custom deserializer for HashMap<String, Abilities> that normalizes ability names
+fn deserialize_abilities<'de, D>(deserializer: D) -> Result<HashMap<String, Abilities>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    use crate::types::FromNormalizedString;
+    use crate::utils::normalize_name;
+    let ability_map = HashMap::<String, String>::deserialize(deserializer)?;
+    ability_map
+        .into_iter()
+        .map(|(slot, ability_str)| {
+            let normalized = normalize_name(&ability_str);
+            let ability = Abilities::from_normalized_str(&normalized)
+                .ok_or_else(|| serde::de::Error::custom(format!("Invalid ability name: {} (normalized: {})", ability_str, normalized)))?;
+            Ok((slot, ability))
         })
         .collect()
 }
