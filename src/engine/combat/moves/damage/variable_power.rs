@@ -14,8 +14,11 @@ use crate::core::instructions::{
 };
 use crate::data::showdown_types::MoveData;
 use crate::engine::combat::moves::{simple, MoveContext};
-use crate::engine::combat::type_effectiveness::{PokemonType, TypeChart};
+use crate::engine::combat::type_effectiveness::TypeChart;
+use crate::types::PokemonType;
 use crate::generation::GenerationMechanics;
+use crate::engine::combat::composers::damage_moves::{simple_damage_move, DamageModifiers};
+use crate::engine::combat::core::damage_system::DamageCalculationContext;
 
 // =============================================================================
 // CONSTANTS FOR MOVE TYPES (avoid string allocations)
@@ -34,8 +37,8 @@ pub fn apply_facade(
     generation: &GenerationMechanics,
     branch_on_damage: bool,
 ) -> Vec<BattleInstructions> {
-    if let Some(user) = state.get_pokemon_at_position(user_position) {
-        // Facade doubles power if user has a status condition (Burn, Paralysis, Poison)
+    // Check if user has a status condition that triggers Facade
+    let power_multiplier = if let Some(user) = state.get_pokemon_at_position(user_position) {
         let has_status = matches!(
             user.status,
             PokemonStatus::Burn
@@ -43,31 +46,36 @@ pub fn apply_facade(
                 | PokemonStatus::Poison
                 | PokemonStatus::BadlyPoisoned
         );
-
+        
         if has_status {
-            // Return a power modifier instruction that doubles the base power
-            // This will be handled by the damage calculation system
-            return apply_power_modifier_move(
-                state,
-                move_data,
-                user_position,
-                target_positions,
-                generation,
-                FACADE_STATUS_MULTIPLIER as f32,
-                branch_on_damage,
-            );
+            Some(FACADE_STATUS_MULTIPLIER as f32)
+        } else {
+            None
         }
-    }
+    } else {
+        None
+    };
 
-    // No status condition, normal power
-    crate::engine::combat::moves::apply_generic_effects(
+    // Use damage composer with power modifier
+    let modifiers = DamageModifiers {
+        power_multiplier,
+        ..Default::default()
+    };
+
+    let instructions = simple_damage_move(
         state,
         move_data,
         user_position,
         target_positions,
+        modifiers,
         generation,
-        branch_on_damage,
-    )
+    );
+
+    vec![BattleInstructions::new_with_positions(
+        100.0, 
+        instructions, 
+        target_positions.to_vec()
+    )]
 }
 
 /// Apply Hex - doubles power against statused targets
@@ -79,39 +87,39 @@ pub fn apply_hex(
     generation: &GenerationMechanics,
     branch_on_damage: bool,
 ) -> Vec<BattleInstructions> {
-    let mut has_statused_target = false;
-
-    for &target_position in target_positions {
+    // Check if any target has a status condition
+    let has_statused_target = target_positions.iter().any(|&target_position| {
         if let Some(target) = state.get_pokemon_at_position(target_position) {
-            if target.status != PokemonStatus::None {
-                has_statused_target = true;
-                break;
-            }
+            target.status != PokemonStatus::None
+        } else {
+            false
         }
-    }
+    });
 
-    if has_statused_target {
-        // Return a power modifier instruction that doubles the base power
-        return apply_power_modifier_move(
-            state,
-            move_data,
-            user_position,
-            target_positions,
-            generation,
-            HEX_STATUS_MULTIPLIER as f32,
-            branch_on_damage,
-        );
-    }
+    // Use damage composer with power modifier
+    let modifiers = DamageModifiers {
+        power_multiplier: if has_statused_target {
+            Some(HEX_STATUS_MULTIPLIER as f32)
+        } else {
+            None
+        },
+        ..Default::default()
+    };
 
-    // No statused targets, normal power
-    crate::engine::combat::moves::apply_generic_effects(
+    let instructions = simple_damage_move(
         state,
         move_data,
         user_position,
         target_positions,
+        modifiers,
         generation,
-        branch_on_damage,
-    )
+    );
+
+    vec![BattleInstructions::new_with_positions(
+        100.0, 
+        instructions, 
+        target_positions.to_vec()
+    )]
 }
 
 /// Apply Gyro Ball - power based on speed comparison
@@ -123,49 +131,46 @@ pub fn apply_gyro_ball(
     generation: &GenerationMechanics,
     branch_on_damage: bool,
 ) -> Vec<BattleInstructions> {
-    if target_positions.is_empty() {
-        return vec![BattleInstructions::new(100.0, vec![])];
+    let mut instructions = Vec::new();
+
+    for &target_position in target_positions {
+        // Calculate base power based on speed comparison
+        let base_power = if let (Some(user), Some(target)) = (
+            state.get_pokemon_at_position(user_position),
+            state.get_pokemon_at_position(target_position),
+        ) {
+            let user_speed = calculate_boosted_speed(user);
+            let target_speed = calculate_boosted_speed(target);
+
+            if user_speed > 0 {
+                // Gyro Ball power = min(150, max(1, 25 * target_speed / user_speed))
+                let calculated_power = ((25.0 * target_speed as f32 / user_speed as f32).max(1.0)).min(150.0);
+                calculated_power as u16
+            } else {
+                1 // Minimum power if user has 0 speed
+            }
+        } else {
+            1 // Fallback power
+        };
+
+        // Create modified move data with calculated power
+        let modified_move_data = MoveData {
+            base_power,
+            ..move_data.clone()
+        };
+
+        let target_instructions = crate::engine::combat::moves::apply_generic_effects(
+            state,
+            &modified_move_data,
+            user_position,
+            &[target_position],
+            generation,
+            branch_on_damage,
+        );
+        instructions.extend(target_instructions);
     }
 
-    let target_position = target_positions[0];
-
-    if let (Some(user), Some(target)) = (
-        state.get_pokemon_at_position(user_position),
-        state.get_pokemon_at_position(target_position),
-    ) {
-        // Gyro Ball power = min(150, max(1, 25 * target_speed / user_speed))
-        let user_speed = calculate_boosted_speed(user);
-        let target_speed = calculate_boosted_speed(target);
-
-        if user_speed > 0 {
-            let calculated_power =
-                ((25.0 * target_speed as f32 / user_speed as f32).max(1.0)).min(150.0);
-
-            let modified_move_data = MoveData {
-                base_power: calculated_power.round() as u16,
-                ..move_data.clone()
-            };
-
-            return crate::engine::combat::moves::apply_generic_effects(
-                state,
-                &modified_move_data,
-                user_position,
-                target_positions,
-                generation,
-                branch_on_damage,
-            );
-        }
-    }
-
-    // Fallback to normal power
-    crate::engine::combat::moves::apply_generic_effects(
-        state,
-        move_data,
-        user_position,
-        target_positions,
-        generation,
-        branch_on_damage,
-    )
+    instructions
 }
 
 /// Apply Reversal - power based on user's remaining HP
@@ -261,7 +266,6 @@ pub fn apply_weather_ball(
     generation: &GenerationMechanics,
     branch_on_damage: bool,
 ) -> Vec<BattleInstructions> {
-    // Avoid expensive clone by only modifying what we need
     let current_weather = state.weather();
 
     // Find matching weather type or return generic effects for no weather
@@ -269,7 +273,7 @@ pub fn apply_weather_ball(
         .iter()
         .find(|(weather, _)| *weather == current_weather)
     {
-        (pokemon_type.to_str(), WEATHER_BALL_BOOSTED_POWER)
+        (*pokemon_type, WEATHER_BALL_BOOSTED_POWER as f32)
     } else {
         return crate::engine::combat::moves::apply_generic_effects(
             state,
@@ -281,32 +285,33 @@ pub fn apply_weather_ball(
         );
     };
 
-    // Only clone the strings we absolutely need
+    // For type changes, we need to create a modified move with the new type
+    // but use the efficient power modification system to avoid unnecessary cloning
     let modified_move_data = MoveData {
-        move_type: new_type.to_string(),
-        base_power: move_data.base_power * power_multiplier,
-        // Copy by reference to avoid allocations where possible
-        id: move_data.id.clone(),
-        num: move_data.num,
-        name: move_data.name.clone(),
-        accuracy: move_data.accuracy,
-        pp: move_data.pp,
-        max_pp: move_data.max_pp,
-        category: move_data.category.clone(),
-        priority: move_data.priority,
-        target: move_data.target.clone(),
-        flags: move_data.flags.clone(),
+        move_type: new_type,
+        ..move_data.clone()
+    };
+
+    // Use damage composer with power modifier
+    let modifiers = DamageModifiers {
+        power_multiplier: Some(power_multiplier),
         ..Default::default()
     };
 
-    crate::engine::combat::moves::apply_generic_effects(
+    let instructions = simple_damage_move(
         state,
         &modified_move_data,
         user_position,
         target_positions,
+        modifiers,
         generation,
-        branch_on_damage,
-    )
+    );
+
+    vec![BattleInstructions::new_with_positions(
+        100.0, 
+        instructions, 
+        target_positions.to_vec()
+    )]
 }
 
 /// Apply Avalanche - doubles power if user was damaged this turn
@@ -625,21 +630,51 @@ fn apply_power_modifier_move(
     power_multiplier: f32,
     branch_on_damage: bool,
 ) -> Vec<BattleInstructions> {
-    // Create modified move data with adjusted power
-    let mut modified_move = move_data.clone();
-    if modified_move.base_power > 0 {
-        modified_move.base_power = ((modified_move.base_power as f32 * power_multiplier) as u16);
+    // Use power modifier instead of cloning entire MoveData
+    if move_data.base_power > 0 && power_multiplier != 1.0 {
+        let mut instructions = Vec::new();
+        for &target_position in target_positions {
+            let context = DamageCalculationContext::new_with_power(
+                move_data,
+                user_position,
+                target_position,
+                generation.clone(),
+                branch_on_damage,
+                power_multiplier,
+            );
+            
+            let damage_result = crate::engine::combat::core::damage_system::calculate_damage_with_effects(
+                state, context
+            );
+            
+            if damage_result.damage > 0 {
+                instructions.push(BattleInstruction::Pokemon(
+                    crate::core::instructions::pokemon::PokemonInstruction::Damage {
+                        target: target_position,
+                        amount: damage_result.damage,
+                        previous_hp: None,
+                    }
+                ));
+            }
+        }
+        
+        // Wrap in BattleInstructions
+        vec![BattleInstructions {
+            percentage: 100.0,
+            instruction_list: instructions,
+            affected_positions: target_positions.to_vec(),
+        }]
+    } else {
+        // No power modification needed, use standard application
+        crate::engine::combat::moves::apply_generic_effects(
+            state,
+            move_data,
+            user_position,
+            target_positions,
+            generation,
+            branch_on_damage,
+        )
     }
-
-    // Apply generic effects with the modified move data
-    crate::engine::combat::moves::apply_generic_effects(
-        state,
-        &modified_move,
-        user_position,
-        target_positions,
-        generation,
-        branch_on_damage,
-    )
 }
 
 /// Calculate speed with stat boosts applied
@@ -882,7 +917,7 @@ pub fn apply_collision_course(
             let mut modified_move_data = move_data.clone();
 
             // Check if move is super effective against target
-            if is_super_effective(move_type, target, generation) {
+            if is_super_effective(move_type.to_normalized_str(), target, generation) {
                 let current_power = modified_move_data.base_power.max(100);
                 modified_move_data.base_power = (current_power as f32 * 1.3) as u16;
             }
@@ -944,8 +979,8 @@ pub fn apply_freeze_dry(
             // Check if target is Water type - if so, boost damage significantly
             let has_water_type = FREEZE_DRY_TARGETS.iter().any(|freeze_dry_type| {
                 target.types.iter().any(|target_type| {
-                    crate::utils::normalize_name(target_type)
-                        == crate::utils::normalize_name(freeze_dry_type.to_str())
+                    crate::utils::normalize_name(target_type.to_normalized_str())
+                        == crate::utils::normalize_name(freeze_dry_type.to_normalized_str())
                 })
             });
 
@@ -1329,11 +1364,11 @@ pub fn apply_terrain_pulse(
         .iter()
         .find(|(terrain, _)| *terrain == current_terrain)
     {
-        modified_move_data.move_type = terrain_type.to_str().to_string();
+        modified_move_data.move_type = *terrain_type;
         modified_move_data.base_power = move_data.base_power * WEATHER_BALL_BOOSTED_POWER;
     } else {
         // No terrain or unhandled terrain - remains Normal type with base power
-        modified_move_data.move_type = PokemonType::Normal.to_str().to_string();
+        modified_move_data.move_type = PokemonType::Normal;
         // Keep original base power
     }
 
@@ -1439,23 +1474,23 @@ fn calculate_type_effectiveness(
     target: &Pokemon,
     generation: &GenerationMechanics,
 ) -> f32 {
-    let type_chart = TypeChart::new(generation.generation.number());
-    let move_pokemon_type = match PokemonType::from_str(move_type) {
+    let type_chart = TypeChart::get_cached(generation.generation.number());
+    let move_pokemon_type = match PokemonType::from_normalized_str(move_type) {
         Some(t) => t,
         None => return 1.0, // Neutral if invalid type
     };
 
     // Get target's types
-    let target_type1 = PokemonType::from_str(&target.types[0]).unwrap_or(PokemonType::Normal);
+    let target_type1 = target.types[0];
     let target_type2 = if target.types.len() > 1 {
-        PokemonType::from_str(&target.types[1]).unwrap_or(target_type1)
+        target.types[1]
     } else {
         target_type1
     };
 
     // Handle Tera type if applicable
     let tera_type = if target.is_terastallized {
-        target.tera_type.map(convert_tera_type)
+        target.tera_type
     } else {
         None
     };
@@ -1501,8 +1536,8 @@ pub fn is_immune_to_paralysis(target: &Pokemon, generation: &GenerationMechanics
     // Electric types are immune to paralysis in Gen 6+
     if generation.generation.number() >= 6 {
         target.types.iter().any(|target_type| {
-            crate::utils::normalize_name(target_type)
-                == crate::utils::normalize_name(PokemonType::Electric.to_str())
+            crate::utils::normalize_name(target_type.to_normalized_str())
+                == crate::utils::normalize_name(PokemonType::Electric.to_normalized_str())
         })
     } else {
         false
@@ -1514,8 +1549,8 @@ pub fn is_immune_to_poison(target: &Pokemon, generation: &GenerationMechanics) -
     // Poison and Steel types are immune to poison
     POISON_RESISTANT_TYPES.iter().any(|resistant_type| {
         target.types.iter().any(|target_type| {
-            crate::utils::normalize_name(target_type)
-                == crate::utils::normalize_name(resistant_type.to_str())
+            crate::utils::normalize_name(target_type.to_normalized_str())
+                == crate::utils::normalize_name(resistant_type.to_normalized_str())
         })
     })
 }
@@ -1577,7 +1612,7 @@ pub fn apply_me_first(
                     accuracy: repo_move_data.accuracy as u16,
                     pp: repo_move_data.pp,
                     max_pp: repo_move_data.max_pp,
-                    move_type: repo_move_data.move_type.to_string(),
+                    move_type: repo_move_data.move_type,
                     category: repo_move_data.category.clone(),
                     priority: repo_move_data.priority,
                     target: repo_move_data.target.clone(),

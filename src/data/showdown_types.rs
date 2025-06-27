@@ -3,8 +3,8 @@
 //! This module defines data types that match Pokemon Showdown's conventions,
 //! enabling direct usage of PS data without transformation.
 
-use crate::types::{AbilityId, TypeId};
-use serde::{Deserialize, Serialize};
+use crate::types::{AbilityId, TypeId, PokemonType};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
 use std::fmt;
 
@@ -165,7 +165,7 @@ impl MoveTarget {
             }
             MoveTarget::AllAdjacent => {
                 // All adjacent Pokemon (opponents + ally in doubles)
-                let mut targets = Vec::new();
+                let mut targets = Vec::with_capacity(active_per_side + 1); // Max possible targets
                 let opponent_side = 1 - user_side;
 
                 // Add all opponents
@@ -250,8 +250,8 @@ pub struct MoveData {
     pub pp: u8,
     #[serde(rename = "maxPP")]
     pub max_pp: u8,
-    #[serde(rename = "type")]
-    pub move_type: String,
+    #[serde(rename = "type", deserialize_with = "deserialize_pokemon_type")]
+    pub move_type: PokemonType,
     pub category: String, // "Physical", "Special", "Status"
     pub priority: i8,
     pub target: String, // We'll parse this into MoveTarget
@@ -327,7 +327,7 @@ impl Default for MoveData {
             accuracy: 100,
             pp: 35,
             max_pp: 35,
-            move_type: "normal".to_string(),
+            move_type: PokemonType::Normal,
             category: "Physical".to_string(),
             priority: 0,
             target: "normal".to_string(),
@@ -591,7 +591,8 @@ pub struct PokemonData {
     #[serde(default)]
     pub num: i32,
     pub name: String,
-    pub types: Vec<TypeId>,
+    #[serde(deserialize_with = "deserialize_pokemon_types")]
+    pub types: Vec<PokemonType>,
     #[serde(rename = "baseStats")]
     pub base_stats: BaseStats,
     pub abilities: HashMap<String, AbilityId>, // slot -> ability
@@ -705,4 +706,29 @@ pub struct AbilityData {
     pub name: String,
     pub description: String,
     pub short_desc: String,
+}
+
+/// Custom deserializer for PokemonType from string
+fn deserialize_pokemon_type<'de, D>(deserializer: D) -> Result<PokemonType, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let type_str = String::deserialize(deserializer)?;
+    PokemonType::from_normalized_str(&type_str)
+        .ok_or_else(|| serde::de::Error::custom(format!("Invalid Pokemon type: {}", type_str)))
+}
+
+/// Custom deserializer for Vec<PokemonType> from Vec<String>
+fn deserialize_pokemon_types<'de, D>(deserializer: D) -> Result<Vec<PokemonType>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let type_strings = Vec::<String>::deserialize(deserializer)?;
+    type_strings
+        .into_iter()
+        .map(|type_str| {
+            PokemonType::from_normalized_str(&type_str)
+                .ok_or_else(|| serde::de::Error::custom(format!("Invalid Pokemon type: {}", type_str)))
+        })
+        .collect()
 }

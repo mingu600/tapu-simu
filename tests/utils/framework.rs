@@ -418,12 +418,8 @@ impl TapuTestFramework {
         pokemon.max_hp = pokemon.stats.hp;
         pokemon.hp = pokemon.max_hp;
 
-        // Set types from Pokemon data (convert TypeId to String)
-        pokemon.types = pokemon_data
-            .types
-            .iter()
-            .map(|t| t.as_str().to_string())
-            .collect();
+        // Set types from Pokemon data
+        pokemon.types = pokemon_data.types.clone();
 
         // Set weight
         pokemon.weight_kg = pokemon_data.weight_kg;

@@ -4,97 +4,25 @@
 //! with generation-specific variations and special cases.
 
 use std::collections::HashMap;
+use std::sync::LazyLock;
 use serde::{Deserialize, Serialize};
+use crate::types::identifiers::{MoveId, TypeId};
+use crate::types::PokemonType;
 // Removed old service layer import - type chart loading now handled differently
 
-/// Pokemon types with numeric indices for the effectiveness matrix
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[repr(u8)]
-pub enum PokemonType {
-    Normal = 0,
-    Fire = 1,
-    Water = 2,
-    Electric = 3,
-    Grass = 4,
-    Ice = 5,
-    Fighting = 6,
-    Poison = 7,
-    Ground = 8,
-    Flying = 9,
-    Psychic = 10,
-    Bug = 11,
-    Rock = 12,
-    Ghost = 13,
-    Dragon = 14,
-    Dark = 15,
-    Steel = 16,
-    Fairy = 17,
-    Typeless = 18, // Internal type for moves like Struggle
-}
-
-impl PokemonType {
-    /// Convert from string representation
-    pub fn from_str(type_str: &str) -> Option<Self> {
-        match type_str.to_lowercase().as_str() {
-            "normal" => Some(Self::Normal),
-            "fire" => Some(Self::Fire),
-            "water" => Some(Self::Water),
-            "electric" => Some(Self::Electric),
-            "grass" => Some(Self::Grass),
-            "ice" => Some(Self::Ice),
-            "fighting" => Some(Self::Fighting),
-            "poison" => Some(Self::Poison),
-            "ground" => Some(Self::Ground),
-            "flying" => Some(Self::Flying),
-            "psychic" => Some(Self::Psychic),
-            "bug" => Some(Self::Bug),
-            "rock" => Some(Self::Rock),
-            "ghost" => Some(Self::Ghost),
-            "dragon" => Some(Self::Dragon),
-            "dark" => Some(Self::Dark),
-            "steel" => Some(Self::Steel),
-            "fairy" => Some(Self::Fairy),
-            "typeless" | "???" => Some(Self::Typeless),
-            _ => None,
-        }
+/// Global cache for generation-specific type charts
+/// This eliminates the expensive recreation of type charts for every damage calculation
+static TYPE_CHART_CACHE: LazyLock<HashMap<u8, TypeChart>> = LazyLock::new(|| {
+    let mut cache = HashMap::new();
+    
+    // Pre-compute all generation type charts
+    for generation in 1..=9 {
+        cache.insert(generation, TypeChart::new_uncached(generation));
     }
+    
+    cache
+});
 
-    /// Convert to string representation
-    pub fn to_str(&self) -> &'static str {
-        match self {
-            Self::Normal => "Normal",
-            Self::Fire => "Fire",
-            Self::Water => "Water",
-            Self::Electric => "Electric",
-            Self::Grass => "Grass",
-            Self::Ice => "Ice",
-            Self::Fighting => "Fighting",
-            Self::Poison => "Poison",
-            Self::Ground => "Ground",
-            Self::Flying => "Flying",
-            Self::Psychic => "Psychic",
-            Self::Bug => "Bug",
-            Self::Rock => "Rock",
-            Self::Ghost => "Ghost",
-            Self::Dragon => "Dragon",
-            Self::Dark => "Dark",
-            Self::Steel => "Steel",
-            Self::Fairy => "Fairy",
-            Self::Typeless => "Typeless",
-        }
-    }
-
-    /// Get all types (for iteration)
-    pub fn all_types() -> [Self; 18] {
-        [
-            Self::Normal, Self::Fire, Self::Water, Self::Electric,
-            Self::Grass, Self::Ice, Self::Fighting, Self::Poison,
-            Self::Ground, Self::Flying, Self::Psychic, Self::Bug,
-            Self::Rock, Self::Ghost, Self::Dragon, Self::Dark,
-            Self::Steel, Self::Fairy,
-        ]
-    }
-}
 
 /// Type effectiveness chart with generation support
 #[derive(Debug, Clone)]
@@ -104,12 +32,35 @@ pub struct TypeChart {
     /// Generation this chart applies to
     generation: u8,
     /// Special case overrides for specific move-type combinations
-    special_cases: HashMap<(String, PokemonType), f32>,
+    special_cases: HashMap<(MoveId, PokemonType), f32>,
 }
 
 impl TypeChart {
-    /// Create a new type chart for the specified generation
-    pub fn new(generation: u8) -> Self {
+    /// Get a cached type chart for the specified generation (preferred method)
+    /// 
+    /// This is the recommended way to access type charts as it avoids expensive
+    /// recreation of the effectiveness matrix for every damage calculation.
+    /// 
+    /// ## Performance Benefits
+    /// - **Memory**: Reuses pre-computed charts instead of allocating new ones
+    /// - **CPU**: Eliminates 500+ operations per damage calculation
+    /// - **Scalability**: Shared across all battle calculations
+    /// 
+    /// ## Usage
+    /// ```rust
+    /// let type_chart = TypeChart::get_cached(8); // Generation 8
+    /// let effectiveness = type_chart.get_effectiveness(PokemonType::Fire, PokemonType::Water);
+    /// ```
+    pub fn get_cached(generation: u8) -> &'static TypeChart {
+        TYPE_CHART_CACHE.get(&generation)
+            .unwrap_or_else(|| &TYPE_CHART_CACHE[&9]) // Default to Gen 9 if invalid generation
+    }
+    
+    /// Create a new type chart for the specified generation (internal use only)
+    /// 
+    /// This method creates a new TypeChart instance and should only be used internally
+    /// for populating the cache. Use `get_cached()` for normal operations.
+    fn new_uncached(generation: u8) -> Self {
         let mut chart = Self {
             effectiveness: [[1.0; 19]; 19],
             generation,
@@ -143,7 +94,7 @@ impl TypeChart {
         // Check for special case overrides first
         if let Some(move_name) = move_name {
             for target_type in [target_types.0, target_types.1].iter() {
-                if let Some(&override_multiplier) = self.special_cases.get(&(move_name.to_string(), *target_type)) {
+                if let Some(&override_multiplier) = self.special_cases.get(&(MoveId::new(move_name), *target_type)) {
                     return override_multiplier;
                 }
             }
@@ -437,20 +388,20 @@ impl TypeChart {
     /// Add special case overrides for specific moves
     fn add_special_cases(&mut self) {
         // Freeze-Dry is super effective against Water despite being Ice-type
-        self.special_cases.insert(("freeze-dry".to_string(), PokemonType::Water), 2.0);
+        self.special_cases.insert((MoveId::new("freeze-dry"), PokemonType::Water), 2.0);
         
         // Flying Press is Fighting-type but hits like Fighting + Flying
         // This is handled in move-specific logic, not here
         
         // Thousand Arrows hits Flying types for neutral damage despite being Ground
-        self.special_cases.insert(("thousand-arrows".to_string(), PokemonType::Flying), 1.0);
+        self.special_cases.insert((MoveId::new("thousand-arrows"), PokemonType::Flying), 1.0);
     }
 }
 
 /// Default type chart for the current generation (Gen 9)
 impl Default for TypeChart {
     fn default() -> Self {
-        Self::new(9)
+        Self::new_uncached(9)
     }
 }
 

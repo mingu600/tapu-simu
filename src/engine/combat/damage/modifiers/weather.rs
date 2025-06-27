@@ -57,7 +57,7 @@ pub fn get_weather_stat_multiplier(
         Weather::Sand => {
             // Sandstorm boosts Special Defense of Rock types by 1.5x
             if stat == Stat::SpecialDefense
-                && pokemon.types.iter().any(|t| t.to_lowercase() == "rock")
+                && pokemon.types.iter().any(|t| *t == crate::types::PokemonType::Rock)
             {
                 1.5
             } else {
@@ -67,7 +67,7 @@ pub fn get_weather_stat_multiplier(
         Weather::Snow => {
             // Snow boosts Defense of Ice types by 1.5x
             if stat == Stat::Defense
-                && pokemon.types.iter().any(|t| t.to_lowercase() == "ice")
+                && pokemon.types.iter().any(|t| *t == crate::types::PokemonType::Ice)
             {
                 1.5
             } else {

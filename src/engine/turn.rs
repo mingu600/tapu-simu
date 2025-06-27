@@ -1060,7 +1060,7 @@ fn generate_attack_instructions_with_enhanced_context(
                 accuracy: repo_move_data.accuracy as u16,
                 pp: repo_move_data.pp,
                 max_pp: repo_move_data.max_pp,
-                move_type: repo_move_data.move_type.to_string(),
+                move_type: repo_move_data.move_type,
                 category: repo_move_data.category.clone(),
                 priority: repo_move_data.priority,
                 target: repo_move_data.target.clone(),

@@ -5,7 +5,8 @@
 //! Dynamax, and Terastallization support.
 
 use crate::engine::combat::damage_context::{DamageContext, DamageResult, DamageEffect};
-use crate::engine::combat::type_effectiveness::{PokemonType, TypeChart};
+use crate::engine::combat::type_effectiveness::TypeChart;
+use crate::types::PokemonType;
 use crate::engine::combat::damage::DamageRolls;
 use crate::core::battle_state::Pokemon;
 use crate::generation::GenerationMechanics;
@@ -24,7 +25,7 @@ fn poke_round(num: f32) -> f32 {
 /// Check if a Pokemon is grounded (affected by terrain)
 fn is_grounded(pokemon: &Pokemon) -> bool {
     // Check for Flying type
-    if pokemon.types.iter().any(|t| t.to_lowercase() == "flying") {
+    if pokemon.types.iter().any(|t| *t == PokemonType::Flying) {
         return false;
     }
 
@@ -179,7 +180,7 @@ pub fn calculate_damage_modern_gen789(context: &DamageContext, damage_rolls: Dam
     // Early immunity checks 
     
     // Check for Levitate immunity to Ground-type moves
-    if context.move_info.move_type.to_lowercase() == "ground" && 
+    if context.move_info.move_type.as_str() == "ground" && 
        context.defender.pokemon.ability.to_lowercase() == "levitate" {
         return DamageResult {
             damage: 0,
@@ -192,7 +193,7 @@ pub fn calculate_damage_modern_gen789(context: &DamageContext, damage_rolls: Dam
     }
     
     // Check for Flash Fire immunity to Fire-type moves (absorbs and boosts)
-    if context.move_info.move_type.to_lowercase() == "fire" && 
+    if context.move_info.move_type.as_str() == "fire" && 
        context.defender.pokemon.ability.to_lowercase() == "flashfire" {
         return DamageResult {
             damage: 0,
@@ -205,7 +206,7 @@ pub fn calculate_damage_modern_gen789(context: &DamageContext, damage_rolls: Dam
     }
     
     // Check for Water Absorb immunity to Water-type moves
-    if context.move_info.move_type.to_lowercase() == "water" && 
+    if context.move_info.move_type.as_str() == "water" && 
        context.defender.pokemon.ability.to_lowercase() == "waterabsorb" {
         return DamageResult {
             damage: 0,
@@ -218,7 +219,7 @@ pub fn calculate_damage_modern_gen789(context: &DamageContext, damage_rolls: Dam
     }
     
     // Check for Volt Absorb immunity to Electric-type moves  
-    if context.move_info.move_type.to_lowercase() == "electric" && 
+    if context.move_info.move_type.as_str() == "electric" && 
        context.defender.pokemon.ability.to_lowercase() == "voltabsorb" {
         return DamageResult {
             damage: 0,
@@ -310,14 +311,13 @@ pub fn calculate_damage_modern_gen789(context: &DamageContext, damage_rolls: Dam
     let damage = base_damage * critical_modifier;
 
     // Type effectiveness calculation
-    let type_chart = TypeChart::new(8); // Modern type chart
+    let type_chart = TypeChart::get_cached(8); // Modern type chart
     let move_type =
-        PokemonType::from_str(&context.move_info.move_type).unwrap_or(PokemonType::Normal);
+        PokemonType::from_normalized_str(context.move_info.move_type.as_str()).unwrap_or(PokemonType::Normal);
 
-    let defender_type1 =
-        PokemonType::from_str(&context.defender.pokemon.types[0]).unwrap_or(PokemonType::Normal);
+    let defender_type1 = context.defender.pokemon.types[0];
     let defender_type2 = if context.defender.pokemon.types.len() > 1 {
-        PokemonType::from_str(&context.defender.pokemon.types[1]).unwrap_or(defender_type1)
+        context.defender.pokemon.types[1]
     } else {
         defender_type1
     };
@@ -343,10 +343,9 @@ pub fn calculate_damage_modern_gen789(context: &DamageContext, damage_rolls: Dam
     }
 
     // STAB calculation
-    let attacker_type1 =
-        PokemonType::from_str(&context.attacker.pokemon.types[0]).unwrap_or(PokemonType::Normal);
+    let attacker_type1 = context.attacker.pokemon.types[0];
     let attacker_type2 = if context.attacker.pokemon.types.len() > 1 {
-        PokemonType::from_str(&context.attacker.pokemon.types[1]).unwrap_or(attacker_type1)
+        context.attacker.pokemon.types[1]
     } else {
         attacker_type1
     };
@@ -361,7 +360,7 @@ pub fn calculate_damage_modern_gen789(context: &DamageContext, damage_rolls: Dam
     // Weather effects
     let mut weather_multiplier = 1.0;
     if let crate::core::instructions::Weather::Sun = context.field.weather.condition {
-        match context.move_info.move_type.to_lowercase().as_str() {
+        match context.move_info.move_type.as_str() {
             "fire" => {
                 weather_multiplier = 1.5;
                 effects.push(DamageEffect::WeatherEffect {
@@ -377,7 +376,7 @@ pub fn calculate_damage_modern_gen789(context: &DamageContext, damage_rolls: Dam
             _ => {}
         }
     } else if let crate::core::instructions::Weather::Rain = context.field.weather.condition {
-        match context.move_info.move_type.to_lowercase().as_str() {
+        match context.move_info.move_type.as_str() {
             "water" => {
                 weather_multiplier = 1.5;
                 effects.push(DamageEffect::WeatherEffect {
@@ -398,7 +397,7 @@ pub fn calculate_damage_modern_gen789(context: &DamageContext, damage_rolls: Dam
     let generation_mechanics = GenerationMechanics::new(crate::generation::Generation::Gen8);
     let terrain_multiplier = get_terrain_damage_modifier(
         &context.field.terrain.condition,
-        &context.move_info.move_type,
+        context.move_info.move_type.as_str(),
         &context.attacker.pokemon,
         &context.defender.pokemon,
         &generation_mechanics,

@@ -7,28 +7,29 @@ use super::ItemModifier;
 use crate::engine::combat::damage_context::DamageContext;
 use crate::generation::GenerationBattleMechanics;
 use crate::core::battle_state::{MoveCategory, Pokemon};
+use crate::types::identifiers::{ItemId, MoveId, TypeId};
 
 /// Get species item effect if the item is species-specific
 pub fn get_species_item_effect(
-    item_name: &str,
+    item_id: &ItemId,
     generation: &dyn GenerationBattleMechanics,
     attacker: &Pokemon,
     _defender: Option<&Pokemon>,
-    _move_name: &str,
-    move_type: &str,
+    _move_id: &MoveId,
+    move_type_id: &TypeId,
     move_category: MoveCategory,
     context: &DamageContext,
 ) -> Option<ItemModifier> {
-    let normalized_name = item_name.to_lowercase().replace(&[' ', '-', '\''][..], "");
+    let move_type_str = move_type_id.as_str();
     
-    match normalized_name.as_str() {
+    match item_id.as_str() {
         // Classic Species Items
         "thickclub" => Some(thick_club_effect(attacker, move_category)),
         "lightball" => Some(light_ball_effect(attacker, move_category)),
-        "souldew" => Some(soul_dew_effect(attacker, move_type, generation)),
-        "adamantorb" => Some(adamant_orb_effect(attacker, move_type)),
-        "lustrousorb" => Some(lustrous_orb_effect(attacker, move_type)),
-        "griseousorb" => Some(griseous_orb_effect(attacker, move_type)),
+        "souldew" => Some(soul_dew_effect(attacker, move_type_str, generation)),
+        "adamantorb" => Some(adamant_orb_effect(attacker, move_type_str)),
+        "lustrousorb" => Some(lustrous_orb_effect(attacker, move_type_str)),
+        "griseousorb" => Some(griseous_orb_effect(attacker, move_type_str)),
         
         // Modern Species Items
         "rustedsword" => Some(rusted_sword_effect(attacker)),
@@ -47,7 +48,7 @@ pub fn get_species_item_effect(
 
 /// Thick Club - Doubles Attack for Cubone and Marowak
 fn thick_club_effect(attacker: &Pokemon, move_category: MoveCategory) -> ItemModifier {
-    let species_name = attacker.species.to_lowercase();
+    let species_name = &attacker.species;
     if (species_name.contains("cubone") || species_name.contains("marowak"))
         && move_category == MoveCategory::Physical
     {
@@ -59,7 +60,7 @@ fn thick_club_effect(attacker: &Pokemon, move_category: MoveCategory) -> ItemMod
 
 /// Light Ball - Doubles Attack and Special Attack for Pikachu
 fn light_ball_effect(attacker: &Pokemon, move_category: MoveCategory) -> ItemModifier {
-    let species_name = attacker.species.to_lowercase();
+    let species_name = &attacker.species;
     if species_name.contains("pikachu") {
         match move_category {
             MoveCategory::Physical => ItemModifier::new().with_attack_multiplier(2.0),
@@ -77,13 +78,13 @@ fn soul_dew_effect(
     move_type: &str,
     generation: &dyn GenerationBattleMechanics,
 ) -> ItemModifier {
-    let species_name = attacker.species.to_lowercase();
+    let species_name = &attacker.species;
     if species_name.contains("latios") || species_name.contains("latias") {
         use crate::generation::Generation;
         match generation.generation() {
             Generation::Gen7 | Generation::Gen8 | Generation::Gen9 => {
                 // Gen 7+: Boost Dragon/Psychic moves by 20%
-                if move_type.to_lowercase() == "dragon" || move_type.to_lowercase() == "psychic" {
+                if move_type == "dragon" || move_type == "psychic" {
                     ItemModifier::new().with_power_multiplier(1.2)
                 } else {
                     ItemModifier::default()
@@ -103,10 +104,9 @@ fn soul_dew_effect(
 
 /// Adamant Orb - Boosts Dragon/Steel moves for Dialga
 fn adamant_orb_effect(attacker: &Pokemon, move_type: &str) -> ItemModifier {
-    let species_name = attacker.species.to_lowercase();
+    let species_name = &attacker.species;
     if species_name.contains("dialga") {
-        let move_type_lower = move_type.to_lowercase();
-        if move_type_lower == "dragon" || move_type_lower == "steel" {
+        if move_type == "dragon" || move_type == "steel" {
             ItemModifier::new().with_power_multiplier(1.2)
         } else {
             ItemModifier::default()
@@ -118,10 +118,9 @@ fn adamant_orb_effect(attacker: &Pokemon, move_type: &str) -> ItemModifier {
 
 /// Lustrous Orb - Boosts Dragon/Water moves for Palkia
 fn lustrous_orb_effect(attacker: &Pokemon, move_type: &str) -> ItemModifier {
-    let species_name = attacker.species.to_lowercase();
+    let species_name = &attacker.species;
     if species_name.contains("palkia") {
-        let move_type_lower = move_type.to_lowercase();
-        if move_type_lower == "dragon" || move_type_lower == "water" {
+        if move_type == "dragon" || move_type == "water" {
             ItemModifier::new().with_power_multiplier(1.2)
         } else {
             ItemModifier::default()
@@ -133,10 +132,9 @@ fn lustrous_orb_effect(attacker: &Pokemon, move_type: &str) -> ItemModifier {
 
 /// Griseous Orb - Boosts Dragon/Ghost moves for Giratina
 fn griseous_orb_effect(attacker: &Pokemon, move_type: &str) -> ItemModifier {
-    let species_name = attacker.species.to_lowercase();
+    let species_name = &attacker.species;
     if species_name.contains("giratina") {
-        let move_type_lower = move_type.to_lowercase();
-        if move_type_lower == "dragon" || move_type_lower == "ghost" {
+        if move_type == "dragon" || move_type == "ghost" {
             ItemModifier::new().with_power_multiplier(1.2)
         } else {
             ItemModifier::default()
@@ -152,7 +150,7 @@ fn griseous_orb_effect(attacker: &Pokemon, move_type: &str) -> ItemModifier {
 
 /// Rusted Sword - Zacian forme item
 fn rusted_sword_effect(attacker: &Pokemon) -> ItemModifier {
-    let species_name = attacker.species.to_lowercase();
+    let species_name = &attacker.species;
     if species_name.contains("zacian") {
         // Rusted Sword primarily provides forme change
         // The actual stat boosts are handled by the forme, not the item directly
@@ -164,7 +162,7 @@ fn rusted_sword_effect(attacker: &Pokemon) -> ItemModifier {
 
 /// Rusted Shield - Zamazenta forme item
 fn rusted_shield_effect(attacker: &Pokemon) -> ItemModifier {
-    let species_name = attacker.species.to_lowercase();
+    let species_name = &attacker.species;
     if species_name.contains("zamazenta") {
         // Rusted Shield primarily provides forme change
         // The actual stat boosts are handled by the forme, not the item directly
@@ -176,7 +174,7 @@ fn rusted_shield_effect(attacker: &Pokemon) -> ItemModifier {
 
 /// Ogerpon Masks - 1.2x power boost for matching Ogerpon forms
 fn ogerpon_mask_effect(attacker: &Pokemon, mask_type: &str) -> ItemModifier {
-    let species_name = attacker.species.to_lowercase();
+    let species_name = &attacker.species;
     if species_name.contains("ogerpon") {
         // Check if the Ogerpon forme matches the mask
         match mask_type {

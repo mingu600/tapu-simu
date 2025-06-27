@@ -10,21 +10,21 @@ use crate::core::battle_state::{MoveCategory, Pokemon};
 use crate::core::battle_format::BattlePosition;
 use crate::core::instructions::PokemonStatus;
 use crate::core::instructions::{BattleInstruction, BattleInstructions, StatusInstruction, PokemonInstruction};
+use crate::types::identifiers::{ItemId, MoveId, TypeId};
+use crate::types::PokemonType;
 
 /// Get status item effect if the item affects status conditions
 pub fn get_status_item_effect(
-    item_name: &str,
+    item_id: &ItemId,
     _generation: &dyn GenerationBattleMechanics,
     _attacker: &Pokemon,
     _defender: Option<&Pokemon>,
-    _move_name: &str,
-    _move_type: &str,
+    _move_id: &MoveId,
+    _move_type_id: &TypeId,
     _move_category: MoveCategory,
     _context: &DamageContext,
 ) -> Option<ItemModifier> {
-    let normalized_name = item_name.to_lowercase().replace(&[' ', '-', '\''][..], "");
-    
-    match normalized_name.as_str() {
+    match item_id.as_str() {
         // Status items don't modify damage during combat, they have end-of-turn effects
         "blacksludge" | "flameorb" | "toxicorb" => Some(ItemModifier::default()),
         _ => None,
@@ -33,14 +33,12 @@ pub fn get_status_item_effect(
 
 /// Get HP restore per turn for status items
 pub fn get_item_hp_restore_per_turn(
-    item_name: &str,
+    item_id: &crate::types::ItemId,
     pokemon: &Pokemon,
     position: BattlePosition,
     _generation: &dyn GenerationBattleMechanics,
 ) -> Option<BattleInstructions> {
-    let normalized_name = item_name.to_lowercase().replace(&[' ', '-', '\''][..], "");
-    
-    match normalized_name.as_str() {
+    match item_id.as_str() {
         "blacksludge" => Some(black_sludge_end_of_turn_effect(pokemon, position)),
         "flameorb" => Some(flame_orb_end_of_turn_effect(pokemon, position)),
         "toxicorb" => Some(toxic_orb_end_of_turn_effect(pokemon, position)),
@@ -51,7 +49,7 @@ pub fn get_item_hp_restore_per_turn(
 /// Black Sludge - Heals Poison-types by 1/16 max HP, damages others by 1/8 max HP
 fn black_sludge_end_of_turn_effect(pokemon: &Pokemon, position: BattlePosition) -> BattleInstructions {
     // Check if Pokemon is Poison-type
-    let is_poison_type = pokemon.types.iter().any(|t| t.to_lowercase() == "poison");
+    let is_poison_type = pokemon.types.iter().any(|t| *t == PokemonType::Poison);
     
     if is_poison_type {
         // Heal 1/16 of max HP

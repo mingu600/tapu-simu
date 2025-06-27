@@ -13,25 +13,27 @@ use crate::core::instructions::{
 };
 use crate::data::repositories::{GameDataRepository, PokemonRepository};
 use crate::engine::combat::damage_context::DamageContext;
-use crate::engine::combat::type_effectiveness::{PokemonType, TypeChart};
+use crate::engine::combat::type_effectiveness::TypeChart;
+use crate::types::PokemonType;
 use crate::generation::{Generation, GenerationBattleMechanics};
+use crate::types::identifiers::{ItemId, MoveId, TypeId};
 
 use super::{ItemModifier, StatBoosts};
 
 /// Get stat boosting item effect if the item is a stat booster
 pub fn get_stat_boosting_item_effect(
-    item_name: &str,
+    item_id: &ItemId,
     generation: &dyn GenerationBattleMechanics,
     attacker: &Pokemon,
     defender: Option<&Pokemon>,
-    move_name: &str,
-    move_type: &str,
+    move_id: &MoveId,
+    move_type_id: &TypeId,
     move_category: MoveCategory,
     context: &DamageContext,
 ) -> Option<ItemModifier> {
-    let normalized_name = item_name.to_lowercase().replace(&[' ', '-', '\''][..], "");
+    let move_type_str = move_type_id.as_str();
     
-    match normalized_name.as_str() {
+    match item_id.as_str() {
         // Power Items
         "lifeorb" => Some(life_orb_effect()),
         "expertbelt" => Some(expert_belt_effect(context)),
@@ -48,32 +50,32 @@ pub fn get_stat_boosting_item_effect(
         // Reactive Stat Items
         "weaknesspolicy" => Some(weakness_policy_effect(context)),
         "focussash" => Some(focus_sash_effect(defender)),
-        "absorbbulb" => Some(absorb_bulb_effect(move_type)),
-        "cellbattery" => Some(cell_battery_effect(move_type)),
+        "absorbbulb" => Some(absorb_bulb_effect(move_type_str)),
+        "cellbattery" => Some(cell_battery_effect(move_type_str)),
         "shellbell" => Some(shell_bell_effect()),
         "metalpowder" => Some(metal_powder_effect(defender)),
         "punchingglove" => Some(punching_glove_effect(context)),
         "boosterenergy" => Some(booster_energy_effect()),
         
         // Generation-Aware Gems
-        "normalgem" => Some(gem_effect("normal", move_type, generation)),
-        "fightinggem" => Some(gem_effect("fighting", move_type, generation)),
-        "flyinggem" => Some(gem_effect("flying", move_type, generation)),
-        "poisongem" => Some(gem_effect("poison", move_type, generation)),
-        "groundgem" => Some(gem_effect("ground", move_type, generation)),
-        "rockgem" => Some(gem_effect("rock", move_type, generation)),
-        "buggem" => Some(gem_effect("bug", move_type, generation)),
-        "ghostgem" => Some(gem_effect("ghost", move_type, generation)),
-        "steelgem" => Some(gem_effect("steel", move_type, generation)),
-        "firegem" => Some(gem_effect("fire", move_type, generation)),
-        "watergem" => Some(gem_effect("water", move_type, generation)),
-        "grassgem" => Some(gem_effect("grass", move_type, generation)),
-        "electricgem" => Some(gem_effect("electric", move_type, generation)),
-        "psychicgem" => Some(gem_effect("psychic", move_type, generation)),
-        "icegem" => Some(gem_effect("ice", move_type, generation)),
-        "dragongem" => Some(gem_effect("dragon", move_type, generation)),
-        "darkgem" => Some(gem_effect("dark", move_type, generation)),
-        "fairygem" => Some(gem_effect("fairy", move_type, generation)),
+        "normalgem" => Some(gem_effect("normal", move_type_str, generation)),
+        "fightinggem" => Some(gem_effect("fighting", move_type_str, generation)),
+        "flyinggem" => Some(gem_effect("flying", move_type_str, generation)),
+        "poisongem" => Some(gem_effect("poison", move_type_str, generation)),
+        "groundgem" => Some(gem_effect("ground", move_type_str, generation)),
+        "rockgem" => Some(gem_effect("rock", move_type_str, generation)),
+        "buggem" => Some(gem_effect("bug", move_type_str, generation)),
+        "ghostgem" => Some(gem_effect("ghost", move_type_str, generation)),
+        "steelgem" => Some(gem_effect("steel", move_type_str, generation)),
+        "firegem" => Some(gem_effect("fire", move_type_str, generation)),
+        "watergem" => Some(gem_effect("water", move_type_str, generation)),
+        "grassgem" => Some(gem_effect("grass", move_type_str, generation)),
+        "electricgem" => Some(gem_effect("electric", move_type_str, generation)),
+        "psychicgem" => Some(gem_effect("psychic", move_type_str, generation)),
+        "icegem" => Some(gem_effect("ice", move_type_str, generation)),
+        "dragongem" => Some(gem_effect("dragon", move_type_str, generation)),
+        "darkgem" => Some(gem_effect("dark", move_type_str, generation)),
+        "fairygem" => Some(gem_effect("fairy", move_type_str, generation)),
         
         // Seeds
         "electricseed" => Some(electric_seed_effect()),
@@ -87,14 +89,12 @@ pub fn get_stat_boosting_item_effect(
 
 /// Check for item effects that trigger on switch-in
 pub fn get_item_on_switch_in_effects(
-    item_name: &str,
+    item_id: &crate::types::ItemId,
     pokemon: &Pokemon,
     position: BattlePosition,
     generation: &dyn GenerationBattleMechanics,
 ) -> Option<BattleInstructions> {
-    let normalized_name = item_name.to_lowercase().replace(&[' ', '-', '\''][..], "");
-    
-    match normalized_name.as_str() {
+    match item_id.as_str() {
         "boosterenergy" => Some(booster_energy_switch_in_effect(pokemon, position)),
         _ => None,
     }
@@ -126,31 +126,25 @@ fn expert_belt_effect(context: &DamageContext) -> ItemModifier {
         Generation::Gen9 => 9,
     };
     
-    let type_chart = TypeChart::new(generation);
+    let type_chart = TypeChart::get_cached(generation);
     
     // Parse move type and defender types
-    let move_type = match PokemonType::from_str(&context.move_info.move_type) {
+    let move_type_str = match PokemonType::from_normalized_str(context.move_info.move_type.as_str()) {
         Some(t) => t,
         None => return ItemModifier::default(), // Invalid move type
     };
     
-    let defender_type1 = match PokemonType::from_str(context.defender.pokemon.types.get(0).unwrap_or(&"Normal".to_string())) {
-        Some(t) => t,
-        None => return ItemModifier::default(), // Invalid defender type
-    };
+    let defender_type1 = context.defender.pokemon.types.get(0).copied().unwrap_or(PokemonType::Normal);
     
-    let defender_type2 = match PokemonType::from_str(context.defender.pokemon.types.get(1).unwrap_or(&defender_type1.to_str().to_string())) {
-        Some(t) => t,
-        None => defender_type1, // Single type Pokemon
-    };
+    let defender_type2 = context.defender.pokemon.types.get(1).copied().unwrap_or(defender_type1);
     
     // Calculate type effectiveness including Tera type if applicable
     let type_effectiveness = type_chart.calculate_damage_multiplier(
-        move_type,
+        move_type_str,
         (defender_type1, defender_type2),
         context.defender.pokemon.tera_type
-            .and_then(|t| PokemonType::from_str(&format!("{:?}", t))),
-        Some(&context.move_info.name),
+            .and_then(|t| PokemonType::from_normalized_str(&format!("{:?}", t))),
+        Some(context.move_info.name.as_str()),
     );
     
     if type_effectiveness > 1.0 {
@@ -258,31 +252,25 @@ fn weakness_policy_effect(context: &DamageContext) -> ItemModifier {
         Generation::Gen9 => 9,
     };
     
-    let type_chart = TypeChart::new(generation);
+    let type_chart = TypeChart::get_cached(generation);
     
     // Parse move type and defender types
-    let move_type = match PokemonType::from_str(&context.move_info.move_type) {
+    let move_type_str = match PokemonType::from_normalized_str(context.move_info.move_type.as_str()) {
         Some(t) => t,
         None => return ItemModifier::default(), // Invalid move type
     };
     
-    let defender_type1 = match PokemonType::from_str(context.defender.pokemon.types.get(0).unwrap_or(&"Normal".to_string())) {
-        Some(t) => t,
-        None => return ItemModifier::default(), // Invalid defender type
-    };
+    let defender_type1 = context.defender.pokemon.types.get(0).copied().unwrap_or(PokemonType::Normal);
     
-    let defender_type2 = match PokemonType::from_str(context.defender.pokemon.types.get(1).unwrap_or(&defender_type1.to_str().to_string())) {
-        Some(t) => t,
-        None => defender_type1, // Single type Pokemon
-    };
+    let defender_type2 = context.defender.pokemon.types.get(1).copied().unwrap_or(defender_type1);
     
     // Calculate type effectiveness including Tera type if applicable
     let type_effectiveness = type_chart.calculate_damage_multiplier(
-        move_type,
+        move_type_str,
         (defender_type1, defender_type2),
         context.defender.pokemon.tera_type
-            .and_then(|t| PokemonType::from_str(&format!("{:?}", t))),
-        Some(&context.move_info.name),
+            .and_then(|t| PokemonType::from_normalized_str(&format!("{:?}", t))),
+        Some(context.move_info.name.as_str()),
     );
     
     if type_effectiveness > 1.0 {
@@ -311,7 +299,7 @@ fn focus_sash_effect(defender: Option<&Pokemon>) -> ItemModifier {
 
 /// Absorb Bulb - +1 Special Attack when hit by Water moves
 fn absorb_bulb_effect(move_type: &str) -> ItemModifier {
-    if move_type.to_lowercase() == "water" {
+    if move_type == "water" {
         ItemModifier::new()
             .with_stat_boosts(StatBoosts::special_attack(1))
             .with_consumed()
@@ -322,7 +310,7 @@ fn absorb_bulb_effect(move_type: &str) -> ItemModifier {
 
 /// Cell Battery - +1 Attack when hit by Electric moves
 fn cell_battery_effect(move_type: &str) -> ItemModifier {
-    if move_type.to_lowercase() == "electric" {
+    if move_type == "electric" {
         ItemModifier::new()
             .with_stat_boosts(StatBoosts::attack(1))
             .with_consumed()
@@ -339,7 +327,7 @@ fn shell_bell_effect() -> ItemModifier {
 /// Metal Powder - Reduce damage by 50% when held by Ditto
 fn metal_powder_effect(defender: Option<&Pokemon>) -> ItemModifier {
     if let Some(pokemon) = defender {
-        if pokemon.species.to_lowercase() == "ditto" {
+        if pokemon.species == "ditto" {
             ItemModifier::new().with_damage_multiplier(0.5)
         } else {
             ItemModifier::default()
@@ -371,9 +359,7 @@ fn booster_energy_effect() -> ItemModifier {
 /// Booster Energy switch-in effect
 fn booster_energy_switch_in_effect(pokemon: &Pokemon, position: BattlePosition) -> BattleInstructions {
     // Check if Pokemon has Protosynthesis or Quark Drive
-    let ability_name = pokemon.ability.to_lowercase();
-    
-    if ability_name == "protosynthesis" || ability_name == "quarkdrive" {
+    if pokemon.ability == "protosynthesis" || pokemon.ability == "quarkdrive" {
         // Consume the item and trigger the ability
         let consume_instruction = BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
             target: position,
@@ -393,7 +379,7 @@ fn booster_energy_switch_in_effect(pokemon: &Pokemon, position: BattlePosition) 
 
 /// Gem effect with generation-aware multipliers
 fn gem_effect(gem_type: &str, move_type: &str, generation: &dyn GenerationBattleMechanics) -> ItemModifier {
-    if move_type.to_lowercase() == gem_type.to_lowercase() {
+    if move_type == gem_type {
         // Generation-aware multipliers:
         // Gen 5: 1.5x multiplier
         // Gen 6+: 1.3x multiplier

@@ -11,6 +11,7 @@ use crate::core::instructions::{
 use crate::core::battle_format::BattlePosition;
 use crate::generation::GenerationMechanics;
 use crate::engine::combat::moves::apply_generic_effects;
+use crate::types::PokemonType;
 use std::collections::HashMap;
 use crate::core::instructions::Stat;
 use crate::core::instructions::StatsInstruction;
@@ -33,14 +34,14 @@ pub fn apply_aura_wheel(
         // Check Morpeko form to determine type
         let normalized_species = crate::utils::normalize_name(&user_pokemon.species);
         let modified_move_type = if normalized_species.contains("hangry") {
-            "Dark" // Hangry Mode Morpeko
+            PokemonType::Dark // Hangry Mode Morpeko
         } else {
-            "Electric" // Full Belly Mode Morpeko (default)
+            PokemonType::Electric // Full Belly Mode Morpeko (default)
         };
         
         // Create modified move data with form-based type
         let modified_move_data = MoveData {
-            move_type: modified_move_type.to_string(),
+            move_type: modified_move_type,
             ..move_data.clone()
         };
         
@@ -78,10 +79,10 @@ pub fn apply_raging_bull(
         // Determine type based on Tauros form
         let normalized_species = crate::utils::normalize_name(&user_pokemon.species);
         let modified_move_type = match normalized_species.as_str() {
-            s if s.contains("tauros") && s.contains("combat") => "Fighting", // Paldean Combat Form
-            s if s.contains("tauros") && s.contains("blaze") => "Fire",     // Paldean Blaze Form
-            s if s.contains("tauros") && s.contains("aqua") => "Water",     // Paldean Aqua Form
-            _ => &move_data.move_type, // Regular Tauros keeps Normal type
+            s if s.contains("tauros") && s.contains("combat") => PokemonType::Fighting, // Paldean Combat Form
+            s if s.contains("tauros") && s.contains("blaze") => PokemonType::Fire,     // Paldean Blaze Form
+            s if s.contains("tauros") && s.contains("aqua") => PokemonType::Water,     // Paldean Aqua Form
+            _ => move_data.move_type, // Regular Tauros keeps Normal type
         };
         
         // Check if screens are present on the target's side to boost power
@@ -99,7 +100,7 @@ pub fn apply_raging_bull(
         
         // Create modified move data
         let mut modified_move_data = MoveData {
-            move_type: modified_move_type.to_string(),
+            move_type: modified_move_type,
             ..move_data.clone()
         };
         

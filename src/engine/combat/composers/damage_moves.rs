@@ -85,11 +85,38 @@ impl Default for DamageModifiers {
 
 /// Standard damage move with optional secondary effects
 ///
-/// This composer handles the most common damage move pattern:
-/// - Calculate and apply damage
-/// - Apply secondary status effects
-/// - Apply contact effects
-/// - Handle recoil/drain
+/// This is the most commonly used composer for basic attacking moves.
+/// Use this for moves like Tackle, Quick Attack, Thunderbolt, etc.
+///
+/// ## Handles automatically:
+/// - Base damage calculation with type effectiveness
+/// - Critical hit mechanics
+/// - STAB (Same Type Attack Bonus)
+/// - Accuracy checks and miss handling
+/// - Secondary status effects (if specified in move data)
+/// - Contact effects (abilities like Static, Rough Skin)
+/// - Recoil/drain damage (if configured)
+/// - Multi-target damage distribution
+///
+/// ## When to use:
+/// - Most physical and special attacking moves
+/// - Moves with simple secondary effects
+/// - Moves that follow standard damage formulas
+///
+/// ## When NOT to use:
+/// - Fixed damage moves (use `fixed_damage_move` instead)
+/// - Multi-hit moves (use `multi_hit_move` instead)  
+/// - Moves with complex power calculations (use condition-dependent composers)
+///
+/// ## Example usage:
+/// ```rust
+/// // For a basic move like Tackle
+/// simple_damage_move(state, move_data, user, targets, DamageModifiers::default(), generation)
+///
+/// // For a move with recoil like Take Down
+/// let modifiers = DamageModifiers { recoil_fraction: Some(0.25), ..Default::default() };
+/// simple_damage_move(state, move_data, user, targets, modifiers, generation)
+/// ```
 pub fn simple_damage_move(
     state: &BattleState,
     move_data: &MoveData,
@@ -103,7 +130,7 @@ pub fn simple_damage_move(
     for &target_position in target_positions {
         // Create damage context
         let mut context = DamageCalculationContext::new(
-            move_data.clone(),
+            move_data,
             user_position,
             target_position,
             generation.clone(),
@@ -211,7 +238,7 @@ pub fn multi_hit_move(
 
     for &target_position in target_positions {
         let context = DamageCalculationContext::new(
-            move_data.clone(),
+            move_data,
             user_position,
             target_position,
             generation.clone(),
@@ -324,7 +351,7 @@ pub fn stat_substitution_move(
     for &target_position in target_positions {
         // Create damage context with stat substitutions
         let mut context = DamageCalculationContext::new(
-            move_data.clone(),
+            move_data,
             user_position,
             target_position,
             generation.clone(),
@@ -537,7 +564,7 @@ pub fn damage_move_with_secondary_volatile_status(
     for &target_position in target_positions {
         // Create damage context
         let mut context = DamageCalculationContext::new(
-            move_data.clone(),
+            move_data,
             user_position,
             target_position,
             generation.clone(),

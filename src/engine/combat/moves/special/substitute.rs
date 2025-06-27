@@ -11,7 +11,8 @@ use crate::core::instructions::{
 };
 use crate::core::battle_format::{BattlePosition, SideReference};
 use crate::generation::GenerationMechanics;
-use crate::engine::combat::type_effectiveness::{TypeChart, PokemonType};
+use crate::engine::combat::type_effectiveness::TypeChart;
+use crate::types::PokemonType;
 use std::collections::HashMap;
 
 // =============================================================================

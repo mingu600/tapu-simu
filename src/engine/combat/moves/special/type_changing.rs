@@ -9,6 +9,8 @@ use crate::core::instructions::{BattleInstructions, BattleInstruction, PokemonIn
 use crate::core::battle_format::BattlePosition;
 use crate::generation::GenerationMechanics;
 use crate::data::showdown_types::MoveData;
+use crate::types::PokemonType;
+use crate::engine::combat::moves::apply_generic_effects;
 
 // =============================================================================
 // TYPE-CHANGING MOVES
@@ -28,9 +30,9 @@ pub fn apply_judgment(
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
         // Judgment's type matches the user's primary type (or Tera type in Gen 9+)
         let judgment_type = if !user_pokemon.types.is_empty() {
-            user_pokemon.types[0].clone()
+            user_pokemon.types[0]
         } else {
-            "Normal".to_string() // Fallback to Normal type
+            PokemonType::Normal // Fallback to Normal type
         };
         
         // Change the move's type to match the user's type
@@ -58,9 +60,9 @@ pub fn apply_multi_attack(
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
         // Multi-Attack's type matches the user's primary type
         let attack_type = if !user_pokemon.types.is_empty() {
-            user_pokemon.types[0].clone()
+            user_pokemon.types[0]
         } else {
-            "Normal".to_string() // Fallback to Normal type
+            PokemonType::Normal // Fallback to Normal type
         };
         
         // Change the move's type to match the user's type
@@ -88,9 +90,9 @@ pub fn apply_revelation_dance(
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
         // Revelation Dance's type matches the user's primary type
         let dance_type = if !user_pokemon.types.is_empty() {
-            user_pokemon.types[0].clone()
+            user_pokemon.types[0]
         } else {
-            "Normal".to_string() // Fallback to Normal type
+            PokemonType::Normal // Fallback to Normal type
         };
         
         // Change the move's type to match the user's type
@@ -143,55 +145,34 @@ pub fn apply_tera_blast(
     
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
         // In Gen 9+, Tera Blast's type matches the user's Tera type
-        let tera_type = if generation.generation.number() >= 9 {
+        let blast_type = if generation.generation.number() >= 9 {
             // Check if Pokemon is Terastallized and has a Tera type
             if user_pokemon.is_terastallized {
                 if let Some(tera_type) = user_pokemon.tera_type {
-                    // Convert from PokemonType enum to string
-                    match tera_type {
-                        crate::core::move_choice::PokemonType::Normal => "Normal".to_string(),
-                        crate::core::move_choice::PokemonType::Fire => "Fire".to_string(),
-                        crate::core::move_choice::PokemonType::Water => "Water".to_string(),
-                        crate::core::move_choice::PokemonType::Electric => "Electric".to_string(),
-                        crate::core::move_choice::PokemonType::Grass => "Grass".to_string(),
-                        crate::core::move_choice::PokemonType::Ice => "Ice".to_string(),
-                        crate::core::move_choice::PokemonType::Fighting => "Fighting".to_string(),
-                        crate::core::move_choice::PokemonType::Poison => "Poison".to_string(),
-                        crate::core::move_choice::PokemonType::Ground => "Ground".to_string(),
-                        crate::core::move_choice::PokemonType::Flying => "Flying".to_string(),
-                        crate::core::move_choice::PokemonType::Psychic => "Psychic".to_string(),
-                        crate::core::move_choice::PokemonType::Bug => "Bug".to_string(),
-                        crate::core::move_choice::PokemonType::Rock => "Rock".to_string(),
-                        crate::core::move_choice::PokemonType::Ghost => "Ghost".to_string(),
-                        crate::core::move_choice::PokemonType::Dragon => "Dragon".to_string(),
-                        crate::core::move_choice::PokemonType::Dark => "Dark".to_string(),
-                        crate::core::move_choice::PokemonType::Steel => "Steel".to_string(),
-                        crate::core::move_choice::PokemonType::Fairy => "Fairy".to_string(),
-                        crate::core::move_choice::PokemonType::Unknown => "Normal".to_string(),
-                    }
+                    tera_type
                 } else {
                     // Terastallized but no Tera type set, use primary type
                     if !user_pokemon.types.is_empty() {
-                        user_pokemon.types[0].clone()
+                        user_pokemon.types[0]
                     } else {
-                        "Normal".to_string()
+                        PokemonType::Normal
                     }
                 }
             } else {
                 // Not Terastallized, use primary type
                 if !user_pokemon.types.is_empty() {
-                    user_pokemon.types[0].clone()
+                    user_pokemon.types[0]
                 } else {
-                    "Normal".to_string()
+                    PokemonType::Normal
                 }
             }
         } else {
-            "Normal".to_string() // Always Normal in pre-Gen 9
+            PokemonType::Normal // Always Normal in pre-Gen 9
         };
         
         // Change the move's type to match the Tera type
         let mut modified_move_data = move_data.clone();
-        modified_move_data.move_type = tera_type;
+        modified_move_data.move_type = blast_type;
         
         // Apply damage with the modified type
         instructions.extend(apply_generic_effects(state, &modified_move_data, user_position, target_positions, generation, branch_on_damage));
@@ -205,35 +186,23 @@ pub fn apply_tera_blast(
 // =============================================================================
 
 /// Determine Ivy Cudgel's type based on Ogerpon's form and mask
-fn determine_ivy_cudgel_type(species: &str, item: Option<&str>) -> String {
+fn determine_ivy_cudgel_type(species: &str, item: Option<&str>) -> PokemonType {
     // Check for Ogerpon forms and their corresponding types
     if crate::utils::normalize_name(species).contains("ogerpon") {
         match item {
             Some(item_name) => {
                 let normalized_item = crate::utils::normalize_name(item_name);
                 match normalized_item.as_str() {
-                    "wellspringmask" => "Water".to_string(),
-                    "hearthflamemask" => "Fire".to_string(),
-                    "cornerstonemask" => "Rock".to_string(),
-                    _ => "Grass".to_string(), // Base form or no mask
+                    "wellspringmask" => PokemonType::Water,
+                    "hearthflamemask" => PokemonType::Fire,
+                    "cornerstonemask" => PokemonType::Rock,
+                    _ => PokemonType::Grass, // Base form or no mask
                 }
             }
-            None => "Grass".to_string(), // No item
+            None => PokemonType::Grass, // No item
         }
     } else {
-        "Grass".to_string() // Default to Grass type
+        PokemonType::Grass // Default to Grass type
     }
 }
 
-/// Apply generic move effects (delegate to shared implementation)
-fn apply_generic_effects(
-    state: &BattleState,
-    move_data: &MoveData,
-    user_position: BattlePosition,
-    target_positions: &[BattlePosition],
-    generation: &GenerationMechanics,
-    branch_on_damage: bool,
-) -> Vec<BattleInstructions> {
-    // Use the shared implementation from the main moves module
-    crate::engine::combat::moves::apply_generic_effects(state, move_data, user_position, target_positions, generation, branch_on_damage)
-}

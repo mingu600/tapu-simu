@@ -8,6 +8,7 @@ use crate::core::instructions::{
 };
 use crate::core::battle_format::{BattlePosition, SideReference};
 use crate::generation::GenerationMechanics;
+use crate::types::PokemonType;
 
 // =============================================================================
 // COUNTER MOVES
@@ -40,7 +41,7 @@ pub fn apply_counter(
         if let Some(&target_position) = target_positions.first() {
             // Check type immunity - Counter can't hit Ghost types
             if let Some(target_pokemon) = state.get_pokemon_at_position(target_position) {
-                if target_pokemon.types.contains(&"ghost".to_string()) {
+                if target_pokemon.types.contains(&PokemonType::Ghost) {
                     return vec![BattleInstructions::new(100.0, vec![])];
                 }
             }

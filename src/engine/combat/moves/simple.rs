@@ -11,7 +11,8 @@ use crate::core::instructions::{
     SideCondition, Stat, StatusInstruction, StatsInstruction, Terrain, VolatileStatus, Weather,
 };
 use crate::data::showdown_types::MoveData;
-use crate::engine::combat::type_effectiveness::{PokemonType, TypeChart};
+use crate::engine::combat::type_effectiveness::TypeChart;
+use crate::types::PokemonType;
 use crate::generation::GenerationMechanics;
 
 /// Generate damage instructions with substitute tracking

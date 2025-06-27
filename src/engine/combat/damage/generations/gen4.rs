@@ -5,7 +5,8 @@
 //! abilities like Filter and Expert Belt items.
 
 use crate::engine::combat::damage_context::{DamageContext, DamageResult, DamageEffect};
-use crate::engine::combat::type_effectiveness::{PokemonType, TypeChart};
+use crate::engine::combat::type_effectiveness::TypeChart;
+use crate::types::PokemonType;
 use crate::engine::combat::damage::DamageRolls;
 use crate::constants::moves::MIN_DAMAGE_PERCENT;
 
@@ -113,14 +114,13 @@ pub fn calculate_damage_gen4(context: &DamageContext, damage_rolls: DamageRolls)
     }
 
     // Get type effectiveness data
-    let type_chart = TypeChart::new(4); // Gen 4 type chart
+    let type_chart = TypeChart::get_cached(4); // Gen 4 type chart
     let move_type =
-        PokemonType::from_str(&context.move_info.move_type).unwrap_or(PokemonType::Normal);
+        PokemonType::from_normalized_str(context.move_info.move_type.as_str()).unwrap_or(PokemonType::Normal);
 
-    let defender_type1 =
-        PokemonType::from_str(&context.defender.pokemon.types[0]).unwrap_or(PokemonType::Normal);
+    let defender_type1 = context.defender.pokemon.types[0];
     let defender_type2 = if context.defender.pokemon.types.len() > 1 {
-        PokemonType::from_str(&context.defender.pokemon.types[1]).unwrap_or(defender_type1)
+        context.defender.pokemon.types[1]
     } else {
         defender_type1
     };
@@ -133,10 +133,9 @@ pub fn calculate_damage_gen4(context: &DamageContext, damage_rolls: DamageRolls)
     };
 
     // STAB calculation
-    let attacker_type1 =
-        PokemonType::from_str(&context.attacker.pokemon.types[0]).unwrap_or(PokemonType::Normal);
+    let attacker_type1 = context.attacker.pokemon.types[0];
     let attacker_type2 = if context.attacker.pokemon.types.len() > 1 {
-        PokemonType::from_str(&context.attacker.pokemon.types[1]).unwrap_or(attacker_type1)
+        context.attacker.pokemon.types[1]
     } else {
         attacker_type1
     };

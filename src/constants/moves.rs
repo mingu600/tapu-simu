@@ -3,7 +3,7 @@
 //! This module contains all hardcoded constants used in move implementations,
 //! extracted from the move files to improve maintainability and prevent magic numbers.
 
-use crate::engine::combat::type_effectiveness::PokemonType;
+use crate::types::PokemonType;
 
 // =============================================================================
 // DAMAGE CALCULATION CONSTANTS

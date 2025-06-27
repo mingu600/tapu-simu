@@ -284,7 +284,8 @@ fn apply_generic_damage_effects(
         let damage_instructions = generate_damage_instructions(
             state, move_data, user_position, target_positions, is_guaranteed_crit, generation
         );
-        instruction_sets.push(BattleInstructions::new(100.0, damage_instructions));
+        let affected_positions = target_positions.to_vec();
+        instruction_sets.push(BattleInstructions::new_with_positions(100.0, damage_instructions, affected_positions));
     }
     
     if instruction_sets.is_empty() {
@@ -349,7 +350,8 @@ fn generate_advanced_damage_branching(
             amount: damage,
             previous_hp: Some(target.hp),
         })];
-        return vec![BattleInstructions::new(accuracy, instructions)];
+        let affected_positions = vec![target_position];
+        return vec![BattleInstructions::new_with_positions(accuracy, instructions, affected_positions)];
     }
     
     // Check for mixed scenarios where some rolls kill and others don't
@@ -435,7 +437,7 @@ fn generate_advanced_damage_branching(
             amount: non_kill_damage,
             previous_hp: Some(target.hp),
         })];
-        instruction_sets.push(BattleInstructions::new(percentage, instructions));
+        instruction_sets.push(BattleInstructions::new_with_positions(percentage, instructions, vec![target_position]));
     }
     
     // Add kill outcome if it has meaningful probability
@@ -446,7 +448,7 @@ fn generate_advanced_damage_branching(
             amount: kill_damage,
             previous_hp: Some(target.hp),
         })];
-        instruction_sets.push(BattleInstructions::new(percentage, instructions));
+        instruction_sets.push(BattleInstructions::new_with_positions(percentage, instructions, vec![target_position]));
     }
     
     // Sort by damage amount for consistent ordering
@@ -503,7 +505,8 @@ fn generate_simple_crit_branching(
         let damage_instructions = generate_damage_instructions(
             state, move_data, user_position, target_positions, false, generation
         );
-        instruction_sets.push(BattleInstructions::new(normal_hit_chance, damage_instructions));
+        let affected_positions = target_positions.to_vec();
+        instruction_sets.push(BattleInstructions::new_with_positions(normal_hit_chance, damage_instructions, affected_positions));
     }
     
     // Critical hit
@@ -511,7 +514,8 @@ fn generate_simple_crit_branching(
         let damage_instructions = generate_damage_instructions(
             state, move_data, user_position, target_positions, true, generation
         );
-        instruction_sets.push(BattleInstructions::new(crit_hit_chance, damage_instructions));
+        let affected_positions = target_positions.to_vec();
+        instruction_sets.push(BattleInstructions::new_with_positions(crit_hit_chance, damage_instructions, affected_positions));
     }
     
     instruction_sets
@@ -616,7 +620,8 @@ fn apply_secondary_effects(
     }
     
     if probability > 0.0 && !effect_instructions.is_empty() {
-        instructions.push(BattleInstructions::new(probability, effect_instructions));
+        let affected_positions = target_positions.to_vec();
+        instructions.push(BattleInstructions::new_with_positions(probability, effect_instructions, affected_positions));
     }
     
     instructions

@@ -13,23 +13,22 @@ use crate::core::instructions::{
 };
 use crate::engine::combat::damage_context::DamageContext;
 use crate::generation::GenerationBattleMechanics;
+use crate::types::{AbilityId, ItemId, MoveId, TypeId};
 
 use super::{ItemModifier, StatBoosts};
 
 /// Get utility item effect if the item is a utility item
 pub fn get_utility_item_effect(
-    item_name: &str,
+    item_id: &ItemId,
     _generation: &dyn GenerationBattleMechanics,
     attacker: &Pokemon,
     _defender: Option<&Pokemon>,
-    _move_name: &str,
-    move_type: &str,
+    _move_id: &MoveId,
+    move_type_id: &TypeId,
     move_category: MoveCategory,
     context: &DamageContext,
 ) -> Option<ItemModifier> {
-    let normalized_name = item_name.to_lowercase().replace(&[' ', '-', '\''][..], "");
-    
-    match normalized_name.as_str() {
+    match item_id.as_str() {
         "leftovers" => Some(ItemModifier::default()), // End-of-turn healing only
         "protectivepads" => Some(protective_pads_effect()),
         "throatspray" => Some(throat_spray_effect(context)),
@@ -45,14 +44,12 @@ pub fn get_utility_item_effect(
 
 /// Get HP restore per turn for utility items
 pub fn get_item_hp_restore_per_turn(
-    item_name: &str,
+    item_id: &ItemId,
     pokemon: &Pokemon,
     position: BattlePosition,
     _generation: &dyn GenerationBattleMechanics,
 ) -> Option<BattleInstructions> {
-    let normalized_name = item_name.to_lowercase().replace(&[' ', '-', '\''][..], "");
-    
-    match normalized_name.as_str() {
+    match item_id.as_str() {
         "leftovers" => Some(leftovers_end_of_turn_effect(pokemon, position)),
         _ => None,
     }
@@ -60,14 +57,12 @@ pub fn get_item_hp_restore_per_turn(
 
 /// Check for utility item effects that trigger on switch-in
 pub fn get_item_on_switch_in_effects(
-    item_name: &str,
+    item_id: &ItemId,
     _pokemon: &Pokemon,
     _position: BattlePosition,
     _generation: &dyn GenerationBattleMechanics,
 ) -> Option<BattleInstructions> {
-    let normalized_name = item_name.to_lowercase().replace(&[' ', '-', '\''][..], "");
-    
-    match normalized_name.as_str() {
+    match item_id.as_str() {
         // Most utility items don't have switch-in effects
         _ => None,
     }
@@ -137,12 +132,10 @@ fn leftovers_end_of_turn_effect(pokemon: &Pokemon, position: BattlePosition) -> 
 
 /// Generate instructions for utility items that trigger on move miss
 pub fn generate_miss_trigger_instructions(
-    item_name: &str,
+    item_id: &ItemId,
     position: BattlePosition,
 ) -> Option<BattleInstructions> {
-    let normalized_name = item_name.to_lowercase().replace(&[' ', '-', '\''][..], "");
-    
-    match normalized_name.as_str() {
+    match item_id.as_str() {
         "blunderpolicy" => Some(blunder_policy_miss_effect(position)),
         _ => None,
     }
@@ -150,15 +143,13 @@ pub fn generate_miss_trigger_instructions(
 
 /// Generate instructions for utility items that trigger on abilities
 pub fn generate_ability_trigger_instructions(
-    item_name: &str,
+    item_id: &ItemId,
     position: BattlePosition,
-    ability_name: &str,
+    ability_id: &AbilityId,
 ) -> Option<BattleInstructions> {
-    let normalized_name = item_name.to_lowercase().replace(&[' ', '-', '\''][..], "");
-    
-    match normalized_name.as_str() {
+    match item_id.as_str() {
         "adrenalineorb" => {
-            if ability_name.to_lowercase() == "intimidate" {
+            if ability_id.as_str() == "intimidate" {
                 Some(adrenaline_orb_intimidate_effect(position))
             } else {
                 None

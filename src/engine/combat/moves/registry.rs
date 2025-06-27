@@ -140,11 +140,12 @@ impl MoveRegistry {
     /// Create a new move registry with all move effects registered
     pub fn new() -> Self {
         let mut registry = Self {
-            standard_moves: std::collections::HashMap::new(),
-            extended_moves: std::collections::HashMap::new(),
-            variable_power_moves: std::collections::HashMap::new(),
-            context_aware_moves: std::collections::HashMap::new(),
-            repository_aware_moves: std::collections::HashMap::new(),
+            // Pre-allocate capacity based on expected move counts
+            standard_moves: std::collections::HashMap::with_capacity(64),
+            extended_moves: std::collections::HashMap::with_capacity(32),
+            variable_power_moves: std::collections::HashMap::with_capacity(48),
+            context_aware_moves: std::collections::HashMap::with_capacity(16),
+            repository_aware_moves: std::collections::HashMap::with_capacity(8),
         };
         
         registry.register_all_moves();
@@ -325,26 +326,161 @@ impl MoveRegistry {
     }
 
     /// Register a standard move effect
+    ///
+    /// Use this for simple moves that don't need move data, context, or repository access.
+    /// These moves work with only battle state and basic parameters.
+    ///
+    /// ## When to use:
+    /// - Status effect moves (Thunder Wave, Sleep Powder, Toxic)
+    /// - Self-targeting stat moves (Swords Dance, Agility, Growl)
+    /// - Simple healing moves (Recover, Roost)
+    /// - Basic utility moves (Protect, Substitute)
+    ///
+    /// ## Function signature:
+    /// ```rust
+    /// fn move_effect(
+    ///     state: &BattleState,
+    ///     user: BattlePosition,
+    ///     targets: &[BattlePosition],
+    ///     generation: &GenerationMechanics,
+    /// ) -> Vec<BattleInstructions>
+    /// ```
+    ///
+    /// ## Example:
+    /// ```rust
+    /// registry.register_standard("thunderwave", apply_thunder_wave);
+    /// registry.register_standard("swordsdance", apply_swords_dance);
+    /// ```
     fn register_standard(&mut self, name: &str, effect_fn: MoveEffectFn) {
         self.standard_moves.insert(name.to_string(), effect_fn);
     }
 
     /// Register an extended move effect that needs move data
+    ///
+    /// Use this for moves that need access to MoveData for power, accuracy, or type calculations.
+    /// Most damage-dealing moves fall into this category.
+    ///
+    /// ## When to use:
+    /// - Damage moves that use standard power calculations (Flamethrower, Thunderbolt)
+    /// - Moves that check accuracy or other MoveData fields
+    /// - Moves that need move type information
+    /// - Status moves that depend on move data (Acid with stat reduction chance)
+    ///
+    /// ## Function signature:
+    /// ```rust
+    /// fn move_effect(
+    ///     state: &BattleState,
+    ///     move_data: &MoveData,
+    ///     user: BattlePosition,
+    ///     targets: &[BattlePosition],
+    ///     generation: &GenerationMechanics,
+    /// ) -> Vec<BattleInstructions>
+    /// ```
+    ///
+    /// ## Example:
+    /// ```rust
+    /// registry.register_extended("flamethrower", apply_flamethrower);
+    /// registry.register_extended("acid", apply_acid); // Needs move data for stat reduction chance
+    /// ```
     fn register_extended(&mut self, name: &str, effect_fn: ExtendedMoveEffectFn) {
         self.extended_moves.insert(name.to_string(), effect_fn);
     }
 
     /// Register a variable power move effect
+    ///
+    /// Use this for moves with dynamic power calculations that may need damage branching.
+    /// These moves modify their power based on battle conditions, Pokemon stats, or other factors.
+    ///
+    /// ## When to use:
+    /// - Moves with conditional power (Facade, Hex, Wake-Up Slap)
+    /// - Stat-based power moves (Gyro Ball, Electro Ball)
+    /// - Multi-hit moves with variable hit counts (Dragon Darts, Population Bomb)
+    /// - Moves that calculate power based on user/target conditions
+    ///
+    /// ## Function signature:
+    /// ```rust
+    /// fn move_effect(
+    ///     state: &BattleState,
+    ///     move_data: &MoveData,
+    ///     user: BattlePosition,
+    ///     targets: &[BattlePosition],
+    ///     generation: &GenerationMechanics,
+    ///     branch_on_damage: bool,
+    /// ) -> Vec<BattleInstructions>
+    /// ```
+    ///
+    /// ## Example:
+    /// ```rust
+    /// registry.register_variable_power("facade", apply_facade); // Double power if user has status
+    /// registry.register_variable_power("dragondarts", apply_dragon_darts); // Multi-hit targeting
+    /// ```
     fn register_variable_power(&mut self, name: &str, effect_fn: VariablePowerMoveEffectFn) {
         self.variable_power_moves.insert(name.to_string(), effect_fn);
     }
 
     /// Register a context-aware move effect
+    ///
+    /// Use this for moves that need information about opponent moves, turn order, or battle context.
+    /// These moves make decisions based on what the opponent is doing this turn.
+    ///
+    /// ## When to use:
+    /// - Priority-dependent moves (Bolt Beak, Fishious Rend)
+    /// - Opponent move-dependent moves (Sucker Punch, Me First)
+    /// - Switch-punishing moves (Pursuit, U-turn effects)
+    /// - Moves that need turn order information
+    ///
+    /// ## Function signature:
+    /// ```rust
+    /// fn move_effect(
+    ///     state: &BattleState,
+    ///     move_data: &MoveData,
+    ///     user: BattlePosition,
+    ///     targets: &[BattlePosition],
+    ///     generation: &GenerationMechanics,
+    ///     context: &MoveContext,
+    ///     branch_on_damage: bool,
+    /// ) -> Vec<BattleInstructions>
+    /// ```
+    ///
+    /// ## Example:
+    /// ```rust
+    /// registry.register_context_aware("boltbeak", apply_boltbeak); // Double power if user moves first
+    /// registry.register_context_aware("suckerpunch", apply_sucker_punch); // Only works if opponent attacks
+    /// ```
     fn register_context_aware(&mut self, name: &str, effect_fn: ContextAwareMoveEffectFn) {
         self.context_aware_moves.insert(name.to_string(), effect_fn);
     }
 
     /// Register a repository-aware move effect
+    ///
+    /// Use this for moves that need access to the game data repository to look up other moves,
+    /// abilities, items, or Pokemon data. This is the most complex registration type.
+    ///
+    /// ## When to use:
+    /// - Moves that copy other moves (Me First, Copycat, Mirror Move)
+    /// - Moves that need to look up move data (Metronome, Sleep Talk)
+    /// - Moves that reference external game data
+    /// - Moves that need comprehensive database access
+    ///
+    /// ## Function signature:
+    /// ```rust
+    /// fn move_effect(
+    ///     state: &BattleState,
+    ///     move_data: &MoveData,
+    ///     user: BattlePosition,
+    ///     targets: &[BattlePosition],
+    ///     generation: &GenerationMechanics,
+    ///     context: &MoveContext,
+    ///     repository: &GameDataRepository,
+    ///     branch_on_damage: bool,
+    /// ) -> Vec<BattleInstructions>
+    /// ```
+    ///
+    /// ## Example:
+    /// ```rust
+    /// registry.register_repository_aware("mefirst", apply_me_first); // Needs to copy opponent's move
+    /// registry.register_repository_aware("metronome", apply_metronome); // Needs random move lookup
+    /// ```
     fn register_repository_aware(&mut self, name: &str, effect_fn: RepositoryAwareMoveEffectFn) {
         self.repository_aware_moves.insert(name.to_string(), effect_fn);
     }

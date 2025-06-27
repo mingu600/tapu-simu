@@ -5,6 +5,7 @@
 
 use crate::core::battle_state::{Move, MoveCategory};
 use crate::data::showdown_types::{ItemData, MoveData, PokemonData};
+use crate::types::identifiers::{ItemId, MoveId, SpeciesId};
 use crate::utils::normalize_name;
 use crate::utils::target_from_string;
 use serde_json;
@@ -26,9 +27,9 @@ pub struct GenerationRepository {
     generation_move_data: HashMap<String, GenerationMoveData>,
     generation_item_data: HashMap<String, GenerationItemData>,
     generation_pokemon_data: HashMap<String, GenerationPokemonData>,
-    move_changes: HashMap<String, MoveChangeHistory>,
-    item_changes: HashMap<String, ItemChangeHistory>,
-    pokemon_changes: HashMap<String, PokemonChangeHistory>,
+    move_changes: HashMap<MoveId, MoveChangeHistory>,
+    item_changes: HashMap<ItemId, ItemChangeHistory>,
+    pokemon_changes: HashMap<SpeciesId, PokemonChangeHistory>,
 }
 
 /// Move data for a specific generation
@@ -112,7 +113,7 @@ impl GenerationRepository {
         T: serde::de::DeserializeOwned,
     {
         let file_path = Path::new(data_dir).join(filename);
-        let mut result = HashMap::new();
+        let mut result = HashMap::with_capacity(generations.len());
 
         if file_path.exists() {
             let file_content = fs::read_to_string(&file_path)?;
@@ -121,7 +122,7 @@ impl GenerationRepository {
             for generation in generations {
                 if let Some(gen_data) = raw_data.get(&generation.id) {
                     let gen_items_raw = gen_data.get(data_key).unwrap().as_object().unwrap();
-                    let mut gen_items = HashMap::new();
+                    let mut gen_items = HashMap::with_capacity(gen_items_raw.len());
 
                     for (item_id, item_value) in gen_items_raw {
                         let item_data: T = serde_json::from_value(item_value.clone())?;
@@ -147,7 +148,7 @@ impl GenerationRepository {
         constructor: impl Fn(String, Vec<GenerationChange>) -> C,
     ) -> Result<HashMap<String, C>, Box<dyn std::error::Error>> {
         let file_path = Path::new(data_dir).join(filename);
-        let mut result = HashMap::new();
+        let mut result = HashMap::with_capacity(16); // Reasonable initial capacity for change history
 
         if file_path.exists() {
             let file_content = fs::read_to_string(&file_path)?;
@@ -163,12 +164,12 @@ impl GenerationRepository {
                         .to_string();
                     let changes_array = change_data.get("changes").unwrap().as_array().unwrap();
 
-                    let mut changes = Vec::new();
+                    let mut changes = Vec::with_capacity(changes_array.len());
                     for change in changes_array {
                         let generation = change.get("generation").unwrap().as_u64().unwrap() as u8;
                         let field_changes_array = change.get("changes").unwrap().as_array().unwrap();
 
-                        let mut field_changes = Vec::new();
+                        let mut field_changes = Vec::with_capacity(field_changes_array.len());
                         for field_change in field_changes_array {
                             field_changes.push(FieldChange {
                                 field: field_change
@@ -275,11 +276,15 @@ impl GenerationRepository {
         )?;
 
         // Load move changes data
-        let move_changes = Self::load_change_history(
+        let move_changes_raw = Self::load_change_history(
             data_dir,
             "move-changes.json",
             |name, changes| MoveChangeHistory { name, changes },
         )?;
+        let move_changes: HashMap<MoveId, MoveChangeHistory> = move_changes_raw
+            .into_iter()
+            .map(|(key, value)| (MoveId::new(key), value))
+            .collect();
 
         // Load generation Pokemon data (if available)
         let mut generation_pokemon_data = Self::load_generation_data(
@@ -319,18 +324,26 @@ impl GenerationRepository {
         }
 
         // Load item changes data
-        let item_changes = Self::load_change_history(
+        let item_changes_raw = Self::load_change_history(
             data_dir,
             "item-changes.json",
             |name, changes| ItemChangeHistory { name, changes },
         )?;
+        let item_changes: HashMap<ItemId, ItemChangeHistory> = item_changes_raw
+            .into_iter()
+            .map(|(key, value)| (ItemId::new(key), value))
+            .collect();
 
         // Load Pokemon changes data
-        let pokemon_changes = Self::load_change_history(
+        let pokemon_changes_raw = Self::load_change_history(
             data_dir,
             "pokemon-changes.json",
             |name, changes| PokemonChangeHistory { name, changes },
         )?;
+        let pokemon_changes: HashMap<SpeciesId, PokemonChangeHistory> = pokemon_changes_raw
+            .into_iter()
+            .map(|(key, value)| (SpeciesId::new(key), value))
+            .collect();
 
         Ok(Self {
             generations,
@@ -534,18 +547,18 @@ impl GenerationRepository {
     }
 
     /// Get change history for a move
-    pub fn get_move_changes(&self, move_name: &str) -> Option<&MoveChangeHistory> {
-        self.move_changes.get(move_name)
+    pub fn get_move_changes(&self, move_id: &MoveId) -> Option<&MoveChangeHistory> {
+        self.move_changes.get(move_id)
     }
 
     /// Get change history for an item
-    pub fn get_item_changes(&self, item_name: &str) -> Option<&ItemChangeHistory> {
-        self.item_changes.get(item_name)
+    pub fn get_item_changes(&self, item_id: &ItemId) -> Option<&ItemChangeHistory> {
+        self.item_changes.get(item_id)
     }
 
     /// Get change history for a Pokemon
-    pub fn get_pokemon_changes(&self, pokemon_name: &str) -> Option<&PokemonChangeHistory> {
-        self.pokemon_changes.get(pokemon_name)
+    pub fn get_pokemon_changes(&self, species_id: &SpeciesId) -> Option<&PokemonChangeHistory> {
+        self.pokemon_changes.get(species_id)
     }
 
     /// Get all moves for a specific generation

@@ -1,4 +1,5 @@
 use crate::types::identifiers::{AbilityId, TypeId};
+use crate::types::PokemonType;
 use crate::core::battle_state::Pokemon;
 use crate::core::battle_state::BattleState;
 use crate::core::battle_format::BattlePosition;
@@ -179,9 +180,8 @@ pub fn apply_ability_effect(ability: &AbilityId, context: AbilityContext) -> Abi
 
 // Type immunity abilities
 fn apply_levitate(context: AbilityContext) -> AbilityEffectResult {
-    use crate::utils::normalize_name;
     if let Some(move_type) = context.move_type {
-        if normalize_name(move_type.as_str()) == normalize_name("Ground") {
+        if move_type.as_str() == "ground" {
             return AbilityEffectResult::immunity();
         }
     }
@@ -189,9 +189,8 @@ fn apply_levitate(context: AbilityContext) -> AbilityEffectResult {
 }
 
 fn apply_flash_fire(context: AbilityContext) -> AbilityEffectResult {
-    use crate::utils::normalize_name;
     if let Some(move_type) = context.move_type {
-        if normalize_name(move_type.as_str()) == normalize_name("Fire") {
+        if move_type.as_str() == "fire" {
             return AbilityEffectResult::immunity();
         }
     }
@@ -199,9 +198,8 @@ fn apply_flash_fire(context: AbilityContext) -> AbilityEffectResult {
 }
 
 fn apply_water_absorb(context: AbilityContext) -> AbilityEffectResult {
-    use crate::utils::normalize_name;
     if let Some(move_type) = context.move_type {
-        if normalize_name(move_type.as_str()) == normalize_name("Water") {
+        if move_type.as_str() == "water" {
             return AbilityEffectResult::immunity();
         }
     }
@@ -209,9 +207,8 @@ fn apply_water_absorb(context: AbilityContext) -> AbilityEffectResult {
 }
 
 fn apply_volt_absorb(context: AbilityContext) -> AbilityEffectResult {
-    use crate::utils::normalize_name;
     if let Some(move_type) = context.move_type {
-        if normalize_name(move_type.as_str()) == normalize_name("Electric") {
+        if move_type.as_str() == "electric" {
             return AbilityEffectResult::immunity();
         }
     }
@@ -219,9 +216,8 @@ fn apply_volt_absorb(context: AbilityContext) -> AbilityEffectResult {
 }
 
 fn apply_sap_sipper(context: AbilityContext) -> AbilityEffectResult {
-    use crate::utils::normalize_name;
     if let Some(move_type) = context.move_type {
-        if normalize_name(move_type.as_str()) == normalize_name("Grass") {
+        if move_type.as_str() == "grass" {
             return AbilityEffectResult::immunity();
         }
     }
@@ -229,9 +225,8 @@ fn apply_sap_sipper(context: AbilityContext) -> AbilityEffectResult {
 }
 
 fn apply_storm_drain(context: AbilityContext) -> AbilityEffectResult {
-    use crate::utils::normalize_name;
     if let Some(move_type) = context.move_type {
-        if normalize_name(move_type.as_str()) == normalize_name("Water") {
+        if move_type.as_str() == "water" {
             return AbilityEffectResult::immunity();
         }
     }
@@ -239,9 +234,8 @@ fn apply_storm_drain(context: AbilityContext) -> AbilityEffectResult {
 }
 
 fn apply_lightning_rod(context: AbilityContext) -> AbilityEffectResult {
-    use crate::utils::normalize_name;
     if let Some(move_type) = context.move_type {
-        if normalize_name(move_type.as_str()) == normalize_name("Electric") {
+        if move_type.as_str() == "electric" {
             return AbilityEffectResult::immunity();
         }
     }
@@ -249,9 +243,8 @@ fn apply_lightning_rod(context: AbilityContext) -> AbilityEffectResult {
 }
 
 fn apply_motor_drive(context: AbilityContext) -> AbilityEffectResult {
-    use crate::utils::normalize_name;
     if let Some(move_type) = context.move_type {
-        if normalize_name(move_type.as_str()) == normalize_name("Electric") {
+        if move_type.as_str() == "electric" {
             return AbilityEffectResult::immunity();
         }
     }
@@ -272,7 +265,8 @@ fn apply_dry_skin(context: AbilityContext) -> AbilityEffectResult {
 
 fn apply_wonder_guard(context: AbilityContext) -> AbilityEffectResult {
     // Wonder Guard only allows super effective moves to hit
-    use crate::engine::combat::type_effectiveness::{TypeChart, PokemonType};
+    use crate::engine::combat::type_effectiveness::TypeChart;
+    use crate::types::PokemonType;
     
     // If no move type or target position, can't check effectiveness
     let move_type_id = match context.move_type {
@@ -291,19 +285,17 @@ fn apply_wonder_guard(context: AbilityContext) -> AbilityEffectResult {
         None => return AbilityEffectResult::none(),
     };
     
-    // Convert type string to PokemonType enum
-    let defender_type1 = PokemonType::from_str(&defender.types[0])
-        .unwrap_or(PokemonType::Normal);
+    // Get defender types (already PokemonType)
+    let defender_type1 = defender.types[0];
     let defender_type2 = if defender.types.len() > 1 {
-        PokemonType::from_str(&defender.types[1])
-            .unwrap_or(defender_type1)
+        defender.types[1]
     } else {
         defender_type1
     };
     
     // Convert TypeId to string and then to PokemonType
     let move_type_str = format!("{:?}", move_type_id).to_lowercase();
-    let move_type = PokemonType::from_str(&move_type_str)
+    let move_type = PokemonType::from_normalized_str(&move_type_str)
         .unwrap_or(PokemonType::Normal);
     
     // Check type effectiveness
@@ -352,7 +344,8 @@ fn apply_thick_fat(context: AbilityContext) -> AbilityEffectResult {
 // Damage boost abilities
 fn apply_neuroforce(context: AbilityContext) -> AbilityEffectResult {
     // Boosts super effective moves by 25%
-    use crate::engine::combat::type_effectiveness::{TypeChart, PokemonType};
+    use crate::engine::combat::type_effectiveness::TypeChart;
+    use crate::types::PokemonType;
     
     // If no move type or target position, can't check effectiveness
     let move_type_id = match context.move_type {
@@ -371,19 +364,17 @@ fn apply_neuroforce(context: AbilityContext) -> AbilityEffectResult {
         None => return AbilityEffectResult::none(),
     };
     
-    // Convert type string to PokemonType enum
-    let defender_type1 = PokemonType::from_str(&defender.types[0])
-        .unwrap_or(PokemonType::Normal);
+    // Get defender types (already PokemonType)
+    let defender_type1 = defender.types[0];
     let defender_type2 = if defender.types.len() > 1 {
-        PokemonType::from_str(&defender.types[1])
-            .unwrap_or(defender_type1)
+        defender.types[1]
     } else {
         defender_type1
     };
     
     // Convert TypeId to string and then to PokemonType
     let move_type_str = format!("{:?}", move_type_id).to_lowercase();
-    let move_type = PokemonType::from_str(&move_type_str)
+    let move_type = PokemonType::from_normalized_str(&move_type_str)
         .unwrap_or(PokemonType::Normal);
     
     // Check type effectiveness
@@ -407,7 +398,8 @@ fn apply_neuroforce(context: AbilityContext) -> AbilityEffectResult {
 
 fn apply_tinted_lens(context: AbilityContext) -> AbilityEffectResult {
     // Doubles damage of not very effective moves
-    use crate::engine::combat::type_effectiveness::{TypeChart, PokemonType};
+    use crate::engine::combat::type_effectiveness::TypeChart;
+    use crate::types::PokemonType;
     
     // If no move type or target position, can't check effectiveness
     let move_type_id = match context.move_type {
@@ -426,19 +418,17 @@ fn apply_tinted_lens(context: AbilityContext) -> AbilityEffectResult {
         None => return AbilityEffectResult::none(),
     };
     
-    // Convert type string to PokemonType enum
-    let defender_type1 = PokemonType::from_str(&defender.types[0])
-        .unwrap_or(PokemonType::Normal);
+    // Get defender types (already PokemonType)
+    let defender_type1 = defender.types[0];
     let defender_type2 = if defender.types.len() > 1 {
-        PokemonType::from_str(&defender.types[1])
-            .unwrap_or(defender_type1)
+        defender.types[1]
     } else {
         defender_type1
     };
     
     // Convert TypeId to string and then to PokemonType
     let move_type_str = format!("{:?}", move_type_id).to_lowercase();
-    let move_type = PokemonType::from_str(&move_type_str)
+    let move_type = PokemonType::from_normalized_str(&move_type_str)
         .unwrap_or(PokemonType::Normal);
     
     // Check type effectiveness
@@ -590,7 +580,8 @@ fn apply_adaptability(context: AbilityContext) -> AbilityEffectResult {
     // This needs access to Pokemon's types and move type matching
     if let Some(move_type) = context.move_type {
         if let Some(pokemon) = context.state.get_pokemon_at_position(context.user_position) {
-            if pokemon.types.contains(&move_type.as_str().to_string()) {
+            let move_pokemon_type = PokemonType::from(&move_type);
+            if pokemon.types.contains(&move_pokemon_type) {
                 return AbilityEffectResult::stab_multiplier(2.0);
             }
         }

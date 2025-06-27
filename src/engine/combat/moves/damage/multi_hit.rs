@@ -175,7 +175,7 @@ pub fn apply_surging_strikes(
     for &target_position in target_positions {
         // Surging Strikes always hits exactly 3 times with guaranteed critical hits
         let context = DamageCalculationContext::new(
-            move_data.clone(),
+            move_data,
             user_position,
             target_position,
             generation.clone(),

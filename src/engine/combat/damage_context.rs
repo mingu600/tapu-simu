@@ -9,7 +9,7 @@ use crate::core::instructions::{Weather, Terrain, Stat};
 use crate::core::battle_state::Pokemon;
 use crate::core::instructions::MoveCategory;
 use crate::core::battle_state::BattleState;
-use crate::types::identifiers::AbilityId;
+use crate::types::identifiers::{AbilityId, ItemId, MoveId, TypeId};
 use crate::data::showdown_types::MoveData;
 use crate::data::types::Stats;
 use serde::{Deserialize, Serialize};
@@ -63,7 +63,7 @@ pub struct DefenderContext {
 #[derive(Debug, Clone)]
 pub struct MoveContext {
     /// Name/ID of the move
-    pub name: String,
+    pub name: MoveId,
     /// Base power after initial modifications
     pub base_power: u8,
     /// Whether this is a critical hit
@@ -77,7 +77,7 @@ pub struct MoveContext {
     /// Whether this move is a multi-hit move (for Loaded Dice)
     pub is_multihit: bool,
     /// Type of the move (may differ from original due to abilities)
-    pub move_type: String,
+    pub move_type: TypeId,
     /// Category of the move
     pub category: MoveCategory,
 }
@@ -136,7 +136,7 @@ pub struct AbilityState {
 #[derive(Debug, Clone, Default)]
 pub struct ItemEffects {
     /// The item name
-    pub item_name: Option<String>,
+    pub item_name: Option<ItemId>,
     /// Whether the item can be used
     pub is_active: bool,
     /// Whether the item was consumed
@@ -229,14 +229,14 @@ impl DamageContext {
         };
 
         let move_info = MoveContext {
-            name: move_data.name.clone(),
+            name: MoveId::new(move_data.name.clone()),
             base_power: move_data.base_power as u8,
             is_critical,
             is_contact: move_data.flags.contains_key("contact"),
             is_punch: move_data.flags.contains_key("punch"),
             is_sound: move_data.flags.contains_key("sound"),
             is_multihit: move_data.flags.contains_key("multihit"),
-            move_type: move_data.move_type.clone(),
+            move_type: TypeId::new(move_data.move_type.to_normalized_str()),
             category: MoveCategory::from_str(&move_data.category),
         };
 
@@ -409,7 +409,7 @@ impl ItemEffects {
     /// Create item effects from a Pokemon
     pub fn from_pokemon(pokemon: &Pokemon) -> Self {
         Self {
-            item_name: pokemon.item.clone(),
+            item_name: pokemon.item.as_ref().map(|item| ItemId::new(item.clone())),
             is_active: pokemon.item.is_some() && !pokemon.item_consumed,
             is_consumed: pokemon.item_consumed,
         }
@@ -472,14 +472,14 @@ impl Default for DefenderContext {
 impl Default for MoveContext {
     fn default() -> Self {
         Self {
-            name: "tackle".to_string(),
+            name: MoveId::new("tackle"),
             base_power: 40,
             is_critical: false,
             is_contact: true,
             is_punch: false,
             is_sound: false,
             is_multihit: false,
-            move_type: "normal".to_string(),
+            move_type: TypeId::new("normal"),
             category: MoveCategory::Physical,
         }
     }

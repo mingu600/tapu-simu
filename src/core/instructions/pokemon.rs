@@ -4,9 +4,10 @@
 //! switching, ability changes, item changes, type changes, etc.
 
 use crate::core::battle_format::BattlePosition;
-use crate::core::instructions::status::PokemonStatus;
-use crate::core::move_choice::PokemonType;
+use crate::types::PokemonStatus;
+use crate::types::PokemonType;
 use crate::types::identifiers::AbilityId;
+use crate::types::from_string::FromNormalizedString;
 use serde::{Deserialize, Serialize};
 
 /// Move categories for damage tracking
@@ -25,6 +26,22 @@ impl MoveCategory {
             "Special" => MoveCategory::Special,
             _ => MoveCategory::Status,
         }
+    }
+}
+
+/// Implementation of unified string parsing trait
+impl FromNormalizedString for MoveCategory {
+    fn from_normalized_str(s: &str) -> Option<Self> {
+        match s.to_lowercase().trim() {
+            "physical" => Some(Self::Physical),
+            "special" => Some(Self::Special),
+            "status" => Some(Self::Status),
+            _ => None,
+        }
+    }
+    
+    fn valid_strings() -> Vec<&'static str> {
+        vec!["physical", "special", "status"]
     }
 }
 

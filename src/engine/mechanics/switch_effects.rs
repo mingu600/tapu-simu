@@ -15,6 +15,7 @@ use crate::core::battle_state::BattleState;
 use crate::generation::GenerationMechanics;
 use crate::engine::combat::damage::is_grounded;
 use crate::types::identifiers::AbilityId;
+use crate::types::PokemonType;
 use std::collections::HashMap;
 use crate::utils::normalize_name;
 
@@ -1005,14 +1006,15 @@ fn calculate_stealth_rock_damage(
     pokemon: &Pokemon,
     generation: &GenerationMechanics,
 ) -> i16 {
-    use crate::engine::combat::type_effectiveness::{PokemonType, TypeChart};
+    use crate::engine::combat::type_effectiveness::TypeChart;
+    use crate::types::PokemonType;
     
-    let type_chart = TypeChart::new(generation.generation.number());
+    let type_chart = TypeChart::get_cached(generation.generation.number());
     let rock_type = PokemonType::Rock;
     
-    let pokemon_type1 = PokemonType::from_str(&pokemon.types[0]).unwrap_or(PokemonType::Normal);
+    let pokemon_type1 = pokemon.types[0];
     let pokemon_type2 = if pokemon.types.len() > 1 {
-        PokemonType::from_str(&pokemon.types[1]).unwrap_or(pokemon_type1)
+        pokemon.types[1]
     } else {
         pokemon_type1
     };
@@ -1036,13 +1038,13 @@ fn get_toxic_spikes_effect(
     generation: &GenerationMechanics,
 ) -> Option<PokemonStatus> {
     // Poison types absorb Toxic Spikes
-    if pokemon.types.iter().any(|t| t.to_lowercase() == "poison") {
+    if pokemon.types.iter().any(|t| *t == PokemonType::Poison) {
         return None; // Absorbed, no effect
     }
     
     // Steel types are immune to poison
     if generation.generation.number() >= 2 {
-        if pokemon.types.iter().any(|t| t.to_lowercase() == "steel") {
+        if pokemon.types.iter().any(|t| *t == PokemonType::Steel) {
             return None;
         }
     }

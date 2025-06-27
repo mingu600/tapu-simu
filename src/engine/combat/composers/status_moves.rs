@@ -40,7 +40,40 @@ pub fn single_status_move(
     simple_status_move(state, status, target_positions, chance)
 }
 
-/// Stat-modifying move (like Swords Dance, Growl)
+/// Stat-modifying move composer for moves that change Pokemon stats
+///
+/// Use this for moves like Swords Dance (+2 Attack), Growl (-1 Attack), 
+/// Calm Mind (+1 SpAtk/SpDef), Scary Face (-2 Speed), etc.
+///
+/// ## Handles automatically:
+/// - Stat boost/reduction application
+/// - Stat stage clamping (-6 to +6)
+/// - Multi-target stat changes
+/// - Position tracking for affected Pokemon
+/// - Failure handling (when stats are already at limits)
+///
+/// ## When to use:
+/// - Pure stat-changing moves (no damage or status)
+/// - Self-targeting stat boosts
+/// - Enemy-targeting stat reductions
+/// - Moves that change multiple stats simultaneously
+///
+/// ## When NOT to use:
+/// - Moves that deal damage AND change stats (use damage composers with secondary effects)
+/// - Moves that apply status conditions AND change stats (use `status_plus_stat_move`)
+///
+/// ## Example usage:
+/// ```rust
+/// // Swords Dance: +2 Attack to self
+/// let mut changes = HashMap::new();
+/// changes.insert(Stat::Attack, 2);
+/// stat_modification_move(state, &[user_position], &changes, Some(user_position))
+///
+/// // Growl: -1 Attack to all enemies
+/// let mut changes = HashMap::new();
+/// changes.insert(Stat::Attack, -1);
+/// stat_modification_move(state, target_positions, &changes, Some(user_position))
+/// ```
 pub fn stat_modification_move(
     state: &BattleState,
     target_positions: &[BattlePosition],

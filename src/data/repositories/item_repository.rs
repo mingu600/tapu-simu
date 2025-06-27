@@ -13,9 +13,12 @@ pub struct ItemRepository {
 impl ItemRepository {
     /// Create new ItemRepository from data
     pub fn new(data: HashMap<ItemId, ItemData>) -> Self {
+        // Get capacity before moving data
+        let capacity = data.len() * 2; // Multiply by 2 to account for both name and ID indexing
         let mut repo = Self {
             data,
-            name_index: HashMap::new(),
+            // Pre-allocate capacity for name index to avoid rehashing
+            name_index: HashMap::with_capacity(capacity),
         };
         repo.build_index();
         repo
@@ -108,6 +111,11 @@ impl ItemRepository {
     pub fn count(&self) -> usize {
         self.data.len()
     }
+
+    /// Get name index size for performance monitoring
+    pub fn index_size(&self) -> usize {
+        self.name_index.len()
+    }
 }
 
 /// Load items data from JSON file
@@ -128,8 +136,9 @@ pub fn load_items_data(path: &Path) -> DataResult<HashMap<ItemId, ItemData>> {
             source: e 
         })?;
     
-    let mut items = HashMap::new();
-    let mut parse_errors = Vec::new();
+    // Pre-allocate capacity based on raw data size
+    let mut items = HashMap::with_capacity(raw_data.len());
+    let mut parse_errors = Vec::with_capacity(raw_data.len() / 10); // Estimate ~10% parse errors
     
     for (id, value) in raw_data {
         match serde_json::from_value::<ItemData>(value) {

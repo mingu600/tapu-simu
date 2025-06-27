@@ -317,6 +317,10 @@ pub fn get_item_by_name_with_generation(
     move_category: MoveCategory,
     context: &DamageContext,
 ) -> ItemModifier {
+    // Convert to typed identifiers
+    let item_id = crate::types::ItemId::new(item_name);
+    let move_id = crate::types::MoveId::new(move_name);
+    let type_id = crate::types::TypeId::new(move_type);
     // Try each category in order
     if let Some(modifier) = choice_items::get_choice_item_effect(
         item_name, generation, attacker, defender, move_name, move_type, move_category, context
@@ -325,37 +329,37 @@ pub fn get_item_by_name_with_generation(
     }
     
     if let Some(modifier) = type_boosting_items::get_type_boosting_item_effect(
-        item_name, generation, attacker, defender, move_name, move_type, move_category, context
+        &item_id, generation, attacker, defender, &move_id, &type_id, move_category, context
     ) {
         return modifier;
     }
     
     if let Some(modifier) = stat_boosting_items::get_stat_boosting_item_effect(
-        item_name, generation, attacker, defender, move_name, move_type, move_category, context
+        &item_id, generation, attacker, defender, &move_id, &type_id, move_category, context
     ) {
         return modifier;
     }
     
     if let Some(modifier) = berry_items::get_berry_item_effect(
-        item_name, generation, attacker, defender, move_name, move_type, move_category, context
+        &item_id, generation, attacker, defender, &move_id, &type_id, move_category, context
     ) {
         return modifier;
     }
     
     if let Some(modifier) = status_items::get_status_item_effect(
-        item_name, generation, attacker, defender, move_name, move_type, move_category, context
+        &item_id, generation, attacker, defender, &move_id, &type_id, move_category, context
     ) {
         return modifier;
     }
     
     if let Some(modifier) = utility_items::get_utility_item_effect(
-        item_name, generation, attacker, defender, move_name, move_type, move_category, context
+        &item_id, generation, attacker, defender, &move_id, &type_id, move_category, context
     ) {
         return modifier;
     }
     
     if let Some(modifier) = species_items::get_species_item_effect(
-        item_name, generation, attacker, defender, move_name, move_type, move_category, context
+        &item_id, generation, attacker, defender, &move_id, &type_id, move_category, context
     ) {
         return modifier;
     }
@@ -371,11 +375,12 @@ pub fn get_item_hp_restore_per_turn(
     position: BattlePosition,
     generation: &dyn GenerationBattleMechanics,
 ) -> BattleInstructions {
-    if let Some(instructions) = status_items::get_item_hp_restore_per_turn(item_name, pokemon, position, generation) {
+    let item_id = crate::types::ItemId::new(item_name);
+    if let Some(instructions) = status_items::get_item_hp_restore_per_turn(&item_id, pokemon, position, generation) {
         return instructions;
     }
     
-    if let Some(instructions) = utility_items::get_item_hp_restore_per_turn(item_name, pokemon, position, generation) {
+    if let Some(instructions) = utility_items::get_item_hp_restore_per_turn(&item_id, pokemon, position, generation) {
         return instructions;
     }
     
@@ -389,14 +394,16 @@ pub fn get_item_on_switch_in_effects(
     position: BattlePosition,
     generation: &dyn GenerationBattleMechanics,
 ) -> BattleInstructions {
-    // Check all categories for switch-in effects
-    for get_effects in [
-        stat_boosting_items::get_item_on_switch_in_effects,
-        utility_items::get_item_on_switch_in_effects,
-    ] {
-        if let Some(instructions) = get_effects(item_name, pokemon, position, generation) {
-            return instructions;
-        }
+    let item_id = crate::types::ItemId::new(item_name);
+    
+    // Check utility items for switch-in effects
+    if let Some(instructions) = utility_items::get_item_on_switch_in_effects(&item_id, pokemon, position, generation) {
+        return instructions;
+    }
+    
+    // Check stat boosting items for switch-in effects  
+    if let Some(instructions) = stat_boosting_items::get_item_on_switch_in_effects(&item_id, pokemon, position, generation) {
+        return instructions;
     }
     
     BattleInstructions::new(100.0, vec![])

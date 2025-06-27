@@ -55,17 +55,38 @@ pub enum HitCountCalculator {
 impl DamageCalculationContext {
     /// Create new damage context
     pub fn new(
-        move_data: MoveData,
+        move_data: &MoveData,
         user_position: BattlePosition,
         target_position: BattlePosition,
         generation: GenerationMechanics,
         branch_on_damage: bool,
     ) -> Self {
         Self {
-            move_data,
+            move_data: move_data.clone(),
             user_position,
             target_position,
             power_modifier: None,
+            force_critical: false,
+            generation,
+            stat_substitutions: None,
+            branch_on_damage,
+        }
+    }
+    
+    /// Create new damage context with power modifier (avoids cloning for simple power changes)
+    pub fn new_with_power(
+        move_data: &MoveData,
+        user_position: BattlePosition,
+        target_position: BattlePosition,
+        generation: GenerationMechanics,
+        branch_on_damage: bool,
+        power_modifier: f32,
+    ) -> Self {
+        Self {
+            move_data: move_data.clone(),
+            user_position,
+            target_position,
+            power_modifier: Some(power_modifier),
             force_critical: false,
             generation,
             stat_substitutions: None,
@@ -299,29 +320,28 @@ pub fn execute_multi_hit_sequence(
 
 /// Check if a Pokemon is immune to a move
 fn is_immune_to_move(pokemon: &Pokemon, move_data: &MoveData) -> bool {
-    use crate::engine::combat::type_effectiveness::{PokemonType, TypeChart};
+    use crate::engine::combat::type_effectiveness::TypeChart;
+    use crate::types::PokemonType;
     use std::str::FromStr;
 
     // Get type chart for current generation (assume Gen 9 for now)
-    let type_chart = TypeChart::new(9);
-    let move_type = PokemonType::from_str(&move_data.move_type).unwrap_or(PokemonType::Normal);
+    let type_chart = TypeChart::get_cached(9);
+    let move_type = move_data.move_type;
 
     // Check type immunity
-    for pokemon_type_str in &pokemon.types {
-        if let Some(pokemon_type) = PokemonType::from_str(pokemon_type_str) {
-            let effectiveness = type_chart.get_effectiveness(move_type, pokemon_type);
-            if effectiveness == 0.0 {
-                return true;
-            }
+    for &pokemon_type in &pokemon.types {
+        let effectiveness = type_chart.get_effectiveness(move_type, pokemon_type);
+        if effectiveness == 0.0 {
+            return true;
         }
     }
 
     // Check ability immunities (simplified for now)
     match pokemon.ability.as_str() {
-        "flashfire" if move_data.move_type.to_lowercase() == "fire" => true,
-        "voltabsorb" | "lightningrod" if move_data.move_type.to_lowercase() == "electric" => true,
-        "waterabsorb" | "stormdrain" if move_data.move_type.to_lowercase() == "water" => true,
-        "sapsipper" if move_data.move_type.to_lowercase() == "grass" => true,
+        "flashfire" if move_type == PokemonType::Fire => true,
+        "voltabsorb" | "lightningrod" if move_type == PokemonType::Electric => true,
+        "waterabsorb" | "stormdrain" if move_type == PokemonType::Water => true,
+        "sapsipper" if move_type == PokemonType::Grass => true,
         _ => false,
     }
 }
@@ -343,18 +363,17 @@ fn should_critical_hit(
 
 /// Calculate type effectiveness for a move against a Pokemon
 fn calculate_type_effectiveness(pokemon: &Pokemon, move_data: &MoveData) -> f32 {
-    use crate::engine::combat::type_effectiveness::{PokemonType, TypeChart};
+    use crate::engine::combat::type_effectiveness::TypeChart;
+    use crate::types::PokemonType;
     use std::str::FromStr;
 
     // Get type chart for current generation (assume Gen 9 for now)
-    let type_chart = TypeChart::new(9);
-    let move_type = PokemonType::from_str(&move_data.move_type).unwrap_or(PokemonType::Normal);
+    let type_chart = TypeChart::get_cached(9);
+    let move_type = move_data.move_type;
 
     let mut effectiveness = 1.0;
-    for pokemon_type_str in &pokemon.types {
-        if let Some(pokemon_type) = PokemonType::from_str(pokemon_type_str) {
-            effectiveness *= type_chart.get_effectiveness(move_type, pokemon_type);
-        }
+    for &pokemon_type in &pokemon.types {
+        effectiveness *= type_chart.get_effectiveness(move_type, pokemon_type);
     }
 
     effectiveness
@@ -374,7 +393,7 @@ pub fn simple_damage_move(
 
     for &target_position in target_positions {
         let context = DamageCalculationContext::new(
-            move_data.clone(),
+            move_data,
             user_position,
             target_position,
             generation.clone(),
@@ -421,7 +440,7 @@ pub fn multi_hit_move(
         };
 
         let context = DamageCalculationContext::new(
-            move_data.clone(),
+            move_data,
             user_position,
             target_position,
             generation.clone(),

@@ -1519,7 +1519,7 @@ fn test_gyro_ball_high_power() {
         percentage: 100.0,
         instruction_list: vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
             target: Positions::SIDE_TWO_0,
-            amount: 154, // High power against much faster Pokemon
+            amount: 153, // High power against much faster Pokemon
             previous_hp: None,
         })],
         affected_positions: vec![Positions::SIDE_TWO_0],

@@ -8,6 +8,7 @@ use crate::core::battle_format::BattlePosition;
 use crate::core::battle_state::BattleState;
 use crate::core::instructions::{BattleInstruction, PokemonStatus, VolatileStatus, StatusInstruction, Stat, StatsInstruction};
 use crate::data::showdown_types::MoveData;
+use crate::types::PokemonType;
 use std::collections::HashMap;
 
 /// Configuration for applying a status effect
@@ -204,23 +205,20 @@ fn has_type_immunity(target: &crate::core::battle_state::Pokemon, status: &Pokem
     match status {
         PokemonStatus::Burn => {
             // Fire types are immune to burn
-            target.types.iter().any(|t| t.to_lowercase() == "fire")
+            target.types.iter().any(|t| *t == PokemonType::Fire)
         }
         PokemonStatus::Freeze => {
             // Ice types are immune to freeze
-            target.types.iter().any(|t| t.to_lowercase() == "ice")
+            target.types.iter().any(|t| *t == PokemonType::Ice)
         }
         PokemonStatus::Paralysis => {
             // Electric types are immune to paralysis (Gen 6+)
             // For now, always apply this rule
-            target.types.iter().any(|t| t.to_lowercase() == "electric")
+            target.types.iter().any(|t| *t == PokemonType::Electric)
         }
         PokemonStatus::Poison | PokemonStatus::BadlyPoisoned => {
             // Poison and Steel types are immune to poison
-            target.types.iter().any(|t| {
-                let t_lower = t.to_lowercase();
-                t_lower == "poison" || t_lower == "steel"
-            })
+            target.types.iter().any(|t| *t == PokemonType::Poison || *t == PokemonType::Steel)
         }
         _ => false,
     }

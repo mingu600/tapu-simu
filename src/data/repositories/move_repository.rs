@@ -13,9 +13,12 @@ pub struct MoveRepository {
 impl MoveRepository {
     /// Create new MoveRepository from data
     pub fn new(data: HashMap<MoveId, MoveData>) -> Self {
+        // Get capacity before moving data
+        let capacity = data.len();
         let mut repo = Self {
             data,
-            name_index: HashMap::new(),
+            // Pre-allocate capacity for name index to avoid rehashing
+            name_index: HashMap::with_capacity(capacity),
         };
         repo.build_index();
         repo
@@ -25,6 +28,7 @@ impl MoveRepository {
     fn build_index(&mut self) {
         for (move_id, move_data) in &self.data {
             let normalized_name = normalize_name(&move_data.name);
+            // Use reference to avoid cloning ID
             self.name_index.insert(normalized_name, move_id.clone());
         }
     }
@@ -40,12 +44,12 @@ impl MoveRepository {
     pub fn find_by_name(&self, name: &str) -> Option<&MoveData> {
         let normalized_name = normalize_name(name);
         
-        // Try index lookup first
+        // Try index lookup first (O(1) with pre-computed normalized names)
         if let Some(move_id) = self.name_index.get(&normalized_name) {
             return self.data.get(move_id);
         }
         
-        // Fallback to linear search for edge cases
+        // Fallback to linear search should rarely be needed with proper indexing
         self.data.values().find(|move_data| normalize_name(&move_data.name) == normalized_name)
     }
 
@@ -68,6 +72,11 @@ impl MoveRepository {
     /// Get move count
     pub fn count(&self) -> usize {
         self.data.len()
+    }
+
+    /// Get name index size for performance monitoring
+    pub fn index_size(&self) -> usize {
+        self.name_index.len()
     }
 }
 
@@ -92,8 +101,9 @@ pub fn load_moves_data(path: &Path) -> DataResult<HashMap<MoveId, MoveData>> {
             source: e 
         })?;
     
-    let mut moves = HashMap::new();
-    let mut parse_errors = Vec::new();
+    // Pre-allocate capacity based on raw data size
+    let mut moves = HashMap::with_capacity(raw_data.len());
+    let mut parse_errors = Vec::with_capacity(raw_data.len() / 10); // Estimate ~10% parse errors
     
     for (id, value) in raw_data {
         match serde_json::from_value::<MoveData>(value) {

@@ -1,6 +1,7 @@
 //! # Modern Battle State System
 
 use crate::core::battle_format::{BattleFormat, BattlePosition, SideReference};
+use crate::types::PokemonType;
 use crate::core::instructions::{
     BattleInstruction, FieldInstruction, PokemonInstruction, PokemonStatus,
     StatsInstruction, StatusInstruction, Terrain, VolatileStatus, Weather,
@@ -402,7 +403,7 @@ impl BattleState {
                 target, new_types, ..
             } => {
                 if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
-                    pokemon.types = new_types.clone();
+                    pokemon.types = new_types.iter().filter_map(|type_str| PokemonType::from_normalized_str(type_str)).collect();
                 }
             }
             PokemonInstruction::ToggleTerastallized {

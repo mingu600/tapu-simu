@@ -15,6 +15,7 @@ use crate::core::instructions::{
     BattleInstruction, BattleInstructions, PokemonInstruction, StatusInstruction, 
     PokemonStatus, VolatileStatus, Weather, Terrain
 };
+use crate::types::PokemonType;
 use std::collections::HashMap;
 
 /// Generate comprehensive end-of-turn instructions following poke-engine order
@@ -172,9 +173,9 @@ fn apply_hail_damage(
 /// Check if Pokemon is immune to sandstorm damage
 fn is_sandstorm_immune(pokemon: &crate::core::battle_state::Pokemon) -> bool {
     // Immune types
-    if pokemon.types.contains(&"Ground".to_string()) ||
-       pokemon.types.contains(&"Rock".to_string()) ||
-       pokemon.types.contains(&"Steel".to_string()) {
+    if pokemon.types.contains(&PokemonType::Ground) ||
+       pokemon.types.contains(&PokemonType::Rock) ||
+       pokemon.types.contains(&PokemonType::Steel) {
         return true;
     }
     
@@ -188,7 +189,7 @@ fn is_sandstorm_immune(pokemon: &crate::core::battle_state::Pokemon) -> bool {
 /// Check if Pokemon is immune to hail damage
 fn is_hail_immune(pokemon: &crate::core::battle_state::Pokemon) -> bool {
     // Immune types
-    if pokemon.types.contains(&"Ice".to_string()) {
+    if pokemon.types.contains(&PokemonType::Ice) {
         return true;
     }
     
@@ -258,7 +259,7 @@ fn apply_grassy_terrain_healing(
 /// Check if Pokemon is grounded (affected by terrain effects)
 fn is_grounded(pokemon: &crate::core::battle_state::Pokemon) -> bool {
     // Not grounded if Flying type or has Air Balloon or Levitate
-    if pokemon.types.contains(&"Flying".to_string()) {
+    if pokemon.types.contains(&PokemonType::Flying) {
         return false;
     }
     
@@ -389,7 +390,7 @@ fn apply_item_effects(
                         }
                     }
                     "blacksludge" => {
-                        if pokemon.types.contains(&"Poison".to_string()) {
+                        if pokemon.types.contains(&PokemonType::Poison) {
                             // Heal if Poison type
                             if pokemon.hp < pokemon.max_hp {
                                 let healing = (pokemon.max_hp / 16).max(1);

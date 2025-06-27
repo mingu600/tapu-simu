@@ -9,9 +9,12 @@ pub mod status;
 pub mod stats;
 
 pub use pokemon::{PokemonInstruction, MoveCategory};
-pub use field::{FieldInstruction, Weather, Terrain, SideCondition};
-pub use status::{StatusInstruction, PokemonStatus, VolatileStatus};
-pub use stats::{StatsInstruction, Stat};
+pub use field::{FieldInstruction, SideCondition};
+pub use status::{StatusInstruction};
+pub use stats::{StatsInstruction};
+
+// Re-export the moved enums from types for convenience
+pub use crate::types::{Weather, Terrain, PokemonStatus, VolatileStatus, Stat};
 
 use crate::core::battle_format::BattlePosition;
 use serde::{Deserialize, Serialize};

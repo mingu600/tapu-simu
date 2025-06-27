@@ -8,6 +8,7 @@ use crate::core::battle_state::{BattleState, Pokemon};
 use crate::data::showdown_types::MoveData;
 use crate::engine::combat::damage_context::{DamageContext, AttackerContext, DefenderContext, MoveContext, FieldContext, FormatContext};
 use crate::engine::combat::damage_context::{EffectiveStats, AbilityState, ItemEffects};
+use crate::types::{MoveId, TypeId};
 use crate::core::instructions::MoveCategory;
 use super::types::DamageRolls;
 
@@ -80,14 +81,14 @@ pub fn calculate_damage_with_positions(
     };
 
     let move_context = MoveContext {
-        name: move_data.name.clone(),
+        name: MoveId::new(&move_data.name),
         base_power: move_data.base_power as u8,
         is_critical,
         is_contact: move_data.flags.contains_key("contact"),
         is_punch: move_data.flags.contains_key("punch"),
         is_sound: move_data.flags.contains_key("sound"),
         is_multihit: move_data.flags.contains_key("multihit"),
-        move_type: move_data.move_type.clone(),
+        move_type: TypeId::new(move_data.move_type.to_normalized_str()),
         category: MoveCategory::from_str(&move_data.category),
     };
 

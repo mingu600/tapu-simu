@@ -6,11 +6,12 @@
 use crate::core::battle_state::Pokemon;
 use crate::core::instructions::{Terrain, VolatileStatus};
 use crate::generation::GenerationMechanics;
+use crate::types::PokemonType;
 
 /// Check if a Pokemon is grounded (affected by terrain)
 pub fn is_grounded(pokemon: &Pokemon) -> bool {
     // Check for Flying type
-    if pokemon.types.iter().any(|t| t.to_lowercase() == "flying") {
+    if pokemon.types.iter().any(|t| *t == PokemonType::Flying) {
         return false;
     }
 

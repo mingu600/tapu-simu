@@ -5,7 +5,8 @@
 //! structure but with Gen 3-specific modifier order.
 
 use crate::engine::combat::damage_context::{DamageContext, DamageResult, DamageEffect};
-use crate::engine::combat::type_effectiveness::{PokemonType, TypeChart};
+use crate::engine::combat::type_effectiveness::TypeChart;
+use crate::types::PokemonType;
 use crate::engine::combat::damage::DamageRolls;
 use crate::core::instructions::Weather;
 use crate::constants::moves::CRITICAL_HIT_MULTIPLIER_LEGACY;
@@ -103,7 +104,7 @@ pub fn calculate_damage_gen3(context: &DamageContext, damage_rolls: DamageRolls)
     // Weather effects
     let mut weather_multiplier = 1.0;
     if let Weather::Sun = context.field.weather.condition {
-        match context.move_info.move_type.to_lowercase().as_str() {
+        match context.move_info.move_type.as_str() {
             "fire" => {
                 weather_multiplier = 1.5;
                 effects.push(DamageEffect::WeatherEffect {
@@ -119,7 +120,7 @@ pub fn calculate_damage_gen3(context: &DamageContext, damage_rolls: DamageRolls)
             _ => {}
         }
     } else if let Weather::Rain = context.field.weather.condition {
-        match context.move_info.move_type.to_lowercase().as_str() {
+        match context.move_info.move_type.as_str() {
             "water" => {
                 weather_multiplier = 1.5;
                 effects.push(DamageEffect::WeatherEffect {
@@ -149,14 +150,13 @@ pub fn calculate_damage_gen3(context: &DamageContext, damage_rolls: DamageRolls)
     base_damage = base_damage * critical_modifier;
 
     // Apply STAB
-    let type_chart = TypeChart::new(3); // Gen 3 type chart
+    let type_chart = TypeChart::get_cached(3); // Gen 3 type chart
     let move_type =
-        PokemonType::from_str(&context.move_info.move_type).unwrap_or(PokemonType::Normal);
+        PokemonType::from_normalized_str(context.move_info.move_type.as_str()).unwrap_or(PokemonType::Normal);
 
-    let attacker_type1 =
-        PokemonType::from_str(&context.attacker.pokemon.types[0]).unwrap_or(PokemonType::Normal);
+    let attacker_type1 = context.attacker.pokemon.types[0];
     let attacker_type2 = if context.attacker.pokemon.types.len() > 1 {
-        PokemonType::from_str(&context.attacker.pokemon.types[1]).unwrap_or(attacker_type1)
+        context.attacker.pokemon.types[1]
     } else {
         attacker_type1
     };
@@ -171,10 +171,9 @@ pub fn calculate_damage_gen3(context: &DamageContext, damage_rolls: DamageRolls)
     base_damage = (base_damage * stab_multiplier).floor();
 
     // Type effectiveness (calculated and applied separately in Gen 3)
-    let defender_type1 =
-        PokemonType::from_str(&context.defender.pokemon.types[0]).unwrap_or(PokemonType::Normal);
+    let defender_type1 = context.defender.pokemon.types[0];
     let defender_type2 = if context.defender.pokemon.types.len() > 1 {
-        PokemonType::from_str(&context.defender.pokemon.types[1]).unwrap_or(defender_type1)
+        context.defender.pokemon.types[1]
     } else {
         defender_type1
     };

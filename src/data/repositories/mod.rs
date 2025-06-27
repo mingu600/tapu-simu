@@ -47,6 +47,9 @@ impl GameDataRepository {
             move_count: self.moves.count(),
             pokemon_count: self.pokemon.count(),
             item_count: self.items.count(),
+            move_index_size: self.moves.index_size(),
+            pokemon_index_size: self.pokemon.index_size(),
+            item_index_size: self.items.index_size(),
         }
     }
 }
@@ -57,6 +60,9 @@ pub struct RepositoryStats {
     pub move_count: usize,
     pub pokemon_count: usize,
     pub item_count: usize,
+    pub move_index_size: usize,
+    pub pokemon_index_size: usize,
+    pub item_index_size: usize,
 }
 
 // Global repository instance (singleton pattern)

@@ -8,7 +8,8 @@ use crate::core::instructions::{BattleInstruction, BattleInstructions, PokemonIn
 use crate::core::battle_format::BattlePosition;
 use crate::generation::GenerationMechanics;
 use crate::data::showdown_types::MoveData;
-use crate::engine::combat::type_effectiveness::{TypeChart, PokemonType};
+use crate::engine::combat::type_effectiveness::TypeChart;
+use crate::types::PokemonType;
 
 // =============================================================================
 // SELF-DAMAGE MOVES (user takes damage but doesn't faint)
@@ -217,28 +218,22 @@ fn is_move_immune(
     target: &crate::core::battle_state::Pokemon,
     generation: &GenerationMechanics,
 ) -> bool {
-    let type_chart = TypeChart::new(generation.generation as u8);
+    let type_chart = TypeChart::get_cached(generation.generation as u8);
     
-    let attacking_type = match PokemonType::from_str(move_type) {
+    let attacking_type = match PokemonType::from_normalized_str(move_type) {
         Some(t) => t,
         None => return false, // Unknown type, assume not immune
     };
     
-    // Get target types from the Vec<String>
-    let target_type1 = if let Some(type_str) = target.types.get(0) {
-        match PokemonType::from_str(type_str) {
-            Some(t) => t,
-            None => return false,
-        }
+    // Get target types from the Vec<PokemonType>
+    let target_type1 = if let Some(pokemon_type) = target.types.get(0) {
+        *pokemon_type
     } else {
         return false; // No types defined
     };
     
-    let target_type2 = if let Some(type_str) = target.types.get(1) {
-        match PokemonType::from_str(type_str) {
-            Some(t) => t,
-            None => target_type1, // Fallback to type1 if type2 is invalid
-        }
+    let target_type2 = if let Some(pokemon_type) = target.types.get(1) {
+        *pokemon_type
     } else {
         target_type1 // Single type Pokemon
     };

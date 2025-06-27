@@ -8,7 +8,8 @@ use crate::core::battle_state::Pokemon;
 use crate::data::showdown_types::MoveData;
 use crate::engine::combat::damage::DamageRolls;
 use crate::engine::combat::damage_context::{DamageContext, DamageEffect, DamageResult};
-use crate::engine::combat::type_effectiveness::{PokemonType, TypeChart};
+use crate::engine::combat::type_effectiveness::TypeChart;
+use crate::types::PokemonType;
 use crate::utils::normalize_name;
 use crate::constants::moves::{GEN1_HIGH_CRIT_MOVES, GEN1_CRIT_SPEED_DIVISOR, GEN1_CRIT_RATE_DIVISOR, GEN1_HIGH_CRIT_MULTIPLIER};
 
@@ -167,14 +168,13 @@ pub fn calculate_damage_gen1(context: &DamageContext, damage_rolls: DamageRolls)
     // Apply additional modifiers before +2
 
     // Type effectiveness calculation (using Gen 1 type chart)
-    let type_chart = TypeChart::new(1); // Gen 1 type chart
+    let type_chart = TypeChart::get_cached(1); // Gen 1 type chart
     let move_type =
-        PokemonType::from_str(&context.move_info.move_type).unwrap_or(PokemonType::Normal);
+        PokemonType::from_normalized_str(context.move_info.move_type.as_str()).unwrap_or(PokemonType::Normal);
 
-    let defender_type1 =
-        PokemonType::from_str(&context.defender.pokemon.types[0]).unwrap_or(PokemonType::Normal);
+    let defender_type1 = context.defender.pokemon.types[0];
     let defender_type2 = if context.defender.pokemon.types.len() > 1 {
-        PokemonType::from_str(&context.defender.pokemon.types[1]).unwrap_or(defender_type1)
+        context.defender.pokemon.types[1]
     } else {
         defender_type1
     };
@@ -188,10 +188,9 @@ pub fn calculate_damage_gen1(context: &DamageContext, damage_rolls: DamageRolls)
     };
 
     // STAB calculation
-    let attacker_type1 =
-        PokemonType::from_str(&context.attacker.pokemon.types[0]).unwrap_or(PokemonType::Normal);
+    let attacker_type1 = context.attacker.pokemon.types[0];
     let attacker_type2 = if context.attacker.pokemon.types.len() > 1 {
-        PokemonType::from_str(&context.attacker.pokemon.types[1]).unwrap_or(attacker_type1)
+        context.attacker.pokemon.types[1]
     } else {
         attacker_type1
     };
@@ -203,24 +202,24 @@ pub fn calculate_damage_gen1(context: &DamageContext, damage_rolls: DamageRolls)
 
     // Apply weather effects (Gen 1 has weather but limited)
     if let crate::core::instructions::Weather::Sun = context.field.weather.condition {
-        if context.move_info.move_type.to_lowercase() == "fire" {
+        if context.move_info.move_type.as_str() == "fire" {
             base_damage = (base_damage * 1.5).floor();
             effects.push(DamageEffect::WeatherEffect {
                 weather: context.field.weather.condition,
             });
-        } else if context.move_info.move_type.to_lowercase() == "water" {
+        } else if context.move_info.move_type.as_str() == "water" {
             base_damage = (base_damage / 2.0).floor();
             effects.push(DamageEffect::WeatherEffect {
                 weather: context.field.weather.condition,
             });
         }
     } else if let crate::core::instructions::Weather::Rain = context.field.weather.condition {
-        if context.move_info.move_type.to_lowercase() == "water" {
+        if context.move_info.move_type.as_str() == "water" {
             base_damage = (base_damage * 1.5).floor();
             effects.push(DamageEffect::WeatherEffect {
                 weather: context.field.weather.condition,
             });
-        } else if context.move_info.move_type.to_lowercase() == "fire" {
+        } else if context.move_info.move_type.as_str() == "fire" {
             base_damage = (base_damage / 2.0).floor();
             effects.push(DamageEffect::WeatherEffect {
                 weather: context.field.weather.condition,

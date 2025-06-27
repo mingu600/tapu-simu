@@ -4,6 +4,7 @@ use crate::core::battle_format::BattlePosition;
 use crate::core::instructions::{MoveCategory, PokemonStatus, VolatileStatus};
 use crate::core::move_choice::MoveIndex;
 use crate::data::types::Stats;
+use crate::types::PokemonType;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 
@@ -55,7 +56,7 @@ pub struct Move {
     /// Accuracy (1-100, 0 for never-miss moves)
     pub accuracy: u8,
     /// Move type
-    pub move_type: String,
+    pub move_type: PokemonType,
     /// Current PP
     pub pp: u8,
     /// Maximum PP
@@ -74,7 +75,7 @@ impl Move {
             name,
             base_power: 60,
             accuracy: 100,
-            move_type: "Normal".to_string(),
+            move_type: PokemonType::Normal,
             pp: 15,
             max_pp: 15,
             target: crate::data::showdown_types::MoveTarget::Normal,
@@ -84,8 +85,8 @@ impl Move {
     }
 
     /// Get the move's type
-    pub fn get_type(&self) -> &str {
-        &self.move_type
+    pub fn get_type(&self) -> PokemonType {
+        self.move_type
     }
 
     /// Get the move's name
@@ -98,7 +99,7 @@ impl Move {
         name: String,
         base_power: u8,
         accuracy: u8,
-        move_type: String,
+        move_type: PokemonType,
         pp: u8,
         max_pp: u8,
         target: crate::data::showdown_types::MoveTarget,
@@ -151,13 +152,13 @@ pub struct Pokemon {
     /// Held item
     pub item: Option<String>,
     /// Types (can change due to moves like Soak)
-    pub types: Vec<String>,
+    pub types: Vec<PokemonType>,
     /// Level
     pub level: u8,
     /// Gender
     pub gender: Gender,
     /// Tera type (if Terastallized) - Gen 9+ only
-    pub tera_type: Option<crate::core::move_choice::PokemonType>,
+    pub tera_type: Option<PokemonType>,
     /// Whether this Pokemon is Terastallized - Gen 9+ only
     pub is_terastallized: bool,
     /// Whether the ability is suppressed (by moves like Gastro Acid)
@@ -202,7 +203,7 @@ impl Pokemon {
             moves: HashMap::new(),
             ability: String::new(),
             item: None,
-            types: vec!["Normal".to_string()],
+            types: vec![PokemonType::Normal],
             level: 50,
             gender: Gender::Unknown,
             tera_type: None,

@@ -567,7 +567,7 @@ impl BattleEnvironment {
             pokemon.stats.speed,
             pokemon.ability,
             pokemon.item.as_ref().unwrap_or(&"None".to_string()),
-            pokemon.types.join("/")
+            pokemon.types.iter().map(|t| t.to_normalized_str()).collect::<Vec<_>>().join("/")
         )
     }
 

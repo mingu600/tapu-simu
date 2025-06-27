@@ -8,6 +8,7 @@ use crate::core::battle_state::{BattleState, Pokemon};
 use crate::core::move_choice::MoveChoice;
 use crate::core::instructions::{PokemonStatus, VolatileStatus, BattleInstructions, BattleInstruction, PokemonInstruction, StatusInstruction};
 use crate::data::showdown_types::MoveData;
+use crate::types::PokemonType;
 use serde::{Deserialize, Serialize};
 
 /// Reasons why a move might be prevented from being used
@@ -138,14 +139,14 @@ fn check_freeze_prevention(
     
     // Calculate thaw chance based on move used
     let thaw_chance = if let Some(data) = move_data {
-        if is_fire_type_move(&data.move_type) {
+        if is_fire_type_move(data.move_type) {
             100.0 // Fire moves always thaw
         } else {
             20.0 // 20% base thaw chance
         }
     } else if let Some(move_index) = move_choice.move_index() {
         if let Some(move_data_internal) = pokemon.get_move(move_index) {
-            if is_fire_type_move(&move_data_internal.move_type) {
+            if is_fire_type_move(move_data_internal.move_type) {
                 100.0 // Fire moves always thaw
             } else {
                 20.0 // 20% base thaw chance
@@ -259,8 +260,8 @@ fn calculate_confusion_self_damage(pokemon: &Pokemon) -> i16 {
 }
 
 /// Check if a move type is Fire-type (for freeze thaw calculation)
-fn is_fire_type_move(move_type: &str) -> bool {
-    move_type.to_lowercase() == "fire"
+fn is_fire_type_move(move_type: PokemonType) -> bool {
+    move_type == PokemonType::Fire
 }
 
 /// Generate prevention instructions with probability branching
@@ -454,7 +455,7 @@ mod tests {
             moves: HashMap::new(),
             ability: "Static".to_string(),
             item: None,
-            types: vec!["Electric".to_string()],
+            types: vec![crate::types::PokemonType::Electric],
             level: 50,
             gender: crate::core::battle_state::Gender::Unknown,
             tera_type: None,

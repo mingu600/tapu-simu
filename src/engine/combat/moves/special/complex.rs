@@ -12,7 +12,8 @@ use crate::core::instructions::{
 };
 use crate::core::battle_format::{BattlePosition, SideReference};
 use crate::generation::GenerationMechanics;
-use crate::engine::combat::type_effectiveness::{TypeChart, PokemonType};
+use crate::engine::combat::type_effectiveness::TypeChart;
+use crate::types::PokemonType;
 use std::collections::HashMap;
 
 // =============================================================================
@@ -89,7 +90,7 @@ pub fn apply_curse(
     _generation: &GenerationMechanics,
 ) -> Vec<BattleInstructions> {
     if let Some(user) = state.get_pokemon_at_position(user_position) {
-        if user.types.iter().any(|t| t.to_lowercase() == "ghost") {
+        if user.types.iter().any(|t| *t == PokemonType::Ghost) {
             // Ghost type: Curses target, user loses 50% HP
             if let Some(&target_position) = target_positions.first() {
                 let mut instructions = Vec::new();

@@ -13,9 +13,12 @@ pub struct PokemonRepository {
 impl PokemonRepository {
     /// Create new PokemonRepository from data
     pub fn new(data: HashMap<SpeciesId, PokemonData>) -> Self {
+        // Get capacity before moving data
+        let capacity = data.len() * 2; // Multiply by 2 to account for both name and ID indexing
         let mut repo = Self {
             data,
-            name_index: HashMap::new(),
+            // Pre-allocate capacity for name index to avoid rehashing
+            name_index: HashMap::with_capacity(capacity),
         };
         repo.build_index();
         repo
@@ -87,6 +90,11 @@ impl PokemonRepository {
     pub fn count(&self) -> usize {
         self.data.len()
     }
+
+    /// Get name index size for performance monitoring
+    pub fn index_size(&self) -> usize {
+        self.name_index.len()
+    }
 }
 
 /// Load pokemon data from JSON file
@@ -107,8 +115,9 @@ pub fn load_pokemon_data(path: &Path) -> DataResult<HashMap<SpeciesId, PokemonDa
             source: e 
         })?;
     
-    let mut pokemon = HashMap::new();
-    let mut parse_errors = Vec::new();
+    // Pre-allocate capacity based on raw data size
+    let mut pokemon = HashMap::with_capacity(raw_data.len());
+    let mut parse_errors = Vec::with_capacity(raw_data.len() / 10); // Estimate ~10% parse errors
     
     for (id, value) in raw_data {
         // Parse manually to handle weight extraction

@@ -9,60 +9,79 @@ use crate::core::instructions::{
 };
 use crate::core::battle_format::BattlePosition;
 use crate::generation::GenerationMechanics;
-use crate::engine::combat::type_effectiveness::{TypeChart, PokemonType};
+use crate::engine::combat::type_effectiveness::TypeChart;
+use crate::types::PokemonType;
+use crate::engine::combat::composers::damage_moves::{simple_damage_move, DamageModifiers};
+use crate::data::showdown_types::MoveData;
 
 // =============================================================================
 // FIXED DAMAGE MOVES
 // =============================================================================
 
-/// Check if a move is immune against a target due to type effectiveness
-fn is_move_immune(
-    move_type: &str,
-    target: &crate::core::battle_state::Pokemon,
+/// Fixed damage calculation function type
+type FixedDamageCalculator = fn(&crate::core::battle_state::Pokemon, &crate::core::battle_state::Pokemon) -> i16;
+
+/// Apply fixed damage move using infrastructure
+fn apply_fixed_damage_move(
+    state: &BattleState,
+    move_type: PokemonType,
+    damage_calculator: FixedDamageCalculator,
+    user_position: BattlePosition,
+    target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
-) -> bool {
-    let type_chart = TypeChart::new(generation.generation as u8);
-    
-    let attacking_type = match PokemonType::from_str(move_type) {
-        Some(t) => t,
-        None => return false, // Unknown type, assume not immune
-    };
-    
-    // Get target types from the Vec<String>
-    let target_type1 = if let Some(type_str) = target.types.get(0) {
-        match PokemonType::from_str(type_str) {
-            Some(t) => t,
-            None => return false,
+) -> Vec<BattleInstructions> {
+    if let Some(user) = state.get_pokemon_at_position(user_position) {
+        let type_chart = TypeChart::get_cached(generation.generation as u8);
+        let mut instructions = Vec::new();
+        
+        for &target_position in target_positions {
+            if let Some(target) = state.get_pokemon_at_position(target_position) {
+                // Check for type immunity using infrastructure
+                let target_type1 = target.types.get(0).copied().unwrap_or(PokemonType::Normal);
+                let target_type2 = target.types.get(1).copied().unwrap_or(target_type1);
+                let tera_type = target.tera_type;
+                
+                let effectiveness = type_chart.calculate_damage_multiplier(
+                    move_type,
+                    (target_type1, target_type2),
+                    tera_type,
+                    None,
+                );
+                
+                // Skip if immune
+                if effectiveness == 0.0 {
+                    continue;
+                }
+                
+                // Calculate fixed damage using the provided calculator
+                let damage_amount = damage_calculator(user, target);
+                
+                // Cap damage to prevent overkill
+                let final_damage = damage_amount.min(target.hp);
+                
+                if final_damage > 0 {
+                    let instruction = BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                        target: target_position,
+                        amount: final_damage,
+                        previous_hp: None,
+                    });
+                    instructions.push(BattleInstructions::new_with_positions(
+                        100.0, 
+                        vec![instruction], 
+                        vec![target_position]
+                    ));
+                }
+            }
         }
-    } else {
-        return false; // No types defined
-    };
-    
-    let target_type2 = if let Some(type_str) = target.types.get(1) {
-        match PokemonType::from_str(type_str) {
-            Some(t) => t,
-            None => target_type1, // Fallback to type1 if type2 is invalid
+        
+        if instructions.is_empty() {
+            instructions.push(BattleInstructions::new(100.0, vec![]));
         }
+        
+        instructions
     } else {
-        target_type1 // Single type Pokemon
-    };
-    
-    // Convert tera_type if present
-    let tera_type = target.tera_type.as_ref().and_then(|t| {
-        // t is already a PokemonType from move_choice, need to convert to type_effectiveness::PokemonType
-        PokemonType::from_str(&format!("{:?}", t))
-    });
-    
-    // Calculate type effectiveness
-    let effectiveness = type_chart.calculate_damage_multiplier(
-        attacking_type,
-        (target_type1, target_type2),
-        tera_type,
-        None, // No special move name needed for basic type effectiveness
-    );
-    
-    // Move is immune if effectiveness is 0.0
-    effectiveness == 0.0
+        vec![BattleInstructions::new(100.0, vec![])]
+    }
 }
 
 /// Apply Seismic Toss - damage equals user's level
@@ -72,37 +91,14 @@ pub fn apply_seismic_toss(
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
 ) -> Vec<BattleInstructions> {
-    if let Some(user) = state.get_pokemon_at_position(user_position) {
-        let intended_damage = user.level as i16;
-        let mut instructions = Vec::new();
-        
-        for &target_position in target_positions {
-            if let Some(target) = state.get_pokemon_at_position(target_position) {
-                // Check for type immunity (Seismic Toss is a Fighting-type move)
-                if is_move_immune("Fighting", target, generation) {
-                    continue; // Skip this target due to immunity
-                }
-                
-                // Cap damage at target's current HP to prevent overkill
-                let damage_amount = intended_damage.min(target.hp);
-                
-                let instruction = BattleInstruction::Pokemon(PokemonInstruction::Damage {
-                    target: target_position,
-                    amount: damage_amount,
-                    previous_hp: None, // Will be filled by state application
-                });
-                instructions.push(BattleInstructions::new(100.0, vec![instruction]));
-            }
-        }
-        
-        if instructions.is_empty() {
-            instructions.push(BattleInstructions::new(100.0, vec![]));
-        }
-        
-        instructions
-    } else {
-        vec![BattleInstructions::new(100.0, vec![])]
-    }
+    apply_fixed_damage_move(
+        state,
+        PokemonType::Fighting,
+        |user, _target| user.level as i16,
+        user_position,
+        target_positions,
+        generation,
+    )
 }
 
 /// Apply Night Shade - damage equals user's level
@@ -112,34 +108,14 @@ pub fn apply_night_shade(
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
 ) -> Vec<BattleInstructions> {
-    if let Some(user) = state.get_pokemon_at_position(user_position) {
-        let damage_amount = user.level as i16;
-        let mut instructions = Vec::new();
-        
-        for &target_position in target_positions {
-            if let Some(target) = state.get_pokemon_at_position(target_position) {
-                // Check for type immunity (Night Shade is a Ghost-type move)
-                if is_move_immune("Ghost", target, generation) {
-                    continue; // Skip this target due to immunity
-                }
-                
-                let instruction = BattleInstruction::Pokemon(PokemonInstruction::Damage {
-                    target: target_position,
-                    amount: damage_amount,
-                    previous_hp: None, // Will be filled by state application
-                });
-                instructions.push(BattleInstructions::new(100.0, vec![instruction]));
-            }
-        }
-        
-        if instructions.is_empty() {
-            instructions.push(BattleInstructions::new(100.0, vec![]));
-        }
-        
-        instructions
-    } else {
-        vec![BattleInstructions::new(100.0, vec![])]
-    }
+    apply_fixed_damage_move(
+        state,
+        PokemonType::Ghost,
+        |user, _target| user.level as i16,
+        user_position,
+        target_positions,
+        generation,
+    )
 }
 
 /// Apply Endeavor - reduces target HP to user's HP
@@ -149,36 +125,20 @@ pub fn apply_endeavor(
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
 ) -> Vec<BattleInstructions> {
-    if let Some(user) = state.get_pokemon_at_position(user_position) {
-        let mut instructions = Vec::new();
-        
-        for &target_position in target_positions {
-            if let Some(target) = state.get_pokemon_at_position(target_position) {
-                // Check for type immunity (Endeavor is a Normal-type move)
-                if is_move_immune("Normal", target, generation) {
-                    continue; // Skip this target due to immunity
-                }
-                
-                if target.hp > user.hp {
-                    let damage_amount = target.hp - user.hp;
-                    let instruction = BattleInstruction::Pokemon(PokemonInstruction::Damage {
-                        target: target_position,
-                        amount: damage_amount,
-                        previous_hp: Some(target.hp),
-                    });
-                    instructions.push(BattleInstructions::new(100.0, vec![instruction]));
-                }
+    apply_fixed_damage_move(
+        state,
+        PokemonType::Normal,
+        |user, target| {
+            if target.hp > user.hp {
+                target.hp - user.hp
+            } else {
+                0
             }
-        }
-        
-        if instructions.is_empty() {
-            instructions.push(BattleInstructions::new(100.0, vec![]));
-        }
-        
-        instructions
-    } else {
-        vec![BattleInstructions::new(100.0, vec![])]
-    }
+        },
+        user_position,
+        target_positions,
+        generation,
+    )
 }
 
 /// Apply Final Gambit - damage equals user's HP, user faints
@@ -189,19 +149,34 @@ pub fn apply_final_gambit(
     generation: &GenerationMechanics,
 ) -> Vec<BattleInstructions> {
     if let Some(user) = state.get_pokemon_at_position(user_position) {
-        let damage_amount = user.hp;
+        let type_chart = TypeChart::get_cached(generation.generation as u8);
+        let user_hp = user.hp;
         let mut instruction_list = Vec::new();
+        let mut affected_positions = vec![user_position]; // User always takes damage
         
         // Deal damage to targets (only if not immune)
         for &target_position in target_positions {
             if let Some(target) = state.get_pokemon_at_position(target_position) {
-                // Check for type immunity (Final Gambit is a Fighting-type move)
-                if !is_move_immune("Fighting", target, generation) {
+                // Check for type immunity using infrastructure
+                let target_type1 = target.types.get(0).copied().unwrap_or(PokemonType::Normal);
+                let target_type2 = target.types.get(1).copied().unwrap_or(target_type1);
+                let tera_type = target.tera_type;
+                
+                let effectiveness = type_chart.calculate_damage_multiplier(
+                    PokemonType::Fighting,
+                    (target_type1, target_type2),
+                    tera_type,
+                    None,
+                );
+                
+                if effectiveness != 0.0 {
+                    let final_damage = user_hp.min(target.hp);
                     instruction_list.push(BattleInstruction::Pokemon(PokemonInstruction::Damage {
                         target: target_position,
-                        amount: damage_amount,
+                        amount: final_damage,
                         previous_hp: None,
                     }));
+                    affected_positions.push(target_position);
                 }
             }
         }
@@ -209,11 +184,11 @@ pub fn apply_final_gambit(
         // User takes damage equal to their HP (this will cause them to faint naturally)
         instruction_list.push(BattleInstruction::Pokemon(PokemonInstruction::Damage {
             target: user_position,
-            amount: damage_amount,
+            amount: user_hp,
             previous_hp: None,
         }));
         
-        vec![BattleInstructions::new(100.0, instruction_list)]
+        vec![BattleInstructions::new_with_positions(100.0, instruction_list, affected_positions)]
     } else {
         vec![BattleInstructions::new(100.0, vec![])]
     }
@@ -222,41 +197,24 @@ pub fn apply_final_gambit(
 /// Apply Nature's Madness - halves target's HP
 pub fn apply_natures_madness(
     state: &BattleState,
-    _user_position: BattlePosition,
+    user_position: BattlePosition,
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
 ) -> Vec<BattleInstructions> {
-    let mut instructions = Vec::new();
-    
-    for &target_position in target_positions {
-        if let Some(target) = state.get_pokemon_at_position(target_position) {
-            // Check for type immunity (Super Fang is a Normal-type move and should be blocked by Ghost types)
-            if is_move_immune("Normal", target, generation) {
-                continue; // Skip this target due to immunity
-            }
-            
-            let damage_amount = if target.hp == 1 {
+    apply_fixed_damage_move(
+        state,
+        PokemonType::Fairy, // Nature's Madness is a Fairy-type move
+        |_user, target| {
+            if target.hp == 1 {
                 1 // When target has 1 HP, deal 1 damage
             } else {
                 target.hp / 2 // Half the target's current HP
-            };
-            
-            if damage_amount > 0 {
-                let instruction = BattleInstruction::Pokemon(PokemonInstruction::Damage {
-                    target: target_position,
-                    amount: damage_amount,
-                    previous_hp: Some(target.hp),
-                });
-                instructions.push(BattleInstructions::new(100.0, vec![instruction]));
             }
-        }
-    }
-    
-    if instructions.is_empty() {
-        instructions.push(BattleInstructions::new(100.0, vec![]));
-    }
-    
-    instructions
+        },
+        user_position,
+        target_positions,
+        generation,
+    )
 }
 
 /// Apply Ruination - halves target's HP
@@ -266,8 +224,20 @@ pub fn apply_ruination(
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
 ) -> Vec<BattleInstructions> {
-    // Same as Nature's Madness
-    apply_natures_madness(state, user_position, target_positions, generation)
+    apply_fixed_damage_move(
+        state,
+        PokemonType::Dark, // Ruination is a Dark-type move
+        |_user, target| {
+            if target.hp == 1 {
+                1 // When target has 1 HP, deal 1 damage
+            } else {
+                target.hp / 2 // Half the target's current HP
+            }
+        },
+        user_position,
+        target_positions,
+        generation,
+    )
 }
 
 /// Apply Super Fang - halves target's HP
@@ -277,6 +247,18 @@ pub fn apply_super_fang(
     target_positions: &[BattlePosition],
     generation: &GenerationMechanics,
 ) -> Vec<BattleInstructions> {
-    // Same as Nature's Madness
-    apply_natures_madness(state, user_position, target_positions, generation)
+    apply_fixed_damage_move(
+        state,
+        PokemonType::Normal, // Super Fang is a Normal-type move
+        |_user, target| {
+            if target.hp == 1 {
+                1 // When target has 1 HP, deal 1 damage
+            } else {
+                target.hp / 2 // Half the target's current HP
+            }
+        },
+        user_position,
+        target_positions,
+        generation,
+    )
 }
