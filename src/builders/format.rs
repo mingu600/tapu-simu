@@ -1,7 +1,7 @@
-use crate::core::battle_format::{BattleFormat, FormatType, FormatClause, BanList};
+use crate::core::battle_format::{BanList, BattleFormat, FormatClause, FormatType};
 use crate::generation::Generation;
 use crate::types::errors::{FormatError, FormatResult};
-use crate::types::{PokemonName, Moves, Abilities, Items};
+use crate::types::{Abilities, Items, Moves, PokemonName};
 
 /// Builder for creating battle formats with fluent API
 #[derive(Debug, Clone)]
@@ -263,11 +263,12 @@ impl FormatBuilder {
 
     /// Add standard competitive clauses
     pub fn standard_clauses(mut self) -> Self {
-        self = self.sleep_clause()
-                .species_clause()
-                .evasion_clause()
-                .ohko_clause()
-                .endless_battle_clause();
+        self = self
+            .sleep_clause()
+            .species_clause()
+            .evasion_clause()
+            .ohko_clause()
+            .endless_battle_clause();
         self
     }
 
@@ -277,28 +278,42 @@ impl FormatBuilder {
         let generation = self.generation.unwrap_or(Generation::Gen9);
         let format_type = self.format_type.unwrap_or(FormatType::Singles);
         let team_size = self.team_size.unwrap_or(6);
-        let active_per_side = self.active_per_side.unwrap_or(format_type.active_pokemon_count());
+        let active_per_side = self
+            .active_per_side
+            .unwrap_or(format_type.active_pokemon_count());
 
         // Validate settings
         if active_per_side > team_size {
-            return Err(FormatError::InvalidTeamSize { 
-                size: active_per_side, 
-                expected: team_size 
+            return Err(FormatError::InvalidTeamSize {
+                size: active_per_side,
+                expected: team_size,
             });
         }
 
         if active_per_side > 3 {
-            return Err(FormatError::RuleViolation { 
-                rule: "Maximum 3 active Pokemon per side".to_string() 
+            return Err(FormatError::RuleViolation {
+                rule: "Maximum 3 active Pokemon per side".to_string(),
             });
         }
 
         // Create ban list
         let ban_list = BanList::new(
-            self.banned_species.into_iter().map(|s| s.as_str().to_string()).collect(),
-            self.banned_moves.into_iter().map(|m| m.as_str().to_string()).collect(),
-            self.banned_items.into_iter().map(|i| i.as_str().to_string()).collect(),
-            self.banned_abilities.into_iter().map(|a| a.as_str().to_string()).collect(),
+            self.banned_species
+                .into_iter()
+                .map(|s| s.as_str().to_string())
+                .collect(),
+            self.banned_moves
+                .into_iter()
+                .map(|m| m.as_str().to_string())
+                .collect(),
+            self.banned_items
+                .into_iter()
+                .map(|i| i.as_str().to_string())
+                .collect(),
+            self.banned_abilities
+                .into_iter()
+                .map(|a| a.as_str().to_string())
+                .collect(),
         );
 
         let format = BattleFormat::new_with_settings(
@@ -403,14 +418,39 @@ impl FormatBuilder {
         // Common Uber Pokemon (these would be more comprehensive in practice)
         let uber_species = match generation {
             Generation::Gen9 => vec![
-                "Arceus", "Dialga", "Palkia", "Giratina", "Rayquaza", "Kyogre", "Groudon",
-                "Mewtwo", "Mew", "Lugia", "Ho-Oh", "Calyrex-Ice", "Calyrex-Shadow",
-                "Zacian", "Zamazenta", "Eternatus",
+                "Arceus",
+                "Dialga",
+                "Palkia",
+                "Giratina",
+                "Rayquaza",
+                "Kyogre",
+                "Groudon",
+                "Mewtwo",
+                "Mew",
+                "Lugia",
+                "Ho-Oh",
+                "Calyrex-Ice",
+                "Calyrex-Shadow",
+                "Zacian",
+                "Zamazenta",
+                "Eternatus",
             ],
             Generation::Gen8 => vec![
-                "Arceus", "Dialga", "Palkia", "Giratina", "Rayquaza", "Kyogre", "Groudon",
-                "Mewtwo", "Lugia", "Ho-Oh", "Calyrex-Ice", "Calyrex-Shadow",
-                "Zacian", "Zamazenta", "Eternatus",
+                "Arceus",
+                "Dialga",
+                "Palkia",
+                "Giratina",
+                "Rayquaza",
+                "Kyogre",
+                "Groudon",
+                "Mewtwo",
+                "Lugia",
+                "Ho-Oh",
+                "Calyrex-Ice",
+                "Calyrex-Shadow",
+                "Zacian",
+                "Zamazenta",
+                "Eternatus",
             ],
             _ => vec![
                 "Arceus", "Dialga", "Palkia", "Giratina", "Rayquaza", "Kyogre", "Groudon",
@@ -440,4 +480,3 @@ impl BattleFormat {
         FormatBuilder::new().name(name)
     }
 }
-
