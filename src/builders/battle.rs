@@ -327,11 +327,10 @@ impl<'a> BattleBuilder<'a> {
                 ivs: Some(crate::data::random_team_loader::RandomStats {
                     hp: Some(31), atk: Some(31), def: Some(31), spa: Some(31), spd: Some(31), spe: Some(31)
                 }),
-                nature: Some("hardy".to_string()), // Neutral nature
+                nature: Some(crate::data::types::Nature::Hardy), // Neutral nature
                 gender: None,
                 shiny: Some(false),
                 tera_type: None,
-                role: None,
                 gigantamax: None,
             };
             team.push(pokemon_set);

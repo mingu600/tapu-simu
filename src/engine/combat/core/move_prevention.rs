@@ -216,7 +216,7 @@ fn check_other_prevention_effects(
     // Check Taunt (prevents status moves)
     if pokemon.volatile_statuses.contains(&VolatileStatus::Taunt) {
         let is_status_move = if let Some(data) = move_data {
-            data.category.to_lowercase() == "status"
+            data.category == crate::core::instructions::pokemon::MoveCategory::Status
         } else if let Some(move_index) = move_choice.move_index() {
             if let Some(move_data_internal) = pokemon.get_move(move_index) {
                 move_data_internal.category == crate::core::battle_state::MoveCategory::Status

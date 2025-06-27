@@ -498,7 +498,7 @@ pub fn dynamic_category_move(
     move_data: &MoveData,
     user_position: BattlePosition,
     target_positions: &[BattlePosition],
-    category_determiner: Box<dyn Fn(&BattleState, BattlePosition) -> String>,
+    category_determiner: Box<dyn Fn(&BattleState, BattlePosition) -> crate::core::instructions::pokemon::MoveCategory>,
     generation: &GenerationMechanics,
 ) -> Vec<BattleInstruction> {
     // Determine the actual category to use

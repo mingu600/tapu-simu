@@ -54,6 +54,69 @@ where
         .collect())
 }
 
+fn deserialize_optional_nature<'de, D>(deserializer: D) -> Result<Option<Nature>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let opt_s: Option<String> = Option::deserialize(deserializer)?;
+    Ok(opt_s.map(|s| match s.as_str() {
+        "Hardy" => Nature::Hardy,
+        "Lonely" => Nature::Lonely,
+        "Brave" => Nature::Brave,
+        "Adamant" => Nature::Adamant,
+        "Naughty" => Nature::Naughty,
+        "Bold" => Nature::Bold,
+        "Docile" => Nature::Docile,
+        "Relaxed" => Nature::Relaxed,
+        "Impish" => Nature::Impish,
+        "Lax" => Nature::Lax,
+        "Timid" => Nature::Timid,
+        "Hasty" => Nature::Hasty,
+        "Serious" => Nature::Serious,
+        "Jolly" => Nature::Jolly,
+        "Naive" => Nature::Naive,
+        "Modest" => Nature::Modest,
+        "Mild" => Nature::Mild,
+        "Quiet" => Nature::Quiet,
+        "Bashful" => Nature::Bashful,
+        "Rash" => Nature::Rash,
+        "Calm" => Nature::Calm,
+        "Gentle" => Nature::Gentle,
+        "Sassy" => Nature::Sassy,
+        "Careful" => Nature::Careful,
+        "Quirky" => Nature::Quirky,
+        _ => Nature::Hardy, // Default to Hardy if unknown
+    }))
+}
+
+fn deserialize_optional_tera_type<'de, D>(deserializer: D) -> Result<Option<PokemonType>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let opt_s: Option<String> = Option::deserialize(deserializer)?;
+    Ok(opt_s.and_then(|s| match s.as_str() {
+        "Normal" => Some(PokemonType::Normal),
+        "Fire" => Some(PokemonType::Fire),
+        "Water" => Some(PokemonType::Water),
+        "Electric" => Some(PokemonType::Electric),
+        "Grass" => Some(PokemonType::Grass),
+        "Ice" => Some(PokemonType::Ice),
+        "Fighting" => Some(PokemonType::Fighting),
+        "Poison" => Some(PokemonType::Poison),
+        "Ground" => Some(PokemonType::Ground),
+        "Flying" => Some(PokemonType::Flying),
+        "Psychic" => Some(PokemonType::Psychic),
+        "Bug" => Some(PokemonType::Bug),
+        "Rock" => Some(PokemonType::Rock),
+        "Ghost" => Some(PokemonType::Ghost),
+        "Dragon" => Some(PokemonType::Dragon),
+        "Dark" => Some(PokemonType::Dark),
+        "Steel" => Some(PokemonType::Steel),
+        "Fairy" => Some(PokemonType::Fairy),
+        _ => None,
+    }))
+}
+
 /// Represents a Pokemon set from random battle data
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RandomPokemonSet {
@@ -69,12 +132,12 @@ pub struct RandomPokemonSet {
     pub item: Option<crate::types::Items>,
     #[serde(deserialize_with = "deserialize_moves")]
     pub moves: Vec<crate::types::Moves>,
-    pub nature: Option<String>,
+    #[serde(deserialize_with = "deserialize_optional_nature")]
+    pub nature: Option<Nature>,
     pub evs: Option<RandomStats>,
     pub ivs: Option<RandomStats>,
-    #[serde(rename = "teraType")]
-    pub tera_type: Option<String>,
-    pub role: Option<String>,
+    #[serde(rename = "teraType", deserialize_with = "deserialize_optional_tera_type")]
+    pub tera_type: Option<PokemonType>,
     pub gigantamax: Option<bool>,
 }
 
@@ -284,61 +347,14 @@ impl Default for RandomTeamLoader {
 
 /// Utility functions for working with random battle data
 impl RandomPokemonSet {
-    /// Get the Pokemon's nature as our internal Nature type
+    /// Get the Pokemon's nature (with fallback to Hardy)
     pub fn get_nature(&self) -> Nature {
-        match self.nature.as_ref().map(|s| s.as_str()) {
-            Some("Hardy") => Nature::Hardy,
-            Some("Lonely") => Nature::Lonely,
-            Some("Brave") => Nature::Brave,
-            Some("Adamant") => Nature::Adamant,
-            Some("Naughty") => Nature::Naughty,
-            Some("Bold") => Nature::Bold,
-            Some("Docile") => Nature::Docile,
-            Some("Relaxed") => Nature::Relaxed,
-            Some("Impish") => Nature::Impish,
-            Some("Lax") => Nature::Lax,
-            Some("Timid") => Nature::Timid,
-            Some("Hasty") => Nature::Hasty,
-            Some("Serious") => Nature::Serious,
-            Some("Jolly") => Nature::Jolly,
-            Some("Naive") => Nature::Naive,
-            Some("Modest") => Nature::Modest,
-            Some("Mild") => Nature::Mild,
-            Some("Quiet") => Nature::Quiet,
-            Some("Bashful") => Nature::Bashful,
-            Some("Rash") => Nature::Rash,
-            Some("Calm") => Nature::Calm,
-            Some("Gentle") => Nature::Gentle,
-            Some("Sassy") => Nature::Sassy,
-            Some("Careful") => Nature::Careful,
-            Some("Quirky") => Nature::Quirky,
-            _ => Nature::Hardy, // Default to Hardy if unknown
-        }
+        self.nature.unwrap_or(Nature::Hardy)
     }
 
-    /// Get the Pokemon's tera type as our internal PokemonType
+    /// Get the Pokemon's tera type
     pub fn get_tera_type(&self) -> Option<PokemonType> {
-        self.tera_type.as_ref().and_then(|t| match t.as_str() {
-            "Normal" => Some(PokemonType::Normal),
-            "Fire" => Some(PokemonType::Fire),
-            "Water" => Some(PokemonType::Water),
-            "Electric" => Some(PokemonType::Electric),
-            "Grass" => Some(PokemonType::Grass),
-            "Ice" => Some(PokemonType::Ice),
-            "Fighting" => Some(PokemonType::Fighting),
-            "Poison" => Some(PokemonType::Poison),
-            "Ground" => Some(PokemonType::Ground),
-            "Flying" => Some(PokemonType::Flying),
-            "Psychic" => Some(PokemonType::Psychic),
-            "Bug" => Some(PokemonType::Bug),
-            "Rock" => Some(PokemonType::Rock),
-            "Ghost" => Some(PokemonType::Ghost),
-            "Dragon" => Some(PokemonType::Dragon),
-            "Dark" => Some(PokemonType::Dark),
-            "Steel" => Some(PokemonType::Steel),
-            "Fairy" => Some(PokemonType::Fairy),
-            _ => None,
-        })
+        self.tera_type
     }
 
     /// Apply Smogon Random Battle optimization rules to stats
@@ -348,7 +364,7 @@ impl RandomPokemonSet {
             use crate::types::Moves;
             let move_id = *move_name;
             if let Ok(move_data) = repository.moves.find_by_id(&move_id) {
-                move_data.category == "Physical"
+                move_data.category == crate::core::instructions::pokemon::MoveCategory::Physical
             } else {
                 false
             }
@@ -578,7 +594,7 @@ impl RandomPokemonSet {
 
         // Set tera type if available (Gen 9+ only)
         // Note: Could add generation check here if needed
-        pokemon.tera_type = self.get_tera_type();
+        pokemon.tera_type = self.tera_type;
 
         // Set weight from repository data
         pokemon.weight_kg = repository.pokemon.get_pokemon_weight(&self.species.as_str()).unwrap_or(50.0);

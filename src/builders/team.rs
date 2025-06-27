@@ -7,6 +7,7 @@ use crate::core::battle_format::BattleFormat;
 use crate::data::GameDataRepository;
 use crate::data::RandomPokemonSet;
 use crate::types::{PokemonName, Abilities, Moves, Items};
+use crate::data::types::Nature;
 use super::traits::{Builder, BuilderError, ValidationContext, ValidatingBuilder};
 
 /// Team builder with standardized interface
@@ -35,7 +36,7 @@ pub struct PokemonBuilder {
     /// Moves (up to 4)
     moves: Vec<Moves>,
     /// Nature
-    nature: Option<String>,
+    nature: Option<Nature>,
     /// EVs (Effort Values)
     evs: Option<EVsConfig>,
     /// IVs (Individual Values)
@@ -243,8 +244,8 @@ impl PokemonBuilder {
     }
 
     /// Set nature
-    pub fn nature(mut self, nature: impl Into<String>) -> Self {
-        self.nature = Some(nature.into());
+    pub fn nature(mut self, nature: Nature) -> Self {
+        self.nature = Some(nature);
         self
     }
 
@@ -316,7 +317,6 @@ impl PokemonBuilder {
             evs: None, // Simplified for now
             ivs: None, // Simplified for now
             gigantamax: None,
-            role: None,
             tera_type: None,
         })
     }
@@ -354,7 +354,7 @@ impl<'a> TeamPokemonContext<'a> {
     }
 
     /// Set nature and continue building
-    pub fn nature(mut self, nature: impl Into<String>) -> Self {
+    pub fn nature(mut self, nature: Nature) -> Self {
         self.pokemon_builder = self.pokemon_builder.nature(nature);
         self
     }

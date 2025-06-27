@@ -89,7 +89,7 @@ pub fn calculate_damage_with_positions(
         is_sound: move_data.flags.contains_key("sound"),
         is_multihit: move_data.flags.contains_key("multihit"),
         move_type: move_data.move_type,
-        category: MoveCategory::from_str(&move_data.category),
+        category: move_data.category,
     };
 
     let field_context = FieldContext {

@@ -368,11 +368,11 @@ fn generate_damage_instructions_with_rolls(
             name: move_data.name,
             base_power: move_data.base_power as u16,
             move_type: move_data.move_type.clone(),
-            category: format!("{:?}", move_data.category),
+            category: move_data.category,
             accuracy: 100, // Accuracy already handled in calling function
             priority: move_data.priority,
             pp: move_data.pp,
-            target: "normal".to_string(),
+            target: crate::data::showdown_types::MoveTarget::Normal,
             ..Default::default()
         };
         
@@ -1079,9 +1079,9 @@ fn generate_attack_instructions_with_enhanced_context(
             pp: move_data_raw.pp,
             max_pp: move_data_raw.max_pp,
             move_type: move_data_raw.move_type.clone(),
-            category: format!("{:?}", move_data_raw.category),
+            category: move_data_raw.category,
             priority: move_data_raw.priority,
-            target: format!("{:?}", move_data_raw.target),
+            target: move_data_raw.target,
             ..crate::data::showdown_types::MoveData::default()
         }
         }
@@ -1099,7 +1099,7 @@ fn generate_attack_instructions_with_enhanced_context(
     
     // Determine targets using the same logic as before
     let targets = if explicit_targets.is_empty() {
-        resolve_targets(parse_move_target(&move_data.target), user_pos, format, state)
+        resolve_targets(move_data.target, user_pos, format, state)
     } else {
         explicit_targets.to_vec()
     };
@@ -1183,11 +1183,11 @@ fn generate_hit_instructions_with_secondary_effects(
         name: move_data.name,
         base_power: move_data.base_power as u16,
         move_type: move_data.move_type.clone(),
-        category: format!("{:?}", move_data.category),
+        category: move_data.category,
         accuracy: 100, // Accuracy already handled
         priority: move_data.priority,
         pp: move_data.pp,
-        target: "normal".to_string(),
+        target: crate::data::showdown_types::MoveTarget::Normal,
         ..Default::default()
     };
     

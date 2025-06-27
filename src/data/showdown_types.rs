@@ -3,10 +3,149 @@
 //! This module defines data types that match Pokemon Showdown's conventions,
 //! enabling direct usage of PS data without transformation.
 
-use crate::types::{Abilities, PokemonType, Moves};
+use crate::types::{Abilities, PokemonType, Moves, PokemonStatus, VolatileStatus, Terrain, Weather};
+use crate::core::instructions::pokemon::MoveCategory;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
 use std::fmt;
+
+// Custom deserializer functions for enum types
+fn deserialize_move_category<'de, D>(deserializer: D) -> Result<MoveCategory, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    match s.as_str() {
+        "Physical" => Ok(MoveCategory::Physical),
+        "Special" => Ok(MoveCategory::Special),
+        "Status" => Ok(MoveCategory::Status),
+        _ => Ok(MoveCategory::Status), // Default fallback
+    }
+}
+
+fn deserialize_move_target<'de, D>(deserializer: D) -> Result<MoveTarget, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    match s.as_str() {
+        "normal" => Ok(MoveTarget::Normal),
+        "self" => Ok(MoveTarget::Self_),
+        "adjacentAlly" => Ok(MoveTarget::AdjacentAlly),
+        "adjacentAllyOrSelf" => Ok(MoveTarget::AdjacentAllyOrSelf),
+        "adjacentFoe" => Ok(MoveTarget::AdjacentFoe),
+        "allAdjacentFoes" => Ok(MoveTarget::AllAdjacentFoes),
+        "allAdjacent" => Ok(MoveTarget::AllAdjacent),
+        "allySide" => Ok(MoveTarget::AllySide),
+        "allyTeam" => Ok(MoveTarget::AllyTeam),
+        "foeSide" => Ok(MoveTarget::FoeSide),
+        "all" => Ok(MoveTarget::All),
+        "any" => Ok(MoveTarget::Any),
+        "randomNormal" => Ok(MoveTarget::RandomNormal),
+        "scripted" => Ok(MoveTarget::Scripted),
+        _ => Ok(MoveTarget::Normal), // Default fallback
+    }
+}
+
+fn deserialize_optional_pokemon_status<'de, D>(deserializer: D) -> Result<Option<PokemonStatus>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let opt_s: Option<String> = Option::deserialize(deserializer)?;
+    Ok(opt_s.map(|s| match s.as_str() {
+        "burn" => PokemonStatus::Burn,
+        "freeze" => PokemonStatus::Freeze,
+        "paralysis" => PokemonStatus::Paralysis,
+        "poison" => PokemonStatus::Poison,
+        "badlypoison" => PokemonStatus::BadlyPoisoned,
+        "toxic" => PokemonStatus::BadlyPoisoned,
+        "sleep" => PokemonStatus::Sleep,
+        _ => PokemonStatus::None,
+    }))
+}
+
+fn deserialize_optional_volatile_status<'de, D>(deserializer: D) -> Result<Option<VolatileStatus>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let opt_s: Option<String> = Option::deserialize(deserializer)?;
+    Ok(opt_s.map(|s| match s.as_str() {
+        "confusion" => VolatileStatus::Confusion,
+        "flinch" => VolatileStatus::Flinch,
+        "substitute" => VolatileStatus::Substitute,
+        "leechseed" => VolatileStatus::LeechSeed,
+        "curse" => VolatileStatus::Curse,
+        "nightmare" => VolatileStatus::Nightmare,
+        "attract" => VolatileStatus::Attract,
+        "torment" => VolatileStatus::Torment,
+        "disable" => VolatileStatus::Disable,
+        "encore" => VolatileStatus::Encore,
+        "taunt" => VolatileStatus::Taunt,
+        "partiallytrapped" => VolatileStatus::PartiallyTrapped,
+        _ => VolatileStatus::Confusion, // Default fallback
+    }))
+}
+
+fn deserialize_optional_terrain<'de, D>(deserializer: D) -> Result<Option<Terrain>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let opt_s: Option<String> = Option::deserialize(deserializer)?;
+    Ok(opt_s.map(|s| match s.as_str() {
+        "Electric" => Terrain::Electric,
+        "Grassy" => Terrain::Grassy,
+        "Misty" => Terrain::Misty,
+        "Psychic" => Terrain::Psychic,
+        _ => Terrain::None,
+    }))
+}
+
+fn deserialize_optional_weather<'de, D>(deserializer: D) -> Result<Option<Weather>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let opt_s: Option<String> = Option::deserialize(deserializer)?;
+    Ok(opt_s.map(|s| match s.as_str() {
+        "sun" => Weather::Sun,
+        "rain" => Weather::Rain,
+        "sand" => Weather::Sandstorm,
+        "sandstorm" => Weather::Sandstorm,
+        "hail" => Weather::Hail,
+        "snow" => Weather::Snow,
+        "harshsunlight" => Weather::HarshSunlight,
+        "heavyrain" => Weather::HeavyRain,
+        "strongwinds" => Weather::StrongWinds,
+        _ => Weather::None,
+    }))
+}
+
+fn deserialize_optional_pokemon_type<'de, D>(deserializer: D) -> Result<Option<PokemonType>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let opt_s: Option<String> = Option::deserialize(deserializer)?;
+    Ok(opt_s.map(|s| match s.as_str() {
+        "Normal" => PokemonType::Normal,
+        "Fire" => PokemonType::Fire,
+        "Water" => PokemonType::Water,
+        "Electric" => PokemonType::Electric,
+        "Grass" => PokemonType::Grass,
+        "Ice" => PokemonType::Ice,
+        "Fighting" => PokemonType::Fighting,
+        "Poison" => PokemonType::Poison,
+        "Ground" => PokemonType::Ground,
+        "Flying" => PokemonType::Flying,
+        "Psychic" => PokemonType::Psychic,
+        "Bug" => PokemonType::Bug,
+        "Rock" => PokemonType::Rock,
+        "Ghost" => PokemonType::Ghost,
+        "Dragon" => PokemonType::Dragon,
+        "Dark" => PokemonType::Dark,
+        "Steel" => PokemonType::Steel,
+        "Fairy" => PokemonType::Fairy,
+        _ => PokemonType::Normal, // Default fallback
+    }))
+}
 
 /// Pokemon Showdown move targets
 ///
@@ -253,9 +392,11 @@ pub struct MoveData {
     pub max_pp: u8,
     #[serde(rename = "type", deserialize_with = "deserialize_pokemon_type")]
     pub move_type: PokemonType,
-    pub category: String, // "Physical", "Special", "Status"
+    #[serde(deserialize_with = "deserialize_move_category")]
+    pub category: MoveCategory,
     pub priority: i8,
-    pub target: String, // We'll parse this into MoveTarget
+    #[serde(deserialize_with = "deserialize_move_target")]
+    pub target: MoveTarget,
     pub flags: std::collections::HashMap<String, i32>, // PS uses 1 for true, 0 for false
 
     // Optional effect data
@@ -264,9 +405,10 @@ pub struct MoveData {
     pub heal: Option<[u8; 2]>,
 
     // Status effects
-    pub status: Option<String>,
-    #[serde(rename = "volatileStatus")]
-    pub volatile_status: Option<String>,
+    #[serde(deserialize_with = "deserialize_optional_pokemon_status")]
+    pub status: Option<PokemonStatus>,
+    #[serde(rename = "volatileStatus", deserialize_with = "deserialize_optional_volatile_status")]
+    pub volatile_status: Option<VolatileStatus>,
 
     // Secondary effects
     pub secondary: Option<SecondaryEffect>,
@@ -305,8 +447,10 @@ pub struct MoveData {
     pub will_crit: bool,
 
     // Weather/terrain
-    pub terrain: Option<String>,
-    pub weather: Option<String>,
+    #[serde(deserialize_with = "deserialize_optional_terrain")]
+    pub terrain: Option<Terrain>,
+    #[serde(deserialize_with = "deserialize_optional_weather")]
+    pub weather: Option<Weather>,
 
     // Descriptions
     pub desc: String,
@@ -329,9 +473,9 @@ impl Default for MoveData {
             pp: 35,
             max_pp: 35,
             move_type: PokemonType::Normal,
-            category: "Physical".to_string(),
+            category: MoveCategory::Physical,
             priority: 0,
-            target: "normal".to_string(),
+            target: MoveTarget::Normal,
             flags: std::collections::HashMap::new(),
             drain: None,
             recoil: None,
@@ -389,13 +533,8 @@ impl MoveData {
             move_type: self.move_type.clone(),
             pp: self.pp,
             max_pp: self.max_pp,
-            target: target_from_string(&self.target),
-            category: match self.category.as_str() {
-                "Physical" => MoveCategory::Physical,
-                "Special" => MoveCategory::Special,
-                "Status" => MoveCategory::Status,
-                _ => MoveCategory::Status,
-            },
+            target: crate::utils::target_from_string(&format!("{}", self.target)),
+            category: self.category,
             priority: self.priority,
         }
     }
@@ -404,15 +543,18 @@ impl MoveData {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SecondaryEffect {
     pub chance: u8,
-    pub status: Option<String>,
-    pub volatile_status: Option<String>,
+    #[serde(deserialize_with = "deserialize_optional_pokemon_status")]
+    pub status: Option<PokemonStatus>,
+    #[serde(rename = "volatileStatus", deserialize_with = "deserialize_optional_volatile_status")]
+    pub volatile_status: Option<VolatileStatus>,
     pub boosts: Option<std::collections::HashMap<String, i8>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SelfEffect {
     pub boosts: Option<std::collections::HashMap<String, i8>>,
-    pub volatile_status: Option<String>,
+    #[serde(rename = "volatileStatus", deserialize_with = "deserialize_optional_volatile_status")]
+    pub volatile_status: Option<VolatileStatus>,
 }
 
 /// Z-move data - can be false or a Z-crystal name
@@ -549,7 +691,8 @@ pub struct ItemData {
     pub is_nonstandard: Option<String>,
 
     // Berry-specific properties
-    pub berry_type: Option<String>,
+    #[serde(deserialize_with = "deserialize_optional_pokemon_type")]
+    pub berry_type: Option<PokemonType>,
     pub berry_power: Option<u8>,
 
     // Healing items
@@ -571,8 +714,8 @@ pub struct ItemData {
 pub struct NaturalGift {
     #[serde(rename = "basePower")]
     pub base_power: u8,
-    #[serde(rename = "type")]
-    pub move_type: String,
+    #[serde(rename = "type", deserialize_with = "deserialize_pokemon_type")]
+    pub move_type: PokemonType,
 }
 
 /// Fling data structure
@@ -580,8 +723,10 @@ pub struct NaturalGift {
 pub struct Fling {
     #[serde(rename = "basePower")]
     pub base_power: u8,
-    pub status: Option<String>,
-    pub volatile_status: Option<String>,
+    #[serde(deserialize_with = "deserialize_optional_pokemon_status")]
+    pub status: Option<PokemonStatus>,
+    #[serde(rename = "volatileStatus", deserialize_with = "deserialize_optional_volatile_status")]
+    pub volatile_status: Option<VolatileStatus>,
 }
 
 /// Pokemon Showdown pokemon data structure

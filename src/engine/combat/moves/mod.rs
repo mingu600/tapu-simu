@@ -566,13 +566,13 @@ fn apply_secondary_effects(
     // Handle status effects
     if let Some(status_name) = &secondary.status {
         for &target in target_positions {
-            let status = match status_name.as_str() {
-                "par" => PokemonStatus::Paralysis,
-                "slp" => PokemonStatus::Sleep,
-                "frz" => PokemonStatus::Freeze,
-                "brn" => PokemonStatus::Burn,
-                "psn" => PokemonStatus::Poison,
-                "tox" => PokemonStatus::BadlyPoisoned,
+            let status = match status_name {
+                PokemonStatus::Paralysis => PokemonStatus::Paralysis,
+                PokemonStatus::Sleep => PokemonStatus::Sleep,
+                PokemonStatus::Freeze => PokemonStatus::Freeze,
+                PokemonStatus::Burn => PokemonStatus::Burn,
+                PokemonStatus::Poison => PokemonStatus::Poison,
+                PokemonStatus::BadlyPoisoned => PokemonStatus::BadlyPoisoned,
                 _ => continue,
             };
             

@@ -54,7 +54,7 @@ impl PokemonType {
             "fighting" | "fight" => Some(Self::Fighting),
             "poison" => Some(Self::Poison),
             "ground" => Some(Self::Ground),
-            "flying" | "fly" => Some(Self::Flying),
+            "flying" | "fly" | "bird" => Some(Self::Flying),
             "psychic" => Some(Self::Psychic),
             "bug" => Some(Self::Bug),
             "rock" => Some(Self::Rock),

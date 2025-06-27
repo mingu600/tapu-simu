@@ -14,9 +14,10 @@ use crate::engine::combat::moves::apply_generic_effects;
 use crate::engine::combat::damage::{calculate_damage_with_positions, DamageRolls, critical_hit_probability};
 use crate::data::showdown_types::MoveData;
 
-// Constants to avoid string allocations
-const PHYSICAL_CATEGORY: &str = "Physical";
-const SPECIAL_CATEGORY: &str = "Special";
+// Constants for move categories
+use crate::core::instructions::pokemon::MoveCategory;
+const PHYSICAL_CATEGORY: MoveCategory = MoveCategory::Physical;
+const SPECIAL_CATEGORY: MoveCategory = MoveCategory::Special;
 
 // =============================================================================
 // SPECIAL COMBAT MECHANICS
@@ -46,12 +47,12 @@ pub fn apply_photon_geyser(
                 let special_attack_stat = user_pokemon.stats.special_attack;
                 
                 if attack_stat > special_attack_stat {
-                    PHYSICAL_CATEGORY.to_string()
+                    PHYSICAL_CATEGORY
                 } else {
-                    SPECIAL_CATEGORY.to_string()
+                    SPECIAL_CATEGORY
                 }
             } else {
-                SPECIAL_CATEGORY.to_string() // Default fallback
+                SPECIAL_CATEGORY // Default fallback
             }
         }),
         generation,
