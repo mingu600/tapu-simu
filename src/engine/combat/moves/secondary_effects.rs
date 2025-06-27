@@ -60,6 +60,7 @@ macro_rules! flinch_move {
         ) -> Vec<BattleInstructions> {
             use crate::core::instructions::{BattleInstruction, StatusInstruction, VolatileStatus};
             
+            
             let mut instruction_sets = Vec::new();
             
             // Get basic damage instructions
@@ -73,18 +74,39 @@ macro_rules! flinch_move {
                 generation,
             );
             
+            // Calculate affected positions from damage instructions
+            let mut no_flinch_affected_positions = Vec::new();
+            let mut flinch_affected_positions = Vec::new();
+            
+            for instruction in &damage_instructions {
+                // Get affected positions from each instruction
+                if let BattleInstruction::Pokemon(ref pokemon_instr) = instruction {
+                    let positions = pokemon_instr.affected_positions();
+                    no_flinch_affected_positions.extend(positions.clone());
+                    flinch_affected_positions.extend(positions);
+                }
+            }
+            
+            // Remove duplicates
+            no_flinch_affected_positions.sort();
+            no_flinch_affected_positions.dedup();
+            flinch_affected_positions.sort();
+            flinch_affected_positions.dedup();
+            
             // Hit without flinch (100 - flinch_chance)%
             let no_flinch_percentage = 100.0 - $chance;
             if no_flinch_percentage > 0.0 {
-                instruction_sets.push(BattleInstructions::new(
+                instruction_sets.push(BattleInstructions::new_with_positions(
                     no_flinch_percentage,
                     damage_instructions.clone(),
+                    no_flinch_affected_positions,
                 ));
             }
             
             // Hit with flinch (flinch_chance)%
             if $chance > 0.0 {
                 let mut flinch_instructions = damage_instructions.clone();
+                let mut any_flinch_applied = false;
                 
                 // Add flinch status to all targets (with speed check)
                 for &target_position in target_positions {
@@ -92,7 +114,8 @@ macro_rules! flinch_move {
                         // Only apply flinch if target hasn't moved yet this turn and isn't already flinched
                         if !target_pokemon.volatile_statuses.contains(&VolatileStatus::Flinch) {
                             // Check if user is faster than target (speed-aware flinch)
-                            if is_user_faster_than_target(state, user_position, target_position) {
+                            let can_flinch = is_user_faster_than_target(state, user_position, target_position);
+                            if can_flinch {
                                 flinch_instructions.push(BattleInstruction::Status(
                                     StatusInstruction::ApplyVolatile {
                                         target: target_position,
@@ -102,15 +125,30 @@ macro_rules! flinch_move {
                                         previous_duration: None,
                                     }
                                 ));
+                                // Target is affected by flinch status too
+                                if !flinch_affected_positions.contains(&target_position) {
+                                    flinch_affected_positions.push(target_position);
+                                }
+                                any_flinch_applied = true;
                             }
                         }
                     }
                 }
                 
-                instruction_sets.push(BattleInstructions::new(
-                    $chance,
-                    flinch_instructions,
-                ));
+                // Only create a separate flinch branch if at least one flinch was actually applied
+                if any_flinch_applied {
+                    instruction_sets.push(BattleInstructions::new_with_positions(
+                        $chance,
+                        flinch_instructions,
+                        flinch_affected_positions,
+                    ));
+                } else {
+                    // No flinch was applied due to speed checks, so combine the percentages
+                    // Update the no-flinch branch to include the flinch chance
+                    if let Some(ref mut no_flinch_branch) = instruction_sets.last_mut() {
+                        no_flinch_branch.percentage += $chance;
+                    }
+                }
             }
             
             instruction_sets
@@ -541,16 +579,21 @@ fn is_user_faster_than_target(
 ) -> bool {
     let user_pokemon = match state.get_pokemon_at_position(user_position) {
         Some(pokemon) => pokemon,
-        None => return false,
+        None => {
+            return false;
+        }
     };
     
     let target_pokemon = match state.get_pokemon_at_position(target_position) {
         Some(pokemon) => pokemon,
-        None => return false,
+        None => {
+            return false;
+        }
     };
     
     let user_speed = user_pokemon.get_effective_speed(state, user_position);
     let target_speed = target_pokemon.get_effective_speed(state, target_position);
+    
     
     user_speed > target_speed
 }

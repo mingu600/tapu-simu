@@ -14,7 +14,7 @@ use tapu_simu::core::instructions::{
 };
 use tapu_simu::core::move_choice::MoveChoice;
 use tapu_simu::data::generation_loader::GenerationRepository;
-use tapu_simu::data::types::BaseStats;
+use tapu_simu::data::types::Stats;
 use tapu_simu::data::GameDataRepository;
 use tapu_simu::engine::turn;
 use tapu_simu::generation::Generation;
@@ -245,7 +245,7 @@ impl TapuTestFramework {
         use std::collections::HashMap;
         use tapu_simu::core::battle_state::Pokemon;
         use tapu_simu::core::move_choice::MoveIndex;
-        use tapu_simu::data::types::BaseStats;
+        use tapu_simu::data::types::Stats;
         use tapu_simu::types::{MoveId, SpeciesId};
 
         // Create Pokemon with basic data
@@ -265,7 +265,7 @@ impl TapuTestFramework {
             })?;
 
         // Use provided EVs/IVs or defaults
-        let evs = spec.evs.unwrap_or(BaseStats {
+        let evs = spec.evs.unwrap_or(Stats {
             hp: 0,
             attack: 0,
             defense: 0,
@@ -274,7 +274,7 @@ impl TapuTestFramework {
             speed: 0,
         });
 
-        let ivs = spec.ivs.unwrap_or(BaseStats {
+        let ivs = spec.ivs.unwrap_or(Stats {
             hp: 31,
             attack: 31,
             defense: 31,
@@ -307,7 +307,7 @@ impl TapuTestFramework {
 
                 if self.format.generation == Generation::Gen1 {
                     // Gen 1: Special Attack and Special Defense are the same stat
-                    BaseStats {
+                    Stats {
                         hp: (((base_hp + dv_hp) as i32 * 2 + stat_exp_factor as i32) * level as i32
                             / 100
                             + level as i32
@@ -337,7 +337,7 @@ impl TapuTestFramework {
                     }
                 } else {
                     // Gen 2: Special Attack and Special Defense are separate
-                    BaseStats {
+                    Stats {
                         hp: (((base_hp + dv_hp) as i32 * 2 + stat_exp_factor as i32) * level as i32
                             / 100
                             + level as i32
@@ -370,7 +370,7 @@ impl TapuTestFramework {
             _ => {
                 // Gen 3+ use IVs (0-31) and EVs
                 // Use i32 for intermediate calculations to prevent overflow
-                BaseStats {
+                Stats {
                     hp: ((2 * base_hp as i32 + ivs.hp as i32 + evs.hp as i32 / 4) * level as i32
                         / 100
                         + level as i32
@@ -403,6 +403,16 @@ impl TapuTestFramework {
                         + 5) as i16,
                 }
             }
+        };
+
+        // Set base species stats for critical hit calculation
+        pokemon.base_stats = Stats {
+            hp: base_hp,
+            attack: base_attack,
+            defense: base_defense,
+            special_attack: base_special_attack,
+            special_defense: base_special_defense,
+            speed: base_speed,
         };
 
         pokemon.max_hp = pokemon.stats.hp;
@@ -776,8 +786,8 @@ pub struct PokemonSpec {
     pub item: Option<&'static str>,
     pub moves: Vec<&'static str>,
     pub nature: Option<&'static str>,
-    pub evs: Option<BaseStats>,
-    pub ivs: Option<BaseStats>,
+    pub evs: Option<Stats>,
+    pub ivs: Option<Stats>,
     pub status: Option<PokemonStatus>,
     pub hp: Option<u16>,
 }

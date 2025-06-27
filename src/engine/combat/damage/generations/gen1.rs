@@ -6,64 +6,34 @@
 
 use crate::core::battle_state::Pokemon;
 use crate::data::showdown_types::MoveData;
-use crate::utils::normalize_name;
-use crate::engine::combat::damage_context::{DamageContext, DamageResult, DamageEffect};
-use crate::engine::combat::type_effectiveness::{PokemonType, TypeChart};
 use crate::engine::combat::damage::DamageRolls;
-
-/// Get base speed stat for a Pokemon species
-/// This is a temporary solution until we store base stats in the Pokemon struct
-fn get_base_speed_for_pokemon(species: &str) -> i32 {
-    // Gen 1 base speeds (some are the same as modern, some different)
-    match species.to_lowercase().as_str() {
-        "dugtrio" => 120,  // Same in Gen 1 and modern
-        "persian" => 115,  // Same in Gen 1 and modern
-        "tauros" => 110,   // Same in Gen 1 and modern
-        "pikachu" => 90,   // Same in Gen 1 and modern
-        "charmander" => 65, // Same in Gen 1 and modern
-        "squirtle" => 43,  // Same in Gen 1 and modern
-        "bulbasaur" => 45, // Same in Gen 1 and modern
-        "farfetchd" => 60, // Same in Gen 1 and modern
-        "throh" => 45,     // Gen 5+ Pokemon, use modern stats
-        "urshifu" => 97,   // Gen 8+ Pokemon, use modern stats
-        "clefable" => 60,  // Same in Gen 1 and modern
-        "lapras" => 60,    // Same in Gen 1 and modern
-        _ => 80, // Default fallback
-    }
-}
+use crate::engine::combat::damage_context::{DamageContext, DamageEffect, DamageResult};
+use crate::engine::combat::type_effectiveness::{PokemonType, TypeChart};
+use crate::utils::normalize_name;
+use crate::constants::moves::{GEN1_HIGH_CRIT_MOVES, GEN1_CRIT_SPEED_DIVISOR, GEN1_CRIT_RATE_DIVISOR, GEN1_HIGH_CRIT_MULTIPLIER};
 
 /// Calculate Gen 1 critical hit probability based on base Speed
 /// Formula: floor(base_speed / 2) / 256 for normal moves
 /// High crit moves: min(8 * floor(base_speed / 2), 255) / 256
 pub fn critical_hit_probability_gen1(attacker: &Pokemon, move_data: &MoveData) -> f32 {
     // Get the base Speed stat for critical hit calculation
-    // In Gen 1, we need the base stat, not the effective stat
-    // For now, we need to calculate the base stat from the species name
-    // TODO: Store base stats separately in Pokemon struct for proper Gen 1 support
-    let base_speed = get_base_speed_for_pokemon(&attacker.species);
-    
+    // In Gen 1, we use the base stat, not the effective stat
+    let base_speed = attacker.base_stats.speed;
+
     // Normalize move name for comparison
     let move_name = normalize_name(&move_data.name);
-    
-    // High critical hit ratio moves in Gen 1
-    let high_crit_moves = [
-        "slash",
-        "razorleaf", 
-        "crabhammer",
-        "karatechop",
-    ];
-    
+
     // Calculate critical hit rate using the correct Gen 1 formula
-    let crit_rate = if high_crit_moves.contains(&move_name.as_str()) {
-        // High crit moves: min(8 * floor(base_speed / 2), 256)
-        (8 * (base_speed as i32 / 2)).min(256)
+    let crit_rate = if GEN1_HIGH_CRIT_MOVES.contains(&move_name.as_str()) {
+        // High crit moves: min(8 * floor(base_speed / 2), 255)
+        (GEN1_HIGH_CRIT_MULTIPLIER * (base_speed / GEN1_CRIT_SPEED_DIVISOR)).min(255)
     } else {
         // Normal moves: floor(base_speed / 2)
-        (base_speed as i32 / 2).min(256)
+        (base_speed / GEN1_CRIT_SPEED_DIVISOR).min(255)
     };
-    
-    let final_rate = crit_rate as f32 / 256.0;
-    
+
+    let final_rate = crit_rate as f32 / GEN1_CRIT_RATE_DIVISOR;
+
     final_rate
 }
 
@@ -76,11 +46,11 @@ fn calculate_final_damage_gen12(
     // Gen 1/2 use range 217-255 instead of 85-100
     let roll_index = match damage_rolls {
         DamageRolls::Min => 217,     // Min roll
-        DamageRolls::Max => 255,     // Max roll 
+        DamageRolls::Max => 255,     // Max roll
         DamageRolls::Average => 236, // Average roll ~(217+255)/2
         DamageRolls::All => 236,     // Default to average
     };
-    
+
     if generation == crate::generation::Generation::Gen2 {
         // Gen 2: damage is always rounded up to 1
         (base_damage * roll_index as f32 / 255.0).floor().max(1.0) as i16
@@ -110,7 +80,7 @@ pub fn calculate_damage_gen1(context: &DamageContext, damage_rolls: DamageRolls)
 
     let mut effects = Vec::new();
     let base_power = context.move_info.base_power as f32;
-    
+
     // Gen 1 critical hits double level before damage calculation
     let level = if context.move_info.is_critical {
         (context.attacker.pokemon.level as f32) * 2.0
@@ -123,13 +93,21 @@ pub fn calculate_damage_gen1(context: &DamageContext, damage_rolls: DamageRolls)
         crate::core::battle_state::MoveCategory::Physical => context
             .attacker
             .effective_stats
-            .get_effective_stat_with_crit_gen(crate::core::instructions::Stat::Attack, context.move_info.is_critical, true, crate::generation::Generation::Gen1)
-            as f32,
+            .get_effective_stat_with_crit_gen(
+                crate::core::instructions::Stat::Attack,
+                context.move_info.is_critical,
+                true,
+                crate::generation::Generation::Gen1,
+            ) as f32,
         crate::core::battle_state::MoveCategory::Special => context
             .attacker
             .effective_stats
-            .get_effective_stat_with_crit_gen(crate::core::instructions::Stat::SpecialAttack, context.move_info.is_critical, true, crate::generation::Generation::Gen1)
-            as f32,
+            .get_effective_stat_with_crit_gen(
+                crate::core::instructions::Stat::SpecialAttack,
+                context.move_info.is_critical,
+                true,
+                crate::generation::Generation::Gen1,
+            ) as f32,
         crate::core::battle_state::MoveCategory::Status => {
             return DamageResult {
                 damage: 0,
@@ -147,13 +125,21 @@ pub fn calculate_damage_gen1(context: &DamageContext, damage_rolls: DamageRolls)
         crate::core::battle_state::MoveCategory::Physical => context
             .defender
             .effective_stats
-            .get_effective_stat_with_crit_gen(crate::core::instructions::Stat::Defense, context.move_info.is_critical, false, crate::generation::Generation::Gen1)
-            as f32,
+            .get_effective_stat_with_crit_gen(
+                crate::core::instructions::Stat::Defense,
+                context.move_info.is_critical,
+                false,
+                crate::generation::Generation::Gen1,
+            ) as f32,
         crate::core::battle_state::MoveCategory::Special => context
             .defender
             .effective_stats
-            .get_effective_stat_with_crit_gen(crate::core::instructions::Stat::SpecialAttack, context.move_info.is_critical, false, crate::generation::Generation::Gen1)
-            as f32,
+            .get_effective_stat_with_crit_gen(
+                crate::core::instructions::Stat::SpecialAttack,
+                context.move_info.is_critical,
+                false,
+                crate::generation::Generation::Gen1,
+            ) as f32,
         crate::core::battle_state::MoveCategory::Status => {
             return DamageResult {
                 damage: 0,
@@ -169,7 +155,8 @@ pub fn calculate_damage_gen1(context: &DamageContext, damage_rolls: DamageRolls)
     // Gen 1 damage formula following official damage-calc exactly
     // Base damage calculation: floor(floor((floor((2*Level)/5+2) * max(1,Attack) * BP) / max(1,Defense)) / 50)
     let mut base_damage = (2.0 * level / 5.0).floor() + 2.0;
-    base_damage = (base_damage * attack_stat.max(1.0) * base_power / defense_stat.max(1.0)).floor() / 50.0;
+    base_damage =
+        (base_damage * attack_stat.max(1.0) * base_power / defense_stat.max(1.0)).floor() / 50.0;
     base_damage = base_damage.floor();
 
     // Track critical hit effect
@@ -178,7 +165,7 @@ pub fn calculate_damage_gen1(context: &DamageContext, damage_rolls: DamageRolls)
     }
 
     // Apply additional modifiers before +2
-    
+
     // Type effectiveness calculation (using Gen 1 type chart)
     let type_chart = TypeChart::new(1); // Gen 1 type chart
     let move_type =
@@ -192,7 +179,7 @@ pub fn calculate_damage_gen1(context: &DamageContext, damage_rolls: DamageRolls)
         defender_type1
     };
 
-    // Calculate type effectiveness against primary type  
+    // Calculate type effectiveness against primary type
     let type1_effectiveness = type_chart.get_effectiveness(move_type, defender_type1);
     let type2_effectiveness = if defender_type2 != defender_type1 {
         type_chart.get_effectiveness(move_type, defender_type2)
@@ -218,18 +205,26 @@ pub fn calculate_damage_gen1(context: &DamageContext, damage_rolls: DamageRolls)
     if let crate::core::instructions::Weather::Sun = context.field.weather.condition {
         if context.move_info.move_type.to_lowercase() == "fire" {
             base_damage = (base_damage * 1.5).floor();
-            effects.push(DamageEffect::WeatherEffect { weather: context.field.weather.condition });
+            effects.push(DamageEffect::WeatherEffect {
+                weather: context.field.weather.condition,
+            });
         } else if context.move_info.move_type.to_lowercase() == "water" {
             base_damage = (base_damage / 2.0).floor();
-            effects.push(DamageEffect::WeatherEffect { weather: context.field.weather.condition });
+            effects.push(DamageEffect::WeatherEffect {
+                weather: context.field.weather.condition,
+            });
         }
     } else if let crate::core::instructions::Weather::Rain = context.field.weather.condition {
         if context.move_info.move_type.to_lowercase() == "water" {
             base_damage = (base_damage * 1.5).floor();
-            effects.push(DamageEffect::WeatherEffect { weather: context.field.weather.condition });
+            effects.push(DamageEffect::WeatherEffect {
+                weather: context.field.weather.condition,
+            });
         } else if context.move_info.move_type.to_lowercase() == "fire" {
             base_damage = (base_damage / 2.0).floor();
-            effects.push(DamageEffect::WeatherEffect { weather: context.field.weather.condition });
+            effects.push(DamageEffect::WeatherEffect {
+                weather: context.field.weather.condition,
+            });
         }
     }
 
@@ -249,7 +244,11 @@ pub fn calculate_damage_gen1(context: &DamageContext, damage_rolls: DamageRolls)
     base_damage = (base_damage * type2_effectiveness).floor();
 
     // Apply damage roll using Gen 1/2 specific system (217-255 range)
-    let final_damage = calculate_final_damage_gen12(base_damage, damage_rolls, crate::generation::Generation::Gen1);
+    let final_damage = calculate_final_damage_gen12(
+        base_damage,
+        damage_rolls,
+        crate::generation::Generation::Gen1,
+    );
 
     DamageResult {
         damage: final_damage,

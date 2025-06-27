@@ -544,7 +544,7 @@ fn combine_move_instructions_with_cancellation(
     second_side: SideReference,
 ) -> BattleResult<Vec<BattleInstructions>> {
     if first_instructions.is_empty() && second_instructions.is_empty() {
-        return Ok(vec![BattleInstructions::new(100.0, vec![])]);
+        return Ok(vec![BattleInstructions::new_with_positions(100.0, vec![], vec![])]);
     } else if first_instructions.is_empty() {
         return Ok(second_instructions);
     } else if second_instructions.is_empty() {
@@ -562,9 +562,10 @@ fn combine_move_instructions_with_cancellation(
         // Check if second move should be cancelled
         if should_cancel_move(&temp_state, second_choice, second_side) {
             // Second move is cancelled - only include first move's instructions
-            combined.push(BattleInstructions::new(
+            combined.push(BattleInstructions::new_with_positions(
                 first_instr.percentage,
                 first_instr.instruction_list.clone(),
+                first_instr.affected_positions.clone(),
             ));
         } else {
             // Second move can proceed - combine both instruction sets
@@ -575,9 +576,16 @@ fn combine_move_instructions_with_cancellation(
                 // Calculate combined probability
                 let combined_percentage = (first_instr.percentage * second_instr.percentage) / 100.0;
                 
-                combined.push(BattleInstructions::new(
+                // Combine affected positions from both instruction sets
+                let mut combined_affected_positions = first_instr.affected_positions.clone();
+                combined_affected_positions.extend(second_instr.affected_positions.clone());
+                combined_affected_positions.sort();
+                combined_affected_positions.dedup();
+                
+                combined.push(BattleInstructions::new_with_positions(
                     combined_percentage,
                     combined_instruction_list,
+                    combined_affected_positions,
                 ));
             }
         }
@@ -592,10 +600,24 @@ fn should_cancel_move(
     choice: &MoveChoice,
     user_side: SideReference,
 ) -> bool {
+    use crate::core::instructions::VolatileStatus;
+    
+    // Check if the attacker has fainted
+    let user_pos = BattlePosition::new(user_side, 0);
+    if let Some(user_pokemon) = state.get_pokemon_at_position(user_pos) {
+        if user_pokemon.hp == 0 {
+            return true; // Cancel move if attacker has fainted
+        }
+        
+        // Check if the attacker is flinched (flinch prevents move execution)
+        if user_pokemon.volatile_statuses.contains(&VolatileStatus::Flinch) {
+            return true; // Cancel move if attacker is flinched
+        }
+    }
+    
     // Only check for attack moves, not switches or status moves
     if let MoveChoice::Move { move_index, target_positions } = choice {
         // Get the move data to check if it's a status move
-        let user_pos = BattlePosition::new(user_side, 0);
         if let Some(user_pokemon) = state.get_pokemon_at_position(user_pos) {
             if let Some(move_data) = user_pokemon.get_move(*move_index) {
                 // Status moves can still be used even if target has fainted
@@ -614,14 +636,6 @@ fn should_cancel_move(
                     }
                 }
             }
-        }
-    }
-    
-    // Also check if the attacker has fainted
-    let user_pos = BattlePosition::new(user_side, 0);
-    if let Some(user_pokemon) = state.get_pokemon_at_position(user_pos) {
-        if user_pokemon.hp == 0 {
-            return true; // Cancel move if attacker has fainted
         }
     }
     
@@ -1089,23 +1103,46 @@ fn generate_attack_instructions_with_enhanced_context(
         explicit_targets.to_vec()
     };
     
-    // Get generation mechanics
-    let generation = state.get_generation_mechanics();
+    // 2. Check move accuracy (CRITICAL: this was missing!)
+    let accuracy_percentage = calculate_move_accuracy(move_data_raw, user_pos, &targets, state, context.going_first);
     
-    // Apply move effects with enhanced context - use generation-specific repository
-    let repository = create_generation_repository(&generation)?;
-    let instructions = apply_move_effects(
-        state,
-        &move_data,
-        user_pos,
-        &targets,
-        &generation,
-        context,
-        &repository,
-        branch_on_damage,
-    )?;
+    let mut instruction_sets = Vec::new();
     
-    Ok(instructions)
+    // 3. If move can miss, create miss instruction set
+    if accuracy_percentage < 100.0 {
+        let miss_percentage = 100.0 - accuracy_percentage;
+        instruction_sets.push(BattleInstructions::new(
+            miss_percentage,
+            vec![], // Move misses - no damage/effects
+        ));
+    }
+    
+    // 4. Only generate hit instructions if move can hit
+    if accuracy_percentage > 0.0 {
+        // Get generation mechanics
+        let generation = state.get_generation_mechanics();
+        
+        // Apply move effects with enhanced context - use generation-specific repository
+        let repository = create_generation_repository(&generation)?;
+        let hit_instructions = apply_move_effects(
+            state,
+            &move_data,
+            user_pos,
+            &targets,
+            &generation,
+            context,
+            &repository,
+            branch_on_damage,
+        )?;
+        
+        // Scale hit instruction probabilities by accuracy
+        for mut hit_instruction in hit_instructions {
+            hit_instruction.percentage = (hit_instruction.percentage * accuracy_percentage) / 100.0;
+            instruction_sets.push(hit_instruction);
+        }
+    }
+    
+    Ok(instruction_sets)
 }
 
 /// Create a generation-specific repository for move effects

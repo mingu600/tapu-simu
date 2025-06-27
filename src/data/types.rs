@@ -4,9 +4,9 @@
 
 use serde::{Deserialize, Serialize};
 
-/// Pokemon base stats structure
+/// Pokemon stats structure
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct BaseStats {
+pub struct Stats {
     pub hp: i16,
     pub attack: i16,
     pub defense: i16,

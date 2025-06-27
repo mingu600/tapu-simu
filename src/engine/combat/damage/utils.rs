@@ -170,33 +170,6 @@ pub fn calculate_final_damage_gen56(
     final_damage as i16
 }
 
-/// Get base Speed stat for a Pokemon species (Gen 1 compatibility)
-/// 
-/// This is a temporary implementation for Gen 1 critical hit calculations.
-/// In proper implementation, base stats should be stored separately.
-/// 
-/// ## Parameters
-/// - `species`: The Pokemon species name
-/// 
-/// ## Returns
-/// The base Speed stat for the species
-pub fn get_base_speed_for_pokemon(species: &str) -> u16 {
-    // TODO: This should be replaced with proper base stat lookup
-    // For now, return a reasonable default based on common Pokemon
-    match species.to_lowercase().as_str() {
-        "persian" => 115,
-        "alakazam" => 120,
-        "electrode" => 150,
-        "jolteon" => 130,
-        "aerodactyl" => 130,
-        "mewtwo" => 130,
-        "crobat" => 130,
-        "ninjask" => 160,
-        "deoxys-speed" => 180,
-        // Add more as needed, or implement proper base stat lookup
-        _ => 70, // Default reasonable speed
-    }
-}
 
 #[cfg(test)]
 mod tests {
@@ -283,10 +256,4 @@ mod tests {
         assert!(burned_damage < normal_damage);
     }
 
-    #[test]
-    fn test_base_speed_lookup() {
-        assert_eq!(get_base_speed_for_pokemon("Persian"), 115);
-        assert_eq!(get_base_speed_for_pokemon("Electrode"), 150);
-        assert_eq!(get_base_speed_for_pokemon("Unknown"), 70); // Default
-    }
 }

@@ -8,6 +8,7 @@ use crate::engine::combat::damage_context::{DamageContext, DamageResult, DamageE
 use crate::engine::combat::type_effectiveness::{PokemonType, TypeChart};
 use crate::engine::combat::damage::DamageRolls;
 use crate::core::instructions::Weather;
+use crate::constants::moves::CRITICAL_HIT_MULTIPLIER_LEGACY;
 
 /// Calculate final damage with Gen 3 specific damage roll system
 fn calculate_final_damage_gen3(
@@ -94,7 +95,7 @@ pub fn calculate_damage_gen3(context: &DamageContext, damage_rolls: DamageRolls)
     // Critical hit (Gen 3+ uses 2x multiplier applied at end)
     let critical_modifier = if context.move_info.is_critical {
         effects.push(DamageEffect::Critical);
-        2.0
+        CRITICAL_HIT_MULTIPLIER_LEGACY
     } else {
         1.0
     };

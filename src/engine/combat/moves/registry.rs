@@ -53,16 +53,7 @@ use super::damage::multi_hit::{
     apply_rock_blast, apply_tail_slap, apply_scale_shot
 };
 
-use super::damage::recoil::{
-    apply_double_edge, apply_take_down, apply_submission, apply_brave_bird,
-    apply_flare_blitz, apply_volt_tackle, apply_wild_charge,
-    apply_head_smash
-};
 
-use super::damage::drain::{
-    apply_absorb, apply_mega_drain, apply_giga_drain, apply_drain_punch,
-    apply_leech_life
-};
 
 use super::special::protection::{
     apply_protect, apply_detect, apply_endure
@@ -70,7 +61,7 @@ use super::special::protection::{
 
 // Additional imports for complex moves from the original match statement
 use super::damage::variable_power;
-use super::damage::{fixed_damage, self_destruct, self_damage, multi_hit};
+use super::damage::{fixed_damage, self_targeting, multi_hit};
 use super::special::{complex, counter};
 use super::special_combat::{
     apply_body_press, apply_foul_play, apply_photon_geyser, apply_sky_drop
@@ -237,22 +228,9 @@ impl MoveRegistry {
         self.register_variable_power("rockblast", multi_hit::apply_multi_hit_move);
         self.register_variable_power("tailslap", multi_hit::apply_multi_hit_move);
 
-        // Recoil moves
-        self.register_standard("doubleedge", apply_double_edge);
-        self.register_standard("takedown", apply_take_down);
-        self.register_standard("submission", apply_submission);
-        self.register_standard("bravebird", apply_brave_bird);
-        self.register_standard("flareblitz", apply_flare_blitz);
-        self.register_standard("volttackle", apply_volt_tackle);
-        self.register_standard("wildcharge", apply_wild_charge);
-        self.register_standard("headsmash", apply_head_smash);
+        // Recoil moves - now handled automatically via PS data
 
-        // Drain moves
-        self.register_standard("absorb", apply_absorb);
-        self.register_standard("megadrain", apply_mega_drain);
-        self.register_standard("gigadrain", apply_giga_drain);
-        self.register_standard("drainpunch", apply_drain_punch);
-        self.register_standard("leechlife", apply_leech_life);
+        // Drain moves - now handled automatically via PS data
 
         // Protection moves
         self.register_standard("protect", apply_protect);
@@ -309,12 +287,10 @@ impl MoveRegistry {
         self.register_standard("ruination", fixed_damage::apply_ruination);
         self.register_standard("superfang", fixed_damage::apply_super_fang);
 
-        // Self-destruct moves
-        self.register_variable_power("explosion", self_destruct::apply_explosion);
-        self.register_variable_power("selfdestruct", self_destruct::apply_self_destruct);
-
-        // Self-damage moves
-        self.register_variable_power("mindblown", self_damage::apply_mind_blown);
+        // Self-targeting moves (both self-destruct and self-damage)
+        self.register_variable_power("explosion", self_targeting::apply_explosion);
+        self.register_variable_power("selfdestruct", self_targeting::apply_self_destruct);
+        self.register_variable_power("mindblown", self_targeting::apply_mind_blown);
 
         // Special combat moves
         self.register_variable_power("bodypress", apply_body_press);

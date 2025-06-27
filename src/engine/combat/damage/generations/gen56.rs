@@ -7,6 +7,7 @@
 use crate::engine::combat::damage_context::{DamageContext, DamageResult, DamageEffect};
 use crate::engine::combat::type_effectiveness::{PokemonType, TypeChart};
 use crate::engine::combat::damage::DamageRolls;
+use crate::constants::moves::{CRITICAL_HIT_MULTIPLIER, MIN_DAMAGE_PERCENT};
 
 /// Calculate final damage with Gen 5-6 specific system (no pokeRound)
 fn calculate_final_damage_gen56(
@@ -26,7 +27,7 @@ fn calculate_final_damage_gen56(
     };
     
     // Step 1: Apply damage roll (85 + i) / 100
-    let mut damage_amount = (base_amount * (85.0 + roll_index as f32) / 100.0).floor();
+    let mut damage_amount = (base_amount * (MIN_DAMAGE_PERCENT as f32 + roll_index as f32) / 100.0).floor();
     
     // Step 2: Apply STAB (if not 4096 to avoid unnecessary calculation)
     if stab_mod != 4096 {
@@ -117,7 +118,7 @@ pub fn calculate_damage_gen56(context: &DamageContext, damage_rolls: DamageRolls
     base_damage = base_damage + 2.0;
     if context.move_info.is_critical {
         // Gen 6 changed critical hit from 2x to 1.5x
-        base_damage *= 1.5; // Assume Gen 6 mechanics
+        base_damage *= CRITICAL_HIT_MULTIPLIER; // Assume Gen 6 mechanics
         effects.push(DamageEffect::Critical);
     }
 

@@ -7,6 +7,7 @@
 use crate::engine::combat::damage_context::{DamageContext, DamageResult, DamageEffect};
 use crate::engine::combat::type_effectiveness::{PokemonType, TypeChart};
 use crate::engine::combat::damage::DamageRolls;
+use crate::constants::moves::MIN_DAMAGE_PERCENT;
 
 /// Calculate final damage with Gen 4 specific system
 fn calculate_final_damage_gen4(
@@ -29,7 +30,7 @@ fn calculate_final_damage_gen4(
     };
     
     // Apply damage roll
-    let mut damage = (base_damage * (85.0 + roll_index as f32) / 100.0).floor();
+    let mut damage = (base_damage * (MIN_DAMAGE_PERCENT as f32 + roll_index as f32) / 100.0).floor();
     
     // Apply each modifier with floor at each step (Gen 4 specific)
     damage = (damage * stab_mod).floor();

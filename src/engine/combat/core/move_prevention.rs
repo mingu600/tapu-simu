@@ -424,12 +424,20 @@ mod tests {
     use std::collections::HashMap;
 
     fn create_test_pokemon() -> Pokemon {
-        use crate::data::types::BaseStats;
+        use crate::data::types::Stats;
         Pokemon {
             species: "Pikachu".to_string(),
             hp: 100,
             max_hp: 100,
-            stats: BaseStats {
+            stats: Stats {
+                hp: 100,
+                attack: 100,
+                defense: 100,
+                special_attack: 100,
+                special_defense: 100,
+                speed: 100,
+            },
+            base_stats: Stats {
                 hp: 100,
                 attack: 100,
                 defense: 100,

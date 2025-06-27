@@ -132,7 +132,7 @@ fn test_blizzard_in_hail() {
         percentage: 100.0, // Perfect accuracy in hail
         instruction_list: vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
             target: Positions::SIDE_TWO_0,
-            amount: 91, // Super effective ice damage
+            amount: 61,
             previous_hp: None,
         })],
         affected_positions: vec![Positions::SIDE_TWO_0],
@@ -141,7 +141,7 @@ fn test_blizzard_in_hail() {
     TestBuilder::new("blizzard in hail")
         .unwrap()
         .team_one(PokemonSpec::new("Articuno").moves(vec!["Blizzard"]))
-        .team_two(PokemonSpec::new("Flygon"))
+        .team_two(PokemonSpec::new("Manaphy"))
         .with_weather(Weather::Hail)
         .turn_one_move("Blizzard")
         .expect_instructions(expected_instructions)
@@ -158,32 +158,44 @@ fn test_blizzard_in_hail() {
 fn test_magician_does_not_steal_if_move_misses() {
     let expected_instructions = vec![
         BattleInstructions {
-            percentage: 10.0,         // Miss chance for Hypnosis
-            instruction_list: vec![], // No effect on miss
+            percentage: 15.0, // Miss chance
+            instruction_list: vec![],
             affected_positions: vec![],
         },
         BattleInstructions {
-            percentage: 90.0, // Hit chance
-            instruction_list: vec![BattleInstruction::Status(StatusInstruction::Apply {
-                target: Positions::SIDE_TWO_0,
-                status: PokemonStatus::Sleep,
-                duration: Some(3),
-                previous_status: Some(PokemonStatus::None),
-                previous_duration: None,
-            })],
-            affected_positions: vec![Positions::SIDE_TWO_0],
+            percentage: 85.0, // Hit chance
+            instruction_list: vec![
+                BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                    target: Positions::SIDE_TWO_0,
+                    amount: 72, // Fire Blast damage to Manaphy
+                    previous_hp: None,
+                }),
+                // Manaphy loses its item
+                BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+                    target: Positions::SIDE_TWO_0,
+                    new_item: None,
+                    previous_item: Some("Leftovers".to_string()),
+                }),
+                // Delphox gains the stolen item via Magician
+                BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
+                    target: Positions::SIDE_ONE_0,
+                    new_item: Some("Leftovers".to_string()),
+                    previous_item: None,
+                }),
+            ],
+            affected_positions: vec![Positions::SIDE_ONE_0, Positions::SIDE_TWO_0],
         },
     ];
 
     TestBuilder::new("magician doesn't steal on miss")
         .unwrap()
         .team_one(
-            PokemonSpec::new("Delcatty")
+            PokemonSpec::new("Delphox")
                 .ability("Magician")
-                .moves(vec!["Hypnosis"]), // Non-damaging move with miss chance
+                .moves(vec!["Fire Blast"]),
         )
-        .team_two(PokemonSpec::new("Clefable").item("Leftovers"))
-        .turn_one_move("Hypnosis")
+        .team_two(PokemonSpec::new("Manaphy").item("Leftovers"))
+        .turn_one_move("Fire Blast")
         .expect_instructions(expected_instructions)
         .assert_success();
 }

@@ -12,7 +12,7 @@ use tapu_simu::core::instructions::{
     BattleInstructions, PokemonStatus, SideCondition, Stat, Terrain, VolatileStatus, Weather,
 };
 use tapu_simu::core::move_choice::{MoveChoice, MoveIndex};
-use tapu_simu::data::types::BaseStats;
+use tapu_simu::data::types::Stats;
 use tapu_simu::generation::Generation;
 use tapu_simu::types::DataResult;
 
@@ -326,14 +326,14 @@ impl PokemonSpec {
     }
 
     /// Set the Pokemon's EVs
-    pub fn evs(mut self, evs: BaseStats) -> Self {
+    pub fn evs(mut self, evs: Stats) -> Self {
         self.evs = Some(evs);
         self
     }
 
     /// Set specific EV values
     pub fn ev_spread(mut self, hp: u8, atk: u8, def: u8, spa: u8, spd: u8, spe: u8) -> Self {
-        self.evs = Some(BaseStats {
+        self.evs = Some(Stats {
             hp: hp as i16,
             attack: atk as i16,
             defense: def as i16,
@@ -345,14 +345,14 @@ impl PokemonSpec {
     }
 
     /// Set the Pokemon's IVs
-    pub fn ivs(mut self, ivs: BaseStats) -> Self {
+    pub fn ivs(mut self, ivs: Stats) -> Self {
         self.ivs = Some(ivs);
         self
     }
 
     /// Set perfect IVs (31 in all stats)
     pub fn perfect_ivs(mut self) -> Self {
-        self.ivs = Some(BaseStats {
+        self.ivs = Some(Stats {
             hp: 31,
             attack: 31,
             defense: 31,
@@ -377,7 +377,7 @@ impl PokemonSpec {
 
     /// Set all base stats to the same value (for dummy Pokemon)
     pub fn base_stats_all(mut self, stat_value: u8) -> Self {
-        self.evs = Some(BaseStats {
+        self.evs = Some(Stats {
             hp: stat_value as i16,
             attack: stat_value as i16,
             defense: stat_value as i16,
@@ -412,7 +412,7 @@ impl PokemonSpec {
     /// Set max HP directly
     pub fn max_hp(mut self, max_hp: i16) -> Self {
         // Store in EVs for now, we'll handle this specially
-        let mut evs = self.evs.unwrap_or(BaseStats {
+        let mut evs = self.evs.unwrap_or(Stats {
             hp: 85,
             attack: 85,
             defense: 85,

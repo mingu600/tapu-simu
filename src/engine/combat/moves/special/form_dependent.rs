@@ -10,7 +10,7 @@ use crate::core::instructions::{
 };
 use crate::core::battle_format::BattlePosition;
 use crate::generation::GenerationMechanics;
-use crate::engine::combat::move_effects::apply_generic_effects;
+use crate::engine::combat::moves::apply_generic_effects;
 use std::collections::HashMap;
 use crate::core::instructions::Stat;
 use crate::core::instructions::StatsInstruction;

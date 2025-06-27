@@ -9,6 +9,7 @@ use crate::engine::combat::type_effectiveness::{PokemonType, TypeChart};
 use crate::engine::combat::damage::DamageRolls;
 use crate::core::battle_state::Pokemon;
 use crate::generation::GenerationMechanics;
+use crate::constants::moves::{CRITICAL_HIT_MULTIPLIER, MIN_DAMAGE_PERCENT};
 
 /// Pokemon rounding function for modern generations
 fn poke_round(num: f32) -> f32 {
@@ -137,7 +138,7 @@ fn calculate_final_damage_roll(
     };
     
     // Step 1: Apply damage roll (85 + i) / 100
-    let mut damage_amount = (base_amount * (85.0 + roll_index as f32) / 100.0).floor();
+    let mut damage_amount = (base_amount * (MIN_DAMAGE_PERCENT as f32 + roll_index as f32) / 100.0).floor();
     
     // Step 2: Apply STAB (if not 4096 to avoid unnecessary calculation)
     if stab_mod != 4096 {
@@ -302,7 +303,7 @@ pub fn calculate_damage_modern_gen789(context: &DamageContext, damage_rolls: Dam
     // Apply critical hit modifier
     let critical_modifier = if context.move_info.is_critical {
         effects.push(DamageEffect::Critical);
-        1.5 // Modern generations use 1.5x
+        CRITICAL_HIT_MULTIPLIER // Modern generations use 1.5x
     } else {
         1.0
     };

@@ -687,8 +687,8 @@ pub struct BaseStats {
 
 impl BaseStats {
     /// Convert to engine stats format
-    pub fn to_engine_stats(&self) -> crate::data::types::BaseStats {
-        crate::data::types::BaseStats {
+    pub fn to_engine_stats(&self) -> crate::data::types::Stats {
+        crate::data::types::Stats {
             hp: self.hp as i16,
             attack: self.attack as i16,
             defense: self.defense as i16,

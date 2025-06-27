@@ -236,48 +236,36 @@ pub fn apply_scale_shot(
     use crate::core::instructions::Stat;
     use std::collections::HashMap;
     
-    let mut instruction_sets = Vec::new();
-    let accuracy = move_data.accuracy as f32;
+    // Note: Accuracy is handled by the turn engine, so we assume this is a hit
+    // and generate the multi-hit damage + stat changes
     
-    // Miss chance (Scale Shot has 90% accuracy)
-    if accuracy < 100.0 {
-        let miss_chance = 100.0 - accuracy;
-        instruction_sets.push(BattleInstructions::new(miss_chance, vec![]));
-    }
+    // Determine hit count based on move and abilities/items
+    let hit_count_calculator = determine_hit_count(state, move_data, user_position);
     
-    // Hit chance - generate multi-hit with stat changes
-    if accuracy > 0.0 {
-        // Determine hit count based on move and abilities/items
-        let hit_count_calculator = determine_hit_count(state, move_data, user_position);
-        
-        // Use the centralized multi-hit system
-        let mut instructions = multi_hit_move(
-            state,
-            move_data,
-            user_position,
-            target_positions,
-            hit_count_calculator,
-            generation,
-            branch_on_damage,
-        );
-        
-        // Create stat changes for Scale Shot (+1 Speed, -1 Defense)
-        let mut stat_changes = HashMap::new();
-        stat_changes.insert(Stat::Speed, 1);
-        stat_changes.insert(Stat::Defense, -1);
-        
-        // Add stat change instructions only if the move hits
-        if !instructions.is_empty() {
-            instructions.push(BattleInstruction::Stats(StatsInstruction::BoostStats {
-                target: user_position,
-                stat_changes,
-                previous_boosts: std::collections::HashMap::new(), // Will be filled in by battle state
-            }));
-        }
-        
-        instruction_sets.push(BattleInstructions::new(accuracy, instructions));
-    }
+    // Use the centralized multi-hit system
+    let mut instructions = multi_hit_move(
+        state,
+        move_data,
+        user_position,
+        target_positions,
+        hit_count_calculator,
+        generation,
+        branch_on_damage,
+    );
     
-    instruction_sets
+    // Create stat changes for Scale Shot (+1 Speed, -1 Defense)
+    let mut stat_changes = HashMap::new();
+    stat_changes.insert(Stat::Speed, 1);
+    stat_changes.insert(Stat::Defense, -1);
+    
+    // Add stat change instructions
+    instructions.push(BattleInstruction::Stats(StatsInstruction::BoostStats {
+        target: user_position,
+        stat_changes,
+        previous_boosts: std::collections::HashMap::new(), // Will be filled in by battle state
+    }));
+    
+    // Return single instruction set with 100% probability (accuracy handled by turn engine)
+    vec![BattleInstructions::new(100.0, instructions)]
 }
 

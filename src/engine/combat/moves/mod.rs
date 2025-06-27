@@ -118,8 +118,6 @@ pub use field::hazards::*;
 pub mod damage;
 pub use damage::multi_hit::*;
 pub use damage::variable_power::*;
-pub use damage::recoil::*;
-pub use damage::drain::*;
 
 // Special moves
 pub mod special;
@@ -135,8 +133,7 @@ pub use special::type_changing::*;
 pub use special::type_removal::*;
 pub use special::utility::*;
 pub use damage::fixed_damage::*;
-pub use damage::self_destruct::*;
-pub use damage::self_damage::*;
+pub use damage::self_targeting::*;
 pub use field::field_manipulation::*;
 pub use field::terrain_dependent::*;
 pub use field::weather_accuracy::*;
@@ -156,7 +153,6 @@ pub mod registry;
 pub use secondary_effects::*;
 
 // Re-export common types and structs
-pub use damage::recoil::{DamageBasedEffectType, DamageBasedEffect, create_damage_based_effect, apply_damage_based_secondary_effects};
 
 // =============================================================================
 // MAIN MOVE EFFECTS ENTRY POINT
@@ -238,7 +234,8 @@ pub fn apply_generic_effects(
     }
 }
 
-/// Apply generic damage effects with accuracy, critical hits, and damage calculation
+/// Apply generic damage effects with critical hits and damage calculation
+/// Note: Accuracy is handled by the turn engine, not here
 fn apply_generic_damage_effects(
     state: &BattleState,
     move_data: &MoveData,
@@ -256,46 +253,38 @@ fn apply_generic_damage_effects(
     
     let mut instruction_sets = Vec::new();
     
-    // Generate instruction sets for hits and misses
-    let accuracy = move_data.accuracy as f32;
+    // Note: Accuracy is handled by the turn engine, so we assume this is a hit
+    // and generate damage/effect instructions
     
-    // Miss chance
-    if accuracy < 100.0 {
-        let miss_chance = 100.0 - accuracy;
-        instruction_sets.push(BattleInstructions::new(miss_chance, vec![]));
-    }
-    
-    if accuracy > 0.0 {
-        if branch_on_damage {
-            // Use advanced probability branching that combines identical outcomes
-            instruction_sets.extend(generate_advanced_damage_branching(
-                state, move_data, user_position, target_positions, generation, accuracy
-            ));
+    if branch_on_damage {
+        // Use advanced probability branching that combines identical outcomes
+        instruction_sets.extend(generate_advanced_damage_branching(
+            state, move_data, user_position, target_positions, generation, 100.0
+        ));
+    } else {
+        // No branching - single hit with average/expected damage
+        // But check for guaranteed critical hit moves
+        let crit_probability = if target_positions.is_empty() {
+            0.0
         } else {
-            // No branching - single hit with average/expected damage
-            // But check for guaranteed critical hit moves
-            let crit_probability = if target_positions.is_empty() {
-                0.0
-            } else {
-                // For multi-target moves, check if any target lacks critical hit immunity
-                target_positions.iter()
-                    .map(|&target_pos| {
-                        if let Some(target) = state.get_pokemon_at_position(target_pos) {
-                            critical_hit_probability(user, target, move_data, generation.generation)
-                        } else {
-                            0.0
-                        }
-                    })
-                    .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
-                    .unwrap_or(0.0)
-            };
-            let is_guaranteed_crit = crit_probability >= 1.0;
-            
-            let damage_instructions = generate_damage_instructions(
-                state, move_data, user_position, target_positions, is_guaranteed_crit, generation
-            );
-            instruction_sets.push(BattleInstructions::new(accuracy, damage_instructions));
-        }
+            // For multi-target moves, check if any target lacks critical hit immunity
+            target_positions.iter()
+                .map(|&target_pos| {
+                    if let Some(target) = state.get_pokemon_at_position(target_pos) {
+                        critical_hit_probability(user, target, move_data, generation.generation)
+                    } else {
+                        0.0
+                    }
+                })
+                .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
+                .unwrap_or(0.0)
+        };
+        let is_guaranteed_crit = crit_probability >= 1.0;
+        
+        let damage_instructions = generate_damage_instructions(
+            state, move_data, user_position, target_positions, is_guaranteed_crit, generation
+        );
+        instruction_sets.push(BattleInstructions::new(100.0, damage_instructions));
     }
     
     if instruction_sets.is_empty() {

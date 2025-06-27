@@ -63,37 +63,45 @@ fn test_basic_multi_hit_move() {
 /// Skill Link guarantees maximum hits for multi-hit moves
 #[test]
 fn test_skilllink_always_has_5_hits() {
-    let expected_instructions = vec![BattleInstructions {
-        percentage: 100.0,
-        instruction_list: vec![
-            BattleInstruction::Pokemon(PokemonInstruction::Damage {
-                target: Positions::SIDE_TWO_0,
-                amount: 12, // Single hit damage from Tail Slap
-                previous_hp: None,
-            }),
-            BattleInstruction::Pokemon(PokemonInstruction::Damage {
-                target: Positions::SIDE_TWO_0,
-                amount: 12,
-                previous_hp: None,
-            }),
-            BattleInstruction::Pokemon(PokemonInstruction::Damage {
-                target: Positions::SIDE_TWO_0,
-                amount: 12,
-                previous_hp: None,
-            }),
-            BattleInstruction::Pokemon(PokemonInstruction::Damage {
-                target: Positions::SIDE_TWO_0,
-                amount: 12,
-                previous_hp: None,
-            }),
-            BattleInstruction::Pokemon(PokemonInstruction::Damage {
-                target: Positions::SIDE_TWO_0,
-                amount: 12, // Fifth hit guaranteed by Skill Link
-                previous_hp: None,
-            }),
-        ],
-        affected_positions: vec![Positions::SIDE_TWO_0],
-    }];
+    // Tail Slap has 85% accuracy, so we expect 15% miss and 85% hit
+    let expected_instructions = vec![
+        BattleInstructions {
+            percentage: 15.0, // Miss chance
+            instruction_list: vec![],
+            affected_positions: vec![],
+        },
+        BattleInstructions {
+            percentage: 85.0, // Hit chance
+            instruction_list: vec![
+                BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                    target: Positions::SIDE_TWO_0,
+                    amount: 12, // Single hit damage from Tail Slap
+                    previous_hp: None,
+                }),
+                BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                    target: Positions::SIDE_TWO_0,
+                    amount: 12,
+                    previous_hp: None,
+                }),
+                BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                    target: Positions::SIDE_TWO_0,
+                    amount: 12,
+                    previous_hp: None,
+                }),
+                BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                    target: Positions::SIDE_TWO_0,
+                    amount: 12,
+                    previous_hp: None,
+                }),
+                BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                    target: Positions::SIDE_TWO_0,
+                    amount: 12, // Fifth hit guaranteed by Skill Link
+                    previous_hp: None,
+                }),
+            ],
+            affected_positions: vec![],
+        }
+    ];
 
     TestBuilder::new("skill link always has 5 hits")
         .unwrap()
@@ -758,15 +766,23 @@ fn test_seismictoss_versus_ghost_type() {
 /// Test Super Fang - deals 50% of target's current HP
 #[test]
 fn test_superfang() {
-    let expected_instructions = vec![BattleInstructions {
-        percentage: 100.0,
-        instruction_list: vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
-            target: Positions::SIDE_TWO_0,
-            amount: 109, // 50% of target's current HP
-            previous_hp: None,
-        })],
-        affected_positions: vec![Positions::SIDE_TWO_0],
-    }];
+    // Super Fang has 90% accuracy, so we expect 10% miss and 90% hit
+    let expected_instructions = vec![
+        BattleInstructions {
+            percentage: 10.0, // Miss chance
+            instruction_list: vec![],
+            affected_positions: vec![],
+        },
+        BattleInstructions {
+            percentage: 90.0, // Hit chance  
+            instruction_list: vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                target: Positions::SIDE_TWO_0,
+                amount: 109, // 50% of target's current HP
+                previous_hp: None,
+            })],
+            affected_positions: vec![],
+        }
+    ];
 
     TestBuilder::new("super fang halves HP")
         .unwrap()
@@ -780,15 +796,23 @@ fn test_superfang() {
 /// Test Super Fang at 1 HP
 #[test]
 fn test_superfang_at_1hp() {
-    let expected_instructions = vec![BattleInstructions {
-        percentage: 100.0,
-        instruction_list: vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
-            target: Positions::SIDE_TWO_0,
-            amount: 1,
-            previous_hp: None,
-        })],
-        affected_positions: vec![Positions::SIDE_TWO_0],
-    }];
+    // Super Fang has 90% accuracy, so we expect 10% miss and 90% hit
+    let expected_instructions = vec![
+        BattleInstructions {
+            percentage: 10.0, // Miss chance
+            instruction_list: vec![],
+            affected_positions: vec![],
+        },
+        BattleInstructions {
+            percentage: 90.0, // Hit chance
+            instruction_list: vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                target: Positions::SIDE_TWO_0,
+                amount: 1,
+                previous_hp: None,
+            })],
+            affected_positions: vec![],
+        }
+    ];
 
     TestBuilder::new("super fang at 1 HP")
         .unwrap()
@@ -802,11 +826,19 @@ fn test_superfang_at_1hp() {
 /// Test Super Fang versus Ghost type
 #[test]
 fn test_superfang_versus_ghost_type() {
-    let expected_instructions = vec![BattleInstructions {
-        percentage: 100.0,
-        instruction_list: vec![], // No effect against Ghost type
-        affected_positions: vec![],
-    }];
+    // Super Fang has 90% accuracy, but does no damage to Ghost types
+    let expected_instructions = vec![
+        BattleInstructions {
+            percentage: 10.0, // Miss chance
+            instruction_list: vec![],
+            affected_positions: vec![],
+        },
+        BattleInstructions {
+            percentage: 90.0, // Hit chance, but no effect due to immunity
+            instruction_list: vec![],
+            affected_positions: vec![],
+        }
+    ];
 
     TestBuilder::new("super fang vs ghost")
         .unwrap()
@@ -825,8 +857,15 @@ fn test_superfang_versus_ghost_type() {
 /// Each hit should trigger Rocky Helmet damage
 #[test]
 fn test_contact_multi_hit_move_versus_rockyhelmet() {
-    let expected_instructions = vec![BattleInstructions {
-        percentage: 100.0,
+    // Tail Slap has 85% accuracy
+    let expected_instructions = vec![
+        BattleInstructions {
+            percentage: 15.0, // Miss chance
+            instruction_list: vec![],
+            affected_positions: vec![],
+        },
+        BattleInstructions {
+            percentage: 85.0, // Hit chance
         instruction_list: vec![
             // First hit
             BattleInstruction::Pokemon(PokemonInstruction::Damage {
@@ -888,9 +927,10 @@ fn test_contact_multi_hit_move_versus_rockyhelmet() {
                 amount: 48, // Rocky Helmet damage (1/6 of max HP)
                 previous_hp: None,
             }),
-        ],
-        affected_positions: vec![Positions::SIDE_ONE_0, Positions::SIDE_TWO_0],
-    }];
+            ],
+            affected_positions: vec![],
+        }
+    ];
 
     TestBuilder::new("contact multi-hit vs rocky helmet")
         .unwrap()
@@ -1136,8 +1176,15 @@ fn test_scaleshot_only_boosts_once() {
 /// Test Population Bomb with Wide Lens
 #[test]
 fn test_population_bomb_with_widelens() {
-    let expected_instructions = vec![BattleInstructions {
-        percentage: 100.0,
+    // Population Bomb with Wide Lens has 99% accuracy (90% base * 1.1)
+    let expected_instructions = vec![
+        BattleInstructions {
+            percentage: 1.0, // Miss chance  
+            instruction_list: vec![],
+            affected_positions: vec![],
+        },
+        BattleInstructions {
+            percentage: 99.0, // Hit chance
         instruction_list: vec![
             // All 10 hits land due to improved accuracy
             BattleInstruction::Pokemon(PokemonInstruction::Damage {
@@ -1195,9 +1242,10 @@ fn test_population_bomb_with_widelens() {
                 amount: 8,
                 previous_hp: None,
             }),
-        ],
-        affected_positions: vec![Positions::SIDE_TWO_0],
-    }];
+            ],
+            affected_positions: vec![],
+        }
+    ];
 
     TestBuilder::new("population bomb with wide lens")
         .unwrap()

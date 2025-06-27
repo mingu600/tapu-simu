@@ -1,7 +1,7 @@
-//! # Self-Destruct Move Effects
-
+//! # Self-Targeting Move Effects
 //! 
-//! This module contains moves that cause the user to faint after use.
+//! This module contains moves that affect the user, including self-damage and self-destruct moves.
+//! Consolidates shared functionality like Damp ability checking.
 
 use crate::core::battle_state::BattleState;
 use crate::core::instructions::{BattleInstruction, BattleInstructions, PokemonInstruction};
@@ -11,7 +11,69 @@ use crate::data::showdown_types::MoveData;
 use crate::engine::combat::type_effectiveness::{TypeChart, PokemonType};
 
 // =============================================================================
-// SELF-DESTRUCT MOVES
+// SELF-DAMAGE MOVES (user takes damage but doesn't faint)
+// =============================================================================
+
+/// Apply Mind Blown - user takes damage equal to half their max HP
+pub fn apply_mind_blown(
+    state: &BattleState,
+    move_data: &MoveData,
+    user_position: BattlePosition,
+    target_positions: &[BattlePosition],
+    generation: &GenerationMechanics,
+    branch_on_damage: bool,
+) -> Vec<BattleInstructions> {
+    // Check for Damp ability which prevents explosive moves
+    if has_damp_ability(state) {
+        return vec![BattleInstructions::new(100.0, vec![])];
+    }
+    
+    let user_pokemon = match state.get_pokemon_at_position(user_position) {
+        Some(pokemon) => pokemon,
+        None => return vec![BattleInstructions::new(100.0, vec![])],
+    };
+    
+    // Create combined instructions with both target damage and self-damage
+    let target_damage_instructions = apply_generic_effects(state, move_data, user_position, target_positions, generation, branch_on_damage);
+    
+    let mut combined_instructions = Vec::new();
+    
+    for mut instruction_set in target_damage_instructions {
+        // Calculate self-damage
+        let self_damage = (user_pokemon.max_hp / 2).min(user_pokemon.hp); // Don't exceed current HP
+        
+        // Add self-damage to each instruction set
+        instruction_set.instruction_list.push(BattleInstruction::Pokemon(PokemonInstruction::Damage {
+            target: user_position,
+            amount: self_damage,
+            previous_hp: Some(user_pokemon.hp),
+        }));
+        
+        // Update affected positions to include user
+        if !instruction_set.affected_positions.contains(&user_position) {
+            instruction_set.affected_positions.push(user_position);
+        }
+        
+        combined_instructions.push(instruction_set);
+    }
+    
+    // If no target damage instructions were generated, create one with just self-damage
+    if combined_instructions.is_empty() {
+        let self_damage = (user_pokemon.max_hp / 2).min(user_pokemon.hp);
+        combined_instructions.push(BattleInstructions::new(100.0, vec![
+            BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                target: user_position,
+                amount: self_damage,
+                previous_hp: Some(user_pokemon.hp),
+            }),
+        ]));
+    }
+    
+    combined_instructions
+}
+
+// =============================================================================
+// SELF-DESTRUCT MOVES (user faints after use)
 // =============================================================================
 
 /// Apply Explosion - high power, user faints
@@ -110,7 +172,7 @@ pub fn apply_self_destruct(
 }
 
 // =============================================================================
-// HELPER FUNCTIONS
+// SHARED HELPER FUNCTIONS
 // =============================================================================
 
 /// Apply generic move effects
@@ -129,6 +191,7 @@ fn apply_generic_effects(
 }
 
 /// Check if any Pokemon on the field has the Damp ability
+/// This prevents explosive moves from working entirely
 fn has_damp_ability(state: &BattleState) -> bool {
     // In Pokemon, Damp prevents explosion/self-destruct moves if any Pokemon on the field has it
     // Check only active Pokemon on both sides
@@ -137,9 +200,8 @@ fn has_damp_ability(state: &BattleState) -> bool {
             if let Some(index) = active_index {
                 if let Some(pokemon) = side.pokemon.get(index) {
                     // Only check active Pokemon that are not fainted and have ability not suppressed
-                    // Check both "Damp" and "damp" for case insensitivity
                     if pokemon.hp > 0 && !pokemon.ability_suppressed && 
-                       (pokemon.ability == "Damp" || pokemon.ability == "damp") {
+                       crate::utils::normalize_name(&pokemon.ability) == "damp" {
                         return true;
                     }
                 }

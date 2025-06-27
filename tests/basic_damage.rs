@@ -13,10 +13,12 @@ mod utils;
 
 use std::collections::HashMap;
 
-// Critical hit constants for tests
-const GEN9_BASE_CRIT_CHANCE: f32 = 1.0 / 16.0; // 6.25%
-const GEN2_BASE_CRIT_CHANCE: f32 = 1.0 / 16.0; // 6.25%
-const GEN4_CRIT_MULTIPLIER: f32 = 1.5;  // Gen 4+ crit multiplier
+// Import critical hit constants from centralized location
+use tapu_simu::constants::moves::{
+    GEN7_9_BASE_CRIT_RATE as GEN9_BASE_CRIT_CHANCE,
+    GEN2_BASE_CRIT_RATE as GEN2_BASE_CRIT_CHANCE,
+    CRITICAL_HIT_MULTIPLIER as GEN4_CRIT_MULTIPLIER,
+};
 use tapu_simu::core::battle_format::{BattlePosition, SideReference};
 use tapu_simu::core::instructions::{
     BattleInstruction, BattleInstructions, PokemonInstruction, SideCondition, Stat,
@@ -370,15 +372,26 @@ fn test_wickedblow_gen8() {
 fn test_crit_roll_ignores_other_boost() {
     let mut defense_boosts = HashMap::new();
     defense_boosts.insert(Stat::Defense, 2); // +2 Defense boost
-    let expected_instructions = vec![BattleInstructions {
-        percentage: 100.0, // Persian + Slash = guaranteed crit in Gen 1
-        instruction_list: vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
-            target: BattlePosition::new(SideReference::SideTwo, 0),
-            amount: 133, // Gen 1 crit damage ignoring defense boost
-            previous_hp: None,
-        })],
-        affected_positions: vec![BattlePosition::new(SideReference::SideTwo, 0)],
-    }];
+    let expected_instructions = vec![
+        BattleInstructions {
+            percentage: 0.390625, // Non-crit (1/256)
+            instruction_list: vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                target: BattlePosition::new(SideReference::SideTwo, 0),
+                amount: 36, // Non-crit damage
+                previous_hp: None,
+            })],
+            affected_positions: vec![BattlePosition::new(SideReference::SideTwo, 0)],
+        },
+        BattleInstructions {
+            percentage: 99.609375, // Persian + Slash = 255/256 crit rate in Gen 1
+            instruction_list: vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                target: BattlePosition::new(SideReference::SideTwo, 0),
+                amount: 133, // Gen 1 crit damage ignoring defense boost
+                previous_hp: None,
+            })],
+            affected_positions: vec![BattlePosition::new(SideReference::SideTwo, 0)],
+        },
+    ];
 
     TestBuilder::new_with_generation("gen1 crit ignores other boost", Generation::Gen1)
         .unwrap()
@@ -399,15 +412,26 @@ fn test_crit_roll_ignores_other_boost() {
 fn test_crit_roll_ignores_other_boost_negative_boost() {
     let mut defense_boosts = HashMap::new();
     defense_boosts.insert(Stat::Defense, -2); // -2 Defense boost
-    let expected_instructions = vec![BattleInstructions {
-        percentage: 100.0, // Persian + Slash = guaranteed crit in Gen 1
-        instruction_list: vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
-            target: BattlePosition::new(SideReference::SideTwo, 0),
-            amount: 133, // Gen 1 crit damage ignoring defense boost
-            previous_hp: None,
-        })],
-        affected_positions: vec![BattlePosition::new(SideReference::SideTwo, 0)],
-    }];
+    let expected_instructions = vec![
+        BattleInstructions {
+            percentage: 0.390625, // Non-crit (1/256)
+            instruction_list: vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                target: BattlePosition::new(SideReference::SideTwo, 0),
+                amount: 136, // Non-crit damage with -2 Defense
+                previous_hp: None,
+            })],
+            affected_positions: vec![BattlePosition::new(SideReference::SideTwo, 0)],
+        },
+        BattleInstructions {
+            percentage: 99.609375, // Persian + Slash = 255/256 crit rate in Gen 1
+            instruction_list: vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                target: BattlePosition::new(SideReference::SideTwo, 0),
+                amount: 133, // Gen 1 crit damage ignoring defense boost
+                previous_hp: None,
+            })],
+            affected_positions: vec![BattlePosition::new(SideReference::SideTwo, 0)],
+        },
+    ];
 
     TestBuilder::new_with_generation("gen1 crit ignores other boost", Generation::Gen1)
         .unwrap()
@@ -428,15 +452,26 @@ fn test_crit_roll_ignores_other_boost_negative_boost() {
 fn test_crit_roll_ignores_own_boost() {
     let mut attack_boosts = HashMap::new();
     attack_boosts.insert(Stat::Attack, 2); // +2 Attack boost
-    let expected_instructions = vec![BattleInstructions {
-        percentage: 100.0, // Persian + Slash = guaranteed crit in Gen 1
-        instruction_list: vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
-            target: BattlePosition::new(SideReference::SideTwo, 0),
-            amount: 133, // Gen 1 crit damage ignoring defense boost
-            previous_hp: None,
-        })],
-        affected_positions: vec![BattlePosition::new(SideReference::SideTwo, 0)],
-    }];
+    let expected_instructions = vec![
+        BattleInstructions {
+            percentage: 0.390625, // Non-crit (1/256)
+            instruction_list: vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                target: BattlePosition::new(SideReference::SideTwo, 0),
+                amount: 136, // Non-crit damage with +2 Attack
+                previous_hp: None,
+            })],
+            affected_positions: vec![BattlePosition::new(SideReference::SideTwo, 0)],
+        },
+        BattleInstructions {
+            percentage: 99.609375, // Persian + Slash = 255/256 crit rate in Gen 1
+            instruction_list: vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                target: BattlePosition::new(SideReference::SideTwo, 0),
+                amount: 133, // Gen 1 crit damage ignoring attack boost
+                previous_hp: None,
+            })],
+            affected_positions: vec![BattlePosition::new(SideReference::SideTwo, 0)],
+        },
+    ];
 
     TestBuilder::new_with_generation("gen1 crit ignores other boost", Generation::Gen1)
         .unwrap()
@@ -455,15 +490,26 @@ fn test_crit_roll_ignores_own_boost() {
 /// Test Gen 1 crit roll ignores Reflect
 #[test]
 fn test_crit_roll_ignores_reflect() {
-    let expected_instructions = vec![BattleInstructions {
-        percentage: 100.0, // Persian + Slash = guaranteed crit in Gen 1
-        instruction_list: vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
-            target: BattlePosition::new(SideReference::SideTwo, 0),
-            amount: 133,
-            previous_hp: None,
-        })],
-        affected_positions: vec![BattlePosition::new(SideReference::SideTwo, 0)],
-    }];
+    let expected_instructions = vec![
+        BattleInstructions {
+            percentage: 0.390625, // Non-crit (1/256)
+            instruction_list: vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                target: BattlePosition::new(SideReference::SideTwo, 0),
+                amount: 69, // Non-crit damage with Reflect
+                previous_hp: None,
+            })],
+            affected_positions: vec![BattlePosition::new(SideReference::SideTwo, 0)],
+        },
+        BattleInstructions {
+            percentage: 99.609375, // Persian + Slash = 255/256 crit rate in Gen 1
+            instruction_list: vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                target: BattlePosition::new(SideReference::SideTwo, 0),
+                amount: 133, // Gen 1 crit damage ignoring Reflect
+                previous_hp: None,
+            })],
+            affected_positions: vec![BattlePosition::new(SideReference::SideTwo, 0)],
+        },
+    ];
 
     TestBuilder::new_with_generation("gen1 crit ignores other boost", Generation::Gen1)
         .unwrap()

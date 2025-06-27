@@ -10,29 +10,16 @@ use crate::utils::normalize_name;
 use crate::engine::combat::damage_context::{DamageContext, DamageResult, DamageEffect};
 use crate::engine::combat::type_effectiveness::{PokemonType, TypeChart};
 use crate::engine::combat::damage::DamageRolls;
+use crate::constants::moves::{CRITICAL_HIT_MULTIPLIER_LEGACY, GEN2_BASE_CRIT_RATE, GEN2_HIGH_CRIT_RATE, GEN2_HIGH_CRIT_MOVES};
 
 /// Calculate Gen 2 critical hit probability using fixed stages
 /// Formula: Uses fixed stages - base 17/256 (~6.64%), high crit moves use +1 stage (1/8 = 12.5%)
 pub fn critical_hit_probability_gen2(attacker: &Pokemon, move_data: &MoveData) -> f32 {
-    // Gen 2 base critical hit rate: 17/256 ≈ 6.64%
-    const GEN2_BASE_CRIT_RATE: f32 = 17.0 / 256.0;
-    // Gen 2 +1 stage critical hit rate: 1/8 = 12.5%
-    const GEN2_HIGH_CRIT_RATE: f32 = 1.0 / 8.0;
-    
     // Normalize move name for comparison
     let move_name = normalize_name(&move_data.name);
     
-    // High critical hit ratio moves in Gen 2
-    let high_crit_moves = [
-        "slash",
-        "razorleaf", 
-        "crabhammer",
-        "karatechop",
-        "aerialace", // Added in Gen 3 but should work in Gen 2 fallback
-    ];
-    
     // Gen 2 uses fixed stages, not multipliers
-    if high_crit_moves.contains(&move_name.as_str()) {
+    if GEN2_HIGH_CRIT_MOVES.contains(&move_name.as_str()) {
         // High crit rate: +1 stage = 1/8 = 12.5%
         GEN2_HIGH_CRIT_RATE
     } else {
@@ -173,7 +160,7 @@ pub fn calculate_damage_gen2(context: &DamageContext, damage_rolls: DamageRolls)
 
     // Gen 2 critical hit multiplier is 2.0x and applied BEFORE the +2
     if context.move_info.is_critical {
-        base_damage *= 2.0;
+        base_damage *= CRITICAL_HIT_MULTIPLIER_LEGACY;
         effects.push(DamageEffect::Critical);
     }
     

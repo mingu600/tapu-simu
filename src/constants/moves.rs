@@ -34,8 +34,115 @@ pub const DAMAGE_ROLL_INCREMENT: f32 = 0.01;
 /// Damage roll start percentage (85%)
 pub const DAMAGE_ROLL_START: f32 = 0.85;
 
-/// Critical hit multiplier for most generations
+// =============================================================================
+// CRITICAL HIT CONSTANTS
+// =============================================================================
+
+/// Critical hit multiplier for Gen 4+ (1.5x)
 pub const CRITICAL_HIT_MULTIPLIER: f32 = 1.5;
+
+/// Critical hit multiplier for Gen 1-3 (2.0x)
+pub const CRITICAL_HIT_MULTIPLIER_LEGACY: f32 = 2.0;
+
+// Generation-specific base critical hit rates
+/// Gen 1 base critical hit calculation uses Speed/2/256
+pub const GEN1_CRIT_SPEED_DIVISOR: i16 = 2;
+pub const GEN1_CRIT_RATE_DIVISOR: f32 = 256.0;
+pub const GEN1_HIGH_CRIT_MULTIPLIER: i16 = 8;
+pub const GEN1_MAX_CRIT_RATE: f32 = 255.0 / 256.0;
+
+/// Gen 2 base critical hit rate (17/256 ≈ 6.64%)
+pub const GEN2_BASE_CRIT_RATE: f32 = 17.0 / 256.0;
+/// Gen 2 high critical hit rate (+1 stage = 1/8 = 12.5%)
+pub const GEN2_HIGH_CRIT_RATE: f32 = 1.0 / 8.0;
+
+/// Gen 3-5 base critical hit rate (1/16 = 6.25%)
+pub const GEN3_5_BASE_CRIT_RATE: f32 = 1.0 / 16.0;
+
+/// Gen 6 base critical hit rate (1/16 = 6.25%)
+pub const GEN6_BASE_CRIT_RATE: f32 = 1.0 / 16.0;
+
+/// Gen 7-9 base critical hit rate (1/24 ≈ 4.17%)
+pub const GEN7_9_BASE_CRIT_RATE: f32 = 1.0 / 24.0;
+
+// Critical hit stage probabilities for different generations
+/// Gen 2 critical hit stage rates
+pub const GEN2_CRIT_STAGES: &[f32] = &[
+    17.0 / 256.0,  // Stage 0: ~6.64%
+    1.0 / 8.0,     // Stage 1: 12.5%
+    1.0 / 4.0,     // Stage 2: 25%
+    85.0 / 256.0,  // Stage 3: ~33.2%
+    1.0 / 2.0,     // Stage 4+: 50% (cap)
+];
+
+/// Gen 3-5 critical hit stage rates
+pub const GEN3_5_CRIT_STAGES: &[f32] = &[
+    1.0 / 16.0,    // Stage 0: 6.25%
+    1.0 / 8.0,     // Stage 1: 12.5%
+    1.0 / 4.0,     // Stage 2: 25%
+    1.0 / 3.0,     // Stage 3: ~33.33%
+    1.0 / 2.0,     // Stage 4+: 50% (cap)
+];
+
+/// Gen 6 critical hit stage rates
+pub const GEN6_CRIT_STAGES: &[f32] = &[
+    1.0 / 16.0,    // Stage 0: 6.25%
+    1.0 / 8.0,     // Stage 1: 12.5%
+    1.0 / 2.0,     // Stage 2: 50%
+    1.0,           // Stage 3+: 100% (always crit)
+];
+
+/// Gen 7-9 critical hit stage rates
+pub const GEN7_9_CRIT_STAGES: &[f32] = &[
+    1.0 / 24.0,    // Stage 0: ~4.17%
+    1.0 / 8.0,     // Stage 1: 12.5%
+    1.0 / 2.0,     // Stage 2: 50%
+    1.0,           // Stage 3+: 100% (always crit)
+];
+
+// High critical hit ratio moves (+1 crit stage)
+pub const HIGH_CRIT_MOVES: &[&str] = &[
+    "slash",
+    "razorleaf",
+    "crabhammer", 
+    "karatechop",
+    "aerialace",
+    "airslash",
+    "attackorder",
+    "crosschop",
+    "leafblade",
+    "nightslash",
+    "psychocut",
+    "shadowclaw",
+    "spacialrend",
+    "stoneedge",
+];
+
+// Guaranteed critical hit moves (always crit)
+pub const GUARANTEED_CRIT_MOVES: &[&str] = &[
+    "frostbreath",
+    "stormthrow", 
+    "wickedblow",
+    "surgingstrikes",
+    "flowertrick",
+];
+
+// Gen 1 high critical hit moves (different list than modern)
+pub const GEN1_HIGH_CRIT_MOVES: &[&str] = &[
+    "slash",
+    "razorleaf", 
+    "crabhammer",
+    "karatechop",
+];
+
+// Gen 2 high critical hit moves
+pub const GEN2_HIGH_CRIT_MOVES: &[&str] = &[
+    "slash",
+    "razorleaf", 
+    "crabhammer",
+    "karatechop",
+    "aerialace", // Added in Gen 3 but should work in Gen 2 fallback
+];
 
 // =============================================================================
 // MOVE POWER CONSTANTS
