@@ -5,7 +5,7 @@
 
 use crate::core::battle_format::BattlePosition;
 use crate::core::move_choice::MoveIndex;
-use crate::types::{PokemonStatus, VolatileStatus};
+use crate::types::{PokemonStatus, VolatileStatus, Moves};
 use serde::{Deserialize, Serialize};
 
 
@@ -94,13 +94,13 @@ pub enum StatusInstruction {
     /// Set the last used move
     SetLastUsedMove {
         target: BattlePosition,
-        move_name: String,
-        previous_move: Option<String>,
+        move_name: Moves,
+        previous_move: Option<Moves>,
     },
     /// Restore last used move (for Disable ending)
     RestoreLastUsedMove {
         target: BattlePosition,
-        move_name: String,
+        move_name: Moves,
     },
 }
 

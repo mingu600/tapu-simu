@@ -10,25 +10,23 @@ The simulator module consists of four main components:
 - **Player System**: AI implementations and player trait
 - **Benchmarking**: Performance analysis and statistical tools
 
-## Simulator (`Simulator`)
+## Primary Interface
 
-Main facade providing clean, ergonomic APIs for creating and running Pokemon battles.
+Main entry point providing ergonomic APIs for battle execution and analysis.
 
-### Core Structure
+### Core Capabilities
 
-**Simulator Components:**
-```rust
-pub struct Simulator {
-    data: GameDataRepository,
-    config: Config,
-}
-```
+**Primary Functions:**
+- Battle creation and execution with customizable parameters
+- Team generation and management with random battle support
+- Performance benchmarking and statistical analysis
+- Multi-format support (Singles, Doubles, VGC, Triples)
 
 **Key Features:**
 - Centralized data and configuration management
-- Fluent API for battle construction
-- Built-in benchmarking and performance analysis
-- Integration with builder patterns
+- Integration with builder patterns for flexible setup
+- Built-in player implementations for testing and evaluation
+- Comprehensive result tracking and analysis
 
 ### Initialization
 

@@ -541,10 +541,146 @@ impl BattleState {
                     }
                 }
             }
-            // Handle other Pokemon instructions as needed
-            _ => {
-                // For now, log unhandled instructions for debugging
-                eprintln!("Unhandled Pokemon instruction: {:?}", instruction);
+            PokemonInstruction::MultiTargetDamage { target_damages, .. } => {
+                for (target, damage) in target_damages {
+                    if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
+                        pokemon.hp = pokemon.hp.saturating_sub(*damage);
+                        if pokemon.hp == 0 {
+                            self.check_and_handle_faint(*target);
+                        }
+                    }
+                }
+            }
+            PokemonInstruction::ChangeAbility { target, new_ability, .. } => {
+                if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
+                    pokemon.ability = *new_ability;
+                }
+            }
+            PokemonInstruction::ToggleAbility { target, suppressed, .. } => {
+                if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
+                    pokemon.ability_suppressed = *suppressed;
+                }
+            }
+            PokemonInstruction::ChangeItem { target, new_item, .. } => {
+                if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
+                    pokemon.item = *new_item;
+                }
+            }
+            PokemonInstruction::ChangeType { target, new_types, .. } => {
+                if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
+                    use crate::types::PokemonType;
+                    use crate::types::from_string::FromNormalizedString;
+                    pokemon.types = new_types.iter()
+                        .filter_map(|type_str| PokemonType::from_normalized_str(&crate::utils::normalize_name(type_str)))
+                        .collect();
+                }
+            }
+            PokemonInstruction::FormeChange { target, new_forme, .. } => {
+                if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
+                    pokemon.forme = Some(new_forme.clone());
+                }
+            }
+            PokemonInstruction::ToggleTerastallized { target, terastallized, tera_type, .. } => {
+                if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
+                    pokemon.is_terastallized = *terastallized;
+                    if let Some(tera_type) = tera_type {
+                        pokemon.tera_type = Some(*tera_type);
+                    }
+                }
+            }
+            PokemonInstruction::ChangeSubstituteHealth { target, new_health, .. } => {
+                if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
+                    pokemon.substitute_health = *new_health;
+                    if *new_health <= 0 {
+                        pokemon.volatile_statuses.remove(crate::types::VolatileStatus::Substitute);
+                    }
+                }
+            }
+            PokemonInstruction::SetFutureSight { target, attacker_position, damage_amount, turns_remaining, move_name, .. } => {
+                let side_index = match target.side {
+                    crate::core::battle_format::SideReference::SideOne => 0,
+                    crate::core::battle_format::SideReference::SideTwo => 1,
+                };
+                if side_index < self.sides.len() {
+                    self.sides[side_index].future_sight.insert(
+                        target.slot,
+                        (*attacker_position, *damage_amount, *turns_remaining, move_name.clone())
+                    );
+                }
+            }
+            PokemonInstruction::DecrementFutureSight { target, .. } => {
+                let side_index = match target.side {
+                    crate::core::battle_format::SideReference::SideOne => 0,
+                    crate::core::battle_format::SideReference::SideTwo => 1,
+                };
+                if side_index < self.sides.len() {
+                    // First, get and update the future sight data
+                    let should_apply_damage = if let Some((_, damage, turns, _)) = self.sides[side_index].future_sight.get_mut(&target.slot) {
+                        *turns = turns.saturating_sub(1);
+                        if *turns == 0 {
+                            Some(*damage)
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    };
+                    
+                    // Then apply damage if needed
+                    if let Some(damage) = should_apply_damage {
+                        if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
+                            pokemon.hp = pokemon.hp.saturating_sub(damage);
+                            if pokemon.hp == 0 {
+                                self.check_and_handle_faint(*target);
+                            }
+                        }
+                        self.sides[side_index].future_sight.remove(&target.slot);
+                    }
+                }
+            }
+            PokemonInstruction::ChangeDamageDealt { side_position, damage_amount, move_category, hit_substitute, .. } => {
+                let side_index = match side_position.side {
+                    crate::core::battle_format::SideReference::SideOne => 0,
+                    crate::core::battle_format::SideReference::SideTwo => 1,
+                };
+                if side_index < self.sides.len() {
+                    self.sides[side_index].last_damage_taken = *damage_amount;
+                    self.sides[side_index].last_move_category = Some(*move_category);
+                    self.sides[side_index].last_hit_substitute = *hit_substitute;
+                }
+            }
+            PokemonInstruction::ItemTransfer { from, to, item, .. } => {
+                // Get the item from the from Pokemon and transfer it to the to Pokemon
+                let item_to_transfer = if let Some(from_pokemon) = self.get_pokemon_at_position_mut(*from) {
+                    let item = from_pokemon.item.take();
+                    item
+                } else {
+                    None
+                };
+                
+                if let Some(to_pokemon) = self.get_pokemon_at_position_mut(*to) {
+                    use crate::types::Items;
+                    use crate::types::from_string::FromNormalizedString;
+                    to_pokemon.item = Items::from_normalized_str(&crate::utils::normalize_name(item));
+                }
+            }
+            PokemonInstruction::ForceSwitch { target, .. } => {
+                // Mark the Pokemon as needing to switch out
+                if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
+                    pokemon.must_switch = true;
+                }
+            }
+            PokemonInstruction::DamageSubstitute { target, amount, .. } => {
+                if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
+                    pokemon.substitute_health = pokemon.substitute_health.saturating_sub(*amount);
+                    if pokemon.substitute_health <= 0 {
+                        pokemon.volatile_statuses.remove(crate::types::VolatileStatus::Substitute);
+                        pokemon.substitute_health = 0;
+                    }
+                }
+            }
+            PokemonInstruction::Message { .. } => {
+                // Messages are for logging/debugging, no state change needed
             }
         }
         
@@ -782,9 +918,87 @@ impl BattleState {
                     }
                 }
             }
-            // Handle other status instructions as needed
-            _ => {
-                eprintln!("Unhandled Status instruction: {:?}", instruction);
+            StatusInstruction::Apply { target, status, duration, .. } => {
+                if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
+                    pokemon.status = *status;
+                    pokemon.status_duration = *duration;
+                }
+            }
+            StatusInstruction::Remove { target, .. } => {
+                if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
+                    pokemon.status = PokemonStatus::None;
+                    pokemon.status_duration = None;
+                }
+            }
+            StatusInstruction::ChangeDuration { target, new_duration, .. } => {
+                if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
+                    pokemon.status_duration = *new_duration;
+                }
+            }
+            StatusInstruction::ApplyVolatile { target, status, duration, .. } => {
+                if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
+                    pokemon.volatile_statuses.insert(*status);
+                    if let Some(duration) = duration {
+                        pokemon.volatile_status_durations.insert(*status, *duration);
+                    }
+                }
+            }
+            StatusInstruction::RemoveVolatile { target, status, .. } => {
+                if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
+                    pokemon.volatile_statuses.remove(*status);
+                    pokemon.volatile_status_durations.remove(status);
+                }
+            }
+            StatusInstruction::ChangeVolatileDuration { target, status, new_duration, .. } => {
+                if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
+                    if let Some(new_duration) = new_duration {
+                        pokemon.volatile_status_durations.insert(*status, *new_duration);
+                    } else {
+                        pokemon.volatile_status_durations.remove(status);
+                    }
+                }
+            }
+            StatusInstruction::SetSleepTurns { target, turns, .. } => {
+                if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
+                    pokemon.sleep_turns = Some(*turns);
+                }
+            }
+            StatusInstruction::SetRestTurns { target, turns, .. } => {
+                if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
+                    pokemon.rest_turns = Some(*turns);
+                }
+            }
+            StatusInstruction::DecrementRestTurns { target, .. } => {
+                if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
+                    if let Some(rest_turns) = pokemon.rest_turns {
+                        pokemon.rest_turns = Some(rest_turns.saturating_sub(1));
+                        if pokemon.rest_turns == Some(0) {
+                            pokemon.rest_turns = None;
+                            pokemon.status = PokemonStatus::None;
+                            pokemon.status_duration = None;
+                        }
+                    }
+                }
+            }
+            StatusInstruction::DisableMove { target, move_index, duration, .. } => {
+                if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
+                    pokemon.disabled_moves.insert(*move_index, *duration);
+                }
+            }
+            StatusInstruction::EnableMove { target, move_index, .. } => {
+                if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
+                    pokemon.disabled_moves.remove(move_index);
+                }
+            }
+            StatusInstruction::SetLastUsedMove { target, move_name, .. } => {
+                if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
+                    pokemon.last_used_move = Some(move_name.clone());
+                }
+            }
+            StatusInstruction::RestoreLastUsedMove { target, move_name, .. } => {
+                if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
+                    pokemon.last_used_move = Some(move_name.clone());
+                }
             }
         }
     }
@@ -1262,5 +1476,18 @@ impl BattleState {
         }
 
         output
+    }
+
+    /// Check if a Pokemon fainted and handle faint-related effects
+    fn check_and_handle_faint(&mut self, position: BattlePosition) {
+        if let Some(pokemon) = self.get_pokemon_at_position(position) {
+            if pokemon.hp <= 0 {
+                // Pokemon has fainted - could trigger additional effects here
+                // For now, just ensure HP is exactly 0
+                if let Some(pokemon_mut) = self.get_pokemon_at_position_mut(position) {
+                    pokemon_mut.hp = 0;
+                }
+            }
+        }
     }
 }

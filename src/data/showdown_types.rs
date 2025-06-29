@@ -19,7 +19,10 @@ where
         "Physical" => Ok(MoveCategory::Physical),
         "Special" => Ok(MoveCategory::Special),
         "Status" => Ok(MoveCategory::Status),
-        _ => Ok(MoveCategory::Status), // Default fallback
+        _ => {
+            eprintln!("Warning: Unknown move category '{}', treating as Status", s);
+            Ok(MoveCategory::Status)
+        }
     }
 }
 
@@ -43,7 +46,10 @@ where
         "any" => Ok(MoveTarget::Any),
         "randomNormal" => Ok(MoveTarget::RandomNormal),
         "scripted" => Ok(MoveTarget::Scripted),
-        _ => Ok(MoveTarget::Normal), // Default fallback
+        _ => {
+            eprintln!("Warning: Unknown move target '{}', treating as Normal", s);
+            Ok(MoveTarget::Normal)
+        }
     }
 }
 
@@ -60,7 +66,10 @@ where
         "badlypoison" => PokemonStatus::BadlyPoisoned,
         "toxic" => PokemonStatus::BadlyPoisoned,
         "sleep" => PokemonStatus::Sleep,
-        _ => PokemonStatus::None,
+        _ => {
+            eprintln!("Warning: Unknown pokemon status '{}', treating as None", s);
+            PokemonStatus::None
+        }
     }))
 }
 
@@ -82,7 +91,10 @@ where
         "encore" => VolatileStatus::Encore,
         "taunt" => VolatileStatus::Taunt,
         "partiallytrapped" => VolatileStatus::PartiallyTrapped,
-        _ => VolatileStatus::Confusion, // Default fallback
+        _ => {
+            eprintln!("Warning: Unknown volatile status '{}', treating as Confusion", s);
+            VolatileStatus::Confusion
+        }
     }))
 }
 

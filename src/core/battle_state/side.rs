@@ -77,6 +77,14 @@ pub struct BattleSide {
     pub damage_dealt: DamageDealt,
     /// Whether Terastallization has been used this battle (Gen 9+ only)
     pub tera_used: bool,
+    /// Future Sight attacks scheduled for specific slots (attacker_position, damage_amount, turns_remaining, move_name)
+    pub future_sight: HashMap<usize, (crate::core::battle_format::BattlePosition, i16, u8, String)>,
+    /// Last damage taken (for Counter/Mirror Coat)
+    pub last_damage_taken: i16,
+    /// Category of last move that dealt damage
+    pub last_move_category: Option<MoveCategory>,
+    /// Whether last damage hit a substitute
+    pub last_hit_substitute: bool,
 }
 
 impl BattleSide {
@@ -91,6 +99,10 @@ impl BattleSide {
             future_sight_attacks: HashMap::new(),
             damage_dealt: DamageDealt::new(),
             tera_used: false,
+            future_sight: HashMap::new(),
+            last_damage_taken: 0,
+            last_move_category: None,
+            last_hit_substitute: false,
         }
     }
 

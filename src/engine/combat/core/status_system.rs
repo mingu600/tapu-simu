@@ -332,7 +332,11 @@ pub fn status_move_with_stats(
                 if *change != 0 {
                     let mut stat_changes = StatBoostArray::default();
                     stat_changes.insert(*stat, *change);
-                    let previous_boosts = std::collections::HashMap::new(); // TODO: Get actual previous boosts
+                    let previous_boosts = if let Some(pokemon) = state.get_pokemon_at_position(target_position) {
+                        pokemon.stat_boosts.to_hashmap()
+                    } else {
+                        std::collections::HashMap::new()
+                    };
                     instructions.push(BattleInstruction::Stats(StatsInstruction::BoostStats {
                         target: target_position,
                         stat_changes: stat_changes.to_hashmap(),
@@ -444,8 +448,8 @@ pub fn apply_volatile_status_effect(
 
     // Get previous state for the instruction
     let previous_had_status = target.volatile_statuses.contains(application.status);
-    // Duration tracking is now handled within VolatileStatusStorage
-    let previous_duration = None; // Will be properly implemented later
+    // Get the current duration if the status exists
+    let previous_duration = target.volatile_status_durations.get(&application.status).copied();
 
     // Create the volatile status instruction
     let instruction = BattleInstruction::Status(StatusInstruction::ApplyVolatile {

@@ -1,109 +1,252 @@
 # Core Module Documentation
 
-The core module implements Tapu Simu's fundamental battle architecture with clean separation of concerns and explicit multi-format support. Every component is designed with position-based targeting and format awareness as first-class features.
+The core module implements Tapu Simu's fundamental battle architecture with clean separation of concerns and explicit multi-format support. Every component is designed with position-based targeting, format awareness, and comprehensive type safety as first-class features.
 
 ## Architecture Overview
 
-The core module provides the foundational types and systems for Pokemon battle simulation:
-- **Battle Orchestration**: Environment management and turn flow
-- **Format Definition**: Multi-format support with position-based targeting  
-- **State Management**: Immutable battle state with instruction-based mutations
-- **Move Selection**: Explicit targeting system for all battle formats
-- **Instruction System**: Atomic state modifications with rollback support
+The core module (`src/core/`) provides the foundational types and systems for Pokemon battle simulation:
 
-## Key Components
+- **Battle Orchestration** - Environment management and turn flow (`battle_environment.rs`)
+- **Format Definition** - Multi-format support with position-based targeting (`battle_format.rs`)
+- **State Management** - Immutable battle state with instruction-based mutations (`battle_state/`)
+- **Move Selection** - Explicit targeting system with type-safe move references (`move_choice.rs`)
+- **Instruction System** - Atomic state modifications with comprehensive rollback support (`instructions/`)
+- **Targeting System** - Unified targeting resolution and validation (`targeting.rs`)
 
-### Battle Environment (`battle_environment.rs`)
-
-The battle orchestration layer managing turn flow, player AI, and battle outcomes.
-
-**Core Types:**
-- `Player` trait: AI interface with `choose_move()` and `name()` methods
-- `RandomPlayer`: Selects random valid moves
-- `FirstMovePlayer`: Always chooses the first available move
-- `DamageMaximizer`: Attempts to maximize damage output
-- `BattleEnvironment`: Main battle orchestrator
-- `BattleResult`: Complete battle outcome with turn-by-turn history
-- `TurnInfo`: Individual turn data including moves, damage, and state changes
-
-**Battle Execution:**
-- `run_battle_from_state()`: Execute single battle from initial state
-- `run_parallel_battles_with_states()`: Thread-safe parallel execution
-- `sample_instruction_index()`: Probabilistic instruction sampling for damage rolls
-
-**Logging & Export:**
-- Complete Showdown replay export with format-specific adaptations
-- Team statistics tracking (damage dealt, healing, etc.)
-- Move history and turn progression logging
+## Core Components
 
 ### Battle Format (`battle_format.rs`)
 
 Format definition and position management system supporting Singles, Doubles, VGC, and Triples.
 
 **Format Types:**
-- `FormatType`: Singles (1), Doubles (2), VGC (2), Triples (3) with active Pokemon counts
-- `BattleFormat`: Complete format specification with generation, clauses, and ban lists
-- Built-in formats: Gen 1-9 OU, VGC 2023-2024, Random Battle variants
-
-**Position System:**
-- `BattlePosition`: Explicit position addressing with `SideReference` and `slot: u8`
-- `SideReference`: Type-safe side identification (SideOne, SideTwo)
-- `all_positions()`: Generate all valid positions for current format
-- `ally_position()`: Get ally position for doubles/triples
-- `opponent_positions()`: Get all opponent positions based on format
-
-**Format Features:**
-- **Clauses**: Sleep, Species, Item, Evasion, OHKO bans
-- **Ban Lists**: Species, moves, items, abilities with generation-specific enforcement
-- **Spread Moves**: Format-aware spread move detection
-- **Position Validation**: Ensure targeting legality for format constraints
-
-### Move Choice (`move_choice.rs`)
-
-Explicit move selection system with comprehensive targeting support.
-
-**Move Choice Types:**
 ```rust
-pub enum MoveChoice {
-    Move(MoveIndex, Vec<BattlePosition>),     // Standard move with targets
-    MoveTera(MoveIndex, PokemonType, Vec<BattlePosition>), // Gen 9+ Terastallization
-    Switch(PokemonIndex),                      // Switch to party Pokemon
-    None,                                      // No action (forced switch, etc.)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum FormatType {
+    Singles,    // 1 active Pokemon per side
+    Doubles,    // 2 active Pokemon per side  
+    Vgc,        // 2 active Pokemon per side with VGC rules
+    Triples,    // 3 active Pokemon per side (deprecated in modern Pokemon)
+}
+
+impl FormatType {
+    pub fn active_pokemon_count(&self) -> usize {
+        match self {
+            FormatType::Singles => 1,
+            FormatType::Doubles | FormatType::Vgc => 2,
+            FormatType::Triples => 3,
+        }
+    }
+
+    pub fn supports_spread_moves(&self) -> bool {
+        match self {
+            FormatType::Singles => false,
+            FormatType::Doubles | FormatType::Vgc | FormatType::Triples => true,
+        }
+    }
 }
 ```
 
-**Type Safety:**
-- `MoveIndex`: Type-safe move slot addressing (M0, M1, M2, M3)
-- `PokemonIndex`: Type-safe team position addressing (P0-P5)
-- `PokemonType`: Complete type system with Gen 9 Terastallization support
+**Position System:**
+```rust
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct BattlePosition {
+    pub side: SideReference,
+    pub slot: u8,
+}
 
-**Targeting Features:**
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum SideReference {
+    SideOne,
+    SideTwo,
+}
+```
+
+**BattleFormat Features:**
+- Complete format specification with generation, clauses, and ban lists
+- Built-in formats: Gen 1-9 OU, VGC 2023-2024, Random Battle variants
+- Clause system: Sleep, Species, Item, Evasion, OHKO bans
+- Ban list management for species, moves, items, abilities
+- Format-aware spread move detection and validation
+
+### Move Choice (`move_choice.rs`)
+
+Explicit move selection system with comprehensive targeting support and type safety.
+
+**Move Choice Types:**
+```rust
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum MoveChoice {
+    /// Standard move with explicit targeting
+    Move {
+        move_index: MoveIndex,
+        target_positions: Vec<BattlePosition>,
+    },
+    /// Gen 9+ Terastallization moves
+    MoveTera {
+        move_index: MoveIndex,
+        target_positions: Vec<BattlePosition>,
+        tera_type: PokemonType,
+    },
+    /// Switch to party Pokemon by index
+    Switch(PokemonIndex),
+    /// No action (speed calculations, forced moves)
+    None,
+}
+```
+
+**Type Safety System:**
+```rust
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum MoveIndex {
+    M0, M1, M2, M3,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum PokemonIndex {
+    P0, P1, P2, P3, P4, P5,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum PokemonType {
+    Normal, Fire, Water, Electric, Grass, Ice, Fighting, Poison,
+    Ground, Flying, Psychic, Bug, Rock, Ghost, Dragon, Dark,
+    Steel, Fairy, // Gen 9+ includes all 18 types for Terastallization
+}
+```
+
+**Move Choice Features:**
 - Multi-target support through `Vec<BattlePosition>`
-- Spread move detection via `is_spread_move()` and `affects_allies()`
-- Target validation against battle state and format constraints
+- Type-safe move slot addressing with `MoveIndex` enum
+- Team position addressing with `PokemonIndex` enum
+- Gen 9+ Terastallization support with type specification
+- Move validation against battle state and format constraints
 - Human-readable logging with position-aware formatting
 
-### Pokemon State (`pokemon_state.rs`)
+### Battle State (`battle_state/`)
 
-Complete Pokemon battle representation with context-aware stat calculations.
+Decomposed state management with immutable design and instruction-based mutations.
 
-**Core Types:**
-- `Pokemon`: Full battle Pokemon with stats, moves, status, and volatile conditions
-- `Move`: Battle move with PP, accuracy, targeting, category, and priority
-- `DamageInfo`: Turn-based damage tracking for counter moves
+#### Main State (`mod.rs`)
 
-**Stat System:**
-- Base stats with nature modifications
-- Stat boosts (-6 to +6) with tier-based multipliers
-- `get_effective_speed()`: Context-aware speed with Trick Room, paralysis, items
-- Weather, item, and ability stat modifications
-- IV/EV integration with level-based calculations
+**BattleState Structure:**
+```rust
+#[derive(Clone, Serialize)]
+pub struct BattleState {
+    /// The battle format determining rules and active Pokemon count
+    pub format: BattleFormat,
+    /// The two battle sides (always exactly 2)
+    pub sides: [BattleSide; 2],
+    /// Field conditions affecting the entire battlefield
+    pub field: FieldConditions,
+    /// Turn-related state information
+    pub turn_info: TurnState,
+    /// Generation-specific data repository
+    #[serde(skip)]
+    pub generation_repo: Arc<GenerationRepository>,
+    /// Game data repository  
+    #[serde(skip)]
+    pub game_data_repo: Arc<GameDataRepository>,
+}
+```
 
-**Battle Integration:**
-- Substitute health tracking and volatile status duration
-- Status condition management (Major: Burn/Paralysis/etc., Volatile: 60+ types)
+**State Operations:**
+- Immutable state design with instruction-based mutations
+- Multi-format initialization with comprehensive format support
+- Battle completion detection and winner determination
+- Format-aware move option generation
+- Repository pattern for data access separation
+
+#### Field Conditions (`field.rs`)
+
+**Weather System:**
+```rust
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WeatherState {
+    pub weather: Weather,
+    pub source_position: Option<BattlePosition>,
+    pub turns_remaining: Option<u8>,
+}
+```
+
+**Terrain System:**
+```rust
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TerrainState {
+    pub terrain: Terrain,
+    pub source_position: Option<BattlePosition>,
+    pub turns_remaining: Option<u8>,
+}
+```
+
+**Global Effects:**
+- `TrickRoomState`: Speed inversion with 5-turn duration
+- `GravityState`: Flying immunity removal and accuracy boost
+- Turn-based decrementation with automatic cleanup
+- Weather effects on damage, accuracy, and healing
+- Terrain effects on priority, status prevention, and damage boosts
+
+#### Side Management (`side.rs`)
+
+**BattleSide Structure:**
+```rust
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BattleSide {
+    /// Complete team (up to 6 Pokemon)
+    pub team: Vec<Pokemon>,
+    /// Mapping from battle slot to team index
+    pub active_positions: BTreeMap<u8, usize>,
+    /// Side-wide volatile status effects
+    pub volatile_status: SideVolatileStatus,
+    /// Damage tracking for counter moves
+    pub damage_dealt: DamageDealt,
+}
+```
+
+**Active Pokemon Management:**
+- Format-aware active Pokemon indexing
+- Switch validation against fainted Pokemon
+- Bench Pokemon availability checking
+- Wish and Future Sight effect scheduling
+
+#### Pokemon State (`pokemon.rs`)
+
+**Pokemon Structure:**
+```rust
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Pokemon {
+    // Core identity
+    pub species: PokemonName,
+    pub level: u8,
+    pub types: Vec<String>,
+    
+    // Battle stats
+    pub stats: StatSpread,
+    pub stat_boosts: StatBoostArray,
+    
+    // Moves and abilities
+    pub moves: [Option<Move>; 4],
+    pub ability: Option<Abilities>,
+    pub item: Option<Items>,
+    
+    // Battle state
+    pub hp: i16,
+    pub status: Option<PokemonStatus>,
+    pub volatile_status: HashMap<VolatileStatus, u8>,
+    
+    // Gen 9+ Terastallization
+    pub terastallized: bool,
+    pub tera_type: Option<PokemonType>,
+}
+```
+
+**Pokemon Features:**
+- Complete battle Pokemon with stats, moves, status, and volatile conditions
+- Context-aware stat calculations with field condition integration
+- Status condition management (Major and Volatile status types)
 - Item consumption tracking and ability suppression
 - Terastallization state with type changing mechanics (Gen 9+)
+- Type-safe ability and item references using strongly-typed enums
 
 ### Targeting System (`targeting.rs`)
 
@@ -121,152 +264,165 @@ Unified targeting resolution and validation for all move types.
 
 **Format Integration:**
 - Spread move handling with format-specific behavior
-- Active position validation against fainted Pokemon  
+- Active position validation against fainted Pokemon
 - Default targeting with format-aware fallbacks
 - Ally position detection for doubles/triples
 
-### Battle State (`battle_state/`)
-
-Decomposed state management with immutable design and instruction-based mutations.
-
-#### Main State (`mod.rs`)
-
-**BattleState Structure:**
-- `format: BattleFormat`: Current battle format and rules
-- `sides: [BattleSide; 2]`: Both player sides with teams and active Pokemon
-- `field: FieldConditions`: Weather, terrain, and global effects
-- `turn: TurnState`: Turn tracking with move order and damage history
-
-**State Operations:**
-- Immutable state with instruction-based mutations
-- Multi-format team initialization from data or pre-built Pokemon
-- `is_battle_over()` and `get_winner()`: Battle completion detection
-- `get_all_options()`: Format-aware move option generation
-
-#### Field Conditions (`field.rs`)
-
-**Weather System:**
-- `WeatherState`: Current weather with source position and turn duration
-- Auto-expiration after 5 turns (8 with items)
-- Weather effects on damage, accuracy, and healing
-
-**Terrain System:**  
-- `TerrainState`: Active terrain with source and duration tracking
-- Priority modification, status prevention, and damage boosts
-- Auto-expiration after 5 turns (8 with items)
-
-**Global Effects:**
-- `TrickRoomState`: Speed inversion with 5-turn duration
-- `GravityState`: Flying immunity removal and accuracy boost
-- Turn-based decrementation with automatic cleanup
-
-#### Side Management (`side.rs`)
-
-**BattleSide Structure:**
-- `team: Vec<Pokemon>`: Complete team (6 Pokemon)
-- `active_positions: BTreeMap<u8, usize>`: Slot-to-team mapping
-- `volatile_status: SideVolatileStatus`: Side-wide effects
-- `damage_dealt: DamageDealt`: Counter move tracking
-
-**Active Pokemon Management:**
-- Format-aware active Pokemon indexing
-- Switch validation against fainted Pokemon
-- Bench Pokemon availability checking
-- Wish and Future Sight effect scheduling
-
 ### Instruction System (`instructions/`)
 
-Atomic state modification system with comprehensive rollback support.
+Domain-grouped atomic state modification system with comprehensive rollback support.
 
 #### Instruction Architecture
 
 **BattleInstruction Enum:**
 ```rust
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum BattleInstruction {
-    Pokemon(PokemonInstruction),    // Pokemon-specific changes
-    Field(FieldInstruction),        // Field condition changes  
-    Status(StatusInstruction),      // Status effect changes
-    Stats(StatsInstruction),        // Stat modification changes
+    /// Pokemon-related instructions (damage, healing, fainting, switching)
+    Pokemon(PokemonInstruction),
+    /// Field-related instructions (weather, terrain, global effects)
+    Field(FieldInstruction),
+    /// Status-related instructions (status conditions, volatile statuses)
+    Status(StatusInstruction),
+    /// Stats-related instructions (boosts, raw stat changes)
+    Stats(StatsInstruction),
 }
 ```
 
-**BattleInstructions:**
-- Probabilistic instruction collections with damage roll sampling
-- `affected_positions: Vec<BattlePosition>`: Position tracking for all effects
-- Previous state storage for complete undo support
-- Instruction probability distribution for damage variance
+**BattleInstructions Collection:**
+```rust
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BattleInstructions {
+    /// Probability of this instruction set occurring (0.0 to 100.0)
+    pub probability: f64,
+    /// All instructions in this collection
+    pub instructions: Vec<BattleInstruction>,
+    /// All positions affected by these instructions
+    pub affected_positions: Vec<BattlePosition>,
+}
+```
 
 #### Pokemon Instructions (`pokemon.rs`)
 
 **Damage & Healing:**
-- `Damage(BattlePosition, u16)`: Direct HP reduction
-- `Heal(BattlePosition, u16)`: HP restoration with max HP clamping
-- `SetHP(BattlePosition, u16)`: Absolute HP setting
+```rust
+pub enum PokemonInstruction {
+    Damage {
+        target: BattlePosition,
+        amount: i16,
+        previous_hp: Option<i16>,
+    },
+    Heal {
+        target: BattlePosition,
+        amount: i16,
+        previous_hp: Option<i16>,
+    },
+    MultiTargetDamage {
+        target_damages: Vec<(BattlePosition, i16)>,
+        previous_hps: Vec<(BattlePosition, Option<i16>)>,
+    },
+    // ... more variants
+}
+```
 
 **State Changes:**
-- `Faint(BattlePosition)`: Pokemon fainting with cleanup
-- `Switch(BattlePosition, PokemonIndex)`: Position switching
-- `ChangeAbility(BattlePosition, String)`: Ability modification
-- `ChangeItem(BattlePosition, String)`: Item changes
-- `ChangeTypes(BattlePosition, Vec<PokemonType>)`: Type modification
+- `Faint`: Pokemon fainting with full state preservation
+- `Switch`: Position switching with team indexing
+- `ChangeAbility`: Type-safe ability changes with rollback
+- `ChangeItem`: Type-safe item changes with rollback
+- `ChangeType`: Type modification with rollback support
 
-**Special Mechanics:**
-- `CreateSubstitute(BattlePosition, u16)`: Substitute creation with HP cost
-- `DamageSubstitute(BattlePosition, u16)`: Substitute damage
-- `BreakSubstitute(BattlePosition)`: Substitute destruction
+**Terastallization & Form Changes:**
+- `ToggleTerastallized`: Gen 9+ Terastallization with type specification
+- `FormeChange`: Pokemon forme changes with rollback
+- `ChangeSubstituteHealth`: Substitute health tracking
 
 #### Field Instructions (`field.rs`)
 
-**Weather Control:**
-- `SetWeather(WeatherState)`: Weather establishment with source tracking
-- `ClearWeather`: Weather removal
-- `EndWeather`: Turn-based weather expiration
-
-**Terrain Control:**
-- `SetTerrain(TerrainState)`: Terrain establishment
-- `ClearTerrain`: Terrain removal  
-- `EndTerrain`: Turn-based terrain expiration
+**Weather & Terrain Control:**
+```rust
+pub enum FieldInstruction {
+    SetWeather(WeatherState),
+    ClearWeather,
+    EndWeather,
+    SetTerrain(TerrainState),
+    ClearTerrain,
+    EndTerrain,
+    // ... more variants
+}
+```
 
 **Global Effects:**
-- `SetTrickRoom(TrickRoomState)`: Speed inversion activation
-- `SetGravity(GravityState)`: Gravity effect activation
+- `SetTrickRoom`: Speed inversion activation
+- `SetGravity`: Gravity effect activation
 - Turn-based decrementation instructions
+- Side condition management
 
 #### Status Instructions (`status.rs`)
 
-**Major Status:**
-- `ApplyMajorStatus(BattlePosition, String)`: Primary status conditions
-- `ClearMajorStatus(BattlePosition)`: Status removal
-- Burn, Paralysis, Sleep, Freeze, Poison, Bad Poison support
+**Status Conditions:**
+```rust
+pub enum StatusInstruction {
+    Apply {
+        target: BattlePosition,
+        status: PokemonStatus,
+        duration: Option<u8>,
+        previous_status: Option<PokemonStatus>,
+        previous_duration: Option<u8>,
+    },
+    Remove {
+        target: BattlePosition,
+        status: PokemonStatus,
+        previous_duration: Option<u8>,
+    },
+    // ... more variants
+}
+```
 
-**Volatile Status:**
-- `ApplyVolatileStatus(BattlePosition, String, Option<u8>)`: Temporary effects
-- `ClearVolatileStatus(BattlePosition, String)`: Effect removal
-- 60+ volatile status types with duration tracking
+**Volatile Status Management:**
+- `ApplyVolatile`: Temporary effects with duration tracking
+- `RemoveVolatile`: Effect removal with rollback support
+- `ChangeVolatileDuration`: Duration modification
 
-**Move Effects:**
-- `SetPP(BattlePosition, MoveIndex, u8)`: PP modification
-- `DisableMove(BattlePosition, MoveIndex, u8)`: Move disabling
-- Sleep turn tracking and wake-up mechanics
+**Move and PP Management:**
+- `DecrementPP`: PP reduction with undo support
+- `DisableMove`: Move disabling with duration tracking
+- `SetLastUsedMove`: Last move tracking with type safety
 
 #### Stats Instructions (`stats.rs`)
 
 **Stat Boosts:**
-- `BoostStat(BattlePosition, String, i8)`: Stat stage modification
-- `SetStatBoost(BattlePosition, String, i8)`: Absolute boost setting
-- -6 to +6 clamping with tier-based multiplier system
+```rust
+pub enum StatsInstruction {
+    BoostStats {
+        target: BattlePosition,
+        stat_changes: StatBoosts,
+        previous_boosts: StatBoosts,
+    },
+    ClearBoosts {
+        target: BattlePosition,
+        previous_boosts: StatBoostArray,
+    },
+    // ... more variants
+}
+```
 
-**Advanced Stats:**
-- `ModifyStatRaw(BattlePosition, String, u16)`: Raw stat changes
-- `CopyStatBoosts(BattlePosition, BattlePosition)`: Boost copying
-- `SwapStatBoosts(BattlePosition, BattlePosition)`: Boost swapping
-- `InvertStatBoosts(BattlePosition)`: Boost sign inversion
+**Raw Stat Changes:**
+- Direct attack, defense, special attack, special defense, speed modifications
+- All with previous value storage for rollback support
 
-## Component Integration
+**Advanced Stat Operations:**
+- `SwapStats`: Stat swapping between Pokemon with rollback
+- `CopyBoosts`: Copy stat boosts between Pokemon
+- `InvertBoosts`: Boost sign inversion with rollback
 
-1. **BattleEnvironment** orchestrates turns using **BattleState** and **Player** implementations
-2. **BattleState** contains **BattleSide**s, **FieldConditions**, and **TurnState**  
-3. **MoveChoice** selections are validated and resolved through the **targeting** system
-4. **Instructions** atomically modify state components with rollback support
-5. **BattleFormat** constrains all targeting, validation, and move generation
-6. **Pokemon** state integrates with field conditions for effective stat calculations
+### Battle Environment (`battle_environment.rs`)
+
+High-level battle orchestration system managing turn order, player interactions, and battle progression.
+
+**Core Components:**
+- `Player` trait: Interface for AI players with move selection
+- Battle orchestration: Turn management, instruction generation/application
+- Player implementations: RandomPlayer, FirstMovePlayer, DamageMaximizer
+- Parallel execution: Multi-threaded battle running with state management
+- Comprehensive logging: Battle state serialization, Showdown export format

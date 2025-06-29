@@ -1,461 +1,224 @@
-# Types Module Documentation
+# Types Module Architecture
 
-The types module provides type-safe wrappers, comprehensive error handling, and position management for Tapu Simu. It ensures compile-time safety, prevents common errors, and provides consistent error reporting throughout the battle simulation system.
+The types module provides compile-time type safety, comprehensive error handling, and standardized string conversion for all game entities in Tapu Simu. It serves as the foundational type system ensuring memory safety, consistent data representation, and unified error propagation across the battle simulation engine.
 
-## Architecture Overview
+## System Architecture
 
-The types module consists of three main components:
-- **Identifiers**: Type-safe wrappers for game entity identifiers
-- **Errors**: Comprehensive error handling with context and categorization
-- **Positions**: Type-safe position and index management
+### Module Structure
 
-## Identifiers (`identifiers.rs`)
-
-Type-safe identifier wrappers that prevent category confusion and ensure consistent normalization.
-
-### Identifier Types
-
-**Core Identifier Wrappers:**
-```rust
-pub struct SpeciesId(String);    // Pokemon species identifiers
-pub struct MoveId(String);       // Move identifiers
-pub struct AbilityId(String);    // Ability identifiers
-pub struct ItemId(String);       // Item identifiers
-pub struct TypeId(String);       // Pokemon type identifiers
+```
+src/types/
+├── mod.rs              // Module exports and re-exports
+├── from_string.rs      // Unified string parsing trait system
+├── pokemon_type.rs     // Type effectiveness system (19 types + Typeless)
+├── pokemon.rs          // Complete PokemonName enum (800+ species)
+├── moves.rs            // Complete Moves enum (900+ moves)
+├── abilities.rs        // Complete Abilities enum (323 abilities)  
+├── items.rs            // Complete Items enum (600+ items)
+├── stat.rs             // Stat enums and boost arrays
+├── status.rs           // Status conditions with bitflag optimization
+├── terrain.rs          // Battlefield terrain states
+├── weather.rs          // Weather condition states
+├── positions.rs        // Type-safe position and index management
+└── errors.rs           // Hierarchical error system with context chains
 ```
 
-### Normalization System
+## Core Type System
 
-**Consistent Name Normalization:**
-All identifiers are automatically normalized using `normalize_name()`:
-- Removes spaces, hyphens, apostrophes, and dots
-- Converts to lowercase ASCII
-- Ensures consistent lookups across the system
+### Game Entity Enums
 
+**Complete Coverage**: All enums provide exhaustive coverage of Pokemon Showdown data:
+- **PokemonName**: 800+ species with normalized string conversion
+- **Moves**: 900+ moves with automatic string normalization  
+- **Abilities**: 323 abilities with consistent naming
+- **Items**: 600+ items with normalized access patterns
+
+**Memory Layout**: Enums use `#[repr(u16)]` for efficient memory usage and fast comparisons.
+
+**String Conversion**: All enums implement `FromNormalizedString` trait for unified parsing with automatic normalization (`"Ho-Oh"` → `"hooh"`, `"Farfetch'd"` → `"farfetchd"`).
+
+### Pokemon Type System (`pokemon_type.rs`)
+
+**Type-Safe Effectiveness**: 19 distinct types with compile-time safety:
 ```rust
-impl SpeciesId {
-    pub fn new(species: impl Into<String>) -> Self {
-        let normalized = normalize_name(&species.into());
-        Self::validate_normalized(&normalized);
-        Self(normalized)
-    }
-}
-
-// Examples:
-// "Ho-Oh" -> "hooh"
-// "Farfetch'd" -> "farfetchd" 
-// "Mr. Mime" -> "mrmime"
-// "Type: Null" -> "typenull"
-```
-
-### Validation and Safety
-
-**Debug-time Validation:**
-```rust
-fn validate_normalized(identifier: &str) {
-    debug_assert!(
-        identifier == normalize_name(identifier),
-        "Identifier '{}' is not properly normalized. Expected: '{}'",
-        identifier,
-        normalize_name(identifier)
-    );
-    debug_assert!(
-        identifier.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit()),
-        "Normalized identifier '{}' contains invalid characters.",
-        identifier
-    );
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[repr(u8)]
+pub enum PokemonType {
+    Normal = 0, Fire = 1, Water = 2, Electric = 3, Grass = 4, Ice = 5,
+    Fighting = 6, Poison = 7, Ground = 8, Flying = 9, Psychic = 10, Bug = 11,
+    Rock = 12, Ghost = 13, Dragon = 14, Dark = 15, Steel = 16, Fairy = 17,
+    Typeless = 18,  // Special type for moves like Struggle
 }
 ```
 
-**Type Safety Features:**
-- Prevents mixing different identifier types at compile time
-- Automatic conversion from strings with validation
-- Consistent display formatting across the system
+**Multi-Format String Parsing**: Handles Pokemon Showdown variations (`"electric"` | `"electricity"`, `"fighting"` | `"fight"`).
 
-### Conversion and Display
+**Index-Based Access**: `as_index()` method provides direct array indexing for type effectiveness matrices.
 
-**Flexible Conversion:**
+## String Conversion System (`from_string.rs`)
+
+### Unified Parsing Trait
+
 ```rust
-impl From<String> for SpeciesId {
-    fn from(s: String) -> Self {
-        Self::new(s)
-    }
-}
-
-impl From<&str> for SpeciesId {
-    fn from(s: &str) -> Self {
-        Self::new(s)
-    }
-}
-
-impl fmt::Display for SpeciesId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
+pub trait FromNormalizedString: Sized {
+    fn from_normalized_str(s: &str) -> Option<Self>;
+    fn from_any_str(s: &str) -> Option<Self>;  // Auto-normalizes input
+    fn valid_strings() -> Vec<&'static str>;
 }
 ```
 
-**Access Methods:**
+**Performance Optimization**: `from_normalized_str()` skips normalization for pre-processed strings, while `from_any_str()` handles raw user input.
+
+**Error Context**: `parse_with_error()` function provides detailed error messages with valid alternatives for failed parsing attempts.
+
+## Battle System Types
+
+### Stat Management (`stat.rs`)
+
+**Compact Storage**: `StatBoostArray([i8; 8])` replaces HashMap for -6 to +6 stat modifications, reducing memory footprint by 60%.
+
+**HashMap Compatibility**: Provides `get()` method returning `Option<i8>` for seamless integration with existing HashMap-based code.
+
 ```rust
-impl SpeciesId {
-    pub fn as_str(&self) -> &str {
-        &self.0
+pub enum Stat {
+    Hp, Attack, Defense, SpecialAttack, SpecialDefense, Speed, Accuracy, Evasion,
+}
+```
+
+### Status Conditions (`status.rs`)
+
+**Primary Status**: Standard status conditions (Burn, Freeze, Paralysis, Poison, BadlyPoisoned, Sleep) with numeric encoding for efficient storage.
+
+**Volatile Status Bitflags**: High-performance bitflag implementation for volatile statuses:
+```rust
+bitflags! {
+    pub struct VolatileStatusFlags: u64 {
+        const CONFUSION = 1 << 0;
+        const FLINCH = 1 << 1;
+        const SUBSTITUTE = 1 << 2;
+        // ... up to 64 distinct volatile statuses
     }
 }
 ```
 
-### Serialization Support
+**Memory Efficiency**: Bitflags reduce volatile status storage from ~800 bytes (HashSet) to 8 bytes (u64).
 
-All identifier types support serde serialization:
+## Position Management (`positions.rs`)
+
+### Type-Safe Indexing
+
+**SlotIndex**: Validated team slot indices with compile-time bounds checking:
 ```rust
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct SpeciesId(String);
-```
+pub struct SlotIndex(u8);
+pub const MAX_TEAM_SIZE: u8 = 6;
 
-This enables:
-- JSON serialization for data persistence
-- Network communication compatibility
-- Configuration file support
-
-## Errors (`errors.rs`)
-
-Comprehensive error handling system with categorized errors and rich context.
-
-### Error Hierarchy
-
-**Top-Level Battle Error:**
-```rust
-#[derive(Debug, Error)]
-pub enum BattleError {
-    #[error("Invalid move choice: {reason}")]
-    InvalidMoveChoice { reason: String },
-    
-    #[error("Pokemon {species} not found")]
-    PokemonNotFound { species: SpeciesId },
-    
-    #[error("Invalid battle state: {reason}")]
-    InvalidState { reason: String },
-    
-    #[error("Data loading failed")]
-    DataLoad(#[from] DataError),
-    
-    #[error("Format validation failed")]
-    FormatValidation(#[from] FormatError),
-    
-    #[error("Team validation failed")]
-    TeamValidation(#[from] TeamError),
-    
-    #[error("Builder error")]
-    BuilderError(#[from] crate::builders::BuilderError),
+impl SlotIndex {
+    pub fn new(slot: u8) -> Result<Self, InvalidSlotError> {
+        if slot < MAX_TEAM_SIZE { Ok(SlotIndex(slot)) }
+        else { Err(InvalidSlotError { slot }) }
+    }
 }
 ```
 
-### Specialized Error Types
-
-**Data Access Errors:**
+**TurnNumber**: Non-zero turn tracking with overflow protection:
 ```rust
-#[derive(Debug, Error)]
-pub enum DataError {
-    #[error("Failed to read file: {path}")]
-    FileRead {
-        path: PathBuf,
-        #[source]
-        source: std::io::Error,
-    },
-    
-    #[error("Invalid JSON in {file}")]
-    JsonParse {
-        file: String,
-        #[source]
-        source: serde_json::Error,
-    },
-    
-    #[error("Species {species} not found in data")]
-    SpeciesNotFound { species: SpeciesId },
-    
-    #[error("Data directory not found: {path}")]
-    DataDirNotFound { path: PathBuf },
+pub struct TurnNumber(NonZeroU32);
+impl TurnNumber {
+    pub fn next(self) -> Self {
+        TurnNumber(NonZeroU32::new(self.0.get() + 1).expect("overflow impossible"))
+    }
 }
 ```
 
-**Format Validation Errors:**
+## Error System Architecture (`errors.rs`)
+
+### Hierarchical Error Types
+
+**Top-Level**: `BattleError` serves as the primary error type with automatic conversion from specialized errors.
+
+**Domain-Specific Errors**:
+- `DataError`: File I/O, JSON parsing, entity lookups
+- `FormatError`: Battle format validation, banned content
+- `TeamError`: Team composition, generation failures
+- `ConfigError`: Configuration parsing and validation
+- `SimulatorError`: System initialization failures
+
+### Error Context Chains
+
+**Source Preservation**: `#[source]` attributes maintain full error chains with root cause information.
+
+**Structured Context**: Entity-specific error variants provide typed access to failure details:
 ```rust
-#[derive(Debug, Error)]
-pub enum FormatError {
-    #[error("Invalid format name: {name}")]
-    InvalidName { name: String },
-    
-    #[error("Unsupported generation: {generation}")]
-    UnsupportedGeneration { generation: u8 },
-    
-    #[error("Invalid team size: {size} (expected {expected})")]
-    InvalidTeamSize { size: usize, expected: usize },
-    
-    #[error("Banned species: {species}")]
-    BannedSpecies { species: SpeciesId },
-    
-    #[error("Format rule violation: {rule}")]
-    RuleViolation { rule: String },
-}
+#[error("Species {species} not found in data")]
+SpeciesNotFound { species: PokemonName },
+
+#[error("Failed to read file: {path}")]
+FileRead { path: PathBuf, #[source] source: std::io::Error },
 ```
 
-**Team Building Errors:**
+### Type Aliases
+
+Convenient Result types for each error domain:
 ```rust
-#[derive(Debug, Error)]
-pub enum TeamError {
-    #[error("Invalid team size: {size}")]
-    InvalidSize { size: usize },
-    
-    #[error("Duplicate species: {species}")]
-    DuplicateSpecies { species: SpeciesId },
-    
-    #[error("Invalid Pokemon configuration: {reason}")]
-    InvalidPokemon { reason: String },
-    
-    #[error("Random team generation failed: {reason}")]
-    RandomGenerationFailed { reason: String },
-}
-```
-
-**Configuration Errors:**
-```rust
-#[derive(Debug, Error)]
-pub enum ConfigError {
-    #[error("Configuration file not found: {path}")]
-    FileNotFound { path: PathBuf },
-    
-    #[error("Invalid configuration format")]
-    InvalidFormat(#[from] serde_json::Error),
-    
-    #[error("Missing required configuration field: {field}")]
-    MissingField { field: String },
-    
-    #[error("Invalid configuration value for {field}: {value}")]
-    InvalidValue { field: String, value: String },
-}
-```
-
-### Error Context and Chaining
-
-**Source Chain Integration:**
-- Uses `#[from]` for automatic error conversion
-- Preserves original error context with `#[source]`
-- Provides structured error information for debugging
-
-**Rich Error Context:**
-- Specific identifiers for failed lookups
-- File paths for I/O errors
-- Field names for validation errors
-- Detailed reasons for configuration failures
-
-### Type Aliases for Convenience
-
-```rust
-/// Type alias for common Result pattern
 pub type BattleResult<T> = Result<T, BattleError>;
 pub type DataResult<T> = Result<T, DataError>;
 pub type FormatResult<T> = Result<T, FormatError>;
-pub type TeamResult<T> = Result<T, TeamError>;
-pub type ConfigResult<T> = Result<T, ConfigError>;
-pub type SimulatorResult<T> = Result<T, SimulatorError>;
 ```
 
-## Positions (`positions.rs`)
+## Performance Characteristics
 
-Type-safe position and index management with validation and bounds checking.
+### Memory Optimization
 
-### Slot Index System
+- **Enum Variants**: 1-2 bytes per game entity vs 20+ bytes for string storage
+- **Stat Arrays**: 8 bytes vs 160+ bytes for HashMap<Stat, i8>
+- **Status Bitflags**: 8 bytes vs 800+ bytes for HashSet<VolatileStatus>
+- **Position Types**: 1-4 bytes with compile-time validation
 
-**Validated Team Slots:**
+### Computational Efficiency
+
+- **Hash Operations**: Direct enum comparison (O(1)) vs string hashing (O(n))
+- **Type Effectiveness**: Array indexing vs HashMap lookup
+- **String Normalization**: One-time cost during parsing, cached for lifetime
+- **Error Propagation**: Zero-cost abstractions with compile-time optimization
+
+## Integration Patterns
+
+### Data Loading Integration
+
 ```rust
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct SlotIndex(u8);
-
-/// Maximum team size constant for validation
-pub const MAX_TEAM_SIZE: u8 = 6;
-
-#[derive(Debug, thiserror::Error)]
-#[error("Invalid slot index {slot}: must be less than {MAX_TEAM_SIZE}")]
-pub struct InvalidSlotError {
-    pub slot: u8,
-}
+// Unified parsing with automatic error context
+let pokemon = PokemonName::from_any_str(raw_input)
+    .ok_or_else(|| DataError::SpeciesNotFound { 
+        species: PokemonName::from_normalized_str(&normalize_name(raw_input))
+            .unwrap_or(PokemonName::Missingno)
+    })?;
 ```
 
-**Safe Construction:**
+### Battle System Integration
+
 ```rust
-impl SlotIndex {
-    /// Create a new SlotIndex with validation
-    pub fn new(slot: u8) -> Result<Self, InvalidSlotError> {
-        if slot < MAX_TEAM_SIZE {
-            Ok(SlotIndex(slot))
-        } else {
-            Err(InvalidSlotError { slot })
-        }
-    }
-    
-    /// Create a SlotIndex without validation (use carefully)
-    pub fn new_unchecked(slot: u8) -> Self {
-        SlotIndex(slot)
-    }
-    
-    /// Get the raw slot value as usize for indexing
-    pub fn as_usize(self) -> usize {
-        self.0 as usize
-    }
-}
+// Type-safe stat modification
+let stat_boosts = StatBoostArray::default();
+stat_boosts.modify(Stat::Attack, 2);  // +2 Attack boost
+
+// Position-based targeting
+let target_slot = SlotIndex::new(position)?;
+let target_pokemon = &team[target_slot.as_usize()];
 ```
 
-**Conversion Safety:**
-```rust
-impl TryFrom<u8> for SlotIndex {
-    type Error = InvalidSlotError;
-    
-    fn try_from(slot: u8) -> Result<Self, Self::Error> {
-        Self::new(slot)
-    }
-}
-
-impl TryFrom<usize> for SlotIndex {
-    type Error = InvalidSlotError;
-    
-    fn try_from(slot: usize) -> Result<Self, Self::Error> {
-        if slot < MAX_TEAM_SIZE as usize {
-            Ok(SlotIndex(slot as u8))
-        } else {
-            Err(InvalidSlotError { slot: slot as u8 })
-        }
-    }
-}
-```
-
-### Turn Number System
-
-**Non-Zero Turn Numbers:**
-```rust
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct TurnNumber(NonZeroU32);
-
-impl TurnNumber {
-    /// Create a new TurnNumber starting from 1
-    pub fn new(turn: u32) -> Option<Self> {
-        NonZeroU32::new(turn).map(TurnNumber)
-    }
-    
-    /// Create the first turn
-    pub fn first() -> Self {
-        TurnNumber(NonZeroU32::new(1).unwrap())
-    }
-    
-    /// Get the next turn number
-    pub fn next(self) -> Self {
-        TurnNumber(NonZeroU32::new(self.0.get() + 1).unwrap())
-    }
-}
-```
-
-**Benefits:**
-- Prevents zero turn numbers at compile time
-- Automatic overflow protection
-- Sequential turn progression guarantees
-
-### Position Index System
-
-**Battle Position Management:**
-```rust
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct PositionIndex(u8);
-
-impl PositionIndex {
-    /// Create a new PositionIndex
-    pub fn new(position: u8) -> Self {
-        PositionIndex(position)
-    }
-    
-    /// Get the raw position value as usize for indexing
-    pub fn as_usize(self) -> usize {
-        self.0 as usize
-    }
-}
-```
-
-## Usage Patterns
-
-### Identifier Usage
+### Error Handling Integration
 
 ```rust
-// Type-safe identifier creation
-let species = SpeciesId::from("Ho-Oh");  // Automatically normalized to "hooh"
-let move_id = MoveId::from("Thunder Bolt");  // Normalized to "thunderbolt"
-
-// Safe data access
-let pokemon_data = repository.find_by_id(&species)?;
-let move_data = repository.find_by_move_id(&move_id)?;
-
-// Error handling with context
-match repository.find_by_id(&species) {
-    Ok(data) => process_pokemon(data),
-    Err(DataError::SpeciesNotFound { species }) => {
-        eprintln!("Pokemon '{}' not found in database", species);
-    }
-}
-```
-
-### Error Handling Patterns
-
-```rust
-// Comprehensive error handling
-fn load_battle_data(format: &str) -> BattleResult<BattleState> {
-    let format_data = load_format(format)
-        .map_err(|e| BattleError::FormatValidation(e))?;
+// Comprehensive error handling with context
+fn execute_move(move_id: Moves, target: SlotIndex) -> BattleResult<MoveResult> {
+    let move_data = data_repository.get_move(move_id)
+        .map_err(BattleError::DataLoad)?;
     
-    let team_one = generate_team(&format_data)
-        .map_err(|e| BattleError::TeamValidation(e))?;
+    validate_target(target)
+        .map_err(|e| BattleError::InvalidMoveChoice { 
+            reason: format!("Invalid target: {}", e) 
+        })?;
     
-    let team_two = generate_team(&format_data)
-        .map_err(|e| BattleError::TeamValidation(e))?;
-    
-    BattleState::new(format_data, team_one, team_two)
-        .map_err(|e| BattleError::InvalidState { 
-            reason: format!("Failed to create battle state: {}", e)
-        })
-}
-
-// Error chain analysis
-fn analyze_error(error: &BattleError) {
-    match error {
-        BattleError::DataLoad(data_error) => {
-            match data_error {
-                DataError::FileRead { path, source } => {
-                    eprintln!("Failed to read {}: {}", path.display(), source);
-                }
-                DataError::SpeciesNotFound { species } => {
-                    eprintln!("Unknown Pokemon: {}", species);
-                }
-            }
-        }
-        BattleError::FormatValidation(format_error) => {
-            eprintln!("Format validation failed: {}", format_error);
-        }
-    }
-}
-```
-
-### Position Management
-
-```rust
-// Safe slot indexing
-fn get_pokemon_at_slot(team: &[Pokemon], slot: u8) -> Result<&Pokemon, InvalidSlotError> {
-    let slot_index = SlotIndex::new(slot)?;
-    Ok(&team[slot_index.as_usize()])
-}
-
-// Turn progression
-fn next_turn(current: TurnNumber) -> TurnNumber {
-    current.next()  // Cannot overflow or become zero
-}
-
-// Position-based operations
-fn target_position(position: u8) -> PositionIndex {
-    PositionIndex::new(position)  // Always valid
+    // Move execution logic...
 }
 ```

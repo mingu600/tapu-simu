@@ -31,7 +31,10 @@ impl From<u8> for Generation {
             7 => Generation::Gen7,
             8 => Generation::Gen8,
             9 => Generation::Gen9,
-            _ => Generation::Gen9, // Default to latest
+            _ => {
+                eprintln!("Warning: Unknown generation number {}, defaulting to Gen9", value);
+                Generation::Gen9
+            }
         }
     }
 }

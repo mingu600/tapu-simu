@@ -1,14 +1,16 @@
 # Builders Module Documentation
 
-The builders module implements sophisticated builder patterns for constructing battle components with comprehensive validation, type safety, and fluent APIs. It provides consistent interfaces for building formats, teams, Pokemon, and complete battles.
+The builders module implements comprehensive builder patterns for constructing battle components in Tapu Simu. It provides type-safe, validated construction of formats, teams, Pokemon, and complete battles with fluent APIs and intelligent defaults.
 
 ## Architecture Overview
 
-The builders module provides four main builders unified under common traits:
-- **Format Builder**: Battle format construction with rule validation
-- **Team Builder**: Hierarchical team and Pokemon building
-- **Battle Builder**: Complete battle setup with player management
-- **Trait System**: Standardized builder interfaces and validation
+The builders module (`src/builders/`) consists of five core files:
+
+- **`traits.rs`** - Common builder traits and standardized error system
+- **`format.rs`** - Battle format construction with rule validation  
+- **`team.rs`** - Hierarchical team and Pokemon building with data validation
+- **`battle.rs`** - Complete battle setup with multi-stage validation
+- **`mod.rs`** - Module declarations and public API exports
 
 ## Core Traits System (`traits.rs`)
 
@@ -29,7 +31,7 @@ pub trait Builder<T> {
 
 ### Extended Traits
 
-**ValidatingBuilder:**
+**ValidatingBuilder** - Incremental validation with context:
 ```rust
 pub trait ValidatingBuilder<T>: Builder<T> {
     fn validate_with_context(&self, context: &mut ValidationContext) -> Result<(), Self::Error>;
@@ -37,7 +39,7 @@ pub trait ValidatingBuilder<T>: Builder<T> {
 }
 ```
 
-**ResettableBuilder:**
+**ResettableBuilder** - Stateful builders that can be reset:
 ```rust
 pub trait ResettableBuilder<T>: Builder<T> {
     fn reset(&mut self);
@@ -45,7 +47,7 @@ pub trait ResettableBuilder<T>: Builder<T> {
 }
 ```
 
-**CloneableBuilder:**
+**CloneableBuilder** - Template-based builders:
 ```rust
 pub trait CloneableBuilder<T>: Builder<T> + Clone {
     fn template(&self) -> Self;
@@ -63,46 +65,48 @@ pub enum BuilderError {
     #[error("Invalid value for {field}: {value:?} - {reason}")]
     InvalidValue { field: String, value: String, reason: String },
     
+    #[error("Validation failed: {0}")]
+    ValidationFailed(String),
+    
     #[error("Configuration conflict: {details}")]
     ConfigConflict { details: String },
     
     #[error("Data error: {0}")]
     DataError(#[from] DataError),
-    
-    #[error("Validation failed: {0}")]
-    ValidationFailed(String),
 }
 ```
 
 **Error Context Features:**
-- Hierarchical field paths for debugging
-- Rich error details with reasons
-- External dependency error propagation
+- Hierarchical field paths for precise error location
+- Rich error details with contextual reasons
+- External dependency error propagation (`DataError`)
 - Validation failure categorization
 
 ## Format Builder (`format.rs`)
 
-Battle format construction with intelligent defaults and validation.
+Constructs `BattleFormat` objects with intelligent defaults and comprehensive rule validation.
+
+### Implementation Architecture
+
+```rust
+pub struct FormatBuilder {
+    format_type: Option<FormatType>,
+    generation: Option<Generation>,
+    clauses: Vec<Clause>,
+    banned_species: Vec<String>,
+    banned_moves: Vec<String>,
+    banned_items: Vec<String>,
+    banned_abilities: Vec<String>,
+    active_per_side: Option<u8>,
+    team_size: Option<u8>,
+}
+```
 
 ### Fluent Interface Design
 
+**Format Type Configuration:**
 ```rust
 impl FormatBuilder {
-    pub fn new() -> Self {
-        Self {
-            format_type: None,
-            generation: None,
-            clauses: Vec::new(),
-            banned_species: Vec::new(),
-            banned_moves: Vec::new(),
-            banned_items: Vec::new(),
-            banned_abilities: Vec::new(),
-            active_per_side: None,
-            team_size: None,
-            errors: Vec::new(),
-        }
-    }
-
     pub fn singles(mut self) -> Self {
         self.format_type = Some(FormatType::Singles);
         self.active_per_side = Some(1);
@@ -115,21 +119,16 @@ impl FormatBuilder {
         self
     }
 
-    pub fn generation(mut self, gen: Generation) -> Self {
-        self.generation = Some(gen);
+    pub fn vgc(mut self) -> Self {
+        self.format_type = Some(FormatType::VGC);
+        self.active_per_side = Some(2);
+        self.team_size = Some(4);
         self
     }
 }
 ```
 
-### Smart Defaults and Validation
-
-**Format Type Intelligence:**
-- Automatically sets `active_per_side` based on format type
-- Validates team size constraints (≤ 6, ≥ active_per_side)
-- Prevents invalid format/generation combinations
-
-**Clause Management:**
+**Intelligent Clause Management:**
 ```rust
 pub fn standard_clauses(mut self) -> Self {
     self.clauses.extend([
@@ -149,7 +148,22 @@ pub fn add_clause(mut self, clause: Clause) -> Self {
 }
 ```
 
-**Preset Builders:**
+**Ban List Management:**
+```rust
+pub fn ban_species(mut self, species: &str) -> Self {
+    self.banned_species.push(species.to_string());
+    self
+}
+
+pub fn ban_move(mut self, move_name: &str) -> Self {
+    self.banned_moves.push(move_name.to_string());
+    self
+}
+```
+
+### Preset Builders
+
+**Common Format Presets:**
 ```rust
 impl FormatBuilder {
     pub fn gen9_ou() -> Self {
@@ -164,369 +178,366 @@ impl FormatBuilder {
     pub fn vgc_2024() -> Self {
         Self::new()
             .generation(Generation::Gen9)
-            .doubles()
+            .vgc()
             .team_size(4)
-            .restricted_series()
     }
 }
 ```
+
+### Validation Logic
+
+**Format-Specific Validation:**
+- Team size constraints (≤ 6, ≥ active_per_side)
+- Format/generation compatibility checking
+- Clause conflict resolution
+- Ban list consistency validation
 
 ## Team Builder (`team.rs`)
 
-Hierarchical builder pattern supporting nested Pokemon construction.
+Hierarchical builder supporting nested Pokemon construction with comprehensive data validation.
 
-### Context-Switching Architecture
+### Architecture Components
 
 ```rust
-pub struct TeamBuilder {
-    data_repository: Arc<GameDataRepository>,
-    pokemon: Vec<TeamPokemon>,
-    current_context: Option<TeamPokemonContext>,
-    format: Option<BattleFormat>,
-    errors: Vec<BuilderError>,
+pub struct TeamBuilder<'a> {
+    data_repository: &'a GameDataRepository,
+    pokemon: Vec<RandomPokemonSet>,
+    format: Option<&'a BattleFormat>,
 }
 
-pub struct TeamPokemonContext {
-    pokemon: TeamPokemon,
-    parent: *mut TeamBuilder,
+pub struct PokemonBuilder {
+    species: String,
+    level: u8,
+    ability: Option<String>,
+    moves: Vec<String>,
+    item: Option<String>,
+    nature: Option<String>,
+    evs: StatSpread,
+    ivs: StatSpread,
+    gender: Option<Gender>,
+}
+
+pub struct TeamPokemonContext<'a> {
+    pokemon_builder: PokemonBuilder,
+    team_builder: &'a mut TeamBuilder<'a>,
 }
 ```
 
-### Fluent Pokemon Building
+### Context-Switching Pattern
 
+**Seamless Team ↔ Pokemon Transitions:**
 ```rust
-impl TeamBuilder {
-    pub fn pokemon(mut self, species: &str) -> TeamPokemonContext {
-        let pokemon_data = self.data_repository.pokemon
-            .find_by_name(species)
-            .expect("Valid Pokemon species");
-
+impl<'a> TeamBuilder<'a> {
+    pub fn pokemon(&mut self, species: &str) -> TeamPokemonContext {
         TeamPokemonContext {
-            pokemon: TeamPokemon::new(species, pokemon_data),
-            parent: &mut self as *mut _,
+            pokemon_builder: PokemonBuilder::new(species),
+            team_builder: self,
         }
     }
 }
 
-impl TeamPokemonContext {
+impl<'a> TeamPokemonContext<'a> {
     pub fn level(mut self, level: u8) -> Self {
-        if level >= 1 && level <= 100 {
-            self.pokemon.level = level;
-        } else {
-            self.add_error(BuilderError::InvalidValue {
-                field: "level".to_string(),
-                value: level.to_string(),
-                reason: "Level must be between 1 and 100".to_string(),
-            });
-        }
+        self.pokemon_builder.level = level;
         self
     }
 
     pub fn ability(mut self, ability: &str) -> Self {
-        if self.pokemon.data.abilities.contains(ability) {
-            self.pokemon.ability = Some(ability.to_string());
-        } else {
-            self.add_error(BuilderError::InvalidValue {
-                field: "ability".to_string(),
-                value: ability.to_string(),
-                reason: "Ability not available for this Pokemon".to_string(),
-            });
-        }
+        self.pokemon_builder.ability = Some(ability.to_string());
         self
     }
 
-    pub fn finish(self) -> TeamBuilder {
-        unsafe { 
-            let parent = &mut *self.parent;
-            parent.pokemon.push(self.pokemon);
-            parent.take_ownership()
-        }
+    pub fn finish(self) -> &'a mut TeamBuilder<'a> {
+        let pokemon_set = self.pokemon_builder.build()
+            .expect("Valid Pokemon configuration");
+        self.team_builder.pokemon.push(pokemon_set);
+        self.team_builder
     }
 }
 ```
 
-### Advanced Validation
+### Comprehensive Validation
 
-**EV/IV System:**
+**EV/IV System Validation:**
 ```rust
-impl TeamPokemonContext {
+impl PokemonBuilder {
     pub fn evs(mut self, hp: u8, atk: u8, def: u8, spa: u8, spd: u8, spe: u8) -> Self {
-        let total = hp + atk + def + spa + spd + spe;
+        let total = hp as u16 + atk as u16 + def as u16 + spa as u16 + spd as u16 + spe as u16;
         
         if total > 510 {
-            self.add_error(BuilderError::InvalidValue {
-                field: "evs".to_string(),
-                value: total.to_string(),
-                reason: "Total EVs cannot exceed 510".to_string(),
-            });
+            panic!("Total EVs cannot exceed 510, got {}", total);
         }
         
         if [hp, atk, def, spa, spd, spe].iter().any(|&ev| ev > 252) {
-            self.add_error(BuilderError::InvalidValue {
-                field: "evs".to_string(),
-                value: "individual".to_string(),
-                reason: "Individual EVs cannot exceed 252".to_string(),
-            });
+            panic!("Individual EVs cannot exceed 252");
         }
         
-        self.pokemon.evs = StatSpread { hp, atk, def, spa, spd, spe };
+        self.evs = StatSpread { hp, atk, def, spa, spd, spe };
         self
     }
+}
+```
 
-    pub fn move_slot(mut self, move_name: &str) -> Self {
-        if self.pokemon.moves.len() >= 4 {
-            self.add_error(BuilderError::InvalidValue {
-                field: "moves".to_string(),
-                value: move_name.to_string(),
-                reason: "Pokemon cannot have more than 4 moves".to_string(),
-            });
-            return self;
-        }
+**Move Slot Management:**
+```rust
+pub fn move_slot(mut self, move_name: &str) -> Self {
+    if self.moves.len() >= 4 {
+        panic!("Pokemon cannot have more than 4 moves");
+    }
+    
+    self.moves.push(move_name.to_string());
+    self
+}
+```
 
-        match self.parent.data_repository.moves.find_by_name(move_name) {
-            Ok(move_data) => {
-                self.pokemon.moves.push(move_data.name.clone());
-            }
-            Err(_) => {
-                self.add_error(BuilderError::DataError(
-                    DataError::MoveNotFound(MoveId::from_name(move_name))
-                ));
-            }
-        }
-        self
+**Data Repository Integration:**
+- Species existence validation
+- Move availability checking
+- Ability compatibility verification
+- Item legality validation
+
+### Configuration Helpers
+
+**EV/IV Configuration Objects:**
+```rust
+pub struct EVsConfig {
+    pub hp: u8,
+    pub atk: u8,
+    pub def: u8,
+    pub spa: u8,
+    pub spd: u8,
+    pub spe: u8,
+}
+
+impl EVsConfig {
+    pub fn max_hp_atk() -> Self {
+        Self { hp: 252, atk: 252, def: 4, spa: 0, spd: 0, spe: 0 }
+    }
+    
+    pub fn max_hp_spa() -> Self {
+        Self { hp: 252, atk: 0, def: 4, spa: 252, spd: 0, spe: 0 }
     }
 }
 ```
 
 ## Battle Builder (`battle.rs`)
 
-Comprehensive battle construction with multi-stage validation.
+Complete battle construction with multi-stage validation and intelligent defaults.
 
-### Complete Battle Setup
+### Core Architecture
 
 ```rust
-pub struct BattleBuilder {
+pub struct BattleBuilder<'a> {
+    data_repository: &'a GameDataRepository,
+    generation_repository: &'a GenerationRepository,
     format: Option<BattleFormat>,
+    team_one: Option<Vec<RandomPokemonSet>>,
+    team_two: Option<Vec<RandomPokemonSet>>,
     player_one: Option<Box<dyn Player>>,
     player_two: Option<Box<dyn Player>>,
-    team_one: Option<Vec<Pokemon>>,
-    team_two: Option<Vec<Pokemon>>,
-    turn_limit: Option<u32>,
-    timeout_ms: Option<u64>,
-    data_repository: Arc<GameDataRepository>,
-    errors: Vec<BuilderError>,
+    config: BattleConfig,
 }
 
-impl BattleBuilder {
-    pub fn new(data: Arc<GameDataRepository>) -> Self {
-        Self {
-            format: None,
-            player_one: None,
-            player_two: None,
-            team_one: None,
-            team_two: None,
-            turn_limit: Some(1000),
-            timeout_ms: Some(30000),
-            data_repository: data,
-            errors: Vec::new(),
-        }
-    }
+pub struct BattleConfig {
+    pub max_turns: u32,
+    pub seed: Option<u64>,
+    pub timeout_ms: Option<u64>,
+}
 
-    pub fn format(mut self, format: BattleFormat) -> Self {
-        self.format = Some(format);
-        self
-    }
-
-    pub fn players(mut self, p1: Box<dyn Player>, p2: Box<dyn Player>) -> Self {
-        self.player_one = Some(p1);
-        self.player_two = Some(p2);
-        self
-    }
-
-    pub fn teams(mut self, team1: Vec<Pokemon>, team2: Vec<Pokemon>) -> Self {
-        self.team_one = Some(team1);
-        self.team_two = Some(team2);
-        self
-    }
+pub struct Battle {
+    pub state: BattleState,
+    pub player_one: Box<dyn Player>,
+    pub player_two: Box<dyn Player>,
+    pub config: BattleConfig,
 }
 ```
 
 ### Multi-Stage Validation
 
+**Required Field Validation:**
 ```rust
-impl Builder<BattleEnvironment> for BattleBuilder {
-    type Error = BuilderError;
+fn validate(&self) -> Result<(), BuilderError> {
+    if self.format.is_none() {
+        return Err(BuilderError::MissingRequired {
+            field: "format".to_string(),
+        });
+    }
+    
+    if self.team_one.is_none() {
+        return Err(BuilderError::MissingRequired {
+            field: "team_one".to_string(),
+        });
+    }
+    
+    if self.team_two.is_none() {
+        return Err(BuilderError::MissingRequired {
+            field: "team_two".to_string(),
+        });
+    }
+    
+    Ok(())
+}
+```
 
-    fn validate(&self) -> Result<(), Self::Error> {
-        // 1. Required field validation
-        if self.format.is_none() {
-            return Err(BuilderError::MissingRequired {
-                field: "format".to_string(),
+**Format Compatibility Validation:**
+```rust
+fn validate_format_compatibility(&self) -> Result<(), BuilderError> {
+    if let (Some(format), Some(team)) = (&self.format, &self.team_one) {
+        if team.len() < format.team_size as usize {
+            return Err(BuilderError::ConfigConflict {
+                details: format!(
+                    "Team size ({}) is less than format requirement ({})",
+                    team.len(),
+                    format.team_size
+                ),
             });
         }
-
-        // 2. Format compatibility validation
-        if let (Some(format), Some(team)) = (&self.format, &self.team_one) {
-            if team.len() < format.team_size() {
-                return Err(BuilderError::ConfigConflict {
-                    details: format!(
-                        "Team size ({}) is less than format requirement ({})",
-                        team.len(),
-                        format.team_size()
-                    ),
-                });
-            }
-        }
-
-        // 3. Configuration validation
-        if let Some(limit) = self.turn_limit {
-            if limit == 0 {
-                return Err(BuilderError::InvalidValue {
-                    field: "turn_limit".to_string(),
-                    value: limit.to_string(),
-                    reason: "Turn limit must be greater than 0".to_string(),
-                });
-            }
-        }
-
-        Ok(())
     }
+    Ok(())
+}
+```
 
-    fn build(mut self) -> Result<BattleEnvironment, Self::Error> {
-        self.validate()?;
-
-        // Provide default players if not specified
-        let player_one = self.player_one.unwrap_or_else(|| Box::new(RandomPlayer::new()));
-        let player_two = self.player_two.unwrap_or_else(|| Box::new(RandomPlayer::new()));
-
-        // Generate random teams if not provided
-        let team_one = self.team_one.unwrap_or_else(|| {
-            self.generate_random_team().unwrap_or_default()
+**Configuration Validation:**
+```rust
+fn validate_config(&self) -> Result<(), BuilderError> {
+    if self.config.max_turns == 0 {
+        return Err(BuilderError::InvalidValue {
+            field: "max_turns".to_string(),
+            value: self.config.max_turns.to_string(),
+            reason: "Max turns must be greater than 0".to_string(),
         });
-        let team_two = self.team_two.unwrap_or_else(|| {
-            self.generate_random_team().unwrap_or_default()
-        });
+    }
+    Ok(())
+}
+```
 
-        // Create battle state
-        let battle_state = BattleState::new(
-            self.format.unwrap(),
-            team_one,
-            team_two,
-        )?;
+### Smart Defaults and Auto-Generation
 
-        Ok(BattleEnvironment::new(
-            battle_state,
-            player_one,
-            player_two,
-            self.turn_limit,
-            self.timeout_ms,
+**Automatic Player Assignment:**
+```rust
+pub fn auto_players(mut self) -> Self {
+    self.player_one = Some(Box::new(RandomPlayer::new()));
+    self.player_two = Some(Box::new(RandomPlayer::new()));
+    self
+}
+```
+
+**Random Team Generation:**
+```rust
+pub fn random_teams(mut self) -> Result<Self, BuilderError> {
+    let format_name = self.format.as_ref()
+        .map(|f| f.get_name())
+        .unwrap_or("gen9randombattle");
+    
+    let team_loader = RandomTeamLoader::new(self.data_repository)?;
+    
+    self.team_one = Some(team_loader.load_team(format_name)?);
+    self.team_two = Some(team_loader.load_team(format_name)?);
+    
+    Ok(self)
+}
+```
+
+**Battle Execution:**
+```rust
+pub fn run(self) -> Result<BattleResult, BuilderError> {
+    let battle = self.build()?;
+    Ok(battle.run())
+}
+```
+
+### Configuration Options
+
+**Battle Parameters:**
+```rust
+impl<'a> BattleBuilder<'a> {
+    pub fn max_turns(mut self, turns: u32) -> Self {
+        self.config.max_turns = turns;
+        self
+    }
+    
+    pub fn seed(mut self, seed: u64) -> Self {
+        self.config.seed = Some(seed);
+        self
+    }
+    
+    pub fn timeout(mut self, ms: u64) -> Self {
+        self.config.timeout_ms = Some(ms);
+        self
+    }
+}
+```
+
+## Type System Integration
+
+### Data Flow Architecture
+
+```
+GameDataRepository + GenerationRepository
+    ↓
+FormatBuilder → BattleFormat
+    ↓
+TeamBuilder → Vec<RandomPokemonSet> → Vec<Pokemon>
+    ↓
+BattleBuilder → Battle → BattleState + Players + Config
+```
+
+### Type Conversions
+
+**RandomPokemonSet to Pokemon:**
+```rust
+impl RandomPokemonSet {
+    pub fn to_battle_pokemon(
+        &self,
+        data_repo: &GameDataRepository,
+        gen_repo: &GenerationRepository,
+    ) -> Result<Pokemon, DataError> {
+        let species_data = data_repo.pokemon.get(&self.species)?;
+        let nature_data = data_repo.natures.get(&self.nature)?;
+        
+        Ok(Pokemon::new(
+            species_data,
+            self.level,
+            self.ability.clone(),
+            self.moves.clone(),
+            self.item.clone(),
+            nature_data,
+            self.evs,
+            self.ivs,
+            self.gender,
         ))
     }
 }
 ```
 
-### Advanced Features
+## Usage Patterns
 
-**Random Team Generation:**
+### Complete Battle Construction
 ```rust
-impl BattleBuilder {
-    fn generate_random_team(&self) -> Result<Vec<Pokemon>, BuilderError> {
-        let format_name = self.format.as_ref()
-            .map(|f| f.format_name())
-            .unwrap_or("gen9randombattle");
-
-        let mut team_loader = RandomTeamLoader::new(self.data_repository.clone())?;
-        team_loader.load_team(format_name)
-            .map_err(BuilderError::DataError)
-    }
-
-    pub fn run(self) -> Result<BattleResult, BuilderError> {
-        let environment = self.build()?;
-        Ok(environment.run_battle())
-    }
-}
+let battle = BattleBuilder::new(data_repo, gen_repo)
+    .format(FormatBuilder::new().gen9_ou().build()?)
+    .random_teams()?
+    .auto_players()
+    .max_turns(1000)
+    .seed(42)
+    .build()?;
 ```
 
-## Validation Architecture
-
-### Multi-layered Validation Strategy
-
-1. **Build-time Validation**: Strict checks during `build()` calls
-2. **Incremental Validation**: Field-level validation during construction
-3. **Format-specific Validation**: Rules based on battle format constraints
-4. **Data Dependency Validation**: External data source verification
-
-### Error Context System
-
+### Custom Team Building
 ```rust
-pub struct ValidationContext {
-    field_path: Vec<String>,
-    warnings: Vec<BuilderWarning>,
-    strict_mode: bool,
-}
-
-impl ValidationContext {
-    pub fn push_field(&mut self, field: &str) {
-        self.field_path.push(field.to_string());
-    }
-
-    pub fn current_path(&self) -> String {
-        self.field_path.join(".")
-    }
-
-    pub fn add_warning(&mut self, warning: BuilderWarning) {
-        self.warnings.push(warning);
-    }
-}
+let team = TeamBuilder::new(data_repo)
+    .format(&battle_format)
+    .pokemon("Pikachu")
+        .level(50)
+        .ability("Static")
+        .move_slot("Thunderbolt")
+        .move_slot("Quick Attack")
+        .evs(0, 252, 0, 252, 4, 0)
+        .finish()
+    .pokemon("Charizard")
+        .level(50)
+        .ability("Blaze")
+        .move_slot("Flamethrower")
+        .finish()
+    .build()?;
 ```
-
-## Type Safety Mechanisms
-
-### Compile-time Guarantees
-
-**Strong Typing:**
-```rust
-// Identifier types prevent category mixing
-pub struct SpeciesId(String);
-pub struct MoveId(String);
-pub struct AbilityId(String);
-
-// Enum-based format types with associated rules
-pub enum FormatType {
-    Singles,   // 1 active per side
-    Doubles,   // 2 active per side
-    VGC,       // 2 active per side, team size 4
-    Triples,   // 3 active per side
-}
-```
-
-**Memory Safety:**
-- Move semantics prevent builder reuse after consumption
-- Repository references ensure data availability during construction
-- Type-erased storage (`Box<dyn Player>`) with static dispatch where possible
-
-### Runtime Safety
-
-**Bounds Checking:**
-```rust
-pub fn level(mut self, level: u8) -> Self {
-    if level >= 1 && level <= 100 {
-        self.pokemon.level = level;
-    } else {
-        self.add_error(BuilderError::InvalidValue {
-            field: "level".to_string(),
-            value: level.to_string(),
-            reason: "Level must be between 1 and 100".to_string(),
-        });
-    }
-    self
-}
-```
-
-## Integration Points
-
-The builders module integrates with:
-- **Data Module**: Validates against `GameDataRepository` for data consistency
-- **Core Module**: Constructs `BattleState`, `BattleFormat`, and related types
-- **Engine Module**: Provides validated components for battle simulation
-- **Testing Module**: Supplies builders for test case construction

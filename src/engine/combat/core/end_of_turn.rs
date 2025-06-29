@@ -13,7 +13,7 @@ use crate::core::battle_format::{BattlePosition, SideReference};
 use crate::core::battle_state::BattleState;
 use crate::core::instructions::{
     BattleInstruction, BattleInstructions, PokemonInstruction, StatusInstruction, 
-    PokemonStatus, VolatileStatus, Weather, Terrain
+    PokemonStatus, VolatileStatus, Weather, Terrain, FieldInstruction
 };
 use crate::types::PokemonType;
 use std::collections::HashMap;
@@ -200,16 +200,108 @@ fn is_hail_immune(pokemon: &crate::core::battle_state::Pokemon) -> bool {
     }
 }
 
-/// Trigger weather-related abilities (placeholder for now)
+/// Trigger weather-related abilities
 fn trigger_weather_abilities(
-    _battle_state: &BattleState
+    battle_state: &BattleState
 ) -> Vec<BattleInstructions> {
-    // TODO: Implement weather ability triggers like:
-    // - Dry Skin in rain/sun
-    // - Rain Dish in rain
-    // - Solar Power in sun
-    // - Ice Body in hail
-    Vec::new()
+    let mut instructions = Vec::new();
+    let current_weather = battle_state.weather();
+    
+    for position in battle_state.get_all_active_positions() {
+        if let Some(pokemon) = battle_state.get_pokemon_at_position(position) {
+            if pokemon.hp == 0 {
+                continue; // Skip fainted Pokemon
+            }
+            
+            match pokemon.ability.as_str() {
+                "dryskin" => {
+                    match current_weather {
+                        Weather::Rain => {
+                            if pokemon.hp < pokemon.max_hp {
+                                let heal_amount = (pokemon.max_hp / 8).max(1);
+                                instructions.push(BattleInstructions::new(
+                                    100.0,
+                                    vec![BattleInstruction::Pokemon(PokemonInstruction::Heal {
+                                        target: position,
+                                        amount: heal_amount,
+                                        previous_hp: Some(pokemon.hp),
+                                    })]
+                                ));
+                            }
+                        }
+                        Weather::Sun => {
+                            let damage_amount = (pokemon.max_hp / 8).max(1);
+                            instructions.push(BattleInstructions::new(
+                                100.0,
+                                vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                                    target: position,
+                                    amount: damage_amount,
+                                    previous_hp: Some(pokemon.hp),
+                                })]
+                            ));
+                        }
+                        _ => {}
+                    }
+                }
+                "raindish" => {
+                    if current_weather == Weather::Rain && pokemon.hp < pokemon.max_hp {
+                        let heal_amount = (pokemon.max_hp / 16).max(1);
+                        instructions.push(BattleInstructions::new(
+                            100.0,
+                            vec![BattleInstruction::Pokemon(PokemonInstruction::Heal {
+                                target: position,
+                                amount: heal_amount,
+                                previous_hp: Some(pokemon.hp),
+                            })]
+                        ));
+                    }
+                }
+                "icebody" => {
+                    if current_weather == Weather::Hail && pokemon.hp < pokemon.max_hp {
+                        let heal_amount = (pokemon.max_hp / 16).max(1);
+                        instructions.push(BattleInstructions::new(
+                            100.0,
+                            vec![BattleInstruction::Pokemon(PokemonInstruction::Heal {
+                                target: position,
+                                amount: heal_amount,
+                                previous_hp: Some(pokemon.hp),
+                            })]
+                        ));
+                    }
+                }
+                "solarpower" => {
+                    if current_weather == Weather::Sun {
+                        let damage_amount = (pokemon.max_hp / 8).max(1);
+                        instructions.push(BattleInstructions::new(
+                            100.0,
+                            vec![BattleInstruction::Pokemon(PokemonInstruction::Damage {
+                                target: position,
+                                amount: damage_amount,
+                                previous_hp: Some(pokemon.hp),
+                            })]
+                        ));
+                    }
+                }
+                "poisonheal" => {
+                    if matches!(pokemon.status, PokemonStatus::Poison | PokemonStatus::BadlyPoisoned) 
+                        && pokemon.hp < pokemon.max_hp {
+                        let heal_amount = (pokemon.max_hp / 8).max(1);
+                        instructions.push(BattleInstructions::new(
+                            100.0,
+                            vec![BattleInstruction::Pokemon(PokemonInstruction::Heal {
+                                target: position,
+                                amount: heal_amount,
+                                previous_hp: Some(pokemon.hp),
+                            })]
+                        ));
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+    
+    instructions
 }
 
 /// Apply terrain effects
@@ -263,8 +355,8 @@ fn is_grounded(pokemon: &crate::core::battle_state::Pokemon) -> bool {
         return false;
     }
     
-    if let Some(ref item) = pokemon.item {
-        if *item == crate::types::Items::AIRBALLOON {
+    if let Some(item) = pokemon.item {
+        if item == crate::types::Items::AIRBALLOON {
             return false;
         }
     }
@@ -284,15 +376,169 @@ fn is_grounded(pokemon: &crate::core::battle_state::Pokemon) -> bool {
 
 /// Decrement field effect timers
 fn decrement_field_timers(
-    _battle_state: &BattleState
+    battle_state: &BattleState
 ) -> Vec<BattleInstructions> {
-    // TODO: Implement field timer decrementation
-    // - Trick Room
-    // - Light Screen / Reflect
-    // - Aurora Veil
-    // - Tailwind
-    // - etc.
-    Vec::new()
+    let mut instructions = Vec::new();
+    
+    // Decrement weather timer
+    if let Some(weather_turns) = battle_state.field.weather.turns_remaining {
+        if weather_turns > 0 {
+            if weather_turns == 1 {
+                // Weather is about to end
+                instructions.push(BattleInstructions::new(
+                    100.0,
+                    vec![BattleInstruction::Field(FieldInstruction::Weather {
+                        new_weather: Weather::None,
+                        turns: None,
+                        source: None,
+                        previous_weather: battle_state.field.weather.condition,
+                        previous_turns: Some(weather_turns),
+                    })]
+                ));
+            } else {
+                // Just decrement timer
+                instructions.push(BattleInstructions::new(
+                    100.0,
+                    vec![BattleInstruction::Field(FieldInstruction::Weather {
+                        new_weather: battle_state.field.weather.condition,
+                        turns: Some(weather_turns - 1),
+                        source: battle_state.field.weather.source,
+                        previous_weather: battle_state.field.weather.condition,
+                        previous_turns: Some(weather_turns),
+                    })]
+                ));
+            }
+        }
+    }
+    
+    // Decrement terrain timer
+    if let Some(terrain_turns) = battle_state.field.terrain.turns_remaining {
+        if terrain_turns > 0 {
+            if terrain_turns == 1 {
+                // Terrain is about to end
+                instructions.push(BattleInstructions::new(
+                    100.0,
+                    vec![BattleInstruction::Field(FieldInstruction::Terrain {
+                        new_terrain: Terrain::None,
+                        turns: None,
+                        source: None,
+                        previous_terrain: battle_state.field.terrain.condition,
+                        previous_turns: Some(terrain_turns),
+                    })]
+                ));
+            } else {
+                // Just decrement timer
+                instructions.push(BattleInstructions::new(
+                    100.0,
+                    vec![BattleInstruction::Field(FieldInstruction::Terrain {
+                        new_terrain: battle_state.field.terrain.condition,
+                        turns: Some(terrain_turns - 1),
+                        source: battle_state.field.terrain.source,
+                        previous_terrain: battle_state.field.terrain.condition,
+                        previous_turns: Some(terrain_turns),
+                    })]
+                ));
+            }
+        }
+    }
+    
+    // Decrement global effect timers
+    if let Some(trick_room_state) = &battle_state.field.global_effects.trick_room {
+        if trick_room_state.turns_remaining > 0 {
+            if trick_room_state.turns_remaining == 1 {
+                // Trick Room is about to end
+                instructions.push(BattleInstructions::new(
+                    100.0,
+                    vec![BattleInstruction::Field(FieldInstruction::TrickRoom {
+                        active: false,
+                        turns: None,
+                        source: None,
+                        previous_active: true,
+                        previous_turns: Some(trick_room_state.turns_remaining),
+                    })]
+                ));
+            } else {
+                // Just decrement timer
+                instructions.push(BattleInstructions::new(
+                    100.0,
+                    vec![BattleInstruction::Field(FieldInstruction::TrickRoom {
+                        active: true,
+                        turns: Some(trick_room_state.turns_remaining - 1),
+                        source: trick_room_state.source,
+                        previous_active: true,
+                        previous_turns: Some(trick_room_state.turns_remaining),
+                    })]
+                ));
+            }
+        }
+    }
+    
+    if let Some(gravity_state) = &battle_state.field.global_effects.gravity {
+        if gravity_state.turns_remaining > 0 {
+            if gravity_state.turns_remaining == 1 {
+                // Gravity is about to end
+                instructions.push(BattleInstructions::new(
+                    100.0,
+                    vec![BattleInstruction::Field(FieldInstruction::Gravity {
+                        active: false,
+                        turns: None,
+                        source: None,
+                        previous_active: true,
+                        previous_turns: Some(gravity_state.turns_remaining),
+                    })]
+                ));
+            } else {
+                // Just decrement timer
+                instructions.push(BattleInstructions::new(
+                    100.0,
+                    vec![BattleInstruction::Field(FieldInstruction::Gravity {
+                        active: true,
+                        turns: Some(gravity_state.turns_remaining - 1),
+                        source: gravity_state.source,
+                        previous_active: true,
+                        previous_turns: Some(gravity_state.turns_remaining),
+                    })]
+                ));
+            }
+        }
+    }
+    
+    // Decrement side condition timers
+    for (side_index, side) in battle_state.sides.iter().enumerate() {
+        let side_ref = if side_index == 0 {
+            crate::core::battle_format::SideReference::SideOne
+        } else {
+            crate::core::battle_format::SideReference::SideTwo
+        };
+        
+        for (condition, duration) in &side.side_conditions {
+            if *duration > 0 {
+                if *duration == 1 {
+                    // Side condition is about to end
+                    instructions.push(BattleInstructions::new(
+                        100.0,
+                        vec![BattleInstruction::Field(FieldInstruction::RemoveSideCondition {
+                            side: side_ref,
+                            condition: *condition,
+                            previous_duration: *duration,
+                        })]
+                    ));
+                } else {
+                    // Just decrement timer
+                    instructions.push(BattleInstructions::new(
+                        100.0,
+                        vec![BattleInstruction::Field(FieldInstruction::DecrementSideConditionDuration {
+                            side: side_ref,
+                            condition: *condition,
+                            previous_duration: *duration,
+                        })]
+                    ));
+                }
+            }
+        }
+    }
+    
+    instructions
 }
 
 /// Apply status condition damage (burn, poison, toxic) with ability interactions
@@ -372,9 +618,9 @@ fn apply_item_effects(
     
     for position in battle_state.get_all_active_positions() {
         if let Some(pokemon) = battle_state.get_pokemon_at_position(position) {
-            if let Some(ref item) = pokemon.item {
-                match item.as_str() {
-                    "leftovers" => {
+            if let Some(item) = pokemon.item {
+                match item {
+                    crate::types::Items::LEFTOVERS => {
                         if pokemon.hp < pokemon.max_hp {
                             let healing = (pokemon.max_hp / 16).max(1);
                             instructions.push(BattleInstructions::new(
@@ -389,7 +635,7 @@ fn apply_item_effects(
                             ));
                         }
                     }
-                    "blacksludge" => {
+                    crate::types::Items::BLACKSLUDGE => {
                         if pokemon.types.contains(&PokemonType::Poison) {
                             // Heal if Poison type
                             if pokemon.hp < pokemon.max_hp {
@@ -420,7 +666,7 @@ fn apply_item_effects(
                             ));
                         }
                     }
-                    "stickybarb" => {
+                    crate::types::Items::STICKYBARB => {
                         let damage = (pokemon.max_hp / 8).max(1);
                         instructions.push(BattleInstructions::new(
                             100.0,

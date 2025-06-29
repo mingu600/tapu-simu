@@ -1,14 +1,15 @@
 # Config Module Documentation
 
-The config module provides comprehensive configuration management for Tapu Simu with file-based and environment-based configuration loading, validation, and builder patterns for flexible setup.
+The config module provides comprehensive configuration management for Tapu Simu with hierarchical configuration structures, fluent builder patterns, JSON-based persistence, and environment variable override support.
 
 ## Architecture Overview
 
-The config module consists of four main components:
-- **Configuration Structures**: Hierarchical configuration organization
-- **Builder Pattern**: Fluent API for configuration construction
-- **File Management**: JSON-based configuration persistence
-- **Environment Integration**: Environment variable override support
+The config module (`src/config.rs`) implements a sophisticated configuration system with four main components:
+
+- **Configuration Structures** - Hierarchical configuration organization with type safety
+- **Builder Pattern** - Fluent API for configuration construction with validation
+- **File Management** - JSON-based configuration persistence with error handling
+- **Environment Integration** - Environment variable override support with intelligent defaults
 
 ## Configuration Structures
 
@@ -31,9 +32,10 @@ pub struct Config {
 
 **Key Features:**
 - Hierarchical organization with specialized configuration sections
-- Serde support for JSON serialization/deserialization
-- Intelligent defaults for all configuration options
+- Full serde support for JSON serialization/deserialization
+- Intelligent default values for all configuration options
 - Built-in validation with detailed error reporting
+- Clone and Debug implementations for development workflow
 
 ### Logging Configuration (`LoggingConfig`)
 
@@ -57,10 +59,26 @@ pub struct LoggingConfig {
 ```
 
 **Default Settings:**
-- Debug logging disabled by default
-- File size limit of 100MB
-- Output to stdout unless file specified
-- Individual component logging controls
+```rust
+impl Default for LoggingConfig {
+    fn default() -> Self {
+        Self {
+            debug: false,                 // Production-safe
+            log_instructions: false,      // Minimal logging by default
+            log_moves: false,            // Optional battle logging
+            log_damage: false,           // Optional damage logging
+            max_file_size_mb: 100,       // 100MB rotation limit
+            log_file: None,              // stdout by default
+        }
+    }
+}
+```
+
+**Logging Control Features:**
+- Granular logging control for different battle components
+- File rotation support with configurable size limits
+- Optional file output with fallback to stdout
+- Debug mode for development workflows
 
 ### Performance Configuration (`PerformanceConfig`)
 
@@ -81,11 +99,26 @@ pub struct PerformanceConfig {
 }
 ```
 
-**Intelligent Defaults:**
-- Parallel battles enabled by default
-- Auto-detection of thread count (0 = CPU count)
-- Caching enabled with 256MB limit
-- Optimized for common usage patterns
+**Intelligent Performance Defaults:**
+```rust
+impl Default for PerformanceConfig {
+    fn default() -> Self {
+        Self {
+            parallel_battles: true,       // Enable parallelism by default
+            thread_count: 0,             // Auto-detect CPU cores
+            cache_moves: true,           // Cache frequently used move data
+            cache_pokemon: true,         // Cache Pokemon data
+            max_cache_size_mb: 256,      // 256MB cache limit
+        }
+    }
+}
+```
+
+**Performance Features:**
+- Auto-detection of available CPU cores
+- Configurable caching for frequently accessed data
+- Memory-bounded caching with configurable limits
+- Parallel battle execution control
 
 ### Battle Configuration (`BattleConfig`)
 
@@ -106,20 +139,51 @@ pub struct BattleConfig {
 }
 ```
 
+**Battle Control Defaults:**
+```rust
+impl Default for BattleConfig {
+    fn default() -> Self {
+        Self {
+            default_max_turns: 1000,         // Prevent infinite loops
+            strict_format_validation: true,   // Competitive accuracy
+            damage_randomization: true,       // Authentic mechanics
+            random_seed: None,               // Non-deterministic by default
+            enable_undo: true,               // Development-friendly
+        }
+    }
+}
+```
+
 **Battle Control Features:**
-- Turn limit protection (default 1000 turns)
+- Turn limit protection against infinite battles
 - Strict format validation for competitive accuracy
 - Damage randomization for authentic Pokemon mechanics
-- Deterministic battles via seed control
-- Undo support for instruction replay
+- Deterministic battle support via seed control
+- Instruction undo support for development and testing
 
 ## Configuration Builder (`ConfigBuilder`)
 
-Fluent API builder pattern for constructing configurations with validation.
+Fluent API builder pattern for constructing validated configurations.
 
 ### Builder Construction
 
-**Basic Usage:**
+**Core Builder Structure:**
+```rust
+#[derive(Debug, Clone)]
+pub struct ConfigBuilder {
+    config: Config,
+}
+
+impl ConfigBuilder {
+    pub fn new() -> Self {
+        Self {
+            config: Config::default(),
+        }
+    }
+}
+```
+
+**Basic Usage Pattern:**
 ```rust
 let config = Config::builder()
     .data_path("/path/to/data")
@@ -136,6 +200,7 @@ let config = Config::builder()
 **Data Configuration:**
 ```rust
 impl ConfigBuilder {
+    /// Set the data path
     pub fn data_path(mut self, path: impl Into<PathBuf>) -> Self {
         self.config.data_path = path.into();
         self
@@ -146,16 +211,31 @@ impl ConfigBuilder {
 **Logging Configuration:**
 ```rust
 impl ConfigBuilder {
+    /// Enable debug logging
     pub fn debug(mut self, enable: bool) -> Self {
         self.config.logging.debug = enable;
         self
     }
 
+    /// Enable instruction logging
     pub fn log_instructions(mut self, enable: bool) -> Self {
         self.config.logging.log_instructions = enable;
         self
     }
 
+    /// Enable move logging
+    pub fn log_moves(mut self, enable: bool) -> Self {
+        self.config.logging.log_moves = enable;
+        self
+    }
+
+    /// Enable damage logging
+    pub fn log_damage(mut self, enable: bool) -> Self {
+        self.config.logging.log_damage = enable;
+        self
+    }
+
+    /// Set log file
     pub fn log_file(mut self, path: impl Into<PathBuf>) -> Self {
         self.config.logging.log_file = Some(path.into());
         self
@@ -166,16 +246,31 @@ impl ConfigBuilder {
 **Performance Configuration:**
 ```rust
 impl ConfigBuilder {
+    /// Enable parallel battles
     pub fn parallel_battles(mut self, enable: bool) -> Self {
         self.config.performance.parallel_battles = enable;
         self
     }
 
+    /// Set thread count (0 for auto-detection)
     pub fn thread_count(mut self, count: usize) -> Self {
         self.config.performance.thread_count = count;
         self
     }
 
+    /// Enable move caching
+    pub fn cache_moves(mut self, enable: bool) -> Self {
+        self.config.performance.cache_moves = enable;
+        self
+    }
+
+    /// Enable Pokemon caching
+    pub fn cache_pokemon(mut self, enable: bool) -> Self {
+        self.config.performance.cache_pokemon = enable;
+        self
+    }
+
+    /// Set maximum cache size
     pub fn max_cache_size(mut self, size_mb: u64) -> Self {
         self.config.performance.max_cache_size_mb = size_mb;
         self
@@ -186,18 +281,33 @@ impl ConfigBuilder {
 **Battle Configuration:**
 ```rust
 impl ConfigBuilder {
+    /// Set default maximum turns
     pub fn max_turns(mut self, turns: u32) -> Self {
         self.config.battle.default_max_turns = turns;
         self
     }
 
+    /// Enable strict format validation
+    pub fn strict_validation(mut self, enable: bool) -> Self {
+        self.config.battle.strict_format_validation = enable;
+        self
+    }
+
+    /// Enable damage randomization
     pub fn damage_randomization(mut self, enable: bool) -> Self {
         self.config.battle.damage_randomization = enable;
         self
     }
 
+    /// Set random seed for deterministic battles
     pub fn random_seed(mut self, seed: u64) -> Self {
         self.config.battle.random_seed = Some(seed);
+        self
+    }
+
+    /// Enable undo support
+    pub fn enable_undo(mut self, enable: bool) -> Self {
+        self.config.battle.enable_undo = enable;
         self
     }
 }
@@ -205,14 +315,16 @@ impl ConfigBuilder {
 
 ### Builder Validation
 
-**Build with Validation:**
+**Validated Build Process:**
 ```rust
 impl ConfigBuilder {
+    /// Build the configuration with validation
     pub fn build(self) -> ConfigResult<Config> {
         self.config.validate()?;
         Ok(self.config)
     }
 
+    /// Build the configuration without validation
     pub fn build_unchecked(self) -> Config {
         self.config
     }
@@ -223,11 +335,17 @@ impl ConfigBuilder {
 
 ### Configuration Persistence
 
-**File Loading:**
+**File Loading Methods:**
 ```rust
 impl Config {
     /// Load configuration from a file
     pub fn load(path: impl AsRef<Path>) -> ConfigResult<Self> {
+        Self::from_file(path)
+    }
+
+    /// Load configuration from a file (explicit method)
+    pub fn from_file(path: impl AsRef<Path>) -> ConfigResult<Self> {
+        let path = path.as_ref();
         let content = std::fs::read_to_string(path)
             .map_err(|e| ConfigError::FileNotFound { path: path.to_path_buf() })?;
         
@@ -271,18 +389,23 @@ impl Config {
 }
 ```
 
+**Path Discovery Strategy:**
+1. Check `{current_dir}/data/ps-extracted`
+2. Fallback to `data/ps-extracted` relative path
+3. Allow validation to catch missing paths later
+
 ## Environment Integration
 
 ### Environment Variable Support
 
 **Supported Environment Variables:**
-- `TAPU_SIMU_DATA_PATH`: Override data directory path
-- `TAPU_SIMU_DEBUG`: Enable debug logging
-- `TAPU_SIMU_LOG_INSTRUCTIONS`: Enable instruction logging
-- `TAPU_SIMU_LOG_FILE`: Set log file path
-- `TAPU_SIMU_THREADS`: Set thread count
-- `TAPU_SIMU_MAX_TURNS`: Set maximum turns per battle
-- `TAPU_SIMU_SEED`: Set random seed for deterministic battles
+- `TAPU_SIMU_DATA_PATH` - Override data directory path
+- `TAPU_SIMU_DEBUG` - Enable debug logging
+- `TAPU_SIMU_LOG_INSTRUCTIONS` - Enable instruction logging
+- `TAPU_SIMU_LOG_FILE` - Set log file path
+- `TAPU_SIMU_THREADS` - Set thread count
+- `TAPU_SIMU_MAX_TURNS` - Set maximum turns per battle
+- `TAPU_SIMU_SEED` - Set random seed for deterministic battles
 
 ### Environment Loading
 
@@ -303,9 +426,26 @@ impl Config {
             config.logging.debug = debug.parse().unwrap_or(false);
         }
 
+        if let Ok(log_instructions) = std::env::var("TAPU_SIMU_LOG_INSTRUCTIONS") {
+            config.logging.log_instructions = log_instructions.parse().unwrap_or(false);
+        }
+
+        if let Ok(log_file) = std::env::var("TAPU_SIMU_LOG_FILE") {
+            config.logging.log_file = Some(PathBuf::from(log_file));
+        }
+
         // Performance settings
         if let Ok(thread_count) = std::env::var("TAPU_SIMU_THREADS") {
             config.performance.thread_count = thread_count.parse().unwrap_or(0);
+        }
+
+        // Battle settings
+        if let Ok(max_turns) = std::env::var("TAPU_SIMU_MAX_TURNS") {
+            config.battle.default_max_turns = max_turns.parse().unwrap_or(1000);
+        }
+
+        if let Ok(seed) = std::env::var("TAPU_SIMU_SEED") {
+            config.battle.random_seed = seed.parse().ok();
         }
 
         config.validate()?;
@@ -328,6 +468,10 @@ impl Config {
             self.logging.debug = debug.parse().unwrap_or(self.logging.debug);
         }
 
+        if let Ok(thread_count) = std::env::var("TAPU_SIMU_THREADS") {
+            self.performance.thread_count = thread_count.parse().unwrap_or(self.performance.thread_count);
+        }
+
         self.validate()?;
         Ok(self)
     }
@@ -338,7 +482,7 @@ impl Config {
 
 ### Comprehensive Validation
 
-**Configuration Validation:**
+**Configuration Validation Implementation:**
 ```rust
 impl Config {
     /// Validate the configuration
@@ -372,6 +516,12 @@ impl Config {
 }
 ```
 
+**Validation Rules:**
+- Data path must exist for successful validation
+- Cache size must be greater than 0
+- Max turns must be greater than 0
+- All validations provide detailed error context
+
 ### Runtime Configuration Helpers
 
 **Thread Count Resolution:**
@@ -389,6 +539,41 @@ impl Config {
     }
 }
 ```
+
+**Runtime Helper Features:**
+- Auto-detection of CPU cores when thread_count is 0
+- Graceful fallback to single-threaded execution
+- Integration with std::thread::available_parallelism()
+
+## Error Handling
+
+### Configuration Error Types
+
+**ConfigError Definition:**
+```rust
+#[derive(Debug, Error)]
+pub enum ConfigError {
+    #[error("Configuration file not found: {path}")]
+    FileNotFound { path: PathBuf },
+    
+    #[error("Invalid configuration format")]
+    InvalidFormat(#[from] serde_json::Error),
+    
+    #[error("Missing required configuration field: {field}")]
+    MissingField { field: String },
+    
+    #[error("Invalid configuration value for {field}: {value}")]
+    InvalidValue { field: String, value: String },
+}
+
+pub type ConfigResult<T> = Result<T, ConfigError>;
+```
+
+**Error Handling Features:**
+- Detailed error context with field names and values
+- JSON parsing error propagation from serde
+- File system error handling with path information
+- Type-safe error handling with thiserror integration
 
 ## Usage Patterns
 
@@ -430,21 +615,48 @@ let config = Config::load("tapu-simu.json")?
 
 ### Environment-First Configuration
 
-**Environment Priority:**
+**Environment Priority Loading:**
 ```rust
 // Pure environment configuration
 let config = Config::from_env()?;
 
-// Fallback pattern
+// Fallback pattern with graceful degradation
 let config = Config::load("tapu-simu.json")
     .or_else(|_| Config::from_env())
     .unwrap_or_else(|_| Config::default());
 ```
 
-## Integration Points
+### Configuration Patterns
 
-The config module integrates with:
-- **Simulator Module**: Primary configuration consumer
-- **Data Module**: Data path and caching configuration
-- **Engine Module**: Battle behavior configuration
-- **Testing Module**: Deterministic testing via seed control
+**Development Configuration:**
+```rust
+let config = Config::builder()
+    .debug(true)
+    .log_instructions(true)
+    .log_moves(true)
+    .log_damage(true)
+    .strict_validation(true)
+    .enable_undo(true)
+    .build()?;
+```
+
+**Production Configuration:**
+```rust
+let config = Config::builder()
+    .parallel_battles(true)
+    .thread_count(16)
+    .cache_moves(true)
+    .cache_pokemon(true)
+    .max_cache_size(512)
+    .build()?;
+```
+
+**Testing Configuration:**
+```rust
+let config = Config::builder()
+    .random_seed(12345)
+    .damage_randomization(false)
+    .enable_undo(true)
+    .max_turns(100)
+    .build()?;
+```

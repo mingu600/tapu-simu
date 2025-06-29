@@ -1,26 +1,25 @@
-# Data Module Documentation
+# Tapu Simu Data Module - Technical Implementation Guide
 
-The data module implements comprehensive Pokemon data management with Pokemon Showdown integration, generation-aware loading, and efficient repository patterns. It provides the data foundation for all battle calculations and team building.
+The data module provides the foundational data management layer for Tapu Simu's multi-format Pokemon battle simulator. It implements sophisticated repository patterns, Pokemon Showdown integration, generation-aware data loading, and performance-optimized lookup systems.
 
-## Architecture Overview
+## Core Architecture
 
-The data module consists of six main components:
-- **Data Types**: Internal and Pokemon Showdown data structures
-- **Repository System**: Type-safe data storage and access patterns
-- **Pokemon Showdown Integration**: Direct PS JSON format support
-- **Generation Management**: Generation-specific data loading and change tracking
-- **Random Team Generation**: Format-specific team building
-- **Data Conversion**: Type-safe conversion between data formats
+The data module consists of seven primary components operating in a layered architecture:
 
-## Data Types
+1. **Data Types Layer** (`types.rs`): Core Pokemon data structures with type safety
+2. **Pokemon Showdown Integration Layer** (`showdown_types.rs`): Direct PS JSON compatibility
+3. **Repository Layer** (`repositories/`): Optimized data storage and retrieval
+4. **Generation Management Layer** (`generation_loader.rs`): Multi-generation data handling
+5. **Random Battle Layer** (`random_team_loader.rs`): Format-specific team generation
+6. **Module Layer** (`mod.rs`): Public API and component integration
+7. **Data Files Layer**: JSON data extracted from Pokemon Showdown
 
-### Internal Types (`types.rs`)
+## Data Types Implementation (`types.rs`)
 
-Engine-optimized data structures for battle calculations.
+### Core Statistics Structure
 
-**Core Battle Types:**
 ```rust
-pub struct EngineBaseStats {
+pub struct Stats {
     pub hp: i16,
     pub attack: i16,
     pub defense: i16,
@@ -28,57 +27,104 @@ pub struct EngineBaseStats {
     pub special_defense: i16,
     pub speed: i16,
 }
-
-pub struct EnginePokemonData {
-    pub id: SpeciesId,
-    pub name: String,
-    pub types: Vec<PokemonType>,
-    pub base_stats: EngineBaseStats,
-    pub abilities: Vec<String>,
-    pub weight: f32,
-    pub height: f32,
-}
 ```
 
-**Nature System:**
+**Technical Details:**
+- Uses `i16` for overflow protection and negative stat handling
+- Implements `Default`, `Clone`, `Debug`, `PartialEq` for comprehensive functionality
+- Provides arithmetic operations and display formatting
+
+### Nature System Implementation
+
 ```rust
 pub enum Nature {
     Hardy, Lonely, Brave, Adamant, Naughty,
     Bold, Docile, Relaxed, Impish, Lax,
-    // ... complete nature enum
-}
-
-impl Nature {
-    pub fn get_stat_modifier(&self, stat: &str) -> f32 {
-        // 1.1x for boosted stats, 0.9x for reduced stats, 1.0x for neutral
-    }
+    Timid, Hasty, Serious, Jolly, Naive,
+    Modest, Mild, Quiet, Bashful, Rash,
+    Calm, Gentle, Sassy, Careful, Quirky,
 }
 ```
 
-**Type Effectiveness:**
+**Implementation Features:**
+- **Stat Modifier Methods**: Individual methods for each stat (`attack_modifier()`, `defense_modifier()`, etc.)
+- **Accurate Multipliers**: 1.1x boost, 0.9x reduction, 1.0x neutral
+- **FromNormalizedString Trait**: Type-safe string conversion with error handling
+- **Complete Coverage**: All 25 official Pokemon natures
+
+**Nature Modifier Logic:**
 ```rust
-pub struct TypeEffectiveness {
-    effectiveness_chart: HashMap<(PokemonType, PokemonType), f32>,
-}
-
-impl TypeEffectiveness {
-    pub fn get_effectiveness(&self, attacking_type: PokemonType, defending_type: PokemonType) -> f32 {
-        // Returns 0.0, 0.25, 0.5, 1.0, 2.0, or 4.0
+impl Nature {
+    pub fn attack_modifier(&self) -> f64 {
+        match self {
+            Nature::Lonely | Nature::Brave | Nature::Adamant | Nature::Naughty => 1.1,
+            Nature::Bold | Nature::Timid | Nature::Modest | Nature::Calm => 0.9,
+            _ => 1.0,
+        }
     }
 }
 ```
 
-### Pokemon Showdown Types (`showdown_types.rs`)
+## Pokemon Showdown Integration (`showdown_types.rs`)
 
-Direct representations of Pokemon Showdown data formats.
+### Move Targeting System
 
-**Move Data:**
+```rust
+pub enum MoveTarget {
+    Normal,                    // Single adjacent opponent
+    Self_,                     // User only
+    AllAdjacentFoes,          // All adjacent opponents
+    AllAdjacent,              // All adjacent Pokemon
+    AllAllies,                // All ally Pokemon
+    All,                      // All Pokemon on field
+    Any,                      // Any single Pokemon
+    Scripted,                 // Special script-defined targeting
+    RandomNormal,             // Random adjacent opponent
+    AllySide,                 // User's entire side
+    FoeSide,                  // Opponent's entire side
+    AllyTeam,                 // All allies including reserves
+    AllOpponents,             // All opponents
+    AllOpposingPokemon,       // All opponents on field
+    AllPokemon,               // Every Pokemon in battle
+}
+```
+
+**Multi-Format Targeting Logic:**
+```rust
+impl MoveTarget {
+    pub fn requires_target_selection(&self, active_per_side: usize) -> bool {
+        match self {
+            MoveTarget::Normal | MoveTarget::Any => active_per_side > 1,
+            MoveTarget::AllAdjacentFoes | MoveTarget::AllAdjacent => false,
+            _ => false,
+        }
+    }
+
+    pub fn get_default_targets(&self, active_per_side: usize) -> Vec<(usize, usize)> {
+        match self {
+            MoveTarget::Normal => vec![(1, 0)], // First opponent slot
+            MoveTarget::AllAdjacentFoes => {
+                // Returns all adjacent opponent positions based on format
+                if active_per_side == 1 {
+                    vec![(1, 0)]
+                } else {
+                    vec![(1, 0), (1, 1)]
+                }
+            }
+            // ... complete targeting logic for all formats
+        }
+    }
+}
+```
+
+### Move Data Structure
+
 ```rust
 pub struct MoveData {
     pub id: String,
     pub name: String,
     pub type_: PokemonType,
-    pub category: String,
+    pub category: String,                    // Physical/Special/Status
     pub power: Option<u16>,
     pub accuracy: Option<u8>,
     pub pp: u8,
@@ -86,10 +132,34 @@ pub struct MoveData {
     pub target: MoveTarget,
     pub flags: MoveFlags,
     pub secondary_effects: Option<SecondaryEffect>,
+    pub critical_hit_ratio: Option<u8>,
+    pub flinch_chance: Option<u8>,
+    pub healing: Option<HealingData>,
+    pub drain: Option<DrainData>,
+    pub multi_hit: Option<MultiHitData>,
+    pub recoil: Option<RecoilData>,
+    pub self_switch: Option<String>,
+    pub weather: Option<String>,
+    pub status: Option<StatusCondition>,
+    pub boosts: Option<StatBoosts>,
+    pub terrain: Option<String>,
+    pub force_switch: bool,
+    pub ohko: bool,
+    pub sleep_usable: bool,
+    pub z_move: Option<ZMoveData>,
+    pub max_move: Option<MaxMoveData>,
+    // ... 30+ total fields
 }
 ```
 
-**Pokemon Data:**
+**Advanced Features:**
+- **Flag System**: `has_flag()` method for move property checking
+- **Engine Conversion**: `to_engine_move()` for battle system integration
+- **Custom Deserializers**: Type-safe JSON parsing with fallback handling
+- **Secondary Effects**: Complete support for chance-based effects and conditions
+
+### Pokemon Data Structure
+
 ```rust
 pub struct PokemonData {
     pub id: String,
@@ -103,225 +173,188 @@ pub struct PokemonData {
     pub evolution_stage: u8,
     pub evolution_line: Vec<String>,
     pub forms: Vec<String>,
-}
-```
-
-**Move Targeting:**
-```rust
-pub enum MoveTarget {
-    Normal,                    // Single adjacent target
-    Self_,                     // User only
-    AllAdjacentFoes,          // All adjacent opponents
-    AllAdjacent,              // All adjacent Pokemon
-    AllAllies,                // All ally Pokemon
-    All,                      // All Pokemon on field
-    Any,                      // Any Pokemon on field
-    Scripted,                 // Special targeting (Counter, etc.)
-    RandomNormal,             // Random adjacent opponent
-    // ... complete targeting system
+    pub gender_ratio: GenderRatio,
+    pub catch_rate: u8,
+    pub base_experience: u16,
+    pub growth_rate: String,
+    pub egg_groups: Vec<String>,
+    pub hatch_time: u16,
 }
 ```
 
 ## Repository System (`repositories/`)
 
-Type-safe repository pattern with optimized lookups and comprehensive error handling.
-
-### Type-Safe Identifiers (`types/identifiers.rs`)
-
-Normalized identifiers prevent lookup errors and ensure consistency.
+### GameDataRepository (Composite Pattern)
 
 ```rust
-pub struct SpeciesId(String);
-pub struct MoveId(String);
-pub struct ItemId(String);
-pub struct AbilityId(String);
-pub struct TypeId(String);
-
-impl SpeciesId {
-    pub fn from_name(name: &str) -> Self {
-        Self(normalize_name(name))
-    }
+pub struct GameDataRepository {
+    pub moves: MoveRepository,
+    pub pokemon: PokemonRepository, 
+    pub items: ItemRepository,
 }
 
+impl GameDataRepository {
+    pub fn global() -> Arc<GameDataRepository> {
+        static INSTANCE: OnceLock<Mutex<Option<Arc<GameDataRepository>>>> = OnceLock::new();
+        
+        let mutex = INSTANCE.get_or_init(|| Mutex::new(None));
+        let mut guard = mutex.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+        
+        if let Some(ref instance) = *guard {
+            instance.clone()
+        } else {
+            let instance = Arc::new(Self::new().expect("Failed to load game data"));
+            *guard = Some(instance.clone());
+            instance
+        }
+    }
+}
 ```
 
-### Repository Implementation Pattern
+**Singleton Features:**
+- **Thread-Safe Access**: `OnceLock<Mutex<Option<Arc<T>>>>` pattern
+- **Lazy Initialization**: Loads data only when first accessed  
+- **Poison Recovery**: Handles mutex poisoning gracefully
+- **Reference Counting**: Arc for shared ownership across threads
 
-Each repository follows a consistent pattern for data storage and access.
+### MoveRepository Performance Optimizations
 
-**Pokemon Repository (`pokemon_repository.rs`):**
+```rust
+pub struct MoveRepository {
+    moves: HashMap<MoveId, MoveData>,        // Primary storage
+    name_index: HashMap<String, MoveId>,     // Name lookup index
+}
+
+impl MoveRepository {
+    pub fn new() -> Result<Self, DataError> {
+        let raw_data: HashMap<String, MoveData> = serde_json::from_str(&moves_json)?;
+        
+        // Pre-allocate with capacity estimation
+        let capacity = raw_data.len();
+        let mut moves = HashMap::with_capacity(capacity);
+        let mut name_index = HashMap::with_capacity(capacity * 2); // 2x for name variations
+        
+        // Dual indexing construction
+        for (id, move_data) in raw_data {
+            let move_id = MoveId::from_id(&id);
+            let normalized_name = normalize_name(&move_data.name);
+            
+            name_index.insert(normalized_name, move_id.clone());
+            name_index.insert(id.clone(), move_id.clone()); // ID as name fallback
+            moves.insert(move_id, move_data);
+        }
+        
+        Ok(Self { moves, name_index })
+    }
+
+    pub fn find_by_name(&self, name: &str) -> Result<&MoveData, DataError> {
+        let normalized = normalize_name(name);
+        
+        // O(1) index lookup
+        if let Some(move_id) = self.name_index.get(&normalized) {
+            return Ok(self.moves.get(move_id).unwrap()); // Safe unwrap - index guarantees existence
+        }
+        
+        // O(n) fallback for edge cases
+        self.moves.values()
+            .find(|move_data| normalize_name(&move_data.name) == normalized)
+            .ok_or_else(|| DataError::MoveNotFound(MoveId::from_name(name)))
+    }
+}
+```
+
+**Optimization Techniques:**
+- **Dual Indexing**: Primary storage + normalized name index for O(1) lookups
+- **Capacity Pre-allocation**: Prevents hash map rehashing during initialization
+- **Index Guarantee**: Safe unwrapping after index lookup
+- **Fallback Strategy**: Linear search for edge cases while maintaining performance
+
+### PokemonRepository Implementation
+
 ```rust
 pub struct PokemonRepository {
-    pokemon_by_id: HashMap<SpeciesId, PokemonData>,
+    pokemon: HashMap<SpeciesId, PokemonData>,
     name_index: HashMap<String, SpeciesId>,
 }
 
 impl PokemonRepository {
-    pub fn find_by_id(&self, id: &SpeciesId) -> Result<&PokemonData, DataError> {
-        self.pokemon_by_id.get(id)
-            .ok_or_else(|| DataError::PokemonNotFound(id.clone()))
+    fn extract_weight(data: &HashMap<String, serde_json::Value>) -> f32 {
+        // PS-specific weight extraction from nested JSON
+        data.get("weightkg").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32
     }
-
-    pub fn find_by_name(&self, name: &str) -> Result<&PokemonData, DataError> {
-        let normalized_name = normalize_name(name);
-        
-        // Try name index first (O(1) lookup)
-        if let Some(id) = self.name_index.get(&normalized_name) {
-            return self.find_by_id(id);
-        }
-        
-        // Fallback to linear search for edge cases
-        self.pokemon_by_id.values()
-            .find(|pokemon| normalize_name(&pokemon.name) == normalized_name)
-            .ok_or_else(|| DataError::PokemonNotFound(SpeciesId::from_name(name)))
+    
+    pub fn find_by_weight_range(&self, min_kg: f32, max_kg: f32) -> Vec<&PokemonData> {
+        self.pokemon.values()
+            .filter(|pokemon| pokemon.weight_kg >= min_kg && pokemon.weight_kg <= max_kg)
+            .collect()
     }
 }
 ```
 
-**Move Repository (`move_repository.rs`):**
-- Identical pattern with move-specific data
-- Additional lookup by move category and type
-- Generation-aware move availability checking
+**Advanced Features:**
+- **Weight Mechanics**: Special handling for fling damage and weight-based moves
+- **Range Queries**: Efficient filtering for weight-based mechanics
+- **Multi-Index Support**: Name, ID, and property-based lookups
 
-**Item Repository (`item_repository.rs`):**
-- Item data management with type categorization
-- Berry, gem, and plate special handling
-- Generation-specific item availability
-
-**Ability Repository (`ability_repository.rs`):**
-- Ability data with effect descriptions
-- Generation-specific ability availability
-- Ability interaction metadata
-
-### Composite Repository (`mod.rs`)
-
-Central access point combining all repositories.
+### ItemRepository Specialized Methods
 
 ```rust
-pub struct GameDataRepository {
-    pub pokemon: PokemonRepository,
-    pub moves: MoveRepository,
-    pub items: ItemRepository,
-    pub abilities: AbilityRepository,
-}
-
-impl GameDataRepository {
-    pub fn new() -> Result<Self, DataError> {
-        Ok(Self {
-            pokemon: PokemonRepository::load()?,
-            moves: MoveRepository::load()?,
-            items: ItemRepository::load()?,
-            abilities: AbilityRepository::load()?,
-        })
+impl ItemRepository {
+    pub fn get_fling_power(&self, item_name: &str) -> Option<u16> {
+        self.find_by_name(item_name)
+            .ok()
+            .and_then(|item| item.fling_power)
     }
-
-    pub fn get_repository_stats(&self) -> RepositoryStats {
-        RepositoryStats {
-            pokemon_count: self.pokemon.len(),
-            move_count: self.moves.len(),
-            item_count: self.items.len(),
-            ability_count: self.abilities.len(),
-        }
-    }
-}
-```
-
-### Target Resolution
-
-Move targeting system with multi-format support.
-
-```rust
-impl MoveTarget {
-    pub fn get_default_targets(&self, user_position: BattlePosition, format: &BattleFormat) -> Vec<BattlePosition> {
-        match self {
-            MoveTarget::Normal => {
-                // Format-aware opponent targeting
-                user_position.opponent_positions(format)
-                    .into_iter()
-                    .take(1)
-                    .collect()
-            }
-            MoveTarget::AllAdjacentFoes => {
-                // All adjacent opponents based on format
-                user_position.adjacent_opponent_positions(format)
-            }
-            MoveTarget::AllAdjacent => {
-                // All adjacent Pokemon (allies and opponents)
-                user_position.adjacent_positions(format)
-            }
-            // ... complete targeting logic
-        }
-    }
-
-    pub fn is_spread_move(&self) -> bool {
-        matches!(self, 
-            MoveTarget::AllAdjacentFoes | 
-            MoveTarget::AllAdjacent | 
-            MoveTarget::All
+    
+    pub fn is_choice_item(&self, item_name: &str) -> bool {
+        matches!(
+            normalize_name(item_name).as_str(),
+            "choiceband" | "choicescarf" | "choicespecs"
         )
+    }
+    
+    pub fn is_berry(&self, item_name: &str) -> bool {
+        self.find_by_name(item_name)
+            .map(|item| item.name.ends_with("Berry"))
+            .unwrap_or(false)
     }
 }
 ```
 
 ## Generation Management (`generation_loader.rs`)
 
-Generation-specific data loading with change tracking and fallback mechanisms.
-
-### Generation Repository Structure
+### Multi-Generation Architecture
 
 ```rust
-pub struct GenerationMoveData {
+pub struct GenerationRepository {
+    generations: HashMap<u8, GenerationData>,
+    move_changes: HashMap<MoveId, Vec<MoveChange>>,
+    pokemon_changes: HashMap<SpeciesId, Vec<PokemonChange>>,
+    item_changes: HashMap<ItemId, Vec<ItemChange>>,
+}
+
+pub struct GenerationData {
     pub generation: u8,
     pub moves: HashMap<MoveId, MoveData>,
-    pub changes: HashMap<MoveId, Vec<MoveChange>>,
-}
-
-pub struct GenerationPokemonData {
-    pub generation: u8,
     pub pokemon: HashMap<SpeciesId, PokemonData>,
-    pub changes: HashMap<SpeciesId, Vec<PokemonChange>>,
-}
-
-pub struct GenerationItemData {
-    pub generation: u8,
     pub items: HashMap<ItemId, ItemData>,
-    pub changes: HashMap<ItemId, Vec<ItemChange>>,
-}
-```
-
-### Change Tracking System
-
-```rust
-pub struct MoveChange {
-    pub generation: u8,
-    pub field: String,
-    pub old_value: serde_json::Value,
-    pub new_value: serde_json::Value,
-    pub reason: Option<String>,
-}
-
-pub struct PokemonChange {
-    pub generation: u8,
-    pub field: String,
-    pub old_value: serde_json::Value,
-    pub new_value: serde_json::Value,
-    pub reason: Option<String>,
+    pub metadata: GenerationMetadata,
 }
 ```
 
 ### Generation-Aware Data Access
 
 ```rust
-impl GenerationLoader {
+impl GenerationRepository {
     pub fn get_move_data(&self, move_id: &MoveId, generation: u8) -> Result<&MoveData, DataError> {
-        // Try current generation first
+        // Current generation lookup
         if let Some(gen_data) = self.generations.get(&generation) {
             if let Some(move_data) = gen_data.moves.get(move_id) {
                 return Ok(move_data);
             }
         }
         
-        // Fallback to earlier generations
+        // Backward compatibility search
         for gen in (1..generation).rev() {
             if let Some(gen_data) = self.generations.get(&gen) {
                 if let Some(move_data) = gen_data.moves.get(move_id) {
@@ -332,167 +365,140 @@ impl GenerationLoader {
         
         Err(DataError::MoveNotFound(move_id.clone()))
     }
-
-    pub fn get_move_changes(&self, move_id: &MoveId, generation: u8) -> Vec<&MoveChange> {
-        self.generations.get(&generation)
-            .and_then(|gen_data| gen_data.changes.get(move_id))
-            .map(|changes| changes.iter().collect())
-            .unwrap_or_default()
+    
+    pub fn get_generation_stats(&self, generation: u8) -> GenerationStats {
+        let gen_data = &self.generations[&generation];
+        GenerationStats {
+            generation,
+            move_count: gen_data.moves.len(),
+            pokemon_count: gen_data.pokemon.len(),
+            item_count: gen_data.items.len(),
+            new_moves: self.count_new_moves(generation),
+            changed_moves: self.count_changed_moves(generation),
+        }
     }
 }
 ```
 
-## Random Team Generation (`random_team_loader.rs`)
+**Advanced Features:**
+- **Fallback Logic**: Searches backward through generations for missing data
+- **Change Tracking**: Complete audit trail of mechanical changes
+- **Performance Optimized**: Single-pass generation validation
+- **Statistical Analysis**: Generation comparison and change analysis
 
-Format-specific team building with Pokemon Showdown random battle compatibility.
+## Random Battle System (`random_team_loader.rs`)
 
-### Team Loading System
+### RandomPokemonSet Structure
 
 ```rust
-pub struct RandomTeamLoader {
-    teams_by_format: HashMap<String, Vec<RandomBattleTeam>>,
-    rng: StdRng,
+pub struct RandomPokemonSet {
+    pub species: String,
+    pub level: u8,
+    pub gender: Option<Gender>,
+    pub ability: String,
+    pub item: Option<String>,
+    pub moves: Vec<String>,
+    pub nature: Nature,
+    pub evs: Stats,
+    pub ivs: Stats,
+    pub tera_type: Option<PokemonType>,  // Gen 9 Terastalization
 }
+```
 
-impl RandomTeamLoader {
-    pub fn load_team(&mut self, format: &str) -> Result<Vec<Pokemon>, DataError> {
-        let teams = self.teams_by_format.get(format)
-            .ok_or_else(|| DataError::FormatNotFound(format.to_string()))?;
-        
-        let team_data = teams.choose(&mut self.rng)
-            .ok_or_else(|| DataError::NoTeamsAvailable)?;
-        
-        team_data.pokemon.iter()
-            .map(|pokemon_set| self.convert_pokemon_set(pokemon_set))
-            .collect()
-    }
+### Battle Pokemon Conversion
 
-    fn convert_pokemon_set(&self, set: &RandomBattlePokemonSet) -> Result<Pokemon, DataError> {
-        let pokemon_data = self.data_repository.pokemon.find_by_name(&set.species)?;
+```rust
+impl RandomPokemonSet {
+    pub fn to_battle_pokemon(&self, repository: &GameDataRepository) -> Result<Pokemon, DataError> {
+        let pokemon_data = repository.pokemon.find_by_name(&self.species)?;
         
-        // Calculate stats with proper formulas
-        let stats = self.calculate_stats(pokemon_data, &set.evs, &set.ivs, set.level, &set.nature)?;
+        // Accurate Pokemon stat calculation
+        let stats = self.calculate_stats(pokemon_data)?;
         
-        // Convert moves
-        let moves = set.moves.iter()
-            .map(|move_name| self.convert_move(move_name))
+        // Move conversion with error handling
+        let moves = self.moves.iter()
+            .take(4) // Enforce 4-move limit
+            .map(|move_name| repository.moves.create_move(move_name))
             .collect::<Result<Vec<_>, _>>()?;
         
         Ok(Pokemon {
-            species: pokemon_data.name.clone(),
-            level: set.level,
-            stats,
+            species: pokemon_data.id.clone(),
+            level: self.level,
+            stats: self.apply_stat_optimizations(stats, repository),
             moves,
-            nature: set.nature,
-            ability: set.ability.clone(),
-            item: set.item.clone(),
-            gender: set.gender,
-            // ... additional fields
+            nature: self.nature,
+            ability: self.ability.clone(),
+            item: self.item.clone(),
+            gender: self.gender,
+            tera_type: self.tera_type,
         })
     }
 }
 ```
 
-### Stat Calculation System
+### Stat Optimization System
 
 ```rust
-impl RandomTeamLoader {
-    fn calculate_stats(
-        &self,
-        pokemon_data: &PokemonData,
-        evs: &StatSpread,
-        ivs: &StatSpread,
-        level: u8,
-        nature: &Nature,
-    ) -> Result<StatSpread, DataError> {
-        let mut stats = StatSpread::default();
+impl RandomPokemonSet {
+    fn apply_stat_optimizations(&self, mut stats: Stats, repository: &GameDataRepository) -> Stats {
+        // Physical move detection
+        let has_physical_moves = self.moves.iter()
+            .any(|move_name| {
+                repository.moves.find_by_name(move_name)
+                    .map(|move_data| move_data.category == "Physical")
+                    .unwrap_or(false)
+            });
         
-        // HP calculation (different formula)
-        stats.hp = if pokemon_data.base_stats.hp == 1 {
-            1  // Shedinja special case
-        } else {
-            ((2 * pokemon_data.base_stats.hp + ivs.hp + evs.hp / 4) * level / 100 + level + 10) as u16
-        };
-        
-        // Other stats calculation
-        for stat in &["attack", "defense", "special_attack", "special_defense", "speed"] {
-            let base_stat = pokemon_data.base_stats.get_stat(stat);
-            let iv = ivs.get_stat(stat);
-            let ev = evs.get_stat(stat);
-            
-            let calculated_stat = (2 * base_stat + iv + ev / 4) * level / 100 + 5;
-            let nature_modifier = nature.get_stat_modifier(stat);
-            
-            stats.set_stat(stat, (calculated_stat as f32 * nature_modifier) as u16);
+        // Special attacker optimization (minimize Foul Play damage)
+        if !has_physical_moves {
+            stats.attack = stats.attack.saturating_sub(stats.attack / 4);
         }
         
-        Ok(stats)
+        // Speed-dependent move detection
+        let has_priority_moves = self.moves.iter()
+            .any(|move_name| {
+                repository.moves.find_by_name(move_name)
+                    .map(|move_data| move_data.priority > 0)
+                    .unwrap_or(false)
+            });
+        
+        // Trick Room optimization
+        if self.has_trick_room_indicator() && !has_priority_moves {
+            stats.speed = stats.speed.saturating_sub(stats.speed / 2);
+        }
+        
+        stats
     }
 }
 ```
 
-### EV/IV Optimization
-
-```rust
-impl RandomTeamLoader {
-    fn optimize_evs_ivs(&self, pokemon_set: &mut RandomBattlePokemonSet) {
-        // Smogon Random Battle rules
-        
-        // Special attackers get 0 Attack IV to minimize Foul Play damage
-        if self.is_special_attacker(pokemon_set) {
-            pokemon_set.ivs.attack = 0;
-        }
-        
-        // Trick Room teams get 0 Speed IV
-        if self.is_trick_room_team(pokemon_set) {
-            pokemon_set.ivs.speed = 0;
-        }
-        
-        // HP IV optimization for specific Pokemon
-        if self.needs_hp_optimization(pokemon_set) {
-            pokemon_set.ivs.hp = self.calculate_optimal_hp_iv(pokemon_set);
-        }
-    }
-}
-```
-
-## Error Handling
-
-Comprehensive error handling with detailed context and recovery strategies.
+## Error Handling Architecture
 
 ```rust
 #[derive(Debug, thiserror::Error)]
 pub enum DataError {
-    #[error("Pokemon not found: {0:?}")]
-    PokemonNotFound(SpeciesId),
+    #[error("Move not found: {0}")]
+    MoveNotFound(String),
     
-    #[error("Move not found: {0:?}")]
-    MoveNotFound(MoveId),
+    #[error("Pokemon not found: {0}")]
+    PokemonNotFound(String),
     
-    #[error("Item not found: {0:?}")]
-    ItemNotFound(ItemId),
+    #[error("Item not found: {0}")]
+    ItemNotFound(String),
     
-    #[error("Ability not found: {0:?}")]
-    AbilityNotFound(AbilityId),
+    #[error("Generation {generation} not supported")]
+    UnsupportedGeneration { generation: u8 },
     
-    #[error("Format not found: {0}")]
-    FormatNotFound(String),
+    #[error("Invalid data format: {message}")]
+    InvalidFormat { message: String },
     
-    #[error("File I/O error: {0}")]
-    IoError(#[from] std::io::Error),
+    #[error("Repository not initialized")]
+    RepositoryNotInitialized,
     
     #[error("JSON parsing error: {0}")]
     JsonError(#[from] serde_json::Error),
     
-    #[error("Invalid data: {0}")]
-    InvalidData(String),
+    #[error("I/O error: {0}")]
+    IoError(#[from] std::io::Error),
 }
 ```
-
-## Integration Points
-
-The data module integrates with:
-- **Core Module**: Provides Pokemon, move, and item data for battle state
-- **Engine Module**: Supplies data for damage calculation and move effects
-- **Builders Module**: Provides data validation for team and battle building
-- **Testing Module**: Supplies test data and validation utilities

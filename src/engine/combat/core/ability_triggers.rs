@@ -117,20 +117,47 @@ fn trigger_speed_boost(position: BattlePosition) -> AbilityTriggerResult {
 }
 
 /// Moody - Randomly increases one stat by 2 stages and decreases another by 1 stage
-fn trigger_moody(position: BattlePosition, _battle_state: &BattleState) -> AbilityTriggerResult {
-    // TODO: Implement proper random stat selection
-    // For now, simplified implementation that boosts Attack and lowers Defense
+fn trigger_moody(position: BattlePosition, battle_state: &BattleState) -> AbilityTriggerResult {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    
+    // All stats that can be modified by Moody
+    let all_stats = [
+        Stat::Attack,
+        Stat::Defense,
+        Stat::SpecialAttack,
+        Stat::SpecialDefense,
+        Stat::Speed,
+    ];
+    
+    // Pick a random stat to boost by +2
+    let boost_stat = all_stats[rng.gen_range(0..all_stats.len())];
+    
+    // Pick a different random stat to lower by -1
+    let mut lower_stat;
+    loop {
+        lower_stat = all_stats[rng.gen_range(0..all_stats.len())];
+        if lower_stat != boost_stat {
+            break;
+        }
+    }
+    
+    let mut changes = StatBoostArray::default();
+    changes.insert(boost_stat, 2);
+    changes.insert(lower_stat, -1);
+    
+    let previous_boosts = if let Some(pokemon) = battle_state.get_pokemon_at_position(position) {
+        pokemon.stat_boosts.to_hashmap()
+    } else {
+        std::collections::HashMap::new()
+    };
+    
     AbilityTriggerResult {
         instructions: vec![
             BattleInstruction::Stats(StatsInstruction::BoostStats {
                 target: position,
-                stat_changes: {
-                    let mut changes = StatBoostArray::default();
-                    changes.insert(Stat::Attack, 2);    // +2 to random stat
-                    changes.insert(Stat::Defense, -1);  // -1 to different random stat
-                    changes.to_hashmap()
-                },
-                previous_boosts: std::collections::HashMap::new(),
+                stat_changes: changes.to_hashmap(),
+                previous_boosts,
             })
         ],
         prevents_other_abilities: false,
@@ -144,18 +171,23 @@ fn trigger_shed_skin(pokemon: &Pokemon, position: BattlePosition) -> AbilityTrig
         return AbilityTriggerResult::default();
     }
     
-    // TODO: Implement proper 30% probability branching
-    // For now, always cure (simplified)
-    AbilityTriggerResult {
-        instructions: vec![
-            BattleInstruction::Status(StatusInstruction::Remove {
-                target: position,
-                status: pokemon.status,
-                previous_duration: pokemon.status_duration,
-            })
-        ],
-        prevents_other_abilities: false,
-        blocks_effect: false,
+    // 30% chance to cure status condition
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    if rng.gen_range(0.0..100.0) < 30.0 {
+        AbilityTriggerResult {
+            instructions: vec![
+                BattleInstruction::Status(StatusInstruction::Remove {
+                    target: position,
+                    status: pokemon.status,
+                    previous_duration: pokemon.status_duration,
+                })
+            ],
+            prevents_other_abilities: false,
+            blocks_effect: false,
+        }
+    } else {
+        AbilityTriggerResult::default()
     }
 }
 
@@ -413,14 +445,100 @@ fn trigger_snow_warning() -> Vec<BattleInstruction> {
     ]
 }
 
-/// Trace - Copies opponent's ability (simplified implementation)
-fn trigger_trace(_position: BattlePosition, _battle_state: &BattleState) -> Vec<BattleInstruction> {
-    // TODO: Implement ability copying logic
+/// Trace - Copies opponent's ability
+fn trigger_trace(position: BattlePosition, battle_state: &BattleState) -> Vec<BattleInstruction> {
+    // Find the first opponent Pokemon with a copyable ability
+    for opponent_position in battle_state.get_all_active_positions() {
+        // Skip if it's the same side
+        if opponent_position.side == position.side {
+            continue;
+        }
+        
+        if let Some(opponent) = battle_state.get_pokemon_at_position(opponent_position) {
+            // Don't copy certain abilities that can't be traced
+            match opponent.ability.as_str() {
+                "trace" | "multitype" | "flowergift" | "forecast" | "illusion" | 
+                "imposter" | "neutralizinggas" | "wonderguard" | "powerofalchemy" |
+                "receiver" | "disguise" | "rkssystem" | "comatose" | "schooling" |
+                "shieldsdown" | "battlebond" | "powerconstruct" | "corrosion" |
+                "stancechange" => {
+                    continue; // Skip uncopyable abilities
+                }
+                _ => {
+                    // Copy this ability
+                    return vec![BattleInstruction::Pokemon(
+                        crate::core::instructions::PokemonInstruction::ChangeAbility {
+                            target: position,
+                            new_ability: opponent.ability,
+                            previous_ability: battle_state.get_pokemon_at_position(position)
+                                .map(|p| p.ability),
+                        }
+                    )];
+                }
+            }
+        }
+    }
+    
+    // No copyable ability found
     Vec::new()
 }
 
 /// Download - Boosts Attack or Special Attack based on opponent's defenses
-fn trigger_download(_position: BattlePosition, _battle_state: &BattleState) -> Vec<BattleInstruction> {
-    // TODO: Implement Download logic
-    Vec::new()
+fn trigger_download(position: BattlePosition, battle_state: &BattleState) -> Vec<BattleInstruction> {
+    let mut total_defense = 0i32;
+    let mut total_special_defense = 0i32;
+    let mut opponent_count = 0;
+    
+    // Calculate total defenses of all opponents
+    for opponent_position in battle_state.get_all_active_positions() {
+        // Skip if it's the same side
+        if opponent_position.side == position.side {
+            continue;
+        }
+        
+        if let Some(opponent) = battle_state.get_pokemon_at_position(opponent_position) {
+            let defense = opponent.get_effective_stat(Stat::Defense);
+            let special_defense = opponent.get_effective_stat(Stat::SpecialDefense);
+            
+            total_defense += defense as i32;
+            total_special_defense += special_defense as i32;
+            opponent_count += 1;
+        }
+    }
+    
+    if opponent_count == 0 {
+        return Vec::new();
+    }
+    
+    // Compare average defenses
+    let avg_defense = total_defense / opponent_count;
+    let avg_special_defense = total_special_defense / opponent_count;
+    
+    let previous_boosts = if let Some(pokemon) = battle_state.get_pokemon_at_position(position) {
+        pokemon.stat_boosts.to_hashmap()
+    } else {
+        std::collections::HashMap::new()
+    };
+    
+    if avg_defense < avg_special_defense {
+        // Boost Attack if Defense is lower
+        let mut changes = StatBoostArray::default();
+        changes.insert(Stat::Attack, 1);
+        
+        vec![BattleInstruction::Stats(StatsInstruction::BoostStats {
+            target: position,
+            stat_changes: changes.to_hashmap(),
+            previous_boosts,
+        })]
+    } else {
+        // Boost Special Attack if Special Defense is lower or equal
+        let mut changes = StatBoostArray::default();
+        changes.insert(Stat::SpecialAttack, 1);
+        
+        vec![BattleInstruction::Stats(StatsInstruction::BoostStats {
+            target: position,
+            stat_changes: changes.to_hashmap(),
+            previous_boosts,
+        })]
+    }
 }

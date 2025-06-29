@@ -1,100 +1,156 @@
 # Engine Module Documentation
 
-The engine module implements the core battle mechanics for Tapu Simu's multi-format Pokemon battle simulation. It provides sophisticated damage calculation, move effects, mechanics integration, and turn resolution with full support for Generations 1-9.
+The engine module implements the core battle mechanics for Tapu Simu's multi-format Pokemon battle simulation. It provides sophisticated damage calculation, move effects, mechanics integration, and turn resolution with full support for Generations 1-9 and comprehensive multi-format awareness.
 
 ## Architecture Overview
 
-The engine module consists of four main components:
-- **Combat System**: Damage calculation, move effects, and battle mechanics
-- **Mechanics Integration**: Items, abilities, and switch effects
-- **Targeting System**: Auto-targeting with Pokemon Showdown compatibility
-- **Turn Resolution**: Turn order and instruction generation
+The engine module (`src/engine/`) consists of four main components:
+
+- **Combat System** (`combat/`) - Damage calculation, move effects, and battle mechanics
+- **Mechanics Integration** (`mechanics/`) - Items, abilities, and switch effects
+- **Targeting System** (`targeting/`) - Auto-targeting with Pokemon Showdown compatibility
+- **Turn Resolution** (`turn.rs`) - Turn order and instruction generation
 
 ## Combat System (`combat/`)
 
-### Damage Calculation (`damage_calc.rs` & `damage/`)
+The combat system is the heart of the engine, implementing Pokemon's complex battle mechanics with full generation support and format awareness.
+
+### Module Organization
+
+**Core Architecture:**
+```rust
+pub mod damage;           // Damage calculation with generation-specific formulas
+pub mod damage_context;   // Modern context system for damage calculations
+pub mod move_context;     // Move execution context and opponent information
+pub mod move_effects;     // Legacy move effects for compatibility
+pub mod moves;           // Modern move effects organized by category
+pub mod type_effectiveness; // Type chart with generation variations
+pub mod composers;       // Reusable move effect patterns
+pub mod core;           // Centralized battle systems
+```
+
+### Damage Calculation System (`damage/`)
 
 The damage system implements Pokemon's authentic damage calculation with generation-specific mechanics and full multi-format support.
 
 **Core Components:**
-- `DamageCalculationContext`: Encapsulates attacker, defender, move, field, and format state
-- `DamageRolls`: Enum controlling damage variance (Average, Min, Max, All 16 rolls)
-- Generation-specific modules (`gen1.rs` through `modern.rs`)
-
-**Key Features:**
-- **16-Roll System**: Authentic Pokemon damage variance (85%-100% in discrete steps)
-- **Critical Hit Mechanics**: Generation-specific probability calculations
-- **Position-Based**: All calculations use explicit `BattlePosition` targeting
-- **Modifier Pipeline**: STAB, type effectiveness, weather, abilities, items in correct order
-
-**Generation Differences:**
 ```rust
-// Gen 1: Different rounding and special mechanics
-fn gen1_damage_formula(context: &DamageContext) -> u16
-
-// Gen 2: Item introduction and modern base formula
-fn gen2_damage_formula(context: &DamageContext) -> u16
-
-// Gen 3+: Ability integration and modern modifier system
-fn modern_damage_formula(context: &DamageContext) -> u16
+// Main damage calculator entry point
+pub fn calculate_damage_with_positions(
+    state: &BattleState,
+    attacker: &Pokemon,
+    defender: &Pokemon,
+    move_data: &MoveData,
+    is_critical: bool,
+    damage_rolls: DamageRolls,
+    target_count: u8,
+    attacker_position: BattlePosition,
+    defender_position: BattlePosition,
+) -> i16
 ```
 
-**Critical Hit Evolution:**
-- **Gen 1**: Speed-based formula with base stat dependency
-- **Gen 2**: Fixed stage system (17/256 base rate)
-- **Gen 3+**: Modern stage-based system with ability interactions
+**Key Features:**
+- **16-Roll Damage Variance**: Authentic Pokemon damage variance (85%-100% in discrete steps)
+- **Critical Hit Mechanics**: Generation-specific probability calculations and damage multipliers
+- **Multi-Format Support**: Position-aware calculations for Singles, Doubles, VGC, Triples
+- **Type Effectiveness**: Complete type chart with generation-specific changes
+
+**Generation-Specific Implementations (`damage/generations/`):**
+```rust
+// Generation dispatch system
+pub mod dispatcher;  // Routes calculations to appropriate generation
+pub mod gen1;       // Special stat handling, different type effectiveness
+pub mod gen2;       // Steel/Dark types, modern formula foundation
+pub mod gen3;       // Abilities integration
+pub mod gen4;       // Physical/Special split
+pub mod gen56;      // Fairy type, Mega Evolution
+pub mod modern;     // Gen 7-9 with Z-moves, Dynamax, Terastallization
+```
+
+**Damage Modifiers (`damage/modifiers/`):**
+- **Abilities** (`abilities.rs`): Thick Fat, Filter, Solid Rock, Adaptability
+- **Items** (`items.rs`): Life Orb, Choice items, type-boosting items
+- **Weather** (`weather.rs`): Rain/sun damage modifications
+- **Terrain** (`terrain.rs`): Electric/Grassy/Psychic/Misty terrain effects
+- **Field** (`field.rs`): Trick Room, Gravity, global effects
+- **Format** (`format.rs`): Multi-target spread move penalties
 
 ### Move Effects System (`moves/`)
 
-Registry-based move effect system replacing large match statements with organized, composable functions.
+Comprehensive move effect system with 200+ implemented moves organized by category and complexity.
 
-**Registry Architecture:**
+**Registry Architecture (`moves/registry.rs`):**
 ```rust
-// Function type hierarchy for different complexity levels
-type MoveEffectFn = fn(&BattleState, BattlePosition, &[BattlePosition], &GenerationMechanics) -> Vec<BattleInstructions>;
+pub struct MoveRegistry {
+    effects: HashMap<Moves, MoveEffectFn>,
+}
 
-type ContextAwareMoveEffectFn = fn(&BattleState, &MoveData, BattlePosition, &[BattlePosition], &GenerationMechanics, &MoveContext, bool) -> Vec<BattleInstructions>;
+impl MoveRegistry {
+    pub fn new() -> Self; // Pre-allocates capacity for ~200 moves
+    fn register_all_moves(&mut self); // Registers all move implementations
+    pub fn get_effect(&self, move_name: Moves) -> Option<&MoveEffectFn>;
+}
 ```
 
 **Move Categories:**
 
-#### Damage Moves (`damage/`)
-- **Simple Damage**: Basic attacking moves with standard calculation
-- **Variable Power**: Context-dependent power (Facade, Hex, Gyro Ball, Avalanche)
-- **Multi-Hit**: Fury Attack, Scale Shot with hit count determination
-- **Drain Moves**: Giga Drain, Leech Life with HP recovery
-- **Recoil Moves**: Take Down, Flare Blitz with self-damage
-- **Self-Destruct**: Explosion, Self-Destruct with fainting
+#### Damage Moves (`moves/damage/`)
+- **Variable Power** (`variable_power.rs`): Context-dependent power (Facade, Hex, Gyro Ball, Avalanche)
+- **Multi-Hit** (`multi_hit.rs`): Multi-strike moves (Fury Attack, Scale Shot, Bullet Seed)
+- **Fixed Damage** (`fixed_damage.rs`): Level-based damage (Seismic Toss, Night Shade)
+- **Self-Targeting** (`self_targeting.rs`): User-affecting damage moves
 
-#### Status Moves (`status/`)
-- **Stat Modifying**: Swords Dance, Growl with boost application
-- **Status Effects**: Thunder Wave, Will-O-Wisp with condition application
-- **Healing**: Recover, Roost with HP restoration
-- **Item Interaction**: Knock Off, Trick with item manipulation
+#### Status Moves (`moves/status/`)
+- **Stat Modifying** (`stat_modifying.rs`): Boost/reduction moves (Swords Dance, Growl, Amnesia)
+- **Status Effects** (`status_effects.rs`): Status application (Thunder Wave, Will-O-Wisp, Sleep Powder)
+- **Healing** (`healing.rs`): HP restoration (Recover, Roost, Heal Pulse)
+- **Item Interaction** (`item_interaction.rs`): Item effects (Knock Off, Trick, Switcheroo)
 
-#### Field Moves (`field/`)
-- **Weather**: Rain Dance, Sunny Day with weather establishment
-- **Terrain**: Electric Terrain, Grassy Terrain with terrain setting
-- **Hazards**: Stealth Rock, Spikes with entry hazard placement
-- **Hazard Removal**: Rapid Spin, Defog with hazard clearing
-- **Screens**: Light Screen, Reflect with damage reduction
+#### Field Moves (`moves/field/`)
+- **Weather** (`weather.rs`): Weather setup (Rain Dance, Sunny Day, Sandstorm)
+- **Hazards** (`hazards.rs`): Entry hazards (Stealth Rock, Spikes, Toxic Spikes)
+- **Advanced Hazards** (`advanced_hazards.rs`): Complex hazard mechanics
+- **Hazard Removal** (`hazard_removal.rs`): Field clearing (Rapid Spin, Defog, Tidy Up)
+- **Screens** (`screens.rs`): Damage reduction (Light Screen, Reflect, Aurora Veil)
+- **Terrain Dependent** (`terrain_dependent.rs`): Terrain-based moves
+- **Weather Accuracy** (`weather_accuracy.rs`): Weather-dependent accuracy
 
-#### Special Moves (`special/`)
-- **Complex Mechanics**: Body Press (uses Defense for Attack), Foul Play (uses target's Attack)
-- **Counter Moves**: Counter, Mirror Coat with damage reflection
-- **Protection**: Protect, Detect with priority-based protection
-- **Two-Turn**: Solar Beam, Fly with charge-then-execute pattern
-- **Form Changes**: Revelation Dance with user type adaptation
+#### Special Moves (`moves/special/`)
+- **Complex** (`complex.rs`): Advanced move mechanics
+- **Counter** (`counter.rs`): Damage reflection (Counter, Mirror Coat, Metal Burst)
+- **Two Turn** (`two_turn.rs`): Charge mechanics (Solar Beam, Fly, Skull Bash)
+- **Priority** (`priority.rs`): Speed modification (Quick Attack, Bullet Punch)
+- **Protection** (`protection.rs`): Damage prevention (Protect, Detect, King's Shield)
+- **Type Changing** (`type_changing.rs`): Type modification moves
+- **Form Dependent** (`form_dependent.rs`): Forme-specific moves
+- **Substitute** (`substitute.rs`): Substitute interaction mechanics
 
-### Core Battle Systems (`core/`)
+### Core Battle Systems (`combat/core/`)
 
 Centralized systems managing battle mechanics across all move types.
 
+**System Components:**
+```rust
+pub mod damage_system;        // Unified damage calculation entry point
+pub mod status_system;        // Major and volatile status management
+pub mod contact_effects;      // Post-contact ability triggers
+pub mod move_prevention;      // Move blocking mechanics
+pub mod field_system;         // Weather, terrain, and global effects
+pub mod substitute_protection; // Substitute interaction handling
+pub mod end_of_turn;          // Comprehensive end-of-turn pipeline
+pub mod ability_triggers;     // Ability activation management
+```
+
 **Damage System (`damage_system.rs`):**
-- Unified damage calculation entry point
-- Multi-target damage with individual target calculation
-- Critical hit determination and damage variance
-- Secondary effect application post-damage
+```rust
+pub fn apply_damage_with_instructions(
+    state: &BattleState,
+    attacker_position: BattlePosition,
+    target_positions: &[BattlePosition],
+    move_data: &MoveData,
+    branch_on_damage: bool,
+) -> Vec<BattleInstructions>
+```
 
 **Status System (`status_system.rs`):**
 - Major status application (Burn, Paralysis, Sleep, Freeze, Poison)
@@ -113,17 +169,32 @@ Centralized systems managing battle mechanics across all move types.
 - Taunt and Torment effect enforcement
 - Disable and Encore move restrictions
 
-**Field System (`field_system.rs`):**
-- Weather and terrain effect application
-- Global effects (Trick Room, Gravity) management
-- Turn-based effect duration tracking
-- Field condition interactions
+**End-of-Turn Processing (`end_of_turn.rs`):**
+```rust
+pub fn generate_end_of_turn_instructions(state: &BattleState) -> Vec<BattleInstructions> {
+    // Comprehensive end-of-turn pipeline:
+    // 1. Remove expiring volatile statuses
+    // 2. Weather effects and damage
+    // 3. Terrain effects and damage
+    // 4. Field effect timer decrementation
+    // 5. Status condition damage (Burn, Poison)
+    // 6. Ability end-of-turn triggers
+    // 7. Item end-of-turn effects (Leftovers, Black Sludge)
+}
+```
 
-### Effect Composition (`composers/`)
+### Effect Composition (`combat/composers/`)
 
 Reusable patterns for common move effect types, reducing code duplication.
 
-**Damage Move Composers:**
+**Composer Categories:**
+```rust
+pub mod damage_moves;  // Standard damage move patterns
+pub mod status_moves;  // Status effect application patterns  
+pub mod field_moves;   // Field effect establishment patterns
+```
+
+**Damage Move Composers (`composers/damage_moves.rs`):**
 ```rust
 pub fn simple_damage_move(
     state: &BattleState,
@@ -143,54 +214,54 @@ pub fn condition_dependent_power_move(
 ) -> Vec<BattleInstruction>
 ```
 
-**Status Move Composers:**
+**Status Move Composers (`composers/status_moves.rs`):**
 - Stat modification patterns with boost clamping
 - Status condition application with immunity checking
 - Healing patterns with HP clamping and percentage calculations
 
-**Field Move Composers:**
+**Field Move Composers (`composers/field_moves.rs`):**
 - Weather and terrain establishment patterns
 - Hazard placement with position-based effects
 - Screen establishment with damage reduction setup
 
-## Mechanics Integration (`mechanics/`)
+### Context Systems
 
-### Items System (`items/`)
-
-Comprehensive item effect system organized by functionality.
-
-**Item Categories:**
-- **Choice Items**: Choice Band, Choice Specs, Choice Scarf with move locking
-- **Type Boosting**: Type gems, plates, memories with damage modification
-- **Stat Boosting**: Life Orb, Expert Belt with power increases
-- **Berry Items**: Sitrus Berry, Lum Berry with consumption triggers
-- **Status Items**: Black Sludge, Leftovers with end-of-turn effects
-- **Utility Items**: Focus Sash, Air Balloon with battle mechanic changes
-- **Species Items**: Thick Club, Light Ball with species-specific boosts
-
-**Generation Integration:**
+**Damage Context (`damage_context.rs`):**
 ```rust
-pub fn apply_item_effects(
-    item_name: &str,
-    state: &BattleState,
-    position: BattlePosition,
-    generation: &GenerationMechanics,
-) -> Vec<BattleInstruction>
+#[derive(Debug, Clone)]
+pub struct DamageContext {
+    pub attacker: AttackerContext,
+    pub defender: DefenderContext,
+    pub move_context: MoveContext,
+    pub field_context: FieldContext,
+    pub format_context: FormatContext,
+}
 ```
+
+**Move Context (`move_context.rs`):**
+```rust
+#[derive(Debug, Clone)]
+pub struct MoveContext {
+    pub opponent_moves: Vec<OpponentMoveInfo>,
+    pub is_first_turn: bool,
+    pub consecutive_uses: u8,
+}
+
+pub struct OpponentMoveInfo {
+    pub move_name: Moves,
+    pub power: u8,
+    pub category: MoveCategory,
+    pub user_position: BattlePosition,
+}
+```
+
+## Mechanics Integration (`mechanics/`)
 
 ### Abilities System (`abilities.rs`)
 
 Comprehensive ability effect system with context-aware triggers.
 
 **Ability Categories:**
-- **Type Immunities**: Levitate, Flash Fire, Water Absorb
-- **Damage Modification**: Thick Fat, Filter, Solid Rock
-- **Stat Boosts**: Intimidate, Download, Contrary
-- **STAB Changes**: Normalize, Aerilate, Pixilate
-- **Weather Abilities**: Drought, Drizzle, Sand Stream
-- **Speed Control**: Quick Feet, Swift Swim, Chlorophyll
-
-**Context Integration:**
 ```rust
 pub fn apply_ability_effects(
     ability_name: &str,
@@ -200,26 +271,89 @@ pub fn apply_ability_effects(
 ) -> Vec<BattleInstruction>
 ```
 
+**Ability Types:**
+- **Type Immunities**: Levitate, Flash Fire, Water Absorb, Volt Absorb
+- **Damage Modification**: Thick Fat, Filter, Solid Rock, Prism Armor
+- **Stat Effects**: Intimidate, Download, Contrary, Simple
+- **STAB Changes**: Normalize, Aerilate, Pixilate, Refrigerate
+- **Weather Abilities**: Drought, Drizzle, Sand Stream, Snow Warning
+- **Speed Control**: Quick Feet, Swift Swim, Chlorophyll, Sand Rush
+
+### Items System (`mechanics/items/`)
+
+Comprehensive item effect system organized by functionality.
+
+**Item Categories:**
+
+#### Choice Items (`choice_items.rs`)
+```rust
+pub fn apply_choice_band_effects(/* ... */) -> Vec<BattleInstruction>;
+pub fn apply_choice_specs_effects(/* ... */) -> Vec<BattleInstruction>;
+pub fn apply_choice_scarf_effects(/* ... */) -> Vec<BattleInstruction>;
+```
+
+#### Type Boosting Items (`type_boosting_items.rs`)
+- Type gems, plates, memories with damage modification
+- Z-crystals for Z-move activation (Gen 7+)
+
+#### Stat Boosting Items (`stat_boosting_items.rs`)
+- Life Orb: 30% damage boost with 10% recoil
+- Expert Belt: Super effective move boost
+- Muscle Band/Wise Glasses: Category-specific boosts
+
+#### Berry Items (`berry_items.rs`)
+- Sitrus Berry, Oran Berry: HP restoration
+- Lum Berry: Status cure
+- Pinch berries: Conditional stat boosts
+
+#### Status Items (`status_items.rs`)
+- Black Sludge, Leftovers: End-of-turn healing
+- Flame Orb, Toxic Orb: Status self-infliction
+
+#### Utility Items (`utility_items.rs`)
+- Focus Sash: Survival mechanics
+- Air Balloon: Ground immunity
+- Assault Vest: Special Defense boost with move restrictions
+
+#### Species Items (`species_items.rs`)
+- Thick Club: Cubone/Marowak attack boost
+- Light Ball: Pikachu stat doubling
+- Eviolite: NFE Pokemon defensive boost
+
 ### Switch Effects (`switch_effects.rs`)
 
 Entry and exit effect management for Pokemon switching.
 
 **Entry Effects:**
-- Intimidate stat reduction
-- Weather and terrain establishment
-- Hazard damage application
-- Ability activation triggers
+```rust
+pub fn apply_entry_effects(
+    state: &BattleState,
+    position: BattlePosition,
+    new_pokemon: &Pokemon,
+) -> Vec<BattleInstruction>
+```
 
 **Exit Effects:**
-- Healing Wish activation
-- Memento stat reduction
-- U-turn/Volt Switch momentum
+```rust
+pub fn apply_exit_effects(
+    state: &BattleState,
+    position: BattlePosition,
+    switching_pokemon: &Pokemon,
+) -> Vec<BattleInstruction>
+```
+
+**Effect Types:**
+- Intimidate stat reduction
+- Weather and terrain establishment (Drought, Drizzle, etc.)
+- Hazard damage application (Stealth Rock, Spikes)
+- Healing Wish and Memento activation
+- U-turn/Volt Switch momentum mechanics
 
 ## Targeting System (`targeting/`)
 
 Auto-targeting system with Pokemon Showdown compatibility for AI and default behaviors.
 
-**Core Components:**
+**Core Implementation (`auto_targeting.rs`):**
 ```rust
 pub struct AutoTargetingEngine {
     format: BattleFormat,
@@ -235,42 +369,44 @@ impl AutoTargetingEngine {
 }
 ```
 
-**Target Resolution:**
+**Target Resolution Strategies:**
 - **Single Targets**: Normal, Adjacent, Any, Self with format-aware selection
 - **Multi-Targets**: AllAdjacentFoes, AllAdjacent with spread move detection
 - **Special Targets**: Scripted (Counter), RandomNormal with context awareness
 - **Validation**: Ensures targets are valid for move type and battle state
 
 **Format Integration:**
-- Singles: Direct opponent targeting
-- Doubles: Adjacent position preference with ally detection
-- VGC: Tournament-specific targeting rules
-- Triples: Complex adjacency rules with position relationships
+- **Singles**: Direct opponent targeting (always position 0)
+- **Doubles**: Adjacent position preference with ally detection
+- **VGC**: Tournament-specific targeting rules and restrictions
+- **Triples**: Complex adjacency rules with three-position relationships
 
 ## Turn Resolution (`turn.rs`)
 
-Comprehensive turn processing with instruction generation and state mutation tracking.
+Simplified turn processing with instruction generation and state mutation tracking.
+
+**Core Turn Function:**
+```rust
+pub fn generate_instructions(
+    state: &BattleState,
+    move_choices: (&MoveChoice, &MoveChoice),
+    branch_on_damage: bool,
+) -> BattleResult<Vec<BattleInstructions>>
+```
 
 **Turn Flow:**
-1. **Move Order Determination**: Priority, speed, special cases (Pursuit + switch)
-2. **Context Creation**: Opponent move information for context-aware moves  
-3. **Instruction Generation**: Convert moves to atomic battle instructions
-4. **State Application**: Apply instructions sequentially for accurate progression
+1. **Auto-Target Resolution**: Resolve any unspecified targets using unified targeting system
+2. **Move Order Determination**: Priority, speed, special cases (Pursuit + switch)
+3. **Context Creation**: Opponent move information for context-aware moves
+4. **Instruction Generation**: Convert moves to atomic battle instructions
 5. **End-of-Turn Processing**: Comprehensive effect resolution pipeline
 
 **End-of-Turn Sequence:**
 ```rust
-pub fn process_end_of_turn(
-    state: &mut BattleState,
-    generation: &GenerationMechanics,
-) -> Vec<BattleInstruction> {
-    // 1. Remove expiring volatile statuses
-    // 2. Weather effects and damage
-    // 3. Terrain effects and damage
-    // 4. Field effect timer decrementation
-    // 5. Status condition damage (Burn, Poison)
-    // 6. Ability end-of-turn triggers
-    // 7. Item end-of-turn effects (Leftovers, Black Sludge)
+pub mod end_of_turn {
+    pub fn process_end_of_turn_effects(state: &BattleState) -> Vec<BattleInstructions> {
+        crate::engine::combat::core::end_of_turn::generate_end_of_turn_instructions(state)
+    }
 }
 ```
 
@@ -279,20 +415,6 @@ pub fn process_end_of_turn(
 - **Speed Tie Resolution**: Consistent random resolution
 - **Multi-Target Priority**: Individual target priority calculation
 - **Faint Handling**: Mid-turn replacement and effect continuation
-
-## Key Design Patterns
-
-### Position-Based Architecture
-Every calculation and effect explicitly uses `BattlePosition` rather than implicit targeting, enabling seamless multi-format support.
-
-### Instruction-Based State Mutation
-All battle changes are atomic `BattleInstruction` objects, allowing probability branching and deterministic replay.
-
-### Context Encapsulation
-Complex information is packaged into context objects to eliminate large parameter lists:
-- `DamageCalculationContext`: Attacker, defender, move, field state
-- `MoveContext`: Opponent moves, battle history, secondary information
-- `AbilityContext`: Trigger conditions, relevant Pokemon, timing information
 
 ### Generation Abstraction
 Generation-specific mechanics are isolated with common interfaces:
@@ -304,13 +426,20 @@ pub trait GenerationMechanics {
 }
 ```
 
+### Registry Pattern
+Move effects are centrally registered rather than using large match statements:
+```rust
+// Modern approach with registry
+let effect_fn = registry.get_effect(move_name)?;
+let instructions = effect_fn.execute(context)?;
+
+// vs. Legacy approach with match statements
+match move_name {
+    Moves::THUNDERBOLT => apply_thunderbolt(/* ... */),
+    Moves::FLAMETHROWER => apply_flamethrower(/* ... */),
+    // ... 200+ more cases
+}
+```
+
 ### Composer Pattern
 Common move patterns are abstracted into reusable functions, combining core systems to reduce duplication across similar move implementations.
-
-## Integration Points
-
-The engine module integrates with:
-- **Core Module**: Battle state, instructions, move choices
-- **Data Module**: Pokemon, move, ability, and item data
-- **Generation Module**: Mechanics variations across generations
-- **Testing Module**: Battle simulation and effect verification

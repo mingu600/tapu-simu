@@ -183,6 +183,20 @@ pub struct Pokemon {
     pub item_consumed: bool,
     /// Weight in kilograms (for moves like Heavy Slam, Heat Crash)
     pub weight_kg: f32,
+    /// Current forme (for Pokemon with multiple formes)
+    pub forme: Option<String>,
+    /// Last used move (for moves like Disable, Encore)
+    pub last_used_move: Option<Moves>,
+    /// Whether this Pokemon must switch out (forced by items/abilities)
+    pub must_switch: bool,
+    /// Sleep turns remaining (for natural sleep mechanics)
+    pub sleep_turns: Option<u8>,
+    /// Rest turns remaining (for Rest move mechanics)
+    pub rest_turns: Option<u8>,
+    /// Disabled moves with their remaining turns
+    pub disabled_moves: std::collections::HashMap<MoveIndex, u8>,
+    /// Volatile status durations
+    pub volatile_status_durations: std::collections::HashMap<crate::types::VolatileStatus, u8>,
 }
 
 impl Pokemon {
@@ -225,6 +239,13 @@ impl Pokemon {
             ability_triggered_this_turn: false,
             item_consumed: false,
             weight_kg: 50.0, // Default weight for unknown Pokemon
+            forme: None,
+            last_used_move: None,
+            must_switch: false,
+            sleep_turns: None,
+            rest_turns: None,
+            disabled_moves: std::collections::HashMap::new(),
+            volatile_status_durations: std::collections::HashMap::new(),
         }
     }
 

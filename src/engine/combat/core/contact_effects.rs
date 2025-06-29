@@ -158,14 +158,14 @@ fn apply_contact_abilities(
             use rand::Rng;
             let mut rng = rand::thread_rng();
             if rng.gen_range(0.0..100.0) < 30.0 {
-                // For now, just add a placeholder instruction
-                // Full disable implementation would require move tracking
-                if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
-                    instructions.push(BattleInstruction::Pokemon(PokemonInstruction::Message {
-                        message: format!("{}'s move was disabled by Cursed Body!", user_pokemon.species),
-                        affected_positions: vec![user_position],
-                    }));
-                }
+                // Disable the move that was just used (typically the first move slot for simplicity)
+                // In a full implementation, this would track the actual move used
+                instructions.push(BattleInstruction::Status(StatusInstruction::DisableMove {
+                    target: user_position,
+                    move_index: crate::core::move_choice::MoveIndex::M1, // First move slot
+                    duration: 4, // Disable typically lasts 4 turns
+                    previous_disabled: false,
+                }));
             }
         }
         _ => {
@@ -218,7 +218,9 @@ fn apply_contact_items(
                     to: user_position,
                     item: "stickybarb".to_string(),
                     previous_from_item: target.item.as_ref().map(|i| i.as_str().to_string()),
-                    previous_to_item: None, // TODO: Get actual previous item
+                    previous_to_item: state.get_pokemon_at_position(user_position)
+                        .and_then(|p| p.item.as_ref())
+                        .map(|i| i.as_str().to_string()),
                 }));
             }
             crate::types::Items::REDCARD => {
@@ -227,7 +229,9 @@ fn apply_contact_items(
                     instructions.push(BattleInstruction::Pokemon(PokemonInstruction::ForceSwitch {
                         target: user_position,
                         source: Some(target_position),
-                        previous_can_switch: true, // TODO: Get actual previous state
+                        previous_can_switch: state.get_pokemon_at_position(user_position)
+                            .map(|p| !p.must_switch)
+                            .unwrap_or(true),
                     }));
                 }
             }
@@ -237,7 +241,9 @@ fn apply_contact_items(
                     instructions.push(BattleInstruction::Pokemon(PokemonInstruction::ForceSwitch {
                         target: target_position,
                         source: Some(user_position),
-                        previous_can_switch: true, // TODO: Get actual previous state
+                        previous_can_switch: state.get_pokemon_at_position(target_position)
+                            .map(|p| !p.must_switch)
+                            .unwrap_or(true),
                     }));
                 }
             }
@@ -351,7 +357,7 @@ pub fn apply_drain_healing(
             instructions.push(BattleInstruction::Pokemon(PokemonInstruction::Heal {
                 target: user_position,
                 amount: heal_amount,
-                previous_hp: None, // TODO: Get actual previous HP
+                previous_hp: state.get_pokemon_at_position(user_position).map(|p| p.hp),
             }));
         }
     }

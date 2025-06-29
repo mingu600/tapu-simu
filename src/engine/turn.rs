@@ -177,8 +177,33 @@ pub fn generate_move_instructions_with_context(
             generate_attack_instructions_with_context(*move_index, target_positions, user_pos, format, state, going_first)
         }
         MoveChoice::MoveTera { move_index, target_positions, .. } => {
-            // For now, treat Tera moves the same as regular moves (simplified)
-            generate_attack_instructions_with_context(*move_index, target_positions, user_pos, format, state, going_first)
+            // Generate Terastallization instruction first
+            let mut all_instructions = Vec::new();
+            
+            // Check if the Pokemon can Terastallize
+            if let Some(user_pokemon) = state.get_pokemon_at_position(user_pos) {
+                if !user_pokemon.is_terastallized && user_pokemon.tera_type.is_some() {
+                    // Apply Terastallization
+                    let tera_instruction = BattleInstructions::new(
+                        100.0,
+                        vec![BattleInstruction::Pokemon(
+                            crate::core::instructions::PokemonInstruction::ToggleTerastallized {
+                                target: user_pos,
+                                terastallized: true,
+                                tera_type: user_pokemon.tera_type,
+                                previous_state: user_pokemon.is_terastallized,
+                            }
+                        )]
+                    );
+                    all_instructions.push(tera_instruction);
+                }
+            }
+            
+            // Then generate the move instructions with enhanced power
+            let move_instructions = generate_attack_instructions_with_context(*move_index, target_positions, user_pos, format, state, going_first)?;
+            all_instructions.extend(move_instructions);
+            
+            Ok(all_instructions)
         }
         MoveChoice::None => {
             Ok(vec![BattleInstructions::new(100.0, vec![])])
@@ -281,8 +306,11 @@ fn generate_attack_instructions_with_context(
     // Only generate hit instructions if move can hit
     if accuracy_percentage > 0.0 {
         // Determine if we should branch on damage (following poke-engine logic)
-        // For now, we'll use false for simplicity - can be enhanced later
-        let branch_on_damage = false;
+        // Branch on damage for moves with variable damage ranges or critical hits
+        let move_name = move_data.name.as_str().to_lowercase();
+        let branch_on_damage = move_data.base_power > 0 && 
+            (move_name.contains("variable") || 
+             move_name.contains("random"));
         
         // Generate hit instructions with secondary effects
         let hit_instructions = generate_hit_instructions_with_secondary_effects(
@@ -765,7 +793,10 @@ fn apply_weather_accuracy_modifiers(
                 _ => base_accuracy,
             }
         }
-        _ => base_accuracy, // No weather modification for other moves
+        _ => {
+            // No weather modification for other moves
+            base_accuracy
+        }
     }
 }
 
@@ -787,7 +818,10 @@ fn apply_ability_accuracy_modifiers(
                 // No Guard makes all moves hit regardless of accuracy
                 100.0
             }
-            _ => base_accuracy,
+            _ => {
+                // No ability-based accuracy modification
+                base_accuracy
+            }
         }
     } else {
         base_accuracy

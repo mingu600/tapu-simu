@@ -174,12 +174,12 @@ fn test_magician_does_not_steal_if_move_misses() {
                 BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
                     target: Positions::SIDE_TWO_0,
                     new_item: None,
-                    previous_item: Some("Leftovers".to_string()),
+                    previous_item: Some(tapu_simu::types::Items::LEFTOVERS),
                 }),
                 // Delphox gains the stolen item via Magician
                 BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
                     target: Positions::SIDE_ONE_0,
-                    new_item: Some("Leftovers".to_string()),
+                    new_item: Some(tapu_simu::types::Items::LEFTOVERS),
                     previous_item: None,
                 }),
             ],
@@ -228,7 +228,7 @@ fn test_throatspray_with_move_that_can_miss() {
                 BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
                     target: Positions::SIDE_ONE_0,
                     new_item: None,
-                    previous_item: Some("Throat Spray".to_string()),
+                    previous_item: Some(tapu_simu::types::Items::THROATSPRAY),
                 }),
                 BattleInstruction::Stats(
                     tapu_simu::core::instructions::StatsInstruction::BoostStats {

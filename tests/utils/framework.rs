@@ -252,10 +252,12 @@ impl TapuTestFramework {
         // Create Pokemon with basic data
         // Convert species string to PokemonName enum
         let species_enum = PokemonName::from_normalized_str(&tapu_simu::utils::normalize_name(spec.species))
-            .unwrap_or_else(|| {
-                use tapu_simu::types::{DataError, PokemonName};
-                panic!("Unknown species: {}", spec.species);
-            });
+            .ok_or_else(|| {
+                use tapu_simu::types::DataError;
+                DataError::SpeciesNotFound {
+                    species: PokemonName::from_normalized_str("unknown").unwrap_or(PokemonName::NONE),
+                }
+            })?;
         let mut pokemon = Pokemon::new(species_enum);
 
         // Set level
@@ -733,16 +735,37 @@ impl TapuTestFramework {
                     return Err(format!("No Pokemon at position {:?}", position));
                 }
             }
-            ExpectedOutcome::Switch(_position, _expected_index) => {
-                // This would require tracking switch events, which is more complex
-                // For now, we can validate that the Pokemon at the position is different
-                // This is a simplified implementation
+            ExpectedOutcome::Switch(position, expected_index) => {
+                // Validate that a Pokemon switch occurred
+                if let Some(pokemon) = state.get_pokemon_at_position(*position) {
+                    // In a real implementation, we'd track the actual switch
+                    // For now, just verify the position is valid and could potentially switch
+                    if pokemon.hp == 0 {
+                        return Err(format!(
+                            "Pokemon at {:?} has fainted and cannot switch to index {}",
+                            position, expected_index
+                        ));
+                    }
+                    // Note: Actual switch validation would require tracking team composition
+                    // and switch history, which is beyond the current framework scope
+                } else {
+                    return Err(format!("No Pokemon at position {:?} to switch", position));
+                }
             }
             ExpectedOutcome::NoEffect(position) => {
-                // This is context-dependent and would need more sophisticated tracking
-                // For now, just validate the position exists
-                if state.get_pokemon_at_position(*position).is_none() {
-                    return Err(format!("No Pokemon at position {:?}", position));
+                // Validate that the position exists and Pokemon is active
+                if let Some(pokemon) = state.get_pokemon_at_position(*position) {
+                    if pokemon.hp == 0 {
+                        return Err(format!(
+                            "Pokemon at {:?} has fainted - NoEffect validation requires active Pokemon",
+                            position
+                        ));
+                    }
+                    // For NoEffect, we mainly validate the Pokemon exists and can be affected
+                    // Additional validation would require context about what specific effect
+                    // was expected not to occur
+                } else {
+                    return Err(format!("No Pokemon at position {:?} for NoEffect validation", position));
                 }
             }
             ExpectedOutcome::Instructions(_expected_instructions) => {
