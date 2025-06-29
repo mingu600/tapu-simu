@@ -1,12 +1,12 @@
 //! Pokemon-related types and implementations for battle state
 
 use crate::core::battle_format::BattlePosition;
-use crate::core::instructions::{MoveCategory, PokemonStatus, VolatileStatus};
+use crate::core::instructions::{MoveCategory, PokemonStatus};
 use crate::core::move_choice::MoveIndex;
 use crate::data::types::Stats;
-use crate::types::{PokemonType, PokemonName, Abilities, Items, Moves};
+use crate::types::{PokemonType, PokemonName, Abilities, Items, Moves, StatBoostArray, VolatileStatusStorage};
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
+use smallvec::SmallVec;
 
 /// Pokemon gender
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -134,19 +134,17 @@ pub struct Pokemon {
     /// Base species stats (used for Gen 1 critical hit calculation)
     pub base_stats: Stats,
     /// Current stat boosts (-6 to +6)
-    pub stat_boosts: HashMap<crate::core::instructions::Stat, i8>,
+    pub stat_boosts: StatBoostArray,
     /// Current status condition
     pub status: PokemonStatus,
     /// Status duration (for sleep/freeze)
     pub status_duration: Option<u8>,
-    /// Volatile statuses
-    pub volatile_statuses: HashSet<VolatileStatus>,
-    /// Volatile status durations (turns remaining for each status)
-    pub volatile_status_durations: HashMap<VolatileStatus, u8>,
+    /// Volatile statuses with optimized storage
+    pub volatile_statuses: VolatileStatusStorage,
     /// Substitute health (when Substitute volatile status is active)
     pub substitute_health: i16,
-    /// Current moves
-    pub moves: HashMap<MoveIndex, Move>,
+    /// Current moves (up to 4 moves, stored efficiently)
+    pub moves: SmallVec<[(MoveIndex, Move); 4]>,
     /// Current ability
     pub ability: Abilities,
     /// Held item
@@ -194,13 +192,12 @@ impl Pokemon {
                 special_defense: 100,
                 speed: 100,
             },
-            stat_boosts: HashMap::new(),
+            stat_boosts: StatBoostArray::default(),
             status: PokemonStatus::None,
             status_duration: None,
-            volatile_statuses: HashSet::new(),
-            volatile_status_durations: HashMap::new(),
+            volatile_statuses: VolatileStatusStorage::default(),
             substitute_health: 0,
-            moves: HashMap::new(),
+            moves: SmallVec::new(),
             ability: crate::types::Abilities::NONE,
             item: None,
             types: vec![PokemonType::Normal],
@@ -217,12 +214,16 @@ impl Pokemon {
 
     /// Get a specific move from Pokemon's moveset
     pub fn get_move(&self, move_index: MoveIndex) -> Option<&Move> {
-        self.moves.get(&move_index)
+        self.moves.iter()
+            .find(|(idx, _)| *idx == move_index)
+            .map(|(_, m)| m)
     }
 
     /// Get mutable reference to a move
     pub fn get_move_mut(&mut self, move_index: MoveIndex) -> Option<&mut Move> {
-        self.moves.get_mut(&move_index)
+        self.moves.iter_mut()
+            .find(|(idx, _)| *idx == move_index)
+            .map(|(_, m)| m)
     }
 
     /// Check if the Pokemon is fainted
@@ -244,7 +245,7 @@ impl Pokemon {
         };
 
         // Apply stat boosts
-        let boost = self.stat_boosts.get(&stat).copied().unwrap_or(0);
+        let boost = self.stat_boosts.get_direct(stat);
         let boost_multiplier = if boost >= 0 {
             (2.0 + boost as f64) / 2.0
         } else {
@@ -333,7 +334,20 @@ impl Pokemon {
 
     /// Add a move to the Pokemon's moveset
     pub fn add_move(&mut self, move_index: MoveIndex, move_data: Move) {
-        self.moves.insert(move_index, move_data);
+        // Remove existing move with same index if it exists
+        self.moves.retain(|(idx, _)| *idx != move_index);
+        // Add the new move
+        self.moves.push((move_index, move_data));
+    }
+    
+    /// Remove a move from the Pokemon's moveset
+    pub fn remove_move(&mut self, move_index: MoveIndex) {
+        self.moves.retain(|(idx, _)| *idx != move_index);
+    }
+    
+    /// Get all move indices for this Pokemon
+    pub fn get_move_indices(&self) -> Vec<MoveIndex> {
+        self.moves.iter().map(|(idx, _)| *idx).collect()
     }
 }
 

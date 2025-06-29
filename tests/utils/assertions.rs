@@ -70,8 +70,8 @@ impl BattleAssertions {
             .ok_or_else(|| format!("No Pokemon at position {:?}", position))?;
         
         for (stat, expected_change) in expected_changes {
-            let actual_change = pokemon.stat_boosts.get(stat).unwrap_or(&0);
-            if actual_change != expected_change {
+            let actual_change = pokemon.stat_boosts.get(*stat).unwrap_or(0);
+            if actual_change != *expected_change {
                 return Err(format!(
                     "Stat change assertion failed at {:?} for {:?}: expected {}, got {}",
                     position, stat, expected_change, actual_change
@@ -102,8 +102,8 @@ impl BattleAssertions {
         let pokemon = state.get_pokemon_at_position(position)
             .ok_or_else(|| format!("No Pokemon at position {:?}", position))?;
         
-        for (stat, change) in &pokemon.stat_boosts {
-            if *change != 0 {
+        for (stat, change) in pokemon.stat_boosts.iter() {
+            if change != 0 {
                 return Err(format!(
                     "Unexpected stat change at {:?}: {:?} has change of {}",
                     position, stat, change

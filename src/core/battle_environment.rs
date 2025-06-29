@@ -647,7 +647,7 @@ impl BattleEnvironment {
         }
 
         // Moves
-        let mut move_names: Vec<String> = pokemon.moves.values().map(|m| m.name.as_str().to_string()).collect();
+        let mut move_names: Vec<String> = pokemon.moves.iter().map(|(_, m)| m.name.as_str().to_string()).collect();
         move_names.sort(); // Sort for consistent output
         for move_name in move_names {
             paste.push_str(&format!("- {}\n", move_name));
@@ -662,7 +662,7 @@ impl BattleEnvironment {
         pokemon: &crate::core::battle_state::Pokemon,
     ) -> (PokemonIVs, PokemonEVs) {
         // Check if Pokemon has any physical moves
-        let has_physical_moves = pokemon.moves.values().any(|m| {
+        let has_physical_moves = pokemon.moves.iter().any(|(_, m)| {
             matches!(
                 m.category,
                 crate::core::instructions::MoveCategory::Physical
@@ -670,7 +670,7 @@ impl BattleEnvironment {
         });
 
         // Check if Pokemon has Trick Room or Gyro Ball
-        let has_speed_dependent_moves = pokemon.moves.values().any(|m| {
+        let has_speed_dependent_moves = pokemon.moves.iter().any(|(_, m)| {
             m.name == crate::types::Moves::TRICKROOM || m.name == crate::types::Moves::GYROBALL
         });
 

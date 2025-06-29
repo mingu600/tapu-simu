@@ -539,8 +539,8 @@ pub fn apply_punishment(
         // Count positive stat boosts
         let mut positive_boosts = 0i32;
         for boost in target.stat_boosts.values() {
-            if *boost > 0 {
-                positive_boosts += *boost as i32;
+            if boost > 0 {
+                positive_boosts += boost as i32;
             }
         }
 
@@ -680,7 +680,7 @@ fn apply_power_modifier_move(
 /// Calculate speed with stat boosts applied
 fn calculate_boosted_speed(pokemon: &Pokemon) -> i32 {
     let base_speed = pokemon.stats.speed;
-    let boost_multiplier = match pokemon.stat_boosts.get(&Stat::Speed).unwrap_or(&0) {
+    let boost_multiplier = match pokemon.stat_boosts.get_direct(Stat::Speed) {
         -6 => 0.25,
         -5 => 0.28,
         -4 => 0.33,
@@ -1197,8 +1197,8 @@ pub fn apply_stored_power(
         let total_boosts: i32 = user
             .stat_boosts
             .values()
-            .filter(|&&boost| boost > 0)
-            .map(|&boost| boost as i32)
+            .filter(|&boost| boost > 0)
+            .map(|boost| boost as i32)
             .sum();
 
         let power = 20 + (total_boosts * 20); // Base 20 + 20 per positive boost

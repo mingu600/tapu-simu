@@ -473,10 +473,9 @@ fn apply_stat_substitutions(
     if substitutions.use_target_stats {
         // For Foul Play, use target's Attack stat and Attack boosts
         effective_user.stats.attack = target.stats.attack;
-        effective_user.stat_boosts.remove(&Stat::Attack);
-        if let Some(target_attack_boost) = target.stat_boosts.get(&Stat::Attack) {
-            effective_user.stat_boosts.insert(Stat::Attack, *target_attack_boost);
-        }
+        effective_user.stat_boosts.remove(Stat::Attack);
+        let target_attack_boost = target.stat_boosts.get_direct(Stat::Attack);
+        effective_user.stat_boosts.insert(Stat::Attack, target_attack_boost);
     }
 
     // Handle stat substitutions (like Body Press using Defense as Attack)
@@ -485,31 +484,27 @@ fn apply_stat_substitutions(
             Stat::Defense => {
                 effective_user.stats.attack = user.stats.defense;
                 // Use Defense boost as Attack boost
-                effective_user.stat_boosts.remove(&Stat::Attack);
-                if let Some(defense_boost) = user.stat_boosts.get(&Stat::Defense) {
-                    effective_user.stat_boosts.insert(Stat::Attack, *defense_boost);
-                }
+                effective_user.stat_boosts.remove(Stat::Attack);
+                let defense_boost = user.stat_boosts.get_direct(Stat::Defense);
+                effective_user.stat_boosts.insert(Stat::Attack, defense_boost);
             }
             Stat::SpecialAttack => {
                 effective_user.stats.attack = user.stats.special_attack;
-                effective_user.stat_boosts.remove(&Stat::Attack);
-                if let Some(spa_boost) = user.stat_boosts.get(&Stat::SpecialAttack) {
-                    effective_user.stat_boosts.insert(Stat::Attack, *spa_boost);
-                }
+                effective_user.stat_boosts.remove(Stat::Attack);
+                let spa_boost = user.stat_boosts.get_direct(Stat::SpecialAttack);
+                effective_user.stat_boosts.insert(Stat::Attack, spa_boost);
             }
             Stat::SpecialDefense => {
                 effective_user.stats.attack = user.stats.special_defense;
-                effective_user.stat_boosts.remove(&Stat::Attack);
-                if let Some(spd_boost) = user.stat_boosts.get(&Stat::SpecialDefense) {
-                    effective_user.stat_boosts.insert(Stat::Attack, *spd_boost);
-                }
+                effective_user.stat_boosts.remove(Stat::Attack);
+                let spd_boost = user.stat_boosts.get_direct(Stat::SpecialDefense);
+                effective_user.stat_boosts.insert(Stat::Attack, spd_boost);
             }
             Stat::Speed => {
                 effective_user.stats.attack = user.stats.speed;
-                effective_user.stat_boosts.remove(&Stat::Attack);
-                if let Some(speed_boost) = user.stat_boosts.get(&Stat::Speed) {
-                    effective_user.stat_boosts.insert(Stat::Attack, *speed_boost);
-                }
+                effective_user.stat_boosts.remove(Stat::Attack);
+                let speed_boost = user.stat_boosts.get_direct(Stat::Speed);
+                effective_user.stat_boosts.insert(Stat::Attack, speed_boost);
             }
             _ => {} // Attack uses Attack, no change needed
         }

@@ -45,13 +45,13 @@ fn is_grounded(pokemon: &Pokemon) -> bool {
     // Check for volatile statuses that affect grounding
     if pokemon
         .volatile_statuses
-        .contains(&crate::core::instructions::VolatileStatus::MagnetRise)
+        .contains(crate::core::instructions::VolatileStatus::MagnetRise)
     {
         return false; // Magnet Rise makes Pokemon ungrounded
     }
     if pokemon
         .volatile_statuses
-        .contains(&crate::core::instructions::VolatileStatus::Telekinesis)
+        .contains(crate::core::instructions::VolatileStatus::Telekinesis)
     {
         return false; // Telekinesis makes Pokemon ungrounded
     }

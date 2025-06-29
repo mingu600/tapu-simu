@@ -610,7 +610,7 @@ fn should_cancel_move(
         }
         
         // Check if the attacker is flinched (flinch prevents move execution)
-        if user_pokemon.volatile_statuses.contains(&VolatileStatus::Flinch) {
+        if user_pokemon.volatile_statuses.contains(VolatileStatus::Flinch) {
             return true; // Cancel move if attacker is flinched
         }
     }
@@ -856,7 +856,8 @@ fn apply_stat_stage_accuracy_modifiers(
     
     // Apply user's accuracy stage
     if let Some(user) = state.get_pokemon_at_position(user_pos) {
-        if let Some(&accuracy_stage) = user.stat_boosts.get(&crate::core::instructions::Stat::Accuracy) {
+        let accuracy_stage = user.stat_boosts.get_direct(crate::core::instructions::Stat::Accuracy);
+        if accuracy_stage != 0 {
             let accuracy_multiplier = match accuracy_stage {
                 -6 => 3.0 / 9.0,   // 33%
                 -5 => 3.0 / 8.0,   // 37.5%
@@ -880,7 +881,8 @@ fn apply_stat_stage_accuracy_modifiers(
     // Apply target's evasion stage (if single target)
     if targets.len() == 1 {
         if let Some(target) = state.get_pokemon_at_position(targets[0]) {
-            if let Some(&evasion_stage) = target.stat_boosts.get(&crate::core::instructions::Stat::Evasion) {
+            let evasion_stage = target.stat_boosts.get_direct(crate::core::instructions::Stat::Evasion);
+            if evasion_stage != 0 {
                 let evasion_multiplier = match evasion_stage {
                     -6 => 9.0 / 3.0,   // 300% (easier to hit)
                     -5 => 8.0 / 3.0,   // 267%
@@ -1044,16 +1046,12 @@ fn generate_attack_instructions_with_enhanced_context(
         })?;
     
     // Convert Move to MoveData via generation-specific repository lookup
-    let generation_repository = crate::data::generation_loader::GenerationRepository::load_from_directory("data/ps-extracted")
-        .expect("Failed to load generation-specific Pokemon data from data/ps-extracted");
-    let move_data = if let Some(gen_move_data) = generation_repository.find_move_by_name_for_generation(&move_data_raw.name.as_str(), state.format.generation.number()) {
+    let move_data = if let Some(gen_move_data) = state.generation_repo.find_move_by_name_for_generation(&move_data_raw.name.as_str(), state.format.generation.number()) {
         // Use generation-specific move data directly (already in showdown_types::MoveData format)
         gen_move_data.clone()
     } else {
         // Fallback to standard repository for moves not found in generation-specific data
-        let repository = crate::data::GameDataRepository::from_path("data/ps-extracted")
-            .expect("Failed to load Pokemon data from data/ps-extracted");
-        if let Some(repo_move_data) = repository.moves.find_by_name(&move_data_raw.name.as_str()) {
+        if let Some(repo_move_data) = state.game_data_repo.moves.find_by_name(&move_data_raw.name.as_str()) {
             // Convert repository::MoveData to showdown_types::MoveData
             crate::data::showdown_types::MoveData {
                 name: repo_move_data.name,

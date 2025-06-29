@@ -293,7 +293,7 @@ fn should_item_swap_fail(user: &Pokemon, target: &Pokemon) -> bool {
     }
     
     // Fail if target is behind a Substitute
-    if target.volatile_statuses.contains(&VolatileStatus::Substitute) {
+    if target.volatile_statuses.contains(VolatileStatus::Substitute) {
         return true;
     }
     

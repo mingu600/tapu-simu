@@ -16,11 +16,11 @@ use serde::{Deserialize, Serialize};
 
 /// Comprehensive context for damage calculation
 #[derive(Debug, Clone)]
-pub struct DamageContext {
+pub struct DamageContext<'a> {
     /// Information about the attacking Pokemon
-    pub attacker: AttackerContext,
+    pub attacker: AttackerContext<'a>,
     /// Information about the defending Pokemon
-    pub defender: DefenderContext,
+    pub defender: DefenderContext<'a>,
     /// Information about the move being used
     pub move_info: MoveContext,
     /// Battlefield conditions that affect damage
@@ -31,9 +31,9 @@ pub struct DamageContext {
 
 /// Context for the attacking Pokemon
 #[derive(Debug, Clone)]
-pub struct AttackerContext {
+pub struct AttackerContext<'a> {
     /// The attacking Pokemon
-    pub pokemon: Pokemon, // TODO: Consider using &Pokemon with lifetimes
+    pub pokemon: &'a Pokemon,
     /// Position of the attacker on the battlefield
     pub position: BattlePosition,
     /// Effective stats after all modifiers
@@ -46,9 +46,9 @@ pub struct AttackerContext {
 
 /// Context for the defending Pokemon
 #[derive(Debug, Clone)]
-pub struct DefenderContext {
+pub struct DefenderContext<'a> {
     /// The defending Pokemon
-    pub pokemon: Pokemon,
+    pub pokemon: &'a Pokemon,
     /// Position of the defender on the battlefield
     pub position: BattlePosition,
     /// Effective stats after all modifiers
@@ -175,11 +175,11 @@ pub enum DamageEffect {
     TerrainEffect { terrain: Terrain },
 }
 
-impl DamageContext {
+impl<'a> DamageContext<'a> {
     /// Create a new damage context from battle state components
     pub fn new(
-        attacker: AttackerContext,
-        defender: DefenderContext,
+        attacker: AttackerContext<'a>,
+        defender: DefenderContext<'a>,
         move_info: MoveContext,
         field: FieldContext,
         format: FormatContext,
@@ -202,18 +202,18 @@ impl DamageContext {
 
     /// Helper to create context from battle state
     pub fn from_battle_state(
-        attacker_pokemon: &Pokemon,
+        attacker_pokemon: &'a Pokemon,
         attacker_position: BattlePosition,
-        defender_pokemon: &Pokemon,
+        defender_pokemon: &'a Pokemon,
         defender_position: BattlePosition,
         move_data: &MoveData,
         field_conditions: &FieldConditions,
         battle_format: &BattleFormat,
         target_count: usize,
         is_critical: bool,
-    ) -> Self {
+    ) -> DamageContext<'a> {
         let attacker = AttackerContext {
-            pokemon: attacker_pokemon.clone(),
+            pokemon: attacker_pokemon,
             position: attacker_position,
             effective_stats: EffectiveStats::from_pokemon(attacker_pokemon),
             ability_state: AbilityState::from_pokemon(attacker_pokemon),
@@ -221,7 +221,7 @@ impl DamageContext {
         };
 
         let defender = DefenderContext {
-            pokemon: defender_pokemon.clone(),
+            pokemon: defender_pokemon,
             position: defender_position,
             effective_stats: EffectiveStats::from_pokemon(defender_pokemon),
             ability_state: AbilityState::from_pokemon(defender_pokemon),
@@ -385,11 +385,11 @@ impl StatStages {
     /// Create stat stages from a Pokemon's current boosts
     pub fn from_pokemon(pokemon: &Pokemon) -> Self {
         Self {
-            attack: *pokemon.stat_boosts.get(&Stat::Attack).unwrap_or(&0),
-            defense: *pokemon.stat_boosts.get(&Stat::Defense).unwrap_or(&0),
-            special_attack: *pokemon.stat_boosts.get(&Stat::SpecialAttack).unwrap_or(&0),
-            special_defense: *pokemon.stat_boosts.get(&Stat::SpecialDefense).unwrap_or(&0),
-            speed: *pokemon.stat_boosts.get(&Stat::Speed).unwrap_or(&0),
+            attack: pokemon.stat_boosts.get_direct(Stat::Attack),
+            defense: pokemon.stat_boosts.get_direct(Stat::Defense),
+            special_attack: pokemon.stat_boosts.get_direct(Stat::SpecialAttack),
+            special_defense: pokemon.stat_boosts.get_direct(Stat::SpecialDefense),
+            speed: pokemon.stat_boosts.get_direct(Stat::Speed),
         }
     }
 }
@@ -433,41 +433,9 @@ fn apply_stat_stage_multiplier(base_value: i16, stage: i8) -> i16 {
 
 
 // Default implementations for testing and compatibility
-impl Default for DamageContext {
-    fn default() -> Self {
-        Self {
-            attacker: AttackerContext::default(),
-            defender: DefenderContext::default(),
-            move_info: MoveContext::default(),
-            field: FieldContext::default(),
-            format: FormatContext::default(),
-        }
-    }
-}
+// Note: DamageContext cannot have a Default implementation due to lifetime parameters
 
-impl Default for AttackerContext {
-    fn default() -> Self {
-        Self {
-            pokemon: Pokemon::default(),
-            position: BattlePosition::new(crate::core::battle_format::SideReference::SideOne, 0),
-            effective_stats: EffectiveStats::default(),
-            ability_state: AbilityState::default(),
-            item_effects: ItemEffects::default(),
-        }
-    }
-}
-
-impl Default for DefenderContext {
-    fn default() -> Self {
-        Self {
-            pokemon: Pokemon::default(),
-            position: BattlePosition::new(crate::core::battle_format::SideReference::SideTwo, 0),
-            effective_stats: EffectiveStats::default(),
-            ability_state: AbilityState::default(),
-            item_effects: ItemEffects::default(),
-        }
-    }
-}
+// Note: AttackerContext and DefenderContext cannot have Default implementations due to lifetime parameters
 
 impl Default for MoveContext {
     fn default() -> Self {

@@ -746,10 +746,10 @@ fn process_switch_out_items(
                 let mut has_negative_boosts = false;
                 let mut stat_changes = HashMap::new();
                 
-                for (stat, &boost) in &pokemon.stat_boosts {
+                for (stat, boost) in pokemon.stat_boosts.iter() {
                     if boost < 0 {
                         has_negative_boosts = true;
-                        stat_changes.insert(*stat, 0 - boost); // Reset to 0
+                        stat_changes.insert(stat, 0 - boost); // Reset to 0
                     }
                 }
                 
@@ -758,7 +758,7 @@ fn process_switch_out_items(
                         BattleInstruction::Stats(StatsInstruction::BoostStats {
                             target: switching_position,
                             stat_changes: stat_changes,
-                            previous_boosts: pokemon.stat_boosts.clone(),
+                            previous_boosts: pokemon.stat_boosts.to_hashmap(),
                         }),
                         // Remove the item after use
                         BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
@@ -780,7 +780,7 @@ fn process_switch_out_items(
                 // Remove any trapping effects when switching out
                 let mut remove_instructions = Vec::new();
                 
-                for volatile_status in &pokemon.volatile_statuses {
+                for volatile_status in pokemon.volatile_statuses.iter() {
                     match volatile_status {
                         crate::core::instructions::VolatileStatus::PartiallyTrapped |
                         crate::core::instructions::VolatileStatus::PartiallyTrapped |
@@ -790,7 +790,7 @@ fn process_switch_out_items(
                         crate::core::instructions::VolatileStatus::SkyDrop => {
                             remove_instructions.push(BattleInstruction::Status(StatusInstruction::RemoveVolatile {
                                 target: switching_position,
-                                status: *volatile_status,
+                                status: volatile_status,
                                 previous_duration: None,
                             }));
                         }
@@ -811,7 +811,7 @@ fn process_switch_out_items(
             // Toxic Orb / Flame Orb - remove their volatile status markers
             crate::types::Items::TOXICORB => {
                 // Remove the ToxicOrb volatile status
-                if pokemon.volatile_statuses.contains(&crate::core::instructions::VolatileStatus::HealBlock) {
+                if pokemon.volatile_statuses.contains(crate::core::instructions::VolatileStatus::HealBlock) {
                     instructions.push(BattleInstructions::new(100.0, vec![
                         BattleInstruction::Status(StatusInstruction::RemoveVolatile {
                             target: switching_position,
@@ -824,7 +824,7 @@ fn process_switch_out_items(
             
             crate::types::Items::FLAMEORB => {
                 // Remove the FlameOrb volatile status
-                if pokemon.volatile_statuses.contains(&crate::core::instructions::VolatileStatus::HealBlock) {
+                if pokemon.volatile_statuses.contains(crate::core::instructions::VolatileStatus::HealBlock) {
                     instructions.push(BattleInstructions::new(100.0, vec![
                         BattleInstruction::Status(StatusInstruction::RemoveVolatile {
                             target: switching_position,
@@ -837,7 +837,7 @@ fn process_switch_out_items(
             
             // Air Balloon - remove when switching out
             crate::types::Items::AIRBALLOON => {
-                if pokemon.volatile_statuses.contains(&crate::core::instructions::VolatileStatus::MagnetRise) {
+                if pokemon.volatile_statuses.contains(crate::core::instructions::VolatileStatus::MagnetRise) {
                     instructions.push(BattleInstructions::new(100.0, vec![
                         BattleInstruction::Status(StatusInstruction::RemoveVolatile {
                             target: switching_position,
@@ -850,7 +850,7 @@ fn process_switch_out_items(
             
             // Choice items - remove choice lock when switching out
             crate::types::Items::CHOICEBAND | crate::types::Items::CHOICESCARF | crate::types::Items::CHOICESPECS => {
-                if pokemon.volatile_statuses.contains(&crate::core::instructions::VolatileStatus::LockedMove) {
+                if pokemon.volatile_statuses.contains(crate::core::instructions::VolatileStatus::LockedMove) {
                     instructions.push(BattleInstructions::new(100.0, vec![
                         BattleInstruction::Status(StatusInstruction::RemoveVolatile {
                             target: switching_position,
@@ -881,7 +881,7 @@ fn process_switch_out_volatile_cleanup(
         
         // Most volatile statuses are cleared when switching out
         // Some statuses persist through switching (e.g., Substitute in some contexts)
-        for volatile_status in &pokemon.volatile_statuses {
+        for volatile_status in pokemon.volatile_statuses.iter() {
             match volatile_status {
                 // Statuses that persist through switching
                 crate::core::instructions::VolatileStatus::Substitute => {
@@ -889,7 +889,7 @@ fn process_switch_out_volatile_cleanup(
                     // For now, remove it on switch
                     instruction_list.push(BattleInstruction::Status(StatusInstruction::RemoveVolatile {
                         target: switching_position,
-                        status: *volatile_status,
+                        status: volatile_status,
                         previous_duration: None,
                     }));
                 }
@@ -921,7 +921,7 @@ fn process_switch_out_volatile_cleanup(
                 crate::core::instructions::VolatileStatus::MiracleEye => {
                     instruction_list.push(BattleInstruction::Status(StatusInstruction::RemoveVolatile {
                         target: switching_position,
-                        status: *volatile_status,
+                        status: volatile_status,
                         previous_duration: None,
                     }));
                 }
@@ -943,7 +943,7 @@ fn process_switch_out_volatile_cleanup(
                 crate::core::instructions::VolatileStatus::Roost => {
                     instruction_list.push(BattleInstruction::Status(StatusInstruction::RemoveVolatile {
                         target: switching_position,
-                        status: *volatile_status,
+                        status: volatile_status,
                         previous_duration: None,
                     }));
                 }
@@ -960,7 +960,7 @@ fn process_switch_out_volatile_cleanup(
                 crate::core::instructions::VolatileStatus::Electroshot => {
                     instruction_list.push(BattleInstruction::Status(StatusInstruction::RemoveVolatile {
                         target: switching_position,
-                        status: *volatile_status,
+                        status: volatile_status,
                         previous_duration: None,
                     }));
                 }
@@ -969,7 +969,7 @@ fn process_switch_out_volatile_cleanup(
                 _ => {
                     instruction_list.push(BattleInstruction::Status(StatusInstruction::RemoveVolatile {
                         target: switching_position,
-                        status: *volatile_status,
+                        status: volatile_status,
                         previous_duration: None,
                     }));
                 }

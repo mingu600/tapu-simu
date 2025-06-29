@@ -103,7 +103,7 @@ fn check_flinch_prevention(
     _battle_state: &BattleState,
     _position: BattlePosition,
 ) -> Option<MovePreventionReason> {
-    if !pokemon.volatile_statuses.contains(&VolatileStatus::Flinch) {
+    if !pokemon.volatile_statuses.contains(VolatileStatus::Flinch) {
         return None;
     }
 
@@ -192,7 +192,7 @@ fn check_confusion_prevention(
 ) -> Option<MovePreventionReason> {
     if !pokemon
         .volatile_statuses
-        .contains(&VolatileStatus::Confusion)
+        .contains(VolatileStatus::Confusion)
     {
         return None;
     }
@@ -214,7 +214,7 @@ fn check_other_prevention_effects(
     _position: BattlePosition,
 ) -> Option<MovePreventionReason> {
     // Check Taunt (prevents status moves)
-    if pokemon.volatile_statuses.contains(&VolatileStatus::Taunt) {
+    if pokemon.volatile_statuses.contains(VolatileStatus::Taunt) {
         let is_status_move = if let Some(data) = move_data {
             data.category == crate::core::instructions::pokemon::MoveCategory::Status
         } else if let Some(move_index) = move_choice.move_index() {
@@ -233,20 +233,20 @@ fn check_other_prevention_effects(
     }
 
     // Check Torment (prevents using same move twice in a row)
-    if pokemon.volatile_statuses.contains(&VolatileStatus::Torment) {
+    if pokemon.volatile_statuses.contains(VolatileStatus::Torment) {
         // For now, implement basic torment check
         // TODO: Implement proper last move tracking
         // return Some(MovePreventionReason::Torment);
     }
 
     // Check Disable (prevents using a specific disabled move)
-    if pokemon.volatile_statuses.contains(&VolatileStatus::Disable) {
+    if pokemon.volatile_statuses.contains(VolatileStatus::Disable) {
         // TODO: Implement proper move disable tracking
         // return Some(MovePreventionReason::Disable);
     }
 
     // Check Encore (forces using the same move)
-    if pokemon.volatile_statuses.contains(&VolatileStatus::Encore) {
+    if pokemon.volatile_statuses.contains(VolatileStatus::Encore) {
         // TODO: Implement proper encore tracking
         // return Some(MovePreventionReason::Encore);
     }

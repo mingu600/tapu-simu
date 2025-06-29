@@ -33,7 +33,7 @@ pub fn apply_solar_beam(
     
     // Check if user is already charging Solar Beam
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
-        if user_pokemon.volatile_statuses.contains(&VolatileStatus::TwoTurnMove) {
+        if user_pokemon.volatile_statuses.contains(VolatileStatus::TwoTurnMove) {
             // Second turn - attack with potentially modified power
             let power_multiplier = match state.weather() {
                 Weather::Sun | Weather::HarshSun | Weather::HarshSunlight => 1.0, // Full power in sun
@@ -108,7 +108,7 @@ pub fn apply_meteor_beam(
     let mut instructions = Vec::new();
     
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
-        if user_pokemon.volatile_statuses.contains(&VolatileStatus::TwoTurnMove) {
+        if user_pokemon.volatile_statuses.contains(VolatileStatus::TwoTurnMove) {
             // Second turn - attack
             instructions.push(BattleInstructions::new(100.0, vec![
                 BattleInstruction::Status(StatusInstruction::RemoveVolatile {
@@ -170,7 +170,7 @@ pub fn apply_dig(
     let mut instructions = Vec::new();
     
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
-        if user_pokemon.volatile_statuses.contains(&VolatileStatus::TwoTurnMove) {
+        if user_pokemon.volatile_statuses.contains(VolatileStatus::TwoTurnMove) {
             // Second turn - attack from underground
             instructions.push(BattleInstructions::new(100.0, vec![
                 BattleInstruction::Status(StatusInstruction::RemoveVolatile {
@@ -223,7 +223,7 @@ pub fn apply_fly(
     let mut instructions = Vec::new();
     
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
-        if user_pokemon.volatile_statuses.contains(&VolatileStatus::TwoTurnMove) {
+        if user_pokemon.volatile_statuses.contains(VolatileStatus::TwoTurnMove) {
             // Second turn - attack from the air
             instructions.push(BattleInstructions::new(100.0, vec![
                 BattleInstruction::Status(StatusInstruction::RemoveVolatile {
@@ -290,7 +290,7 @@ pub fn apply_dive(
     let mut instructions = Vec::new();
     
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
-        if user_pokemon.volatile_statuses.contains(&VolatileStatus::TwoTurnMove) {
+        if user_pokemon.volatile_statuses.contains(VolatileStatus::TwoTurnMove) {
             // Second turn - attack from underwater
             instructions.push(BattleInstructions::new(100.0, vec![
                 BattleInstruction::Status(StatusInstruction::RemoveVolatile {
@@ -343,7 +343,7 @@ pub fn apply_phantom_force(
     let mut instructions = Vec::new();
     
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
-        if user_pokemon.volatile_statuses.contains(&VolatileStatus::TwoTurnMove) {
+        if user_pokemon.volatile_statuses.contains(VolatileStatus::TwoTurnMove) {
             // Second turn - attack with protection bypass
             instructions.push(BattleInstructions::new(100.0, vec![
                 BattleInstruction::Status(StatusInstruction::RemoveVolatile {
@@ -467,7 +467,7 @@ pub fn apply_skull_bash(
     let mut instructions = Vec::new();
     
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
-        if user_pokemon.volatile_statuses.contains(&VolatileStatus::TwoTurnMove) {
+        if user_pokemon.volatile_statuses.contains(VolatileStatus::TwoTurnMove) {
             // Second turn - attack
             instructions.push(BattleInstructions::new(100.0, vec![
                 BattleInstruction::Status(StatusInstruction::RemoveVolatile {
@@ -528,7 +528,7 @@ pub fn apply_focus_punch(
     let mut instructions = Vec::new();
     
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
-        if user_pokemon.volatile_statuses.contains(&VolatileStatus::TwoTurnMove) {
+        if user_pokemon.volatile_statuses.contains(VolatileStatus::TwoTurnMove) {
             // Second turn - check if user was hit during focus
             if state.user_moved_after_taking_damage(user_position) {
                 // User was hit during focus - move fails
@@ -586,7 +586,7 @@ fn apply_standard_two_turn_move(
     let mut instructions = Vec::new();
     
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
-        if user_pokemon.volatile_statuses.contains(&VolatileStatus::TwoTurnMove) {
+        if user_pokemon.volatile_statuses.contains(VolatileStatus::TwoTurnMove) {
             // Second turn - attack
             instructions.push(BattleInstructions::new(100.0, vec![
                 BattleInstruction::Status(StatusInstruction::RemoveVolatile {

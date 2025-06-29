@@ -65,7 +65,7 @@ pub fn apply_attract(
     for &target_position in target_positions {
         if let Some(target) = state.get_pokemon_at_position(target_position) {
             // Check if target is already attracted or has immunity (like Oblivious)
-            if !target.volatile_statuses.contains(&VolatileStatus::Attract) {
+            if !target.volatile_statuses.contains(VolatileStatus::Attract) {
                 let instruction = BattleInstruction::Status(StatusInstruction::ApplyVolatile {
                     target: target_position,
                     status: VolatileStatus::Attract,

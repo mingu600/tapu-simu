@@ -212,7 +212,7 @@ impl TapuTestFramework {
         let pokemon_two = self.create_pokemon_from_spec(team_two)?;
 
         // Create battle state with pre-constructed Pokemon
-        let state = BattleState::new_with_pokemon(self.format.clone(), pokemon_one, pokemon_two);
+        let state = BattleState::new_with_pokemon(self.format.clone(), pokemon_one, pokemon_two, self.generation_repository.clone(), self.repository.clone());
 
         Ok(state)
     }
@@ -448,7 +448,6 @@ impl TapuTestFramework {
         }
 
         // Add moves using generation-specific repository data - fail if move not found
-        let mut moves = HashMap::new();
         for (i, &move_name) in spec.moves.iter().enumerate() {
             if let Some(move_index) = MoveIndex::from_index(i) {
                 // Find move data by name using generation-specific repository
@@ -464,10 +463,9 @@ impl TapuTestFramework {
                     })?;
 
                 let engine_move = self.generation_repository.move_to_engine_move(move_data);
-                moves.insert(move_index, engine_move);
+                pokemon.add_move(move_index, engine_move);
             }
         }
-        pokemon.moves = moves;
 
         // Set status if specified
         if let Some(status) = spec.status {
@@ -524,7 +522,7 @@ impl TapuTestFramework {
             SetupAction::ModifyStats(position, stat_changes) => {
                 if let Some(pokemon) = state.get_pokemon_at_position_mut(*position) {
                     for (stat, change) in stat_changes {
-                        let current = pokemon.stat_boosts.get(stat).unwrap_or(&0);
+                        let current = pokemon.stat_boosts.get(*stat).unwrap_or(0);
                         let new_value = (current + change).clamp(-6, 6);
                         pokemon.stat_boosts.insert(*stat, new_value);
                     }
@@ -684,8 +682,8 @@ impl TapuTestFramework {
             }
             ExpectedOutcome::StatChange(position, stat, expected_change) => {
                 if let Some(pokemon) = state.get_pokemon_at_position(*position) {
-                    let actual_change = pokemon.stat_boosts.get(stat).unwrap_or(&0);
-                    if actual_change != expected_change {
+                    let actual_change = pokemon.stat_boosts.get(*stat).unwrap_or(0);
+                    if actual_change != *expected_change {
                         return Err(format!(
                             "Stat change mismatch at {:?} for {:?}: expected {}, got {}",
                             position, stat, expected_change, actual_change
@@ -764,7 +762,7 @@ impl TapuTestFramework {
             }
             ExpectedOutcome::VolatileStatus(position, expected_status) => {
                 if let Some(pokemon) = state.get_pokemon_at_position(*position) {
-                    if !pokemon.volatile_statuses.contains(expected_status) {
+                    if !pokemon.volatile_statuses.contains(*expected_status) {
                         return Err(format!(
                             "Volatile status mismatch at {:?}: expected {:?}, but not present",
                             position, expected_status

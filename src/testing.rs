@@ -12,7 +12,7 @@ pub struct TestUtils;
 impl TestUtils {
     /// Create a basic test state for testing
     pub fn create_basic_test_state() -> BattleState {
-        BattleState::new(BattleFormat::gen9_ou())
+        BattleState::default()
     }
     
     /// Create a test move choice

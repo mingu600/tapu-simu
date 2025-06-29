@@ -14,6 +14,8 @@ use crate::simulator::Player;
 pub struct BattleBuilder<'a> {
     /// Data repository for Pokemon/move/ability data
     data: &'a GameDataRepository,
+    /// Generation-specific data repository
+    generation_repo: std::sync::Arc<crate::data::generation_loader::GenerationRepository>,
     /// Battle format configuration
     format: Option<BattleFormat>,
     /// Teams for the battle
@@ -67,9 +69,10 @@ pub struct Battle {
 
 impl<'a> BattleBuilder<'a> {
     /// Create a new modern battle builder
-    pub fn new(data: &'a GameDataRepository) -> Self {
+    pub fn new(data: &'a GameDataRepository, generation_repo: std::sync::Arc<crate::data::generation_loader::GenerationRepository>) -> Self {
         Self {
             data,
+            generation_repo,
             format: None,
             teams: None,
             players: None,
@@ -357,7 +360,13 @@ impl<'a> Builder<Battle> for BattleBuilder<'a> {
         });
 
         // Create battle state and manually add teams using the provided repository
-        let mut battle_state = BattleState::new(format);
+        let game_data_repo = crate::data::GameDataRepository::global("data/ps-extracted")
+            .map_err(|e| BuilderError::InvalidValue {
+                field: "data_repository".to_string(),
+                value: "failed to load".to_string(),
+                reason: format!("Failed to load game data repository: {}", e),
+            })?;
+        let mut battle_state = BattleState::new(format, self.generation_repo.clone(), game_data_repo);
 
         // Convert RandomPokemonSet to battle Pokemon and add to sides
         for pokemon_set in team1 {

@@ -112,7 +112,7 @@ macro_rules! flinch_move {
                 for &target_position in target_positions {
                     if let Some(target_pokemon) = state.get_pokemon_at_position(target_position) {
                         // Only apply flinch if target hasn't moved yet this turn and isn't already flinched
-                        if !target_pokemon.volatile_statuses.contains(&VolatileStatus::Flinch) {
+                        if !target_pokemon.volatile_statuses.contains(VolatileStatus::Flinch) {
                             // Check if user is faster than target (speed-aware flinch)
                             let can_flinch = is_user_faster_than_target(state, user_position, target_position);
                             if can_flinch {

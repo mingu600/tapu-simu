@@ -220,7 +220,7 @@ pub fn hazard_removal_move(
                 for slot in 0..state.format.active_pokemon_count() {
                     let position = BattlePosition::new(side_ref, slot);
                     if let Some(pokemon) = state.get_pokemon_at_position(position) {
-                        if pokemon.volatile_statuses.contains(&crate::core::instructions::VolatileStatus::Substitute) {
+                        if pokemon.volatile_statuses.contains(crate::core::instructions::VolatileStatus::Substitute) {
                             instructions.push(BattleInstruction::Status(
                                 crate::core::instructions::StatusInstruction::RemoveVolatile {
                                     target: position,

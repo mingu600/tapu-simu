@@ -589,7 +589,7 @@ impl RandomPokemonSet {
                 _ => continue,
             };
 
-            pokemon.moves.insert(move_index, move_data);
+            pokemon.add_move(move_index, move_data);
         }
 
         // Set tera type if available (Gen 9+ only)

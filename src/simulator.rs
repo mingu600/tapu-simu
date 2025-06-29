@@ -12,6 +12,7 @@ use std::path::Path;
 /// with sensible defaults and fluent builder patterns.
 pub struct Simulator {
     data: GameDataRepository,
+    generation_repo: std::sync::Arc<crate::data::generation_loader::GenerationRepository>,
     config: Config,
 }
 
@@ -20,13 +21,21 @@ impl Simulator {
     pub fn new() -> Result<Self, SimulatorError> {
         let config = Config::default();
         let data = GameDataRepository::from_path(&config.data_path)?;
-        Ok(Self { data, config })
+        let generation_repo = std::sync::Arc::new(
+            crate::data::generation_loader::GenerationRepository::load_from_directory(config.data_path.to_str().unwrap_or("data/ps-extracted"))
+                .map_err(|_| SimulatorError::InitializationFailed(DataError::DataDirNotFound { path: config.data_path.clone() }))?
+        );
+        Ok(Self { data, generation_repo, config })
     }
 
     /// Create a new simulator with custom configuration
     pub fn with_config(config: Config) -> Result<Self, SimulatorError> {
         let data = GameDataRepository::from_path(&config.data_path)?;
-        Ok(Self { data, config })
+        let generation_repo = std::sync::Arc::new(
+            crate::data::generation_loader::GenerationRepository::load_from_directory(config.data_path.to_str().unwrap_or("data/ps-extracted"))
+                .map_err(|_| SimulatorError::InitializationFailed(DataError::DataDirNotFound { path: config.data_path.clone() }))?
+        );
+        Ok(Self { data, generation_repo, config })
     }
 
     /// Create a new simulator with data from a specific path
@@ -34,12 +43,16 @@ impl Simulator {
         let mut config = Config::default();
         config.data_path = path.as_ref().to_path_buf();
         let data = GameDataRepository::from_path(&config.data_path)?;
-        Ok(Self { data, config })
+        let generation_repo = std::sync::Arc::new(
+            crate::data::generation_loader::GenerationRepository::load_from_directory(config.data_path.to_str().unwrap_or("data/ps-extracted"))
+                .map_err(|_| SimulatorError::InitializationFailed(DataError::DataDirNotFound { path: config.data_path.clone() }))?
+        );
+        Ok(Self { data, generation_repo, config })
     }
 
     /// Get a battle builder for creating custom battles
     pub fn battle(&self) -> BattleBuilder<'_> {
-        BattleBuilder::new(&self.data)
+        BattleBuilder::new(&self.data, self.generation_repo.clone())
     }
 
     /// Quick API for common random battle

@@ -169,8 +169,8 @@ pub fn apply_move_effects(
     repository: &crate::data::GameDataRepository,
     branch_on_damage: bool,
 ) -> BattleResult<Vec<BattleInstructions>> {
-    // Use the registry system for all move dispatching
-    let registry = registry::MoveRegistry::new();
+    // Use the global registry system for all move dispatching
+    let registry = registry::get_move_registry();
     registry.apply_move_effects(
         state,
         move_data,

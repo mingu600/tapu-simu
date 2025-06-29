@@ -107,7 +107,7 @@ pub fn apply_feint(
             let mut instruction_list = Vec::new();
             
             // Remove Protect status
-            if target_pokemon.volatile_statuses.contains(&VolatileStatus::Protect) {
+            if target_pokemon.volatile_statuses.contains(VolatileStatus::Protect) {
                 instruction_list.push(BattleInstruction::Status(StatusInstruction::RemoveVolatile {
                     target: target_position,
                     status: VolatileStatus::Protect,
@@ -116,7 +116,7 @@ pub fn apply_feint(
             }
             
             // Remove other protection statuses
-            if target_pokemon.volatile_statuses.contains(&VolatileStatus::Endure) {
+            if target_pokemon.volatile_statuses.contains(VolatileStatus::Endure) {
                 instruction_list.push(BattleInstruction::Status(StatusInstruction::RemoveVolatile {
                     target: target_position,
                     status: VolatileStatus::Endure,

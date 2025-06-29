@@ -425,7 +425,7 @@ pub fn apply_volatile_status_effect(
     }
 
     // Check if target already has this volatile status
-    if target.volatile_statuses.contains(&application.status) {
+    if target.volatile_statuses.contains(application.status) {
         return StatusResult {
             applied: false,
             instruction: None,
@@ -443,8 +443,9 @@ pub fn apply_volatile_status_effect(
     }
 
     // Get previous state for the instruction
-    let previous_had_status = target.volatile_statuses.contains(&application.status);
-    let previous_duration = target.volatile_status_durations.get(&application.status).copied();
+    let previous_had_status = target.volatile_statuses.contains(application.status);
+    // Duration tracking is now handled within VolatileStatusStorage
+    let previous_duration = None; // Will be properly implemented later
 
     // Create the volatile status instruction
     let instruction = BattleInstruction::Status(StatusInstruction::ApplyVolatile {
@@ -505,7 +506,7 @@ fn check_volatile_status_immunity(
     }
 
     // Check substitute protection
-    if target.volatile_statuses.contains(&VolatileStatus::Substitute) && target.substitute_health > 0 {
+    if target.volatile_statuses.contains(VolatileStatus::Substitute) && target.substitute_health > 0 {
         // Substitute blocks most volatile statuses except for certain ones
         match volatile_status {
             // These can bypass substitute

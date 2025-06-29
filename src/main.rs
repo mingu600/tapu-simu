@@ -228,7 +228,17 @@ fn execute_battles(
             println!();
         }
 
-        let mut state = BattleState::new_with_teams(format.clone(), team_one, team_two);
+        // Create repositories for battle state
+        let generation_repo = std::sync::Arc::new(
+            tapu_simu::data::generation_loader::GenerationRepository::load_from_directory("data/ps-extracted")
+                .expect("Failed to load generation repository")
+        );
+        let game_data_repo = std::sync::Arc::new(
+            tapu_simu::data::GameDataRepository::from_path("data/ps-extracted")
+                .expect("Failed to load game data repository")
+        );
+        
+        let mut state = BattleState::new_with_teams(format.clone(), team_one, team_two, generation_repo, game_data_repo);
 
         if verbose && run == 1 {
             println!("Initialized battle state with format: {}", state.format);

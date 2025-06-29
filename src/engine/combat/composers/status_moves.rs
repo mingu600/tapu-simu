@@ -96,7 +96,7 @@ pub fn stat_modification_move(
                 target: target_position,
                 stat_changes: boost_map,
                 previous_boosts: if let Some(pokemon) = state.get_pokemon_at_position(target_position) {
-                    pokemon.stat_boosts.clone()
+                    pokemon.stat_boosts.to_hashmap()
                 } else {
                     HashMap::new()
                 },
@@ -298,7 +298,7 @@ pub fn status_plus_stat_move(
                 target: target_position,
                 stat_changes: boost_map,
                 previous_boosts: if let Some(pokemon) = state.get_pokemon_at_position(target_position) {
-                    pokemon.stat_boosts.clone()
+                    pokemon.stat_boosts.to_hashmap()
                 } else {
                     HashMap::new()
                 },

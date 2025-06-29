@@ -134,7 +134,7 @@ fn apply_contact_abilities(
             let mut stat_changes = HashMap::new();
             stat_changes.insert(Stat::Speed, -1);
             let previous_boosts = if let Some(pokemon) = state.get_pokemon_at_position(user_position) {
-                pokemon.stat_boosts.clone()
+                pokemon.stat_boosts.to_hashmap()
             } else {
                 HashMap::new()
             };

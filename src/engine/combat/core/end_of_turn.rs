@@ -71,14 +71,14 @@ fn remove_expiring_volatile_statuses(
     for position in battle_state.get_all_active_positions() {
         if let Some(pokemon) = battle_state.get_pokemon_at_position(position) {
             for &status in &single_turn_statuses {
-                if pokemon.volatile_statuses.contains(&status) {
+                if pokemon.volatile_statuses.contains(status) {
                     instructions.push(BattleInstructions::new(
                         100.0,
                         vec![BattleInstruction::Status(
                             StatusInstruction::RemoveVolatile {
                                 target: position,
                                 status,
-                                previous_duration: pokemon.volatile_status_durations.get(&status).copied(),
+                                previous_duration: None, // Duration tracking handled within VolatileStatusStorage
                             }
                         )]
                     ));
@@ -274,8 +274,8 @@ fn is_grounded(pokemon: &crate::core::battle_state::Pokemon) -> bool {
     }
     
     // Check for Magnet Rise, Telekinesis, etc.
-    if pokemon.volatile_statuses.contains(&VolatileStatus::MagnetRise) ||
-       pokemon.volatile_statuses.contains(&VolatileStatus::Telekinesis) {
+    if pokemon.volatile_statuses.contains(VolatileStatus::MagnetRise) ||
+       pokemon.volatile_statuses.contains(VolatileStatus::Telekinesis) {
         return false;
     }
     

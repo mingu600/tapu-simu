@@ -535,7 +535,7 @@ pub fn apply_multiple_status_effects_with_substitute_protection(
     
     // Check if target has substitute
     if let Some(target_pokemon) = state.get_pokemon_at_position(target_position) {
-        let has_substitute = target_pokemon.volatile_statuses.contains(&VS::Substitute) 
+        let has_substitute = target_pokemon.volatile_statuses.contains(VS::Substitute) 
             && target_pokemon.substitute_health > 0;
         
         if has_substitute {

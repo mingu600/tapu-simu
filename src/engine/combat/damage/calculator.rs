@@ -65,7 +65,7 @@ pub fn calculate_damage_with_positions(
 ) -> i16 {
     // Build modern DamageContext
     let attacker_context = AttackerContext {
-        pokemon: attacker.clone(),
+        pokemon: attacker,
         position: attacker_position,
         effective_stats: EffectiveStats::from_pokemon(attacker),
         ability_state: AbilityState::from_pokemon(attacker),
@@ -73,7 +73,7 @@ pub fn calculate_damage_with_positions(
     };
 
     let defender_context = DefenderContext {
-        pokemon: defender.clone(),
+        pokemon: defender,
         position: defender_position,
         effective_stats: EffectiveStats::from_pokemon(defender),
         ability_state: AbilityState::from_pokemon(defender),

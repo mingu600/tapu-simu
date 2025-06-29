@@ -24,7 +24,7 @@ pub fn generate_substitute_aware_damage_with_tracking(
 ) -> (Vec<BattleInstruction>, bool) {
     if let Some(target) = state.get_pokemon_at_position(target_position) {
         // Check if target has a substitute
-        if target.volatile_statuses.contains(&VolatileStatus::Substitute) && target.substitute_health > 0 {
+        if target.volatile_statuses.contains(VolatileStatus::Substitute) && target.substitute_health > 0 {
             let mut instructions = Vec::new();
             let substitute_damage = damage.min(target.substitute_health);
             let new_substitute_health = target.substitute_health - substitute_damage;

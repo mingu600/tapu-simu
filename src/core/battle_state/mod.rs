@@ -10,6 +10,7 @@ use crate::core::move_choice::{MoveChoice, PokemonIndex};
 use crate::generation::GenerationBattleMechanics;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::sync::Arc;
 
 // Re-export MoveCategory for compatibility
 pub use crate::core::instructions::MoveCategory;
@@ -28,7 +29,7 @@ pub use side::*;
 
 
 /// The main battle state with decomposed components
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize)]
 pub struct BattleState {
     /// The battle format determining rules and active Pokemon count
     pub format: BattleFormat,
@@ -38,17 +39,84 @@ pub struct BattleState {
     pub field: FieldConditions,
     /// Turn-related state information
     pub turn_info: TurnState,
+    /// Generation-specific data repository
+    #[serde(skip)]
+    pub generation_repo: Arc<crate::data::generation_loader::GenerationRepository>,
+    /// Game data repository  
+    #[serde(skip)]
+    pub game_data_repo: Arc<crate::data::GameDataRepository>,
+}
+
+impl std::fmt::Debug for BattleState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("BattleState")
+            .field("format", &self.format)
+            .field("sides", &self.sides)
+            .field("field", &self.field)
+            .field("turn_info", &self.turn_info)
+            .field("generation_repo", &"<GenerationRepository>")
+            .field("game_data_repo", &"<GameDataRepository>")
+            .finish()
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for BattleState {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct BattleStateDeserialize {
+            format: BattleFormat,
+            sides: [BattleSide; 2],
+            field: FieldConditions,
+            turn_info: TurnState,
+        }
+
+        let data = BattleStateDeserialize::deserialize(deserializer)?;
+        
+        // Create default repositories during deserialization
+        let generation_repo = Arc::new(
+            crate::data::generation_loader::GenerationRepository::load_from_directory("data/ps-extracted")
+                .map_err(|_| serde::de::Error::custom("Failed to load generation repository"))?
+        );
+        let game_data_repo = Arc::new(
+            crate::data::GameDataRepository::from_path("data/ps-extracted")
+                .map_err(|_| serde::de::Error::custom("Failed to load game data repository"))?
+        );
+
+        Ok(BattleState {
+            format: data.format,
+            sides: data.sides,
+            field: data.field,
+            turn_info: data.turn_info,
+            generation_repo,
+            game_data_repo,
+        })
+    }
 }
 
 impl Default for BattleState {
     fn default() -> Self {
-        Self::new(BattleFormat::gen9_ou())
+        let generation_repo = Arc::new(
+            crate::data::generation_loader::GenerationRepository::load_from_directory("data/ps-extracted")
+                .expect("Failed to load generation-specific Pokemon data from data/ps-extracted")
+        );
+        let game_data_repo = Arc::new(
+            crate::data::GameDataRepository::from_path("data/ps-extracted")
+                .expect("Failed to load Pokemon data from data/ps-extracted")
+        );
+        Self::new(BattleFormat::gen9_ou(), generation_repo, game_data_repo)
     }
 }
 
 impl BattleState {
     /// Create a new battle state with the specified format
-    pub fn new(format: BattleFormat) -> Self {
+    pub fn new(
+        format: BattleFormat,
+        generation_repo: Arc<crate::data::generation_loader::GenerationRepository>,
+        game_data_repo: Arc<crate::data::GameDataRepository>,
+    ) -> Self {
         let side_one = BattleSide::new();
         let side_two = BattleSide::new();
         Self {
@@ -56,6 +124,8 @@ impl BattleState {
             sides: [side_one, side_two],
             field: FieldConditions::default(),
             turn_info: TurnState::default(),
+            generation_repo,
+            game_data_repo,
         }
     }
 
@@ -64,21 +134,19 @@ impl BattleState {
         format: BattleFormat,
         team_one: Vec<crate::data::RandomPokemonSet>,
         team_two: Vec<crate::data::RandomPokemonSet>,
+        generation_repo: Arc<crate::data::generation_loader::GenerationRepository>,
+        game_data_repo: Arc<crate::data::GameDataRepository>,
     ) -> Self {
-        let mut state = Self::new(format.clone());
-
-        // Create PS repository for proper move and Pokemon data
-        let repository = crate::data::GameDataRepository::from_path("data/ps-extracted")
-            .expect("Failed to load Pokemon data from data/ps-extracted. Ensure the data directory exists and contains valid JSON files.");
+        let mut state = Self::new(format.clone(), generation_repo, game_data_repo.clone());
 
         // Convert and add Pokemon to each side
         for pokemon_set in team_one {
-            let pokemon = pokemon_set.to_battle_pokemon(&repository);
+            let pokemon = pokemon_set.to_battle_pokemon(&game_data_repo);
             state.sides[0].add_pokemon(pokemon);
         }
 
         for pokemon_set in team_two {
-            let pokemon = pokemon_set.to_battle_pokemon(&repository);
+            let pokemon = pokemon_set.to_battle_pokemon(&game_data_repo);
             state.sides[1].add_pokemon(pokemon);
         }
 
@@ -101,8 +169,10 @@ impl BattleState {
         format: BattleFormat,
         team_one: Vec<Pokemon>,
         team_two: Vec<Pokemon>,
+        generation_repo: Arc<crate::data::generation_loader::GenerationRepository>,
+        game_data_repo: Arc<crate::data::GameDataRepository>,
     ) -> Self {
-        let mut state = Self::new(format);
+        let mut state = Self::new(format, generation_repo, game_data_repo);
         
         // Add Pokemon to each side
         for pokemon in team_one {
@@ -303,7 +373,7 @@ impl BattleState {
             PokemonInstruction::Damage { target, amount, .. } => {
                 if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
                     // Check if Pokemon has a substitute
-                    if pokemon.volatile_statuses.contains(&VolatileStatus::Substitute) && pokemon.substitute_health > 0 {
+                    if pokemon.volatile_statuses.contains(VolatileStatus::Substitute) && pokemon.substitute_health > 0 {
                         // Damage goes to substitute first
                         let current_substitute_health = pokemon.substitute_health;
                         let remaining_substitute_health = current_substitute_health - amount;
@@ -311,7 +381,7 @@ impl BattleState {
                         if remaining_substitute_health <= 0 {
                             // Substitute is broken, apply excess damage to Pokemon
                             pokemon.substitute_health = 0;
-                            pokemon.volatile_statuses.remove(&VolatileStatus::Substitute);
+                            pokemon.volatile_statuses.remove(VolatileStatus::Substitute);
                             let excess_damage = amount - current_substitute_health;
                             let damage_to_pokemon = if excess_damage > 0 {
                                 pokemon.hp = (pokemon.hp - excess_damage).max(0);
@@ -366,7 +436,7 @@ impl BattleState {
                     pokemon.hp = 0;
                     pokemon.status = PokemonStatus::None;
                     pokemon.volatile_statuses.clear();
-                    pokemon.volatile_status_durations.clear();
+                    // volatile_statuses.clear() already clears durations
                 }
             }
             PokemonInstruction::Switch {
@@ -644,15 +714,16 @@ impl BattleState {
             } => {
                 if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
                     pokemon.volatile_statuses.insert(*status);
-                    if let Some(dur) = duration {
-                        pokemon.volatile_status_durations.insert(*status, *dur);
+                    if let Some(_dur) = duration {
+                        // Duration tracking is handled within VolatileStatusStorage
+                        // For now, just insert the status - duration logic can be added later
                     }
                 }
             }
             StatusInstruction::RemoveVolatile { target, status, .. } => {
                 if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
-                    pokemon.volatile_statuses.remove(status);
-                    pokemon.volatile_status_durations.remove(status);
+                    pokemon.volatile_statuses.remove(*status);
+                    // Duration removal is handled by VolatileStatusStorage
                 }
             }
             StatusInstruction::ChangeVolatileDuration {
@@ -663,13 +734,12 @@ impl BattleState {
             } => {
                 if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
                     if let Some(new_dur) = new_duration {
-                        pokemon.volatile_status_durations.insert(*status, *new_dur);
+                        // Duration tracking is handled within VolatileStatusStorage
                         if *new_dur == 0 {
-                            pokemon.volatile_statuses.remove(status);
-                            pokemon.volatile_status_durations.remove(status);
+                            pokemon.volatile_statuses.remove(*status);
                         }
                     } else {
-                        pokemon.volatile_status_durations.remove(status);
+                        // Duration removal is handled by VolatileStatusStorage
                     }
                 }
             }
@@ -729,7 +799,7 @@ impl BattleState {
             } => {
                 if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
                     for (stat, change) in stat_changes {
-                        let current_boost = pokemon.stat_boosts.get(stat).copied().unwrap_or(0);
+                        let current_boost = pokemon.stat_boosts.get_direct(*stat);
                         let new_boost = (current_boost + change).clamp(-6, 6);
                         pokemon.stat_boosts.insert(*stat, new_boost);
                     }
@@ -785,9 +855,8 @@ impl BattleState {
                     // Copy the boosts to apply to target
                     let mut boosts_to_copy = HashMap::new();
                     for stat in stats_to_copy {
-                        if let Some(boost) = source_pokemon.stat_boosts.get(stat) {
-                            boosts_to_copy.insert(*stat, *boost);
-                        }
+                        let boost = source_pokemon.stat_boosts.get_direct(*stat);
+                        boosts_to_copy.insert(*stat, boost);
                     }
 
                     // Apply to target (need to get mutable reference after immutable one)
@@ -811,14 +880,14 @@ impl BattleState {
                 if let Some(pokemon1) = self.get_pokemon_at_position(*target1) {
                     for stat in stats_to_swap {
                         target1_boosts
-                            .insert(*stat, pokemon1.stat_boosts.get(stat).copied().unwrap_or(0));
+                            .insert(*stat, pokemon1.stat_boosts.get_direct(*stat));
                     }
                 }
 
                 if let Some(pokemon2) = self.get_pokemon_at_position(*target2) {
                     for stat in stats_to_swap {
                         target2_boosts
-                            .insert(*stat, pokemon2.stat_boosts.get(stat).copied().unwrap_or(0));
+                            .insert(*stat, pokemon2.stat_boosts.get_direct(*stat));
                     }
                 }
 
@@ -842,9 +911,8 @@ impl BattleState {
             } => {
                 if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
                     for stat in stats_to_invert {
-                        if let Some(boost) = pokemon.stat_boosts.get_mut(stat) {
-                            *boost = -*boost;
-                        }
+                        let boost = pokemon.stat_boosts.get_mut(*stat);
+                        *boost = -*boost;
                     }
                 }
             }

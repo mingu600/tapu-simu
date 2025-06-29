@@ -35,6 +35,100 @@ impl From<u8> for Stat {
     }
 }
 
+/// Compact array storage for stat boosts (-6 to +6)
+/// More memory efficient than HashMap for stat boosts
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize)]
+pub struct StatBoostArray([i8; 8]);
+
+impl StatBoostArray {
+    /// Get the boost value for a specific stat (HashMap-compatible)
+    /// Returns Some(value) for HashMap compatibility, but always returns Some since we have defaults
+    pub fn get(&self, stat: Stat) -> Option<i8> {
+        Some(self.0[stat as usize])
+    }
+    
+    /// Get the boost value for a specific stat directly without Option wrapper
+    pub fn get_direct(&self, stat: Stat) -> i8 {
+        self.0[stat as usize]
+    }
+    
+    /// Insert/set the boost value for a specific stat (HashMap-compatible)
+    pub fn insert(&mut self, stat: Stat, value: i8) {
+        self.0[stat as usize] = value.clamp(-6, 6);
+    }
+    
+    /// Remove a stat boost, setting it to 0 (HashMap-compatible)
+    pub fn remove(&mut self, stat: Stat) {
+        self.0[stat as usize] = 0;
+    }
+    
+    /// Clear all stat boosts (HashMap-compatible)
+    pub fn clear(&mut self) {
+        self.0 = [0; 8];
+    }
+    
+    /// Get mutable reference to boost value (HashMap-compatible)
+    pub fn get_mut(&mut self, stat: Stat) -> &mut i8 {
+        &mut self.0[stat as usize]
+    }
+    
+    /// Set the boost value for a specific stat, clamping to valid range
+    pub fn set(&mut self, stat: Stat, value: i8) {
+        self.insert(stat, value);
+    }
+    
+    /// Modify the boost value for a specific stat by a delta amount
+    pub fn modify(&mut self, stat: Stat, delta: i8) {
+        let current = self.get_direct(stat);
+        self.insert(stat, current + delta);
+    }
+    
+    /// Reset all stat boosts to 0 (alias for clear)
+    pub fn reset(&mut self) {
+        self.clear();
+    }
+    
+    /// Check if any stat has a boost/drop
+    pub fn has_any_boosts(&self) -> bool {
+        self.0.iter().any(|&boost| boost != 0)
+    }
+    
+    /// Check if no stat has boosts (HashMap-compatible)
+    pub fn is_empty(&self) -> bool {
+        !self.has_any_boosts()
+    }
+    
+    /// Get an iterator over all boost values (HashMap-compatible)
+    pub fn values(&self) -> impl Iterator<Item = i8> + '_ {
+        self.0.iter().copied()
+    }
+    
+    /// Get an iterator over (stat, boost) pairs (HashMap-compatible)
+    pub fn iter(&self) -> impl Iterator<Item = (Stat, i8)> + '_ {
+        self.0.iter().enumerate().map(|(i, &boost)| (Stat::from(i as u8), boost))
+    }
+    
+    /// Get all non-zero boosts as a HashMap for compatibility
+    pub fn to_hashmap(&self) -> std::collections::HashMap<Stat, i8> {
+        let mut map = std::collections::HashMap::new();
+        for (i, &boost) in self.0.iter().enumerate() {
+            if boost != 0 {
+                map.insert(Stat::from(i as u8), boost);
+            }
+        }
+        map
+    }
+    
+    /// Create from a HashMap for compatibility
+    pub fn from_hashmap(map: &std::collections::HashMap<Stat, i8>) -> Self {
+        let mut array = Self::default();
+        for (&stat, &boost) in map {
+            array.insert(stat, boost);
+        }
+        array
+    }
+}
+
 /// Implementation of unified string parsing trait
 impl FromNormalizedString for Stat {
     fn from_normalized_str(s: &str) -> Option<Self> {

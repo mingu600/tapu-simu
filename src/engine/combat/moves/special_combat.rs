@@ -81,7 +81,7 @@ pub fn apply_sky_drop(
 ) -> Vec<BattleInstructions> {
     if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
         // Check if user is already in the Sky Drop charging state
-        if user_pokemon.volatile_statuses.contains(&VolatileStatus::SkyDrop) {
+        if user_pokemon.volatile_statuses.contains(VolatileStatus::SkyDrop) {
             // Second turn - attack and remove both Pokemon from sky
             let mut instructions = apply_generic_effects(state, move_data, user_position, target_positions, generation, branch_on_damage);
             
@@ -97,7 +97,7 @@ pub fn apply_sky_drop(
             // Remove Sky Drop status from target (if any)
             for &target_position in target_positions {
                 if let Some(target) = state.get_pokemon_at_position(target_position) {
-                    if target.volatile_statuses.contains(&VolatileStatus::SkyDrop) {
+                    if target.volatile_statuses.contains(VolatileStatus::SkyDrop) {
                         instructions.push(BattleInstructions::new(100.0, vec![
                             BattleInstruction::Status(StatusInstruction::RemoveVolatile {
                                 target: target_position,
