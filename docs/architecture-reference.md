@@ -164,50 +164,50 @@ graph TB
 
 ```mermaid
 sequenceDiagram
-    participant Player1
-    participant Player2
-    participant BattleEnvironment
-    participant BattleEngine
-    participant BattleState
-    participant InstructionSystem
-    participant DataRepositories
+    participant P1 as Player One
+    participant P2 as Player Two
+    participant BE as BattleEnvironment
+    participant Engine as BattleEngine
+    participant State as BattleState
+    participant Instructions as InstructionSystem
+    participant Data as DataRepositories
 
-    Note over Player1,DataRepositories: Battle Initialization
-    BattleEnvironment->>BattleState: new(format, teams)
-    BattleState->>DataRepositories: validate_teams()
-    DataRepositories-->>BattleState: validation_result
+    Note over P1,Data: Battle Initialization
+    BE->>State: new(format, teams)
+    State->>Data: validate_teams()
+    Data-->>State: validation_result
 
     loop Turn Loop
-        Note over Player1,DataRepositories: Move Selection Phase
-        BattleEnvironment->>Player1: choose_move(state, options)
-        Player1-->>BattleEnvironment: MoveChoice
-        BattleEnvironment->>Player2: choose_move(state, options)
-        Player2-->>BattleEnvironment: MoveChoice
+        Note over P1,Data: Move Selection Phase
+        BE->>P1: choose_move(state, options)
+        P1-->>BE: MoveChoice
+        BE->>P2: choose_move(state, options)
+        P2-->>BE: MoveChoice
 
-        Note over Player1,DataRepositories: Turn Execution Phase
-        BattleEnvironment->>BattleEngine: execute_turn(choices)
-        BattleEngine->>BattleEngine: resolve_targeting()
-        BattleEngine->>BattleEngine: determine_move_order()
+        Note over P1,Data: Turn Execution Phase
+        BE->>Engine: execute_turn(choices)
+        Engine->>Engine: resolve_targeting()
+        Engine->>Engine: determine_move_order()
         
         loop For Each Move
-            BattleEngine->>BattleEngine: check_move_prevention()
-            BattleEngine->>BattleEngine: calculate_accuracy()
-            BattleEngine->>BattleEngine: apply_move_effects()
-            BattleEngine->>InstructionSystem: generate_instructions()
-            InstructionSystem-->>BattleEngine: BattleInstructions
+            Engine->>Engine: check_move_prevention()
+            Engine->>Engine: calculate_accuracy()
+            Engine->>Engine: apply_move_effects()
+            Engine->>Instructions: generate_instructions()
+            Instructions-->>Engine: BattleInstructions
         end
 
-        BattleEngine->>BattleState: apply_instructions(instructions)
-        BattleState->>BattleState: update_state()
-        BattleEngine->>BattleEngine: process_end_of_turn()
+        Engine->>State: apply_instructions(instructions)
+        State->>State: update_state()
+        Engine->>Engine: process_end_of_turn()
         
-        BattleEngine-->>BattleEnvironment: new_state
-        BattleEnvironment->>BattleState: check_battle_over()
+        Engine-->>BE: new_state
+        BE->>State: check_battle_over()
         
         alt Battle Continues
-            BattleState-->>BattleEnvironment: false
+            State-->>BE: false
         else Battle Ends
-            BattleState-->>BattleEnvironment: true, winner
+            State-->>BE: true, winner
             break
         end
     end
