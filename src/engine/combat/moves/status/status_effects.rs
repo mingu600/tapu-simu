@@ -27,6 +27,12 @@ pub fn apply_thunder_wave(
     vec![BattleInstructions::new(100.0, instructions)]
 }
 
+/// Apply Thunder Wave using unified context signature
+pub fn apply_thunder_wave_unified(ctx: &mut crate::engine::combat::move_context::MoveExecutionContext) -> Vec<crate::core::instructions::BattleInstructions> {
+    let instructions = paralysis_move(ctx.state, ctx.target_positions, 100.0);
+    vec![crate::core::instructions::BattleInstructions::new(100.0, instructions)]
+}
+
 /// Apply Sleep Powder - puts target to sleep
 /// Uses the centralized system with powder move immunity handling
 pub fn apply_sleep_powder(
@@ -37,6 +43,12 @@ pub fn apply_sleep_powder(
 ) -> Vec<BattleInstructions> {
     let instructions = sleep_move(state, target_positions, 75.0); // Sleep Powder has 75% accuracy
     vec![BattleInstructions::new(100.0, instructions)]
+}
+
+/// Apply Sleep Powder using unified context signature
+pub fn apply_sleep_powder_unified(ctx: &mut crate::engine::combat::move_context::MoveExecutionContext) -> Vec<crate::core::instructions::BattleInstructions> {
+    let instructions = sleep_move(ctx.state, ctx.target_positions, 75.0); // Sleep Powder has 75% accuracy
+    vec![crate::core::instructions::BattleInstructions::new(100.0, instructions)]
 }
 
 /// Apply Toxic - badly poisons the target

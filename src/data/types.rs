@@ -3,6 +3,7 @@
 //! This module defines core data types used throughout the battle system.
 
 use serde::{Deserialize, Serialize};
+use crate::types::from_string::FromNormalizedString;
 
 /// Pokemon stats structure
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -43,6 +44,49 @@ pub enum Nature {
     Sassy,
     Careful,
     Quirky,
+}
+
+impl FromNormalizedString for Nature {
+    fn from_normalized_str(s: &str) -> Option<Self> {
+        match s {
+            "hardy" => Some(Nature::Hardy),
+            "lonely" => Some(Nature::Lonely),
+            "brave" => Some(Nature::Brave),
+            "adamant" => Some(Nature::Adamant),
+            "naughty" => Some(Nature::Naughty),
+            "bold" => Some(Nature::Bold),
+            "docile" => Some(Nature::Docile),
+            "relaxed" => Some(Nature::Relaxed),
+            "impish" => Some(Nature::Impish),
+            "lax" => Some(Nature::Lax),
+            "timid" => Some(Nature::Timid),
+            "hasty" => Some(Nature::Hasty),
+            "serious" => Some(Nature::Serious),
+            "jolly" => Some(Nature::Jolly),
+            "naive" => Some(Nature::Naive),
+            "modest" => Some(Nature::Modest),
+            "mild" => Some(Nature::Mild),
+            "quiet" => Some(Nature::Quiet),
+            "bashful" => Some(Nature::Bashful),
+            "rash" => Some(Nature::Rash),
+            "calm" => Some(Nature::Calm),
+            "gentle" => Some(Nature::Gentle),
+            "sassy" => Some(Nature::Sassy),
+            "careful" => Some(Nature::Careful),
+            "quirky" => Some(Nature::Quirky),
+            _ => None,
+        }
+    }
+    
+    fn valid_strings() -> Vec<&'static str> {
+        vec![
+            "hardy", "lonely", "brave", "adamant", "naughty",
+            "bold", "docile", "relaxed", "impish", "lax",
+            "timid", "hasty", "serious", "jolly", "naive",
+            "modest", "mild", "quiet", "bashful", "rash",
+            "calm", "gentle", "sassy", "careful", "quirky",
+        ]
+    }
 }
 
 impl Nature {

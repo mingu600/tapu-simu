@@ -9,6 +9,7 @@ use crate::core::instructions::{
     BattleInstruction, BattleInstructions, PokemonInstruction, StatusInstruction,
     StatsInstruction, PokemonStatus, VolatileStatus, Stat
 };
+use crate::types::StatBoostArray;
 use std::collections::HashMap;
 
 /// Types of ability triggers
@@ -103,11 +104,11 @@ fn trigger_speed_boost(position: BattlePosition) -> AbilityTriggerResult {
             BattleInstruction::Stats(StatsInstruction::BoostStats {
                 target: position,
                 stat_changes: {
-                    let mut changes = HashMap::new();
+                    let mut changes = StatBoostArray::default();
                     changes.insert(Stat::Speed, 1);
-                    changes
+                    changes.to_hashmap()
                 },
-                previous_boosts: HashMap::new(),
+                previous_boosts: std::collections::HashMap::new(),
             })
         ],
         prevents_other_abilities: false,
@@ -124,12 +125,12 @@ fn trigger_moody(position: BattlePosition, _battle_state: &BattleState) -> Abili
             BattleInstruction::Stats(StatsInstruction::BoostStats {
                 target: position,
                 stat_changes: {
-                    let mut changes = HashMap::new();
+                    let mut changes = StatBoostArray::default();
                     changes.insert(Stat::Attack, 2);    // +2 to random stat
                     changes.insert(Stat::Defense, -1);  // -1 to different random stat
-                    changes
+                    changes.to_hashmap()
                 },
-                previous_boosts: HashMap::new(),
+                previous_boosts: std::collections::HashMap::new(),
             })
         ],
         prevents_other_abilities: false,
@@ -342,11 +343,11 @@ fn trigger_intimidate(
                 instructions.push(BattleInstruction::Stats(StatsInstruction::BoostStats {
                     target: position,
                     stat_changes: {
-                        let mut changes = HashMap::new();
+                        let mut changes = StatBoostArray::default();
                         changes.insert(Stat::Attack, -1);
-                        changes
+                        changes.to_hashmap()
                     },
-                    previous_boosts: HashMap::new(),
+                    previous_boosts: std::collections::HashMap::new(),
                 }));
             }
         }

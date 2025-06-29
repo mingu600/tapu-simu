@@ -9,6 +9,7 @@ use crate::core::instructions::{
 };
 use crate::core::battle_format::{BattlePosition, SideReference};
 use crate::generation::GenerationMechanics;
+use crate::types::StatBoostArray;
 use std::collections::HashMap;
 
 // =============================================================================
@@ -131,8 +132,8 @@ pub fn apply_haze(
                 if !pokemon.stat_boosts.is_empty() {
                     let instruction = BattleInstruction::Stats(StatsInstruction::BoostStats {
                         target: position,
-                        stat_changes: HashMap::new(), // Reset all to 0
-                        previous_boosts: HashMap::new(),
+                        stat_changes: std::collections::HashMap::new(), // Reset all to 0
+                        previous_boosts: std::collections::HashMap::new(),
                     });
                     instructions.push(instruction);
                 }
@@ -155,8 +156,8 @@ pub fn apply_clear_smog(
     for &target_position in target_positions {
         let instruction = BattleInstruction::Stats(StatsInstruction::BoostStats {
             target: target_position,
-            stat_changes: HashMap::new(), // Reset all to 0
-            previous_boosts: HashMap::new(),
+            stat_changes: std::collections::HashMap::new(), // Reset all to 0
+            previous_boosts: std::collections::HashMap::new(),
         });
         instructions.push(BattleInstructions::new(100.0, vec![instruction]));
     }

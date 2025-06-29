@@ -13,7 +13,7 @@ use crate::core::instructions::{
 use crate::core::battle_format::{BattlePosition, SideReference};
 use crate::generation::GenerationMechanics;
 use crate::engine::combat::type_effectiveness::TypeChart;
-use crate::types::PokemonType;
+use crate::types::{PokemonType, StatBoostArray};
 use std::collections::HashMap;
 
 // =============================================================================
@@ -63,13 +63,13 @@ pub fn apply_belly_drum(
             }));
             
             // Maximize Attack (set to +6)
-            let mut stat_boosts = HashMap::new();
+            let mut stat_boosts = StatBoostArray::default();
             stat_boosts.insert(Stat::Attack, 6);
             
             instructions.push(BattleInstruction::Stats(StatsInstruction::BoostStats {
                 target: target_position,
-                stat_changes: stat_boosts,
-                previous_boosts: HashMap::new(),
+                stat_changes: stat_boosts.to_hashmap(),
+                previous_boosts: std::collections::HashMap::new(),
             }));
             
             vec![BattleInstructions::new(100.0, instructions)]
@@ -124,15 +124,15 @@ pub fn apply_curse(
                 target_positions[0]
             };
             
-            let mut stat_boosts = HashMap::new();
+            let mut stat_boosts = StatBoostArray::default();
             stat_boosts.insert(Stat::Attack, 1);
             stat_boosts.insert(Stat::Defense, 1);
             stat_boosts.insert(Stat::Speed, -1);
             
             let instruction = BattleInstruction::Stats(StatsInstruction::BoostStats {
                 target: target_position,
-                stat_changes: stat_boosts,
-                previous_boosts: HashMap::new(),
+                stat_changes: stat_boosts.to_hashmap(),
+                previous_boosts: std::collections::HashMap::new(),
             });
             
             vec![BattleInstructions::new(100.0, vec![instruction])]

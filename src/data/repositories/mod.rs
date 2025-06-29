@@ -8,7 +8,7 @@ pub use move_repository::{MoveRepository, load_moves_data};
 pub use pokemon_repository::{PokemonRepository, load_pokemon_data};
 pub use item_repository::{ItemRepository, load_items_data};
 
-use crate::types::DataResult;
+use crate::types::{DataResult, DataError};
 use std::path::Path;
 use std::sync::{Arc, Mutex, OnceLock};
 
@@ -72,7 +72,8 @@ impl GameDataRepository {
     /// Get or create global repository instance (singleton pattern)
     pub fn global(path: impl AsRef<Path>) -> DataResult<Arc<Self>> {
         let mutex = GLOBAL_REPOSITORY.get_or_init(|| Mutex::new(None));
-        let mut repo = mutex.lock().unwrap();
+        let mut repo = mutex.lock()
+            .map_err(|_| DataError::LockPoisoned)?;
         
         if let Some(existing) = repo.as_ref() {
             return Ok(Arc::clone(existing));

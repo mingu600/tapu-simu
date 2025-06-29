@@ -10,20 +10,21 @@ use crate::core::instructions::{
 };
 use crate::core::battle_format::{BattlePosition, SideReference};
 use crate::generation::GenerationMechanics;
+use crate::types::StatBoostArray;
 use std::collections::HashMap;
 
 /// Helper functions to create common stat boost patterns efficiently
-fn single_stat_boost(stat: Stat, boost: i8) -> HashMap<Stat, i8> {
-    let mut map = HashMap::with_capacity(1);
-    map.insert(stat, boost);
-    map
+fn single_stat_boost(stat: Stat, boost: i8) -> crate::types::StatBoostArray {
+    let mut array = crate::types::StatBoostArray::default();
+    array.insert(stat, boost);
+    array
 }
 
-fn dual_stat_boost(stat1: Stat, boost1: i8, stat2: Stat, boost2: i8) -> HashMap<Stat, i8> {
-    let mut map = HashMap::with_capacity(2);
-    map.insert(stat1, boost1);
-    map.insert(stat2, boost2);
-    map
+fn dual_stat_boost(stat1: Stat, boost1: i8, stat2: Stat, boost2: i8) -> crate::types::StatBoostArray {
+    let mut array = crate::types::StatBoostArray::default();
+    array.insert(stat1, boost1);
+    array.insert(stat2, boost2);
+    array
 }
 
 // =============================================================================
@@ -75,8 +76,8 @@ pub fn apply_defog(
     for &target_position in target_positions {
         instructions.push(BattleInstruction::Stats(StatsInstruction::BoostStats {
             target: target_position,
-            stat_changes: single_stat_boost(Stat::Evasion, -1),
-            previous_boosts: HashMap::new(),
+            stat_changes: single_stat_boost(Stat::Evasion, -1).to_hashmap(),
+            previous_boosts: std::collections::HashMap::new(),
         }));
     }
     
@@ -159,8 +160,8 @@ pub fn apply_tidy_up(
     // Boost user's Attack and Speed by 1 stage each
     instructions.push(BattleInstruction::Stats(StatsInstruction::BoostStats {
         target: user_position,
-        stat_changes: dual_stat_boost(Stat::Attack, 1, Stat::Speed, 1),
-        previous_boosts: HashMap::new(),
+        stat_changes: dual_stat_boost(Stat::Attack, 1, Stat::Speed, 1).to_hashmap(),
+        previous_boosts: std::collections::HashMap::new(),
     }));
     
     vec![BattleInstructions::new(100.0, instructions)]

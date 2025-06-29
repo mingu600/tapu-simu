@@ -13,7 +13,7 @@ use crate::core::instructions::{
 };
 use crate::engine::combat::damage_context::DamageContext;
 use crate::generation::GenerationBattleMechanics;
-use crate::types::{Abilities, Items, Moves, PokemonType};
+use crate::types::{Abilities, Items, Moves, PokemonType, StatBoostArray};
 
 use super::{ItemModifier, StatBoosts};
 
@@ -161,14 +161,14 @@ pub fn generate_ability_trigger_instructions(
 
 /// Blunder Policy - +2 Speed when missing a move
 fn blunder_policy_miss_effect(position: BattlePosition) -> BattleInstructions {
-    let mut stat_changes = HashMap::new();
+    let mut stat_changes = StatBoostArray::default();
     stat_changes.insert(Stat::Speed, 2);
     
     let instructions = vec![
         BattleInstruction::Stats(StatsInstruction::BoostStats {
             target: position,
-            stat_changes,
-            previous_boosts: HashMap::new(),
+            stat_changes: stat_changes.to_hashmap(),
+            previous_boosts: std::collections::HashMap::new(),
         }),
         BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
             target: position,
@@ -181,14 +181,14 @@ fn blunder_policy_miss_effect(position: BattlePosition) -> BattleInstructions {
 
 /// Adrenaline Orb - +1 Speed when intimidated
 fn adrenaline_orb_intimidate_effect(position: BattlePosition) -> BattleInstructions {
-    let mut stat_changes = HashMap::new();
+    let mut stat_changes = StatBoostArray::default();
     stat_changes.insert(Stat::Speed, 1);
     
     let instructions = vec![
         BattleInstruction::Stats(StatsInstruction::BoostStats {
             target: position,
-            stat_changes,
-            previous_boosts: HashMap::new(),
+            stat_changes: stat_changes.to_hashmap(),
+            previous_boosts: std::collections::HashMap::new(),
         }),
         BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
             target: position,

@@ -10,7 +10,7 @@ use crate::core::move_choice::MoveChoice;
 use crate::core::battle_state::MoveCategory;
 use crate::generation::GenerationMechanics;
 use crate::core::instructions::{BattleInstructions, BattleInstruction, PokemonInstruction};
-use crate::types::BattleResult;
+use crate::types::{BattleResult, StatBoostArray};
 use std::collections::HashMap;
 use crate::data::showdown_types::MoveData;
 
@@ -101,6 +101,9 @@ impl MoveContext {
 }
 
 // Re-export all move effect functions from their respective modules
+
+// Composer utilities
+pub mod composers;
 
 // Status effect moves
 pub mod status;
@@ -593,7 +596,7 @@ fn apply_secondary_effects(
     // Handle stat boosts/drops
     if let Some(boosts) = &secondary.boosts {
         for &target in target_positions {
-            let mut stat_changes = HashMap::new();
+            let mut stat_changes = StatBoostArray::default();
             
             for (stat_name, change) in boosts {
                 let stat = match stat_name.as_str() {
@@ -612,8 +615,8 @@ fn apply_secondary_effects(
             if !stat_changes.is_empty() {
                 effect_instructions.push(BattleInstruction::Stats(StatsInstruction::BoostStats {
                     target,
-                    stat_changes,
-                    previous_boosts: HashMap::new(),
+                    stat_changes: stat_changes.to_hashmap(),
+                    previous_boosts: std::collections::HashMap::new(),
                 }));
             }
         }

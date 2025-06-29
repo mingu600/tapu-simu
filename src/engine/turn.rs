@@ -14,24 +14,7 @@ use crate::data::showdown_types::MoveTarget;
 use crate::engine::combat::moves::{MoveContext, OpponentMoveInfo};
 use crate::types::{BattleError, BattleResult};
 
-/// Parse move target string to MoveTarget enum
-fn parse_move_target(target_str: &str) -> MoveTarget {
-    match target_str.to_lowercase().as_str() {
-        "normal" => MoveTarget::Normal,
-        "self" => MoveTarget::Self_,
-        "adjacentally" => MoveTarget::AdjacentAlly,
-        "adjacentallyorself" => MoveTarget::AdjacentAllyOrSelf,
-        "adjacentfoe" => MoveTarget::AdjacentFoe,
-        "alladjacentfoes" => MoveTarget::AllAdjacentFoes,
-        "alladjacent" => MoveTarget::AllAdjacent,
-        "all" => MoveTarget::All,
-        "allyside" => MoveTarget::AllySide,
-        "foeside" => MoveTarget::FoeSide,
-        "allyteam" => MoveTarget::AllyTeam,
-        "any" => MoveTarget::Any,
-        _ => MoveTarget::Normal, // Default fallback
-    }
-}
+// Note: parse_move_target function removed - now using type-safe MoveTarget enum throughout
 
 // Compatibility for end_of_turn module  
 pub mod end_of_turn {

@@ -9,7 +9,7 @@ use crate::core::battle_state::BattleState;
 use crate::core::instructions::{BattleInstruction, PokemonInstruction, PokemonStatus, StatusInstruction, StatsInstruction, Stat};
 use crate::data::showdown_types::MoveData;
 use super::status_system::{apply_status_effect, StatusApplication};
-use crate::types::Abilities;
+use crate::types::{Abilities, StatBoostArray};
 use std::collections::HashMap;
 
 /// Apply all contact effects that should occur after a move hits
@@ -131,16 +131,16 @@ fn apply_contact_abilities(
         }
         Abilities::GOOEY | Abilities::TANGLINGHAIR => {
             // Lower the attacker's speed by 1 stage
-            let mut stat_changes = HashMap::new();
+            let mut stat_changes = StatBoostArray::default();
             stat_changes.insert(Stat::Speed, -1);
             let previous_boosts = if let Some(pokemon) = state.get_pokemon_at_position(user_position) {
                 pokemon.stat_boosts.to_hashmap()
             } else {
-                HashMap::new()
+                std::collections::HashMap::new()
             };
             instructions.push(BattleInstruction::Stats(StatsInstruction::BoostStats {
                 target: user_position,
-                stat_changes,
+                stat_changes: stat_changes.to_hashmap(),
                 previous_boosts,
             }));
         }
@@ -160,11 +160,12 @@ fn apply_contact_abilities(
             if rng.gen_range(0.0..100.0) < 30.0 {
                 // For now, just add a placeholder instruction
                 // Full disable implementation would require move tracking
-                instructions.push(BattleInstruction::Pokemon(PokemonInstruction::Message {
-                    message: format!("{}'s move was disabled by Cursed Body!", 
-                                   state.get_pokemon_at_position(user_position).unwrap().species),
-                    affected_positions: vec![user_position],
-                }));
+                if let Some(user_pokemon) = state.get_pokemon_at_position(user_position) {
+                    instructions.push(BattleInstruction::Pokemon(PokemonInstruction::Message {
+                        message: format!("{}'s move was disabled by Cursed Body!", user_pokemon.species),
+                        affected_positions: vec![user_position],
+                    }));
+                }
             }
         }
         _ => {

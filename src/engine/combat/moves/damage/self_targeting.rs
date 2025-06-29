@@ -10,6 +10,7 @@ use crate::generation::GenerationMechanics;
 use crate::data::showdown_types::MoveData;
 use crate::engine::combat::type_effectiveness::TypeChart;
 use crate::types::PokemonType;
+use crate::engine::combat::moves::apply_generic_effects;
 
 // =============================================================================
 // SELF-DAMAGE MOVES (user takes damage but doesn't faint)
@@ -175,21 +176,6 @@ pub fn apply_self_destruct(
 // =============================================================================
 // SHARED HELPER FUNCTIONS
 // =============================================================================
-
-/// Apply generic move effects
-fn apply_generic_effects(
-    state: &BattleState,
-    move_data: &MoveData,
-    user_position: BattlePosition,
-    target_positions: &[BattlePosition],
-    generation: &GenerationMechanics,
-    branch_on_damage: bool,
-) -> Vec<BattleInstructions> {
-    // Use the proper generic effects implementation from main module
-    crate::engine::combat::moves::apply_generic_effects(
-        state, move_data, user_position, target_positions, generation, branch_on_damage
-    )
-}
 
 /// Check if any Pokemon on the field has the Damp ability
 /// This prevents explosive moves from working entirely

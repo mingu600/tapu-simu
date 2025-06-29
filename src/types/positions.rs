@@ -79,12 +79,12 @@ impl TurnNumber {
     
     /// Create the first turn
     pub fn first() -> Self {
-        TurnNumber(NonZeroU32::new(1).unwrap())
+        TurnNumber(NonZeroU32::new(1).expect("1 is never zero"))
     }
     
     /// Get the next turn number
     pub fn next(self) -> Self {
-        TurnNumber(NonZeroU32::new(self.0.get() + 1).unwrap())
+        TurnNumber(NonZeroU32::new(self.0.get() + 1).expect("turn number + 1 is never zero"))
     }
     
     /// Get the raw turn value

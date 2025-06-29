@@ -350,8 +350,8 @@ impl<'a> Builder<Battle> for BattleBuilder<'a> {
         // Validate first
         self.validate()?;
 
-        let format = self.format.unwrap(); // Safe because validate() checks this
-        let (team1, team2) = self.teams.unwrap(); // Safe because validate() checks this
+        let format = self.format.expect("Format should be set after validation");
+        let (team1, team2) = self.teams.expect("Teams should be set after validation");
         let (player1, player2) = self.players.unwrap_or_else(|| {
             (
                 Box::new(crate::simulator::RandomPlayer::new()),

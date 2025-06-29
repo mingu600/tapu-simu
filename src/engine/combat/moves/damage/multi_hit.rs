@@ -14,6 +14,7 @@ use crate::engine::combat::core::damage_system::{
 use crate::engine::combat::composers::damage_moves::{
     simple_damage_move, DamageModifiers,
 };
+use crate::types::StatBoostArray;
 
 // =============================================================================
 // MULTI-HIT MOVE FUNCTIONS
@@ -254,14 +255,14 @@ pub fn apply_scale_shot(
     );
     
     // Create stat changes for Scale Shot (+1 Speed, -1 Defense)
-    let mut stat_changes = HashMap::new();
+    let mut stat_changes = crate::types::StatBoostArray::default();
     stat_changes.insert(Stat::Speed, 1);
     stat_changes.insert(Stat::Defense, -1);
     
     // Add stat change instructions
     instructions.push(BattleInstruction::Stats(StatsInstruction::BoostStats {
         target: user_position,
-        stat_changes,
+        stat_changes: stat_changes.to_hashmap(),
         previous_boosts: std::collections::HashMap::new(), // Will be filled in by battle state
     }));
     

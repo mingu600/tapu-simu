@@ -17,6 +17,7 @@ use super::super::core::{
     contact_effects::{apply_recoil_damage, apply_drain_healing},
     substitute_protection::{EffectType, should_block_effect, get_effect_type_for_status_instruction},
 };
+use crate::types::StatBoostArray;
 use std::collections::HashMap;
 use crate::core::instructions::{StatusInstruction, VolatileStatus};
 use crate::core::instructions::VolatileStatus as VS;
@@ -203,7 +204,7 @@ pub fn simple_damage_move(
 
         // Apply stat changes
         if let Some(ref stat_changes) = modifiers.stat_changes {
-            let mut non_zero_changes = HashMap::new();
+            let mut non_zero_changes = StatBoostArray::default();
             for (stat, change) in stat_changes {
                 if *change != 0 {
                     non_zero_changes.insert(*stat, *change);
@@ -212,8 +213,8 @@ pub fn simple_damage_move(
             if !non_zero_changes.is_empty() {
                 instructions.push(BattleInstruction::Stats(StatsInstruction::BoostStats {
                     target: target_position,
-                    stat_changes: non_zero_changes,
-                    previous_boosts: HashMap::new(), // Will be filled in by battle state
+                    stat_changes: non_zero_changes.to_hashmap(),
+                    previous_boosts: std::collections::HashMap::new(), // Will be filled in by battle state
                 }));
             }
         }

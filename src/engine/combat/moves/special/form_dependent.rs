@@ -11,7 +11,7 @@ use crate::core::instructions::{
 use crate::core::battle_format::BattlePosition;
 use crate::generation::GenerationMechanics;
 use crate::engine::combat::moves::apply_generic_effects;
-use crate::types::PokemonType;
+use crate::types::{PokemonType, StatBoostArray};
 use std::collections::HashMap;
 use crate::core::instructions::Stat;
 use crate::core::instructions::StatsInstruction;
@@ -48,14 +48,14 @@ pub fn apply_aura_wheel(
         let mut instructions = apply_generic_effects(state, &modified_move_data, user_position, target_positions, generation, branch_on_damage);
         
         // Add Speed boost
-        let mut speed_boost = HashMap::new();
+        let mut speed_boost = StatBoostArray::default();
         speed_boost.insert(Stat::Speed, 1);
         
         instructions.push(BattleInstructions::new(100.0, vec![
             BattleInstruction::Stats(StatsInstruction::BoostStats {
                 target: user_position,
-                stat_changes: speed_boost,
-                previous_boosts: HashMap::new(),
+                stat_changes: speed_boost.to_hashmap(),
+                previous_boosts: std::collections::HashMap::new(),
             }),
         ]));
         

@@ -214,7 +214,7 @@ fn calculate_crit_rate_from_stage(stage: i32, generation: crate::generation::Gen
             GEN2_CRIT_STAGES
                 .get(stage_index)
                 .copied()
-                .unwrap_or(*GEN2_CRIT_STAGES.last().unwrap())
+                .unwrap_or(GEN2_CRIT_STAGES.last().copied().unwrap_or(0.5))
         }
         crate::generation::Generation::Gen3
         | crate::generation::Generation::Gen4
@@ -223,14 +223,14 @@ fn calculate_crit_rate_from_stage(stage: i32, generation: crate::generation::Gen
             GEN3_5_CRIT_STAGES
                 .get(stage_index)
                 .copied()
-                .unwrap_or(*GEN3_5_CRIT_STAGES.last().unwrap())
+                .unwrap_or(GEN3_5_CRIT_STAGES.last().copied().unwrap_or(0.5))
         }
         crate::generation::Generation::Gen6 => {
             // Gen 6
             GEN6_CRIT_STAGES
                 .get(stage_index)
                 .copied()
-                .unwrap_or(*GEN6_CRIT_STAGES.last().unwrap())
+                .unwrap_or(GEN6_CRIT_STAGES.last().copied().unwrap_or(0.5))
         }
         crate::generation::Generation::Gen7
         | crate::generation::Generation::Gen8
@@ -239,7 +239,7 @@ fn calculate_crit_rate_from_stage(stage: i32, generation: crate::generation::Gen
             GEN7_9_CRIT_STAGES
                 .get(stage_index)
                 .copied()
-                .unwrap_or(*GEN7_9_CRIT_STAGES.last().unwrap())
+                .unwrap_or(GEN7_9_CRIT_STAGES.last().copied().unwrap_or(0.5))
         }
         _ => {
             // Fallback - shouldn't reach here for Gen 1 or Gen 2

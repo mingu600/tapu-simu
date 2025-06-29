@@ -13,9 +13,9 @@ use crate::core::instructions::{
     SideCondition, Stat, StatsInstruction, StatusInstruction, Terrain, VolatileStatus, Weather,
 };
 use crate::data::showdown_types::MoveData;
-use crate::engine::combat::moves::{simple, MoveContext};
+use crate::engine::combat::moves::{simple, MoveContext, apply_generic_effects, composers::power_modifier::hp_based_power};
 use crate::engine::combat::type_effectiveness::TypeChart;
-use crate::types::PokemonType;
+use crate::types::{PokemonType, StatBoostArray};
 use crate::generation::GenerationMechanics;
 use crate::engine::combat::composers::damage_moves::{simple_damage_move, DamageModifiers};
 use crate::engine::combat::core::damage_system::DamageCalculationContext;
@@ -497,6 +497,20 @@ pub fn apply_eruption(
     instructions
 }
 
+/// Apply Eruption using unified context signature and PowerModifierBuilder
+pub fn apply_eruption_unified(ctx: &mut crate::engine::combat::move_context::MoveExecutionContext) -> Vec<crate::core::instructions::BattleInstructions> {
+    use crate::engine::combat::moves::composers::power_modifier::hp_based_power;
+    hp_based_power(150.0).build()(ctx)
+}
+
+// Example of how the above function could be refactored using the PowerModifierBuilder:
+// 
+// use crate::engine::combat::move_context::MoveEffectFn;
+// 
+// pub fn eruption_effect_unified() -> MoveEffectFn {
+//     hp_based_power(150.0).build()
+// }
+
 /// Apply Water Spout - power based on user's remaining HP
 pub fn apply_waterspout(
     state: &BattleState,
@@ -515,6 +529,13 @@ pub fn apply_waterspout(
         generation,
         branch_on_damage,
     )
+}
+
+/// Apply Water Spout using unified context signature and PowerModifierBuilder
+pub fn apply_waterspout_unified(ctx: &mut crate::engine::combat::move_context::MoveExecutionContext) -> Vec<crate::core::instructions::BattleInstructions> {
+    // Water Spout has identical mechanics to Eruption (150 base power, HP-based)
+    use crate::engine::combat::moves::composers::power_modifier::hp_based_power;
+    hp_based_power(150.0).build()(ctx)
 }
 
 /// Apply Punishment - power increases based on target's stat boosts
@@ -1257,12 +1278,12 @@ pub fn apply_strength_sap(
     for &target_position in target_positions {
         if let Some(target) = state.get_pokemon_at_position(target_position) {
             // Lower target's Attack by 1 stage
-            let mut stat_changes = HashMap::new();
+            let mut stat_changes = StatBoostArray::default();
             stat_changes.insert(Stat::Attack, -1);
             instruction_list.push(BattleInstruction::Stats(StatsInstruction::BoostStats {
                 target: target_position,
-                stat_changes: stat_changes,
-                previous_boosts: HashMap::new(),
+                stat_changes: stat_changes.to_hashmap(),
+                previous_boosts: std::collections::HashMap::new(),
             }));
 
             // Heal user based on target's current Attack stat
@@ -1556,24 +1577,6 @@ pub fn is_immune_to_poison(target: &Pokemon, generation: &GenerationMechanics) -
 }
 
 /// Apply generic move effects (damage calculation with standard mechanics)
-fn apply_generic_effects(
-    state: &BattleState,
-    move_data: &MoveData,
-    user_position: BattlePosition,
-    target_positions: &[BattlePosition],
-    generation: &GenerationMechanics,
-    branch_on_damage: bool,
-) -> Vec<BattleInstructions> {
-    // Delegate to the simple module's generic effects implementation
-    crate::engine::combat::moves::simple::apply_generic_effects(
-        state,
-        move_data,
-        user_position,
-        target_positions,
-        generation,
-        branch_on_damage,
-    )
-}
 
 // Placeholder function removed - moves now use proper MoveContext with opponent switching information
 

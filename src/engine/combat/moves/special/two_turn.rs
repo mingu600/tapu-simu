@@ -13,8 +13,10 @@ use crate::core::instructions::{
 };
 use crate::core::battle_format::BattlePosition;
 use crate::generation::GenerationMechanics;
+use crate::types::StatBoostArray;
 use std::collections::HashMap;
 use crate::data::showdown_types::MoveData;
+use crate::engine::combat::moves::apply_generic_effects;
 
 // =============================================================================
 // TWO-TURN/CHARGE MOVES
@@ -122,14 +124,14 @@ pub fn apply_meteor_beam(
             instructions.extend(generic_instructions);
         } else {
             // First turn - start charging and boost Special Attack
-            let mut stat_boosts = HashMap::new();
+            let mut stat_boosts = StatBoostArray::default();
             stat_boosts.insert(Stat::SpecialAttack, 1);
             
             instructions.push(BattleInstructions::new(100.0, vec![
                 BattleInstruction::Stats(StatsInstruction::BoostStats {
                     target: user_position,
-                    stat_changes: stat_boosts,
-                    previous_boosts: HashMap::new(),
+                    stat_changes: stat_boosts.to_hashmap(),
+                    previous_boosts: std::collections::HashMap::new(),
                 }),
                 BattleInstruction::Status(StatusInstruction::ApplyVolatile {
                     target: user_position,
@@ -481,14 +483,14 @@ pub fn apply_skull_bash(
             instructions.extend(generic_instructions);
         } else {
             // First turn - charge and boost Defense
-            let mut stat_boosts = HashMap::new();
+            let mut stat_boosts = StatBoostArray::default();
             stat_boosts.insert(Stat::Defense, 1);
             
             instructions.push(BattleInstructions::new(100.0, vec![
                 BattleInstruction::Stats(StatsInstruction::BoostStats {
                     target: user_position,
-                    stat_changes: stat_boosts,
-                    previous_boosts: HashMap::new(),
+                    stat_changes: stat_boosts.to_hashmap(),
+                    previous_boosts: std::collections::HashMap::new(),
                 }),
                 BattleInstruction::Status(StatusInstruction::ApplyVolatile {
                     target: user_position,
@@ -613,17 +615,4 @@ fn apply_standard_two_turn_move(
     }
     
     instructions
-}
-
-/// Apply generic move effects (delegate to shared implementation)
-fn apply_generic_effects(
-    state: &BattleState,
-    move_data: &MoveData,
-    user_position: BattlePosition,
-    target_positions: &[BattlePosition],
-    generation: &GenerationMechanics,
-    branch_on_damage: bool,
-) -> Vec<BattleInstructions> {
-    // Use the shared implementation from the main moves module
-    crate::engine::combat::moves::apply_generic_effects(state, move_data, user_position, target_positions, generation, branch_on_damage)
 }

@@ -10,7 +10,7 @@ use crate::data::types::{Nature, Stats};
 use rand::rngs::StdRng;
 use rand::seq::SliceRandom;
 use rand::SeedableRng;
-use serde::{Deserialize, Serialize, Deserializer};
+use serde::{Deserialize, Serialize, Deserializer, de};
 use crate::types::{FromNormalizedString, PokemonName, Abilities, Items, Moves};
 use std::fs;
 use std::path::Path;
@@ -21,8 +21,8 @@ where
     D: Deserializer<'de>,
 {
     let s = String::deserialize(deserializer)?;
-    Ok(FromNormalizedString::from_normalized_str(&crate::utils::normalize_name(&s))
-        .unwrap_or(PokemonName::NONE))
+    FromNormalizedString::from_normalized_str(&crate::utils::normalize_name(&s))
+        .ok_or_else(|| de::Error::custom(format!("Unknown Pokemon: {}", s)))
 }
 
 fn deserialize_optional_ability<'de, D>(deserializer: D) -> Result<Option<Abilities>, D::Error>
@@ -30,8 +30,14 @@ where
     D: Deserializer<'de>,
 {
     let opt_s: Option<String> = Option::deserialize(deserializer)?;
-    Ok(opt_s.map(|s| FromNormalizedString::from_normalized_str(&crate::utils::normalize_name(&s))
-        .unwrap_or(Abilities::NONE)))
+    match opt_s {
+        Some(s) => {
+            let ability = FromNormalizedString::from_normalized_str(&crate::utils::normalize_name(&s))
+                .ok_or_else(|| de::Error::custom(format!("Unknown ability: {}", s)))?;
+            Ok(Some(ability))
+        }
+        None => Ok(None),
+    }
 }
 
 fn deserialize_optional_item<'de, D>(deserializer: D) -> Result<Option<Items>, D::Error>
@@ -39,8 +45,14 @@ where
     D: Deserializer<'de>,
 {
     let opt_s: Option<String> = Option::deserialize(deserializer)?;
-    Ok(opt_s.map(|s| FromNormalizedString::from_normalized_str(&crate::utils::normalize_name(&s))
-        .unwrap_or(Items::NONE)))
+    match opt_s {
+        Some(s) => {
+            let item = FromNormalizedString::from_normalized_str(&crate::utils::normalize_name(&s))
+                .ok_or_else(|| de::Error::custom(format!("Unknown item: {}", s)))?;
+            Ok(Some(item))
+        }
+        None => Ok(None),
+    }
 }
 
 fn deserialize_moves<'de, D>(deserializer: D) -> Result<Vec<Moves>, D::Error>
@@ -48,10 +60,12 @@ where
     D: Deserializer<'de>,
 {
     let strings: Vec<String> = Vec::deserialize(deserializer)?;
-    Ok(strings.into_iter()
-        .map(|s| FromNormalizedString::from_normalized_str(&crate::utils::normalize_name(&s))
-            .unwrap_or(Moves::NONE))
-        .collect())
+    strings.into_iter()
+        .map(|s| {
+            FromNormalizedString::from_normalized_str(&crate::utils::normalize_name(&s))
+                .ok_or_else(|| de::Error::custom(format!("Unknown move: {}", s)))
+        })
+        .collect()
 }
 
 fn deserialize_optional_nature<'de, D>(deserializer: D) -> Result<Option<Nature>, D::Error>
@@ -59,34 +73,14 @@ where
     D: Deserializer<'de>,
 {
     let opt_s: Option<String> = Option::deserialize(deserializer)?;
-    Ok(opt_s.map(|s| match s.as_str() {
-        "Hardy" => Nature::Hardy,
-        "Lonely" => Nature::Lonely,
-        "Brave" => Nature::Brave,
-        "Adamant" => Nature::Adamant,
-        "Naughty" => Nature::Naughty,
-        "Bold" => Nature::Bold,
-        "Docile" => Nature::Docile,
-        "Relaxed" => Nature::Relaxed,
-        "Impish" => Nature::Impish,
-        "Lax" => Nature::Lax,
-        "Timid" => Nature::Timid,
-        "Hasty" => Nature::Hasty,
-        "Serious" => Nature::Serious,
-        "Jolly" => Nature::Jolly,
-        "Naive" => Nature::Naive,
-        "Modest" => Nature::Modest,
-        "Mild" => Nature::Mild,
-        "Quiet" => Nature::Quiet,
-        "Bashful" => Nature::Bashful,
-        "Rash" => Nature::Rash,
-        "Calm" => Nature::Calm,
-        "Gentle" => Nature::Gentle,
-        "Sassy" => Nature::Sassy,
-        "Careful" => Nature::Careful,
-        "Quirky" => Nature::Quirky,
-        _ => Nature::Hardy, // Default to Hardy if unknown
-    }))
+    match opt_s {
+        Some(s) => {
+            let nature = FromNormalizedString::from_normalized_str(&crate::utils::normalize_name(&s))
+                .ok_or_else(|| de::Error::custom(format!("Unknown nature: {}", s)))?;
+            Ok(Some(nature))
+        }
+        None => Ok(None),
+    }
 }
 
 fn deserialize_optional_tera_type<'de, D>(deserializer: D) -> Result<Option<PokemonType>, D::Error>
@@ -94,26 +88,9 @@ where
     D: Deserializer<'de>,
 {
     let opt_s: Option<String> = Option::deserialize(deserializer)?;
-    Ok(opt_s.and_then(|s| match s.as_str() {
-        "Normal" => Some(PokemonType::Normal),
-        "Fire" => Some(PokemonType::Fire),
-        "Water" => Some(PokemonType::Water),
-        "Electric" => Some(PokemonType::Electric),
-        "Grass" => Some(PokemonType::Grass),
-        "Ice" => Some(PokemonType::Ice),
-        "Fighting" => Some(PokemonType::Fighting),
-        "Poison" => Some(PokemonType::Poison),
-        "Ground" => Some(PokemonType::Ground),
-        "Flying" => Some(PokemonType::Flying),
-        "Psychic" => Some(PokemonType::Psychic),
-        "Bug" => Some(PokemonType::Bug),
-        "Rock" => Some(PokemonType::Rock),
-        "Ghost" => Some(PokemonType::Ghost),
-        "Dragon" => Some(PokemonType::Dragon),
-        "Dark" => Some(PokemonType::Dark),
-        "Steel" => Some(PokemonType::Steel),
-        "Fairy" => Some(PokemonType::Fairy),
-        _ => None,
+    Ok(opt_s.and_then(|s| {
+        use crate::types::FromNormalizedString;
+        PokemonType::from_normalized_str(&crate::utils::normalize_name(&s))
     }))
 }
 
@@ -315,8 +292,9 @@ impl RandomTeamLoader {
             let file_name_str = file_name.to_string_lossy();
 
             if file_name_str.ends_with("-teams.json") {
-                let format_name = file_name_str.strip_suffix("-teams.json").unwrap();
-                formats.push(format_name.to_string());
+                if let Some(format_name) = file_name_str.strip_suffix("-teams.json") {
+                    formats.push(format_name.to_string());
+                }
             }
         }
 
@@ -464,10 +442,12 @@ impl RandomPokemonSet {
         pokemon.item = self.item;
 
         // Set gender
-        pokemon.gender = match self.gender.as_ref().map(|s| s.as_str()) {
-            Some("M") => Gender::Male,
-            Some("F") => Gender::Female,
-            _ => Gender::Unknown,
+        pokemon.gender = if let Some(gender_str) = &self.gender {
+            use crate::types::FromNormalizedString;
+            Gender::from_normalized_str(&crate::utils::normalize_name(gender_str))
+                .unwrap_or(Gender::Unknown)
+        } else {
+            Gender::Unknown
         };
 
         // Calculate stats from base stats, level, nature, IVs, EVs

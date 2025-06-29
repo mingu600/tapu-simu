@@ -798,10 +798,10 @@ impl BattleState {
                 ..
             } => {
                 if let Some(pokemon) = self.get_pokemon_at_position_mut(*target) {
-                    for (stat, change) in stat_changes {
-                        let current_boost = pokemon.stat_boosts.get_direct(*stat);
+                    for (&stat, &change) in stat_changes.iter() {
+                        let current_boost = pokemon.stat_boosts.get_direct(stat);
                         let new_boost = (current_boost + change).clamp(-6, 6);
-                        pokemon.stat_boosts.insert(*stat, new_boost);
+                        pokemon.stat_boosts.insert(stat, new_boost);
                     }
                 }
             }

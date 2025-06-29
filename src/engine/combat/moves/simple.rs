@@ -377,18 +377,5 @@ pub fn apply_perish_song(
 // GENERIC EFFECTS AND HELPER FUNCTIONS
 // =============================================================================
 
-/// Apply generic move effects based on move data
-/// This is the fallback function for moves without specific implementations
-pub fn apply_generic_effects(
-    state: &BattleState,
-    move_data: &MoveData,
-    user_position: BattlePosition,
-    target_positions: &[BattlePosition],
-    generation: &GenerationMechanics,
-    branch_on_damage: bool,
-) -> Vec<BattleInstructions> {
-    // Use the shared implementation from the main moves module
-    super::apply_generic_effects(state, move_data, user_position, target_positions, generation, branch_on_damage)
-}
 
 // Fallback function removed - moves should either be implemented or return errors

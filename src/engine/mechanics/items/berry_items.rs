@@ -7,7 +7,7 @@ use super::{ItemModifier, StatBoosts};
 use crate::engine::combat::damage_context::DamageContext;
 use crate::generation::{GenerationBattleMechanics, Generation};
 use crate::engine::combat::type_effectiveness::TypeChart;
-use crate::types::PokemonType;
+use crate::types::{PokemonType, StatBoostArray};
 use crate::core::battle_state::{MoveCategory, Pokemon};
 use crate::core::battle_format::BattlePosition;
 use crate::core::instructions::{Stat, PokemonStatus};
@@ -356,14 +356,14 @@ pub fn generate_berry_activation_instructions(
                     _ => return None, // Should not happen, but return None instead of panicking
                 };
                 
-                let mut stat_changes = HashMap::new();
+                let mut stat_changes = StatBoostArray::default();
                 stat_changes.insert(stat, 1);
                 
                 let instructions = vec![
                     BattleInstruction::Stats(StatsInstruction::BoostStats {
                         target: position,
-                        stat_changes,
-                        previous_boosts: HashMap::new(),
+                        stat_changes: stat_changes.to_hashmap(),
+                        previous_boosts: std::collections::HashMap::new(),
                     }),
                     BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
                         target: position,
@@ -421,14 +421,14 @@ pub fn generate_berry_activation_instructions(
                 let mut rng = thread_rng();
                 let random_stat = *boostable_stats.choose(&mut rng)
                     .expect("Boostable stats vec should not be empty");
-                let mut stat_changes = HashMap::new();
+                let mut stat_changes = StatBoostArray::default();
                 stat_changes.insert(random_stat, 2);
                 
                 let instructions = vec![
                     BattleInstruction::Stats(StatsInstruction::BoostStats {
                         target: position,
-                        stat_changes,
-                        previous_boosts: HashMap::new(),
+                        stat_changes: stat_changes.to_hashmap(),
+                        previous_boosts: std::collections::HashMap::new(),
                     }),
                     BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
                         target: position,

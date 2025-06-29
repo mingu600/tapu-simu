@@ -73,6 +73,9 @@ pub enum DataError {
     
     #[error("Required data file missing: {file}")]
     RequiredFileMissing { file: String },
+    
+    #[error("Repository lock poisoned")]
+    LockPoisoned,
 }
 
 /// Errors related to battle format validation

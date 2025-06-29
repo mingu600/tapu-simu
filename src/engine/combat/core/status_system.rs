@@ -8,7 +8,7 @@ use crate::core::battle_format::BattlePosition;
 use crate::core::battle_state::BattleState;
 use crate::core::instructions::{BattleInstruction, PokemonStatus, VolatileStatus, StatusInstruction, Stat, StatsInstruction};
 use crate::data::showdown_types::MoveData;
-use crate::types::PokemonType;
+use crate::types::{PokemonType, StatBoostArray};
 use std::collections::HashMap;
 
 /// Configuration for applying a status effect
@@ -330,12 +330,12 @@ pub fn status_move_with_stats(
         for &target_position in target_positions {
             for (stat, change) in &stat_changes {
                 if *change != 0 {
-                    let mut stat_changes = HashMap::new();
+                    let mut stat_changes = StatBoostArray::default();
                     stat_changes.insert(*stat, *change);
-                    let previous_boosts = HashMap::new(); // TODO: Get actual previous boosts
+                    let previous_boosts = std::collections::HashMap::new(); // TODO: Get actual previous boosts
                     instructions.push(BattleInstruction::Stats(StatsInstruction::BoostStats {
                         target: target_position,
-                        stat_changes,
+                        stat_changes: stat_changes.to_hashmap(),
                         previous_boosts,
                     }));
                 }

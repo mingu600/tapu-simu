@@ -77,6 +77,26 @@ self_stat_boost!(apply_iron_defense, Stat::Defense => 2);
 /// Apply Amnesia - raises Special Defense by 2 stages
 self_stat_boost!(apply_amnesia, Stat::SpecialDefense => 2);
 
+// Unified signature versions for key moves
+/// Apply Swords Dance using unified context signature
+pub fn apply_swords_dance_unified(ctx: &mut crate::engine::combat::move_context::MoveExecutionContext) -> Vec<crate::core::instructions::BattleInstructions> {
+    use std::collections::HashMap;
+    let mut stat_changes = HashMap::new();
+    stat_changes.insert(crate::types::stat::Stat::Attack, 2);
+    vec![crate::core::instructions::BattleInstructions::new(100.0, 
+        crate::engine::combat::composers::status_moves::self_stat_boost_move(ctx.state, ctx.user_position, &stat_changes))]
+}
+
+/// Apply Dragon Dance using unified context signature  
+pub fn apply_dragon_dance_unified(ctx: &mut crate::engine::combat::move_context::MoveExecutionContext) -> Vec<crate::core::instructions::BattleInstructions> {
+    use std::collections::HashMap;
+    let mut stat_changes = HashMap::new();
+    stat_changes.insert(crate::types::stat::Stat::Attack, 1);
+    stat_changes.insert(crate::types::stat::Stat::Speed, 1);
+    vec![crate::core::instructions::BattleInstructions::new(100.0, 
+        crate::engine::combat::composers::status_moves::self_stat_boost_move(ctx.state, ctx.user_position, &stat_changes))]
+}
+
 /// Apply Agility - raises Speed by 2 stages
 self_stat_boost!(apply_agility, Stat::Speed => 2);
 

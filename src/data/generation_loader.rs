@@ -121,7 +121,10 @@ impl GenerationRepository {
 
             for generation in generations {
                 if let Some(gen_data) = raw_data.get(&generation.id) {
-                    let gen_items_raw = gen_data.get(data_key).unwrap().as_object().unwrap();
+                    let gen_items_raw = gen_data.get(data_key)
+                        .ok_or_else(|| format!("Missing '{}' key in generation data", data_key))?
+                        .as_object()
+                        .ok_or_else(|| format!("'{}' is not an object in generation data", data_key))?;
                     let mut gen_items = HashMap::with_capacity(gen_items_raw.len());
 
                     for (item_id, item_value) in gen_items_raw {
@@ -158,28 +161,41 @@ impl GenerationRepository {
                 for (item_id, change_data) in changes_obj {
                     let name = change_data
                         .get("name")
-                        .unwrap()
+                        .ok_or_else(|| format!("Missing 'name' field for item {}", item_id))?
                         .as_str()
-                        .unwrap()
+                        .ok_or_else(|| format!("'name' field is not a string for item {}", item_id))?
                         .to_string();
-                    let changes_array = change_data.get("changes").unwrap().as_array().unwrap();
+                    let changes_array = change_data.get("changes")
+                        .ok_or_else(|| format!("Missing 'changes' field for item {}", item_id))?
+                        .as_array()
+                        .ok_or_else(|| format!("'changes' field is not an array for item {}", item_id))?;
 
                     let mut changes = Vec::with_capacity(changes_array.len());
                     for change in changes_array {
-                        let generation = change.get("generation").unwrap().as_u64().unwrap() as u8;
-                        let field_changes_array = change.get("changes").unwrap().as_array().unwrap();
+                        let generation = change.get("generation")
+                            .ok_or_else(|| format!("Missing 'generation' field in change for item {}", item_id))?
+                            .as_u64()
+                            .ok_or_else(|| format!("'generation' field is not a number for item {}", item_id))? as u8;
+                        let field_changes_array = change.get("changes")
+                            .ok_or_else(|| format!("Missing 'changes' field in change for item {}", item_id))?
+                            .as_array()
+                            .ok_or_else(|| format!("'changes' field is not an array in change for item {}", item_id))?;
 
                         let mut field_changes = Vec::with_capacity(field_changes_array.len());
                         for field_change in field_changes_array {
                             field_changes.push(FieldChange {
                                 field: field_change
                                     .get("field")
-                                    .unwrap()
+                                    .ok_or_else(|| format!("Missing 'field' in field change for item {}", item_id))?
                                     .as_str()
-                                    .unwrap()
+                                    .ok_or_else(|| format!("'field' is not a string in field change for item {}", item_id))?
                                     .to_string(),
-                                from: field_change.get("from").unwrap().clone(),
-                                to: field_change.get("to").unwrap().clone(),
+                                from: field_change.get("from")
+                                    .ok_or_else(|| format!("Missing 'from' in field change for item {}", item_id))?
+                                    .clone(),
+                                to: field_change.get("to")
+                                    .ok_or_else(|| format!("Missing 'to' in field change for item {}", item_id))?
+                                    .clone(),
                             });
                         }
 

@@ -10,6 +10,7 @@ use crate::data::showdown_types::MoveData;
 use super::super::core::status_system::{
     StatusApplication, apply_multiple_status_effects, simple_status_move,
 };
+use crate::types::StatBoostArray;
 use std::collections::HashMap;
 
 /// Status move with optional stat changes
@@ -83,22 +84,22 @@ pub fn stat_modification_move(
     let mut instructions = Vec::new();
 
     for &target_position in target_positions {
-        // Convert single stat changes to HashMap for BoostStats
-        let mut boost_map = HashMap::new();
+        // Convert stat changes to StatBoostArray
+        let mut stat_boost_array = crate::types::StatBoostArray::default();
         for (&stat, &change) in stat_changes {
             if change != 0 {
-                boost_map.insert(stat, change);
+                stat_boost_array.insert(stat, change);
             }
         }
         
-        if !boost_map.is_empty() {
+        if !stat_boost_array.is_empty() {
             instructions.push(BattleInstruction::Stats(StatsInstruction::BoostStats {
                 target: target_position,
-                stat_changes: boost_map,
+                stat_changes: stat_boost_array.to_hashmap(),
                 previous_boosts: if let Some(pokemon) = state.get_pokemon_at_position(target_position) {
                     pokemon.stat_boosts.to_hashmap()
                 } else {
-                    HashMap::new()
+                    std::collections::HashMap::new()
                 },
             }));
         }
@@ -286,21 +287,21 @@ pub fn status_plus_stat_move(
         }
 
         // Apply stat changes
-        let mut boost_map = HashMap::new();
+        let mut stat_boost_array = crate::types::StatBoostArray::default();
         for (&stat, &change) in &stat_changes {
             if change != 0 {
-                boost_map.insert(stat, change);
+                stat_boost_array.insert(stat, change);
             }
         }
         
-        if !boost_map.is_empty() {
+        if !stat_boost_array.is_empty() {
             instructions.push(BattleInstruction::Stats(StatsInstruction::BoostStats {
                 target: target_position,
-                stat_changes: boost_map,
+                stat_changes: stat_boost_array.to_hashmap(),
                 previous_boosts: if let Some(pokemon) = state.get_pokemon_at_position(target_position) {
                     pokemon.stat_boosts.to_hashmap()
                 } else {
-                    HashMap::new()
+                    std::collections::HashMap::new()
                 },
             }));
         }

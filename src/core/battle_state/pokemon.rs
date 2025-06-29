@@ -5,6 +5,7 @@ use crate::core::instructions::{MoveCategory, PokemonStatus};
 use crate::core::move_choice::MoveIndex;
 use crate::data::types::Stats;
 use crate::types::{PokemonType, PokemonName, Abilities, Items, Moves, StatBoostArray, VolatileStatusStorage};
+use crate::types::from_string::FromNormalizedString;
 use serde::{Deserialize, Serialize};
 use smallvec::SmallVec;
 
@@ -14,6 +15,21 @@ pub enum Gender {
     Male,
     Female,
     Unknown,
+}
+
+impl FromNormalizedString for Gender {
+    fn from_normalized_str(s: &str) -> Option<Self> {
+        match s {
+            "m" | "male" => Some(Gender::Male),
+            "f" | "female" => Some(Gender::Female),
+            "n" | "genderless" | "unknown" => Some(Gender::Unknown),
+            _ => None,
+        }
+    }
+    
+    fn valid_strings() -> Vec<&'static str> {
+        vec!["m", "male", "f", "female", "n", "genderless", "unknown"]
+    }
 }
 
 /// Information about damage taken this turn (for moves like Avalanche)

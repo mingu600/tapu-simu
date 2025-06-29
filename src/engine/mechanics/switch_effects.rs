@@ -9,6 +9,7 @@
 
 use crate::core::battle_format::BattlePosition;
 use crate::core::instructions::{SideCondition, PokemonStatus, Stat};
+use crate::types::StatBoostArray;
 use crate::core::instructions::{BattleInstruction, BattleInstructions, FieldInstruction, PokemonInstruction, StatusInstruction, StatsInstruction};
 use crate::core::battle_state::Pokemon;
 use crate::core::battle_state::BattleState;
@@ -140,14 +141,14 @@ fn process_entry_hazards(
     // Sticky Web
     if let Some(&sticky_web) = side.side_conditions.get(&SideCondition::StickyWeb) {
         if sticky_web > 0 && is_grounded(pokemon) {
-            let mut stat_boosts = HashMap::new();
+            let mut stat_boosts = StatBoostArray::default();
             stat_boosts.insert(Stat::Speed, -1);
             
             instructions.push(BattleInstructions::new(100.0, vec![
                 BattleInstruction::Stats(StatsInstruction::BoostStats {
                     target: switching_position,
-                    stat_changes: stat_boosts,
-                    previous_boosts: HashMap::new(),
+                    stat_changes: stat_boosts.to_hashmap(),
+                    previous_boosts: std::collections::HashMap::new(),
                 })
             ]));
         }
@@ -337,14 +338,14 @@ fn apply_intimidate_effect(
         if let Some(opponent) = opposing_side_data.get_active_pokemon_at_slot(slot) {
             // Check for immunities (Clear Body, Hyper Cutter, etc.)
             if !is_immune_to_intimidate(opponent, generation) {
-                let mut stat_boosts = HashMap::new();
+                let mut stat_boosts = StatBoostArray::default();
                 stat_boosts.insert(Stat::Attack, -1);
                 
                 instructions.push(BattleInstructions::new(100.0, vec![
                     BattleInstruction::Stats(StatsInstruction::BoostStats {
                         target: BattlePosition::new(opposing_side, slot),
-                        stat_changes: stat_boosts,
-                        previous_boosts: HashMap::new(),
+                        stat_changes: stat_boosts.to_hashmap(),
+                        previous_boosts: std::collections::HashMap::new(),
                     })
                 ]));
             }
@@ -382,7 +383,7 @@ fn apply_download_effect(
         let avg_defense = total_defense / opponent_count as f64;
         let avg_special_defense = total_special_defense / opponent_count as f64;
         
-        let mut stat_boosts = HashMap::new();
+        let mut stat_boosts = StatBoostArray::default();
         if avg_defense < avg_special_defense {
             // Boost Attack if Defense is lower
             stat_boosts.insert(Stat::Attack, 1);
@@ -394,8 +395,8 @@ fn apply_download_effect(
         instructions.push(BattleInstructions::new(100.0, vec![
             BattleInstruction::Stats(StatsInstruction::BoostStats {
                 target: user_position,
-                stat_changes: stat_boosts,
-                previous_boosts: HashMap::new(),
+                stat_changes: stat_boosts.to_hashmap(),
+                previous_boosts: std::collections::HashMap::new(),
             })
         ]));
     }
@@ -577,14 +578,14 @@ fn process_switch_in_items(
             // Room Service - Lowers Speed when Trick Room is active
             crate::types::Items::ROOMSERVICE => {
                 if state.field.global_effects.trick_room.is_some() {
-                    let mut stat_boosts = HashMap::new();
+                    let mut stat_boosts = StatBoostArray::default();
                     stat_boosts.insert(Stat::Speed, -1);
                     
                     instructions.push(BattleInstructions::new(100.0, vec![
                         BattleInstruction::Stats(StatsInstruction::BoostStats {
                             target: switching_position,
-                            stat_changes: stat_boosts,
-                            previous_boosts: HashMap::new(),
+                            stat_changes: stat_boosts.to_hashmap(),
+                            previous_boosts: std::collections::HashMap::new(),
                         }),
                         // Remove the item after use
                         BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
@@ -603,14 +604,14 @@ fn process_switch_in_items(
                     match pokemon.ability {
                         crate::types::Abilities::PROTOSYNTHESIS => {
                             let highest_stat = calculate_highest_stat_excluding_hp(pokemon);
-                            let mut stat_boosts = HashMap::new();
+                            let mut stat_boosts = StatBoostArray::default();
                             stat_boosts.insert(highest_stat, 1);
                             
                             instructions.push(BattleInstructions::new(100.0, vec![
                                 BattleInstruction::Stats(StatsInstruction::BoostStats {
                                     target: switching_position,
-                                    stat_changes: stat_boosts,
-                                    previous_boosts: HashMap::new(),
+                                    stat_changes: stat_boosts.to_hashmap(),
+                                    previous_boosts: std::collections::HashMap::new(),
                                 }),
                                 // Remove the item after use
                                 BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
@@ -622,14 +623,14 @@ fn process_switch_in_items(
                         }
                         crate::types::Abilities::QUARKDRIVE => {
                             let highest_stat = calculate_highest_stat_excluding_hp(pokemon);
-                            let mut stat_boosts = HashMap::new();
+                            let mut stat_boosts = StatBoostArray::default();
                             stat_boosts.insert(highest_stat, 1);
                             
                             instructions.push(BattleInstructions::new(100.0, vec![
                                 BattleInstruction::Stats(StatsInstruction::BoostStats {
                                     target: switching_position,
-                                    stat_changes: stat_boosts,
-                                    previous_boosts: HashMap::new(),
+                                    stat_changes: stat_boosts.to_hashmap(),
+                                    previous_boosts: std::collections::HashMap::new(),
                                 }),
                                 // Remove the item after use
                                 BattleInstruction::Pokemon(PokemonInstruction::ChangeItem {
@@ -744,7 +745,7 @@ fn process_switch_out_items(
             crate::types::Items::WHITEHERB => {
                 // Check if Pokemon has any negative stat changes to remove
                 let mut has_negative_boosts = false;
-                let mut stat_changes = HashMap::new();
+                let mut stat_changes = StatBoostArray::default();
                 
                 for (stat, boost) in pokemon.stat_boosts.iter() {
                     if boost < 0 {
@@ -757,7 +758,7 @@ fn process_switch_out_items(
                     instructions.push(BattleInstructions::new(100.0, vec![
                         BattleInstruction::Stats(StatsInstruction::BoostStats {
                             target: switching_position,
-                            stat_changes: stat_changes,
+                            stat_changes: stat_changes.to_hashmap(),
                             previous_boosts: pokemon.stat_boosts.to_hashmap(),
                         }),
                         // Remove the item after use
@@ -1173,14 +1174,14 @@ fn apply_intrepid_sword_effect(
     _generation: &GenerationMechanics,
 ) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
-    let mut stat_boosts = HashMap::new();
+    let mut stat_boosts = StatBoostArray::default();
     stat_boosts.insert(Stat::Attack, 1);
     
     instructions.push(BattleInstructions::new(100.0, vec![
         BattleInstruction::Stats(StatsInstruction::BoostStats {
             target: user_position,
-            stat_changes: stat_boosts,
-            previous_boosts: HashMap::new(),
+            stat_changes: stat_boosts.to_hashmap(),
+            previous_boosts: std::collections::HashMap::new(),
         })
     ]));
     
@@ -1194,14 +1195,14 @@ fn apply_dauntless_shield_effect(
     _generation: &GenerationMechanics,
 ) -> Vec<BattleInstructions> {
     let mut instructions = Vec::new();
-    let mut stat_boosts = HashMap::new();
+    let mut stat_boosts = StatBoostArray::default();
     stat_boosts.insert(Stat::Defense, 1);
     
     instructions.push(BattleInstructions::new(100.0, vec![
         BattleInstruction::Stats(StatsInstruction::BoostStats {
             target: user_position,
-            stat_changes: stat_boosts,
-            previous_boosts: HashMap::new(),
+            stat_changes: stat_boosts.to_hashmap(),
+            previous_boosts: std::collections::HashMap::new(),
         })
     ]));
     
@@ -1229,14 +1230,14 @@ fn apply_protosynthesis_effect(
             // Determine highest stat (excluding HP)
             let highest_stat = calculate_highest_stat_excluding_hp(pokemon);
             
-            let mut stat_boosts = HashMap::new();
+            let mut stat_boosts = StatBoostArray::default();
             stat_boosts.insert(highest_stat, 1);
             
             instructions.push(BattleInstructions::new(100.0, vec![
                 BattleInstruction::Stats(StatsInstruction::BoostStats {
                     target: user_position,
-                    stat_changes: stat_boosts,
-                    previous_boosts: HashMap::new(),
+                    stat_changes: stat_boosts.to_hashmap(),
+                    previous_boosts: std::collections::HashMap::new(),
                 })
             ]));
             
@@ -1282,14 +1283,14 @@ fn apply_quark_drive_effect(
             // Determine highest stat (excluding HP)
             let highest_stat = calculate_highest_stat_excluding_hp(pokemon);
             
-            let mut stat_boosts = HashMap::new();
+            let mut stat_boosts = StatBoostArray::default();
             stat_boosts.insert(highest_stat, 1);
             
             instructions.push(BattleInstructions::new(100.0, vec![
                 BattleInstruction::Stats(StatsInstruction::BoostStats {
                     target: user_position,
-                    stat_changes: stat_boosts,
-                    previous_boosts: HashMap::new(),
+                    stat_changes: stat_boosts.to_hashmap(),
+                    previous_boosts: std::collections::HashMap::new(),
                 })
             ]));
             
@@ -1341,14 +1342,14 @@ fn apply_embody_aspect_effect(
             _ => return instructions, // Not an Ogerpon forme
         };
         
-        let mut stat_boosts = HashMap::new();
+        let mut stat_boosts = StatBoostArray::default();
         stat_boosts.insert(stat_to_boost, 1);
         
         instructions.push(BattleInstructions::new(100.0, vec![
             BattleInstruction::Stats(StatsInstruction::BoostStats {
                 target: user_position,
-                stat_changes: stat_boosts,
-                previous_boosts: HashMap::new(),
+                stat_changes: stat_boosts.to_hashmap(),
+                previous_boosts: std::collections::HashMap::new(),
             })
         ]));
     }

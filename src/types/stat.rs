@@ -37,7 +37,7 @@ impl From<u8> for Stat {
 
 /// Compact array storage for stat boosts (-6 to +6)
 /// More memory efficient than HashMap for stat boosts
-#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct StatBoostArray([i8; 8]);
 
 impl StatBoostArray {
@@ -126,6 +126,86 @@ impl StatBoostArray {
             array.insert(stat, boost);
         }
         array
+    }
+    
+    /// Constructor that accepts anything that can convert to Self
+    pub fn new<T: Into<Self>>(value: T) -> Self {
+        value.into()
+    }
+    
+    /// Iterator over non-zero stat boosts (for applying changes)
+    pub fn iter_changes(&self) -> impl Iterator<Item = (Stat, i8)> + '_ {
+        (0..8).filter_map(move |i| {
+            let boost = self.0[i];
+            if boost != 0 {
+                Some((Stat::from(i as u8), boost))
+            } else {
+                None
+            }
+        })
+    }
+}
+
+// Try implementing conversion for various integer types that might be used in tests
+impl From<std::collections::HashMap<Stat, i8>> for StatBoostArray {
+    fn from(map: std::collections::HashMap<Stat, i8>) -> Self {
+        Self::from_hashmap(&map)
+    }
+}
+
+impl From<std::collections::HashMap<Stat, i16>> for StatBoostArray {
+    fn from(map: std::collections::HashMap<Stat, i16>) -> Self {
+        let mut array = Self::default();
+        for (stat, boost) in map {
+            array.insert(stat, boost as i8);
+        }
+        array
+    }
+}
+
+impl From<std::collections::HashMap<Stat, i32>> for StatBoostArray {
+    fn from(map: std::collections::HashMap<Stat, i32>) -> Self {
+        let mut array = Self::default();
+        for (stat, boost) in map {
+            array.insert(stat, boost as i8);
+        }
+        array
+    }
+}
+
+impl From<std::collections::HashMap<Stat, i64>> for StatBoostArray {
+    fn from(map: std::collections::HashMap<Stat, i64>) -> Self {
+        let mut array = Self::default();
+        for (stat, boost) in map {
+            array.insert(stat, boost as i8);
+        }
+        array
+    }
+}
+
+impl From<std::collections::HashMap<Stat, isize>> for StatBoostArray {
+    fn from(map: std::collections::HashMap<Stat, isize>) -> Self {
+        let mut array = Self::default();
+        for (stat, boost) in map {
+            array.insert(stat, boost as i8);
+        }
+        array
+    }
+}
+
+/// Implement From trait for automatic conversion from HashMap reference
+impl From<&std::collections::HashMap<Stat, i8>> for StatBoostArray {
+    fn from(map: &std::collections::HashMap<Stat, i8>) -> Self {
+        Self::from_hashmap(map)
+    }
+}
+
+/// Implement Deref to HashMap for backwards compatibility in tests
+impl std::ops::Deref for StatBoostArray {
+    type Target = [i8; 8];
+    
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 

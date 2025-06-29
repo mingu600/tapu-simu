@@ -13,6 +13,27 @@ use std::io::Write;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
+/// Helper function to safely write to log file with error handling
+fn safe_write<W: Write>(file: &mut W, content: &str) {
+    if let Err(e) = write!(file, "{}", content) {
+        eprintln!("Warning: Failed to write to log file: {}", e);
+    }
+}
+
+/// Helper function to safely writeln to log file with error handling
+fn safe_writeln<W: Write>(file: &mut W, content: &str) {
+    if let Err(e) = writeln!(file, "{}", content) {
+        eprintln!("Warning: Failed to write line to log file: {}", e);
+    }
+}
+
+/// Helper function to safely flush log file with error handling
+fn safe_flush<W: Write>(file: &mut W) {
+    if let Err(e) = file.flush() {
+        eprintln!("Warning: Failed to flush log file: {}", e);
+    }
+}
+
 /// Player trait for different agent types - modern interface only
 pub trait Player: Send + Sync + 'static {
     /// Choose a move from available options
@@ -238,14 +259,23 @@ impl BattleEnvironment {
         // Create log file if verbose
         let mut log_file = if self.verbose && self.log_file.is_some() {
             use std::fs::OpenOptions;
-            Some(
-                OpenOptions::new()
-                    .create(true)
-                    .write(true)
-                    .truncate(true)
-                    .open(self.log_file.as_ref().unwrap())
-                    .expect("Failed to create log file"),
-            )
+            match self.log_file.as_ref() {
+                Some(path) => {
+                    match OpenOptions::new()
+                        .create(true)
+                        .write(true)
+                        .truncate(true)
+                        .open(path)
+                    {
+                        Ok(file) => Some(file),
+                        Err(e) => {
+                            eprintln!("Warning: Failed to create log file '{}': {}", path, e);
+                            None
+                        }
+                    }
+                }
+                None => None,
+            }
         } else {
             None
         };
@@ -266,10 +296,10 @@ impl BattleEnvironment {
             let team_stats = self.format_team_stats(&state);
 
             if let Some(ref mut file) = log_file {
-                writeln!(file, "{}", start_msg).unwrap();
-                writeln!(file, "{}", showdown_export).unwrap();
-                writeln!(file, "{}", team_stats).unwrap();
-                file.flush().unwrap();
+                safe_writeln(file, &start_msg);
+                safe_writeln(file, &showdown_export);
+                safe_writeln(file, &team_stats);
+                safe_flush(file);
             } else {
                 println!("{}", start_msg);
                 println!("{}", showdown_export);
@@ -337,8 +367,8 @@ impl BattleEnvironment {
                 );
 
                 if let Some(ref mut file) = log_file {
-                    write!(file, "{}", turn_header).unwrap();
-                    file.flush().unwrap();
+                    safe_write(file, &turn_header);
+                    safe_flush(file);
                 } else {
                     print!("{}", turn_header);
                 }
@@ -360,13 +390,22 @@ impl BattleEnvironment {
             // Reopen log file to write the selected moves
             if self.verbose && self.log_file.is_some() {
                 use std::fs::OpenOptions;
-                log_file = Some(
-                    OpenOptions::new()
-                        .create(true)
-                        .append(true)
-                        .open(self.log_file.as_ref().unwrap())
-                        .expect("Failed to reopen log file"),
-                );
+                log_file = match self.log_file.as_ref() {
+                    Some(path) => {
+                        match OpenOptions::new()
+                            .create(true)
+                            .append(true)
+                            .open(path)
+                        {
+                            Ok(file) => Some(file),
+                            Err(e) => {
+                                eprintln!("Warning: Failed to reopen log file '{}': {}", path, e);
+                                None
+                            }
+                        }
+                    }
+                    None => None,
+                };
 
                 let moves_msg = format!(
                     "\nMoves Selected:\n  Side 1: {}\n  Side 2: {}\n=============================\n",
@@ -375,8 +414,8 @@ impl BattleEnvironment {
                 );
 
                 if let Some(ref mut file) = log_file {
-                    write!(file, "{}", moves_msg).unwrap();
-                    file.flush().unwrap();
+                    safe_write(file, &moves_msg);
+                    safe_flush(file);
                 }
             }
 
@@ -393,23 +432,23 @@ impl BattleEnvironment {
                 );
 
                 if let Some(ref mut file) = log_file {
-                    write!(file, "{}", instructions_msg).unwrap();
+                    safe_write(file, &instructions_msg);
                     for (i, instruction_set) in instructions.iter().enumerate() {
-                        writeln!(
-                            file,
-                            "  Sequence {} ({:.1}%): {} instructions",
+                        let sequence_msg = format!(
+                            "  Sequence {} ({:.1}%): {} instructions\n",
                             i,
                             instruction_set.percentage,
                             instruction_set.instruction_list.len()
-                        )
-                        .unwrap();
+                        );
+                        safe_write(file, &sequence_msg);
                         for (j, instruction) in instruction_set.instruction_list.iter().enumerate()
                         {
-                            writeln!(file, "    {}: {:?}", j, instruction).unwrap();
+                            let instruction_msg = format!("    {}: {:?}\n", j, instruction);
+                            safe_write(file, &instruction_msg);
                         }
                     }
-                    writeln!(file, "").unwrap();
-                    file.flush().unwrap();
+                    safe_writeln(file, "");
+                    safe_flush(file);
                 } else {
                     print!("{}", instructions_msg);
                     for (i, instruction_set) in instructions.iter().enumerate() {
@@ -435,8 +474,8 @@ impl BattleEnvironment {
                 if self.verbose {
                     let chosen_msg = format!("Applying instruction sequence {}\n", chosen_index);
                     if let Some(ref mut file) = log_file {
-                        write!(file, "{}", chosen_msg).unwrap();
-                        file.flush().unwrap();
+                        safe_write(file, &chosen_msg);
+                        safe_flush(file);
                     } else {
                         print!("{}", chosen_msg);
                     }
@@ -479,8 +518,8 @@ impl BattleEnvironment {
             );
 
             if let Some(ref mut file) = log_file {
-                write!(file, "{}", end_msg).unwrap();
-                file.flush().unwrap();
+                safe_write(file, &end_msg);
+                safe_flush(file);
             } else {
                 print!("{}", end_msg);
             }
@@ -902,7 +941,13 @@ where
 
                     let result = env.run_battle(initial_state);
 
-                    let mut results = results.lock().unwrap();
+                    let mut results = match results.lock() {
+                        Ok(guard) => guard,
+                        Err(poisoned) => {
+                            eprintln!("Warning: Mutex was poisoned, recovering...");
+                            poisoned.into_inner()
+                        }
+                    };
                     results.total_battles += 1;
                     match result.winner {
                         Some(SideReference::SideOne) => results.player_one_wins += 1,
@@ -915,10 +960,29 @@ where
         .collect();
 
     for handle in handles {
-        handle.join().unwrap();
+        if let Err(e) = handle.join() {
+            eprintln!("Warning: Thread panicked: {:?}", e);
+        }
     }
 
-    Arc::try_unwrap(results).unwrap().into_inner().unwrap()
+    match Arc::try_unwrap(results) {
+        Ok(mutex) => match mutex.into_inner() {
+            Ok(results) => results,
+            Err(poisoned) => {
+                eprintln!("Warning: Mutex was poisoned at end of parallel battles, recovering...");
+                poisoned.into_inner()
+            }
+        },
+        Err(_) => {
+            eprintln!("Error: Arc has remaining references, returning empty results");
+            ParallelBattleResults {
+                total_battles: 0,
+                player_one_wins: 0,
+                player_two_wins: 0,
+                draws: 0,
+            }
+        }
+    }
 }
 
 /// Helper function to create a battle environment and run it
