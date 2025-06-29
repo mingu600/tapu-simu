@@ -164,51 +164,39 @@ graph TB
 
 ```mermaid
 sequenceDiagram
-    participant P1 as Player One
-    participant P2 as Player Two
-    participant BE as BattleEnvironment
-    participant Engine as BattleEngine
-    participant State as BattleState
-    participant Instructions as InstructionSystem
-    participant Data as DataRepositories
+    participant PlayerOne
+    participant PlayerTwo
+    participant BattleEnvironment
+    participant BattleEngine
+    participant BattleState
+    participant InstructionSystem
 
-    Note over P1,Data: Battle Initialization
-    BE->>State: new(format, teams)
-    State->>Data: validate_teams()
-    Data-->>State: validation_result
-
-    loop Turn Loop
-        Note over P1,Data: Move Selection Phase
-        BE->>P1: choose_move(state, options)
-        P1-->>BE: MoveChoice
-        BE->>P2: choose_move(state, options)
-        P2-->>BE: MoveChoice
-
-        Note over P1,Data: Turn Execution Phase
-        BE->>Engine: execute_turn(choices)
-        Engine->>Engine: resolve_targeting()
-        Engine->>Engine: determine_move_order()
+    BattleEnvironment->>BattleState: Create battle state
+    BattleState->>BattleState: Validate teams and format
+    
+    loop Turn Execution
+        BattleEnvironment->>PlayerOne: Request move choice
+        PlayerOne-->>BattleEnvironment: Return move choice
+        BattleEnvironment->>PlayerTwo: Request move choice
+        PlayerTwo-->>BattleEnvironment: Return move choice
         
-        loop For Each Move
-            Engine->>Engine: check_move_prevention()
-            Engine->>Engine: calculate_accuracy()
-            Engine->>Engine: apply_move_effects()
-            Engine->>Instructions: generate_instructions()
-            Instructions-->>Engine: BattleInstructions
-        end
-
-        Engine->>State: apply_instructions(instructions)
-        State->>State: update_state()
-        Engine->>Engine: process_end_of_turn()
+        BattleEnvironment->>BattleEngine: Execute turn with choices
+        BattleEngine->>BattleEngine: Resolve targeting
+        BattleEngine->>BattleEngine: Determine move order
+        BattleEngine->>BattleEngine: Check move prevention
+        BattleEngine->>BattleEngine: Calculate accuracy
+        BattleEngine->>InstructionSystem: Generate instructions
+        InstructionSystem-->>BattleEngine: Return instructions
+        BattleEngine->>BattleState: Apply instructions
+        BattleState->>BattleState: Update state
+        BattleEngine->>BattleEngine: Process end of turn
+        BattleEngine-->>BattleEnvironment: Return new state
         
-        Engine-->>BE: new_state
-        BE->>State: check_battle_over()
-        
-        alt Battle Continues
-            State-->>BE: false
-        else Battle Ends
-            State-->>BE: true, winner
-            break
+        BattleEnvironment->>BattleState: Check if battle over
+        alt Battle continues
+            BattleState-->>BattleEnvironment: Continue
+        else Battle ends
+            BattleState-->>BattleEnvironment: Battle complete
         end
     end
 ```
